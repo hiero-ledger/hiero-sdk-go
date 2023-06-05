@@ -116,9 +116,9 @@ func (node *_Node) _GetChannel(logger Logger) (*_Channel, error) {
 	}
 
 	var kacp = keepalive.ClientParameters{
-		Time:                10 * time.Second,
-		Timeout:             2 * time.Second,
-		PermitWithoutStream: true,
+		// Time:                10 * time.Second,
+		// Timeout:             2 * time.Second,
+		// PermitWithoutStream: true,
 	}
 
 	var conn *grpc.ClientConn
