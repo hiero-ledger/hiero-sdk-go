@@ -152,9 +152,9 @@ func (node *_MirrorNode) _GetConsensusServiceClient() (mirror.ConsensusServiceCl
 	}
 
 	var kacp = keepalive.ClientParameters{
-		Time:                10 * time.Second,
-		Timeout:             time.Second,
-		PermitWithoutStream: true,
+		// Time:                10 * time.Second,
+		// Timeout:             time.Second,
+		// PermitWithoutStream: true,
 	}
 
 	var security grpc.DialOption
