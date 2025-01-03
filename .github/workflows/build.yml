@@ -103,11 +103,11 @@ jobs:
 
             - name: Tests Unit
               if: success()
-              run: go test -tags="unit" -timeout 9999s -v -coverprofile=unit.out -covermode=atomic -race
+              run: go test ./sdk/... -tags="unit" -timeout 9999s -v -coverprofile=unit.out -covermode=atomic -race
 
             - name: Tests Integration
               if: success()
-              run: go test -tags="e2e" -timeout 9999s -v -coverprofile=e2e.out -covermode=atomic -race
+              run: go test ./sdk/... -tags="e2e" -timeout 9999s -v -coverprofile=e2e.out -covermode=atomic -race
 
             - name: Upload coverage to Codecov
               if: success()

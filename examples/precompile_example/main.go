@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
 	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/contract_helper"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 //go:embed PrecompileExample.json

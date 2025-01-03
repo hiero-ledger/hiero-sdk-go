@@ -10,7 +10,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/response"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/utils"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 type TokenService struct {

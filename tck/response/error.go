@@ -4,7 +4,7 @@ package response
 
 import (
 	"github.com/creachadair/jrpc2"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 // see https://json-rpc.readthedocs.io/en/latest/exceptions.html

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 func main() {

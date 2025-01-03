@@ -34,7 +34,7 @@ tasks:
 
     "test:integration":
         cmds:
-            - go test -tags="e2e" -v -timeout 9999s
+            - go test ./sdk/... -tags="e2e" -v -timeout 9999s
     run-examples:
         cmds:
             - |

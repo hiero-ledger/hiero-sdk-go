@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 func ParseCustomFees(paramFees []param.CustomFee) ([]hiero.Fee, error) {
