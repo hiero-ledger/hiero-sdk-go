@@ -92,7 +92,7 @@ jobs:
           cd hedera-services
           docker-compose up &
           cd ../hiero-sdk-go
-          go test -tags="e2e" -coverprofile=coverage.out -covermode=atomic -v -timeout 9999s
+          go test ./sdk/... -tags="e2e" -coverprofile=coverage.out -covermode=atomic -v -timeout 9999s
 
       - name: Codecov
         uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # v5.0.7

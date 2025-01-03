@@ -17,7 +17,7 @@ import (
 	"github.com/creachadair/jrpc2/jhttp"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/methods"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/response"
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 	"github.com/joho/godotenv"
 )
 

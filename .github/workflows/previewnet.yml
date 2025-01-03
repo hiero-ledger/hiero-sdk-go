@@ -45,7 +45,7 @@ jobs:
         run: go vet ./examples/...
 
       - name: Vet
-        run: go vet .
+        run: go vet ./sdk/...
 
       - name: Lint
         uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
@@ -53,7 +53,7 @@ jobs:
           version: v1.50
 
       - name: Build
-        run: go build -v .
+        run: go build -v ./sdk
 
       - name: Test
         run: go test -v -timeout 9999s

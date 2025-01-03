@@ -5,7 +5,7 @@ test-unit: build
   go test -tags="unit" -v
 
 test-e2e: build
-  go test -tags="e2e" -v -timeout 9999s
+  go test ./sdk/... -tags="e2e" -v -timeout 9999s
 
 format:
   go fmt || goimports -w *.go

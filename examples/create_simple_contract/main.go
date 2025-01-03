@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2"
+	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 // a simple contract struct
