@@ -41,13 +41,13 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Vet Examples
-        run: go vet ./sdk/...
+        run: go vet ./sdk
 
       - name: Vet
-        run: go vet ./sdk/...
+        run: go vet ./sdk
 
       - name: Build
-        run: go build -v ./sdk/...
+        run: go build -v ./sdk
 
   test:
     name: Test

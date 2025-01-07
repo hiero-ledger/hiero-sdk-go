@@ -22,7 +22,7 @@ tasks:
             - golangci-lint run
     update:
         cmds:
-            - go test -tags="all" -v -run TestIntegrationAddressBookQueryUpdateAll
+            - go test ./sdk -tags="all" -v -run TestIntegrationAddressBookQueryUpdateAll
     test:
         deps:
             - "test:unit"
@@ -30,11 +30,11 @@ tasks:
 
     "test:unit":
         cmds:
-            - go test -tags="unit" -v
+            - go test ./sdk -tags="unit" -v
 
     "test:integration":
         cmds:
-            - go test ./sdk/... -tags="e2e" -v -timeout 9999s
+            - go test ./sdk -tags="e2e" -v -timeout 9999s
     run-examples:
         cmds:
             - |

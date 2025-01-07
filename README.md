@@ -27,22 +27,22 @@ replace (
 )
 ```
 
-### Running Integration Tests
+### Running Tests
 
+# Integration
 ```bash
-$ env CONFIG_FILE="<your_config_file>" go test -v Integration -timeout 9999s
+$ env CONFIG_FILE="<your_config_file>" go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
 
 or
 
 ```bash
-$ env CONFIG_FILE="<your_config_file>" OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go test -v Integration -timeout 9999s
+$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go test ./sdk -tags="e2e" -timeout 9999s
 ```
 
-or
-
+# Unit 
 ```bash
-$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go test -v Integration -timeout 9999s
+$ go test ./sdk -tags="unit" -v -timeout 9999s
 ```
 
 The config file _can_ contain both the network and the operator, but you can also
