@@ -177,7 +177,7 @@ func TestMirrorNodeContractQueryFailWhenSenderIsNotSet(t *testing.T) {
 	contractID := receipt.ContractID
 
 	// Wait for mirror node to import data
-	time.Sleep(2 * time.Second)
+	time.Sleep(3 * time.Second)
 	param, err := NewContractFunctionParameters().AddAddress(ADDRESS)
 
 	_, err = NewMirrorNodeContractEstimateGasQuery().
