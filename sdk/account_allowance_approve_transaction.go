@@ -1,8 +1,10 @@
 package hiero
 
-import "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
-
 // SPDX-License-Identifier: Apache-2.0
+
+import (
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+)
 
 // AccountAllowanceApproveTransaction
 // Creates one or more hbar/token approved allowances <b>relative to the owner account specified in the allowances of
