@@ -336,3 +336,15 @@ func TestUnitContractCreateTransactionCoverage(t *testing.T) {
 		b.AddSignature(newKey.PublicKey(), sig)
 	}
 }
+
+func TestUnitContractCreateTransactionFromToBytes(t *testing.T) {
+	tx := NewContractCreateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ContractCreateTransaction).buildProtoBody())
+}

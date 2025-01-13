@@ -9,6 +9,7 @@ import (
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	protobuf "google.golang.org/protobuf/proto"
 )
@@ -147,4 +148,16 @@ func TestUnitAccountAllowanceDeleteTransactionSetNothing(t *testing.T) {
 	transaction.GetRegenerateTransactionID()
 	_, err = transaction.GetSignatures()
 	require.NoError(t, err)
+}
+
+func TestUnitAllowanceDeleteTransactionFromToBytes(t *testing.T) {
+	tx := NewAccountAllowanceDeleteTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountAllowanceDeleteTransaction).buildProtoBody())
 }

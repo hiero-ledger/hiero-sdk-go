@@ -45,9 +45,21 @@ func NewContractCreateTransaction() *ContractCreateTransaction {
 }
 
 func _ContractCreateTransactionFromProtobuf(tx Transaction[*ContractCreateTransaction], pb *services.TransactionBody) ContractCreateTransaction {
-	key, _ := _KeyFromProtobuf(pb.GetContractCreateInstance().GetAdminKey())
-	autoRenew := _DurationFromProtobuf(pb.GetContractCreateInstance().GetAutoRenewPeriod())
-	stakedNodeID := pb.GetContractCreateInstance().GetStakedNodeId()
+	var key Key = nil
+	if pb.GetContractCreateInstance().GetAdminKey() != nil {
+		key, _ = _KeyFromProtobuf(pb.GetContractCreateInstance().GetAdminKey())
+	}
+	var autoRenew *time.Duration
+	if pb.GetContractCreateInstance().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetContractCreateInstance().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
+
+	var stakedNodeID *int64
+	if pb.GetContractCreateInstance().GetStakedNodeId() != 0 {
+		stakedNodeIdVal := pb.GetContractCreateInstance().GetStakedNodeId()
+		stakedNodeID = &stakedNodeIdVal
+	}
 
 	var stakeNodeAccountID *AccountID
 	if pb.GetContractCreateInstance().GetStakedAccountId() != nil {
@@ -64,14 +76,14 @@ func _ContractCreateTransactionFromProtobuf(tx Transaction[*ContractCreateTransa
 		adminKey:                      key,
 		gas:                           pb.GetContractCreateInstance().Gas,
 		initialBalance:                pb.GetContractCreateInstance().InitialBalance,
-		autoRenewPeriod:               &autoRenew,
+		autoRenewPeriod:               autoRenew,
 		parameters:                    pb.GetContractCreateInstance().ConstructorParameters,
 		memo:                          pb.GetContractCreateInstance().GetMemo(),
 		initcode:                      pb.GetContractCreateInstance().GetInitcode(),
 		autoRenewAccountID:            autoRenewAccountID,
 		maxAutomaticTokenAssociations: pb.GetContractCreateInstance().MaxAutomaticTokenAssociations,
 		stakedAccountID:               stakeNodeAccountID,
-		stakedNodeID:                  &stakedNodeID,
+		stakedNodeID:                  stakedNodeID,
 		declineReward:                 pb.GetContractCreateInstance().GetDeclineReward(),
 	}
 	tx.childTransaction = &contractCreateTransaction

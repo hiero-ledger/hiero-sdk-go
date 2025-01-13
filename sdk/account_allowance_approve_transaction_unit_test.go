@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -250,4 +251,16 @@ func TestUnitAccountAllowanceApproveTransactionScheduleProtobuf(t *testing.T) {
 	actual, err := tx.buildScheduled()
 	require.NoError(t, err)
 	require.Equal(t, expected.String(), actual.String())
+}
+
+func TestUnitAllowanceApproveTransactionFromToBytes(t *testing.T) {
+	tx := NewAccountAllowanceApproveTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountAllowanceApproveTransaction).buildProtoBody())
 }

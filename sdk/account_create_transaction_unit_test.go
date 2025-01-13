@@ -360,3 +360,15 @@ func TestUnitAccountCreateSetStakedAccountID(t *testing.T) {
 	require.Equal(t, int64(0), tx.GetStakedNodeID())
 	require.Equal(t, account, tx.GetStakedAccountID())
 }
+
+func TestUnitAccountCreateTransactionFromToBytes(t *testing.T) {
+	tx := NewAccountCreateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountCreateTransaction).buildProtoBody())
+}

@@ -251,3 +251,15 @@ func TestUnitAccountDeleteTransactionTransactionMock(t *testing.T) {
 		Execute(client)
 	require.NoError(t, err)
 }
+
+func TestUnitAccountDeleteTransactionFromToBytes(t *testing.T) {
+	tx := NewAccountDeleteTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountDeleteTransaction).buildProtoBody())
+}

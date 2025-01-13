@@ -50,7 +50,11 @@ func NewAccountUpdateTransaction() *AccountUpdateTransaction {
 }
 
 func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransaction], pb *services.TransactionBody) AccountUpdateTransaction {
-	key, _ := _KeyFromProtobuf(pb.GetCryptoUpdateAccount().GetKey())
+	var key Key
+	if pb.GetCryptoUpdateAccount().GetKey() != nil {
+		key, _ = _KeyFromProtobuf(pb.GetCryptoUpdateAccount().GetKey())
+	}
+
 	var receiverSignatureRequired bool
 
 	switch s := pb.GetCryptoUpdateAccount().GetReceiverSigRequiredField().(type) {
@@ -60,10 +64,23 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 		receiverSignatureRequired = s.ReceiverSigRequiredWrapper.Value // nolint
 	}
 
-	autoRenew := _DurationFromProtobuf(pb.GetCryptoUpdateAccount().AutoRenewPeriod)
-	expiration := _TimeFromProtobuf(pb.GetCryptoUpdateAccount().ExpirationTime)
+	var autoRenew *time.Duration
+	if pb.GetCryptoUpdateAccount().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetCryptoUpdateAccount().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
 
-	stakedNodeID := pb.GetCryptoUpdateAccount().GetStakedNodeId()
+	var expiration *time.Time
+	if pb.GetCryptoUpdateAccount().GetExpirationTime() != nil {
+		expirationVal := _TimeFromProtobuf(pb.GetCryptoUpdateAccount().GetExpirationTime())
+		expiration = &expirationVal
+	}
+
+	var stakedNodeID *int64
+	if pb.GetCryptoUpdateAccount().GetStakedNodeId() != 0 {
+		stakedNodeIdVal := pb.GetCryptoUpdateAccount().GetStakedNodeId()
+		stakedNodeID = &stakedNodeIdVal
+	}
 
 	var stakeNodeAccountID *AccountID
 	if pb.GetCryptoUpdateAccount().GetStakedAccountId() != nil {
@@ -73,13 +90,13 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 	accountUpdateTransaction := AccountUpdateTransaction{
 		accountID:                     _AccountIDFromProtobuf(pb.GetCryptoUpdateAccount().GetAccountIDToUpdate()),
 		key:                           key,
-		autoRenewPeriod:               &autoRenew,
+		autoRenewPeriod:               autoRenew,
 		memo:                          pb.GetCryptoUpdateAccount().GetMemo().Value,
 		receiverSignatureRequired:     receiverSignatureRequired,
-		expirationTime:                &expiration,
+		expirationTime:                expiration,
 		maxAutomaticTokenAssociations: pb.GetCryptoUpdateAccount().MaxAutomaticTokenAssociations.GetValue(),
 		stakedAccountID:               stakeNodeAccountID,
-		stakedNodeID:                  &stakedNodeID,
+		stakedNodeID:                  stakedNodeID,
 		declineReward:                 pb.GetCryptoUpdateAccount().GetDeclineReward().GetValue(),
 	}
 

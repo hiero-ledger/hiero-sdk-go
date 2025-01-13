@@ -46,8 +46,16 @@ func NewAccountCreateTransaction() *AccountCreateTransaction {
 }
 
 func _AccountCreateTransactionFromProtobuf(tx Transaction[*AccountCreateTransaction], pb *services.TransactionBody) AccountCreateTransaction {
-	key, _ := _KeyFromProtobuf(pb.GetCryptoCreateAccount().GetKey())
-	renew := _DurationFromProtobuf(pb.GetCryptoCreateAccount().GetAutoRenewPeriod())
+	var key Key = nil
+	if pb.GetCryptoCreateAccount().GetKey() != nil {
+		key, _ = _KeyFromProtobuf(pb.GetCryptoCreateAccount().GetKey())
+	}
+
+	var autoRenew *time.Duration
+	if pb.GetCryptoCreateAccount().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetCryptoCreateAccount().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
 
 	var stakedNodeID *int64
 	if pb.GetCryptoCreateAccount().GetStakedNodeId() != 0 {
@@ -62,7 +70,7 @@ func _AccountCreateTransactionFromProtobuf(tx Transaction[*AccountCreateTransact
 	accountCreateTransaction := AccountCreateTransaction{
 		key:                           key,
 		initialBalance:                pb.GetCryptoCreateAccount().InitialBalance,
-		autoRenewPeriod:               &renew,
+		autoRenewPeriod:               autoRenew,
 		memo:                          pb.GetCryptoCreateAccount().GetMemo(),
 		receiverSignatureRequired:     pb.GetCryptoCreateAccount().ReceiverSigRequired,
 		maxAutomaticTokenAssociations: pb.GetCryptoCreateAccount().MaxAutomaticTokenAssociations,

@@ -328,3 +328,15 @@ func TestUnitAccountUpdateTransactionCoverage(t *testing.T) {
 		b.AddSignature(key.PublicKey(), sig)
 	}
 }
+
+func TestUnitAccountUpdateTransactionFromToBytes(t *testing.T) {
+	tx := NewAccountUpdateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountUpdateTransaction).buildProtoBody())
+}
