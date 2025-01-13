@@ -63,9 +63,20 @@ func NewContractUpdateTransaction() *ContractUpdateTransaction {
 }
 
 func _ContractUpdateTransactionFromProtobuf(tx Transaction[*ContractUpdateTransaction], pb *services.TransactionBody) ContractUpdateTransaction {
-	key, _ := _KeyFromProtobuf(pb.GetContractUpdateInstance().AdminKey)
-	autoRenew := _DurationFromProtobuf(pb.GetContractUpdateInstance().GetAutoRenewPeriod())
-	expiration := _TimeFromProtobuf(pb.GetContractUpdateInstance().GetExpirationTime())
+	var key Key = nil
+	if pb.GetContractUpdateInstance().GetAdminKey() != nil {
+		key, _ = _KeyFromProtobuf(pb.GetContractUpdateInstance().GetAdminKey())
+	}
+	var autoRenew *time.Duration
+	if pb.GetContractUpdateInstance().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetContractUpdateInstance().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
+	var expiration *time.Time
+	if pb.GetContractUpdateInstance().GetExpirationTime() != nil {
+		expirationVal := _TimeFromProtobuf(pb.GetContractUpdateInstance().GetExpirationTime())
+		expiration = &expirationVal
+	}
 	var memo string
 
 	switch m := pb.GetContractUpdateInstance().GetMemoField().(type) {
@@ -75,7 +86,11 @@ func _ContractUpdateTransactionFromProtobuf(tx Transaction[*ContractUpdateTransa
 		memo = m.MemoWrapper.Value
 	}
 
-	stakedNodeID := pb.GetContractUpdateInstance().GetStakedNodeId()
+	var stakedNodeID *int64
+	if pb.GetContractUpdateInstance().GetStakedNodeId() != 0 {
+		stakedNodeIdVal := pb.GetContractUpdateInstance().GetStakedNodeId()
+		stakedNodeID = &stakedNodeIdVal
+	}
 
 	var stakeNodeAccountID *AccountID
 	if pb.GetContractUpdateInstance().GetStakedAccountId() != nil {
@@ -90,13 +105,13 @@ func _ContractUpdateTransactionFromProtobuf(tx Transaction[*ContractUpdateTransa
 	contractUpdateTransaction := ContractUpdateTransaction{
 		contractID:                    _ContractIDFromProtobuf(pb.GetContractUpdateInstance().GetContractID()),
 		adminKey:                      key,
-		autoRenewPeriod:               &autoRenew,
-		expirationTime:                &expiration,
+		autoRenewPeriod:               autoRenew,
+		expirationTime:                expiration,
 		memo:                          memo,
 		autoRenewAccountID:            autoRenewAccountID,
 		maxAutomaticTokenAssociations: pb.GetContractUpdateInstance().MaxAutomaticTokenAssociations.GetValue(),
 		stakedAccountID:               stakeNodeAccountID,
-		stakedNodeID:                  &stakedNodeID,
+		stakedNodeID:                  stakedNodeID,
 		declineReward:                 pb.GetContractUpdateInstance().GetDeclineReward().GetValue(),
 	}
 	tx.childTransaction = &contractUpdateTransaction
@@ -382,14 +397,6 @@ func (tx ContractUpdateTransaction) buildProtoBody() *services.ContractUpdateTra
 		body.MemoField = &services.ContractUpdateTransactionBody_MemoWrapper{
 			MemoWrapper: &wrapperspb.StringValue{Value: tx.memo},
 		}
-	}
-
-	if tx.adminKey != nil {
-		body.AdminKey = tx.adminKey._ToProtoKey()
-	}
-
-	if tx.contractID != nil {
-		body.ContractID = tx.contractID._ToProtobuf()
 	}
 
 	if tx.stakedAccountID != nil {
