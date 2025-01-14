@@ -1,5 +1,5 @@
-![](https://img.shields.io/github/v/tag/hiero-project/hiero-sdk-go)
-![](https://img.shields.io/github/go-mod/go-version/hiero-project/hiero-sdk-go)
+![](https://img.shields.io/github/v/tag/hiero-ledger/hiero-sdk-go)
+![](https://img.shields.io/github/go-mod/go-version/hiero-ledger/hiero-sdk-go)
 [![](https://godoc.org/github.com/hiero-ledger/hiero-sdk-go/v2?status.svg)](http://godoc.org/github.com/hiero-project/hiero-sdk-go/v2)
 
 # Hiero Go SDK
