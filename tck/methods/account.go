@@ -4,6 +4,7 @@ package methods
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
@@ -37,7 +38,11 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 		transaction.SetKey(key)
 	}
 	if params.InitialBalance != nil {
-		transaction.SetInitialBalance(hiero.HbarFromTinybar(*params.InitialBalance))
+		initialBalance, err := strconv.ParseInt(*params.InitialBalance, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetInitialBalance(hiero.HbarFromTinybar(initialBalance))
 	}
 	if params.ReceiverSignatureRequired != nil {
 		transaction.SetReceiverSignatureRequired(*params.ReceiverSignatureRequired)
@@ -66,7 +71,12 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 		transaction.SetAccountMemo(*params.Memo)
 	}
 	if params.AutoRenewPeriod != nil {
-		transaction.SetAutoRenewPeriod(time.Duration(*params.AutoRenewPeriod) * time.Second)
+		autoRenewPeriodSeconds, err := strconv.ParseInt(*params.AutoRenewPeriod, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetAutoRenewPeriod(time.Duration(autoRenewPeriodSeconds) * time.Second)
 	}
 	if params.Alias != nil {
 		transaction.SetAlias(*params.Alias)
@@ -106,7 +116,11 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 	}
 
 	if params.ExpirationTime != nil {
-		transaction.SetExpirationTime(time.Unix(*params.ExpirationTime, 0))
+		expirationTime, err := strconv.ParseInt(*params.ExpirationTime, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetExpirationTime(time.Unix(expirationTime, 0))
 	}
 
 	if params.ReceiverSignatureRequired != nil {
@@ -142,7 +156,11 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 	}
 
 	if params.AutoRenewPeriod != nil {
-		transaction.SetAutoRenewPeriod(time.Duration(*params.AutoRenewPeriod) * time.Second)
+		autoRenewPeriodSeconds, err := strconv.ParseInt(*params.AutoRenewPeriod, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAutoRenewPeriod(time.Duration(autoRenewPeriodSeconds) * time.Second)
 	}
 
 	if params.CommonTransactionParams != nil {
