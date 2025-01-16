@@ -23,7 +23,7 @@ func (t *TokenService) SetSdkService(service *SDKService) {
 	t.sdkService = service
 }
 
-// CreateToken gRPC method for createToken
+// CreateToken jRPC method for createToken
 func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -132,7 +132,6 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 	if params.InitialSupply != nil {
 		initialSupply, err := strconv.ParseInt(*params.InitialSupply, 10, 64)
 		if err != nil {
-			fmt.Println("Initial Supply: ", err)
 			return nil, err
 		}
 		transaction.SetInitialSupply(uint64(initialSupply))
@@ -423,11 +422,6 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 				return nil, err
 			}
 
-			// Check if the parsed Token ID is empty
-			if (parsedTokenID == hiero.TokenID{}) {
-				return nil, response.InvalidParams.WithData("Invalid Token ID")
-			}
-
 			parsedTokenIds = append(parsedTokenIds, parsedTokenID)
 		}
 
@@ -475,10 +469,6 @@ func (t *TokenService) DissociatesToken(_ context.Context, params param.Associat
 			parsedTokenID, err := hiero.TokenIDFromString(tokenIDStr)
 			if err != nil {
 				return nil, err
-			}
-
-			if (parsedTokenID == hiero.TokenID{}) {
-				return nil, response.InvalidParams.WithData("Invalid Token ID")
 			}
 
 			parsedTokenIds = append(parsedTokenIds, parsedTokenID)
@@ -774,7 +764,7 @@ func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams
 	// Construct the response
 	status := receipt.Status.String()
 	newTotalSupply := strconv.FormatUint(receipt.TotalSupply, 10)
-	serialNumbers := mapSerialNumbersToString(receipt.SerialNumbers)
+	serialNumbers := utils.MapSerialNumbersToString(receipt.SerialNumbers)
 
 	return &response.TokenMintResponse{
 		TokenId:        params.TokenId,
@@ -842,13 +832,4 @@ func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams
 		NewTotalSupply: &newTotalSupply,
 		Status:         &status,
 	}, nil
-}
-
-// Helper function to map serial numbers to strings
-func mapSerialNumbersToString(serials []int64) []string {
-	serialStrings := make([]string, len(serials))
-	for i, serial := range serials {
-		serialStrings[i] = fmt.Sprintf("%d", serial)
-	}
-	return serialStrings
 }
