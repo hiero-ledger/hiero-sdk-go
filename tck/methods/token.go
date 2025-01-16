@@ -196,7 +196,7 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 	return &response.TokenResponse{TokenId: receipt.TokenID.String(), Status: receipt.Status.String()}, nil
 }
 
-// UpdateToken gRPC method for updateToken
+// UpdateToken jRPC method for updateToken
 func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -330,7 +330,7 @@ func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenPa
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// DeleteToken gRPC method for deleteToken
+// DeleteToken jRPC method for deleteToken
 func (t *TokenService) DeleteToken(_ context.Context, params param.DeleteTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -356,7 +356,7 @@ func (t *TokenService) DeleteToken(_ context.Context, params param.DeleteTokenPa
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// UpdateTokenFeeSchedule gRPC method for updateTokenFeeSchedule
+// UpdateTokenFeeSchedule jRPC method for updateTokenFeeSchedule
 func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.UpdateTokenFeeScheduleParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenFeeScheduleUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -391,7 +391,7 @@ func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.Up
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// AssociateToken gRPC method for associateToken
+// AssociateToken jRPC method for associateToken
 func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenAssociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -446,7 +446,7 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// DisassociateToken gRPC method for dissociateToken
+// DisassociateToken jRPC method for dissociateToken
 func (t *TokenService) DissociatesToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenDissociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -495,7 +495,7 @@ func (t *TokenService) DissociatesToken(_ context.Context, params param.Associat
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// PauseToken gRPC method for pauseToken
+// PauseToken jRPC method for pauseToken
 func (t *TokenService) PauseToken(_ context.Context, params param.PauseUnPauseTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenPauseTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -525,7 +525,7 @@ func (t *TokenService) PauseToken(_ context.Context, params param.PauseUnPauseTo
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// UnpauseToken gRPC method for unpauseToken
+// UnpauseToken jRPC method for unpauseToken
 func (t *TokenService) UnpauseToken(_ context.Context, params param.PauseUnPauseTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenUnpauseTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -555,7 +555,7 @@ func (t *TokenService) UnpauseToken(_ context.Context, params param.PauseUnPause
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// FreezeToken gRPC method for freezeToken
+// FreezeToken jRPC method for freezeToken
 func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenFreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -594,7 +594,7 @@ func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreez
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// UnfreezeToken gRPC method for unfreezeToken
+// UnfreezeToken jRPC method for unfreezeToken
 func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenUnfreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -633,7 +633,7 @@ func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFre
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// GrantTokenKyc gRPC method for grantTokenKyc
+// GrantTokenKyc jRPC method for grantTokenKyc
 func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenGrantKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -672,7 +672,7 @@ func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevoke
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// RevokeTokenKyc gRPC method for revokeTokenKyc
+// RevokeTokenKyc jRPC method for revokeTokenKyc
 func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
 
 	transaction := hiero.NewTokenRevokeKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -711,7 +711,7 @@ func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevok
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// MintToken gRPC method for mintToken
+// MintToken jRPC method for mintToken
 func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams) (*response.TokenMintResponse, error) {
 
 	transaction := hiero.NewTokenMintTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -774,7 +774,7 @@ func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams
 	}, nil
 }
 
-// BurnToken gRPC method for burnToken
+// BurnToken jRPC method for burnToken
 func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams) (*response.TokenBurnResponse, error) {
 
 	transaction := hiero.NewTokenBurnTransaction().SetGrpcDeadline(&threeSecondsDuration)
