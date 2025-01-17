@@ -517,3 +517,27 @@ func TestUnitScheduleDeleteTransactionMock(t *testing.T) {
 	_, err = freez.Sign(newKey).Execute(client)
 	require.NoError(t, err)
 }
+
+func TestUnitScheduleCreateTransactionFromToBytes(t *testing.T) {
+	tx := NewScheduleCreateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ScheduleCreateTransaction).buildProtoBody())
+}
+
+func TestUnitScheduleDeleteTransactionFromToBytes(t *testing.T) {
+	tx := NewScheduleDeleteTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ScheduleDeleteTransaction).buildProtoBody())
+}

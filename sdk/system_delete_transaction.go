@@ -33,15 +33,15 @@ func NewSystemDeleteTransaction() *SystemDeleteTransaction {
 }
 
 func _SystemDeleteTransactionFromProtobuf(tx Transaction[*SystemDeleteTransaction], pb *services.TransactionBody) SystemDeleteTransaction {
-	expiration := time.Date(
-		time.Now().Year(), time.Now().Month(), time.Now().Day(),
-		time.Now().Hour(), time.Now().Minute(),
-		int(pb.GetSystemDelete().ExpirationTime.Seconds), time.Now().Nanosecond(), time.Now().Location(),
-	)
+	var expiration *time.Time
+	if pb.GetCryptoUpdateAccount().GetExpirationTime() != nil {
+		expirationVal := _TimeFromProtobuf(pb.GetCryptoUpdateAccount().GetExpirationTime())
+		expiration = &expirationVal
+	}
 	systemDeleteTransaction := SystemDeleteTransaction{
 		contractID:     _ContractIDFromProtobuf(pb.GetSystemDelete().GetContractID()),
 		fileID:         _FileIDFromProtobuf(pb.GetSystemDelete().GetFileID()),
-		expirationTime: &expiration,
+		expirationTime: expiration,
 	}
 
 	tx.childTransaction = &systemDeleteTransaction

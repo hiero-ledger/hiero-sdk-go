@@ -74,3 +74,15 @@ func TestUnitPrngTransactionScheduleProtobuf(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expected.GetUtilPrng(), actual.GetUtilPrng())
 }
+
+func TestUnitPrngTransactionFromToBytes(t *testing.T) {
+	tx := NewPrngTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(PrngTransaction).buildProtoBody())
+}

@@ -144,3 +144,15 @@ func TestUnitTokenCancelAirdropTransactionValidateNetworkOnIDs(t *testing.T) {
 	err = transaction.validateNetworkOnIDs(client)
 	require.NoError(t, err)
 }
+
+func TestUnitTokenCancelAirdropTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenCancelAirdropTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenCancelAirdropTransaction).buildProtoBody())
+}

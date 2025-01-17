@@ -329,3 +329,15 @@ func TestUnitTokenAirdropTransactionScheduleProtobuf(t *testing.T) {
 	require.NoError(t, err)
 	require.ElementsMatch(t, expected.GetTokenAirdrop().TokenTransfers, actual.GetTokenAirdrop().TokenTransfers)
 }
+
+func TestUnitTokenAirdropTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenAirdropTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenAirdropTransaction).buildProtoBody())
+}
