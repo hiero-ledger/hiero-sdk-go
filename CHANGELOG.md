@@ -1,3 +1,11 @@
+## v2.54.0
+
+### Fixed
+- Overriding the default values of properties in some transactions when doing `transaction.toBytes()` and then `TransactionFromBytes(transaction)`.
+
+### Changed
+- Moved all source files to `/sdk` directory. The new way of importing the SDK is `import hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"`
+
 ## v2.53.0
 
 ### Added
