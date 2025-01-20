@@ -22,6 +22,25 @@ type AccountAllowanceApproveTransaction struct {
 	nftAllowances   []*TokenNftAllowance
 }
 
+// AccountAllowanceDeleteTransaction
+// This transaction removes one or more hbar or token allowances previously approved for specified spender accounts.
+// Allowances are relative to the owner account defined in the transaction's allowance list. Each allowance previously
+// granted a spender the right to transfer a specific amount of the owner's hbar or tokens to another account of the
+// spender's choosing.
+//
+// If the owner is not explicitly specified in an allowance, the transaction's payer account is assumed to be the owner
+// for that allowance. Setting the allowance amount to zero in a CryptoAllowance or TokenAllowance effectively deletes
+// the respective allowance for the specified spender.
+//
+// For example, if account <tt>0.0.X</tt> is the payer of this transaction and no owner is specified in the allowances,
+// then at consensus, all specified spender accounts will have their hbar or token allowances from <tt>0.0.X</tt> removed.
+type AccountAllowanceNftSerialsDeleteTransaction struct {
+	*Transaction[*AccountAllowanceDeleteTransaction]
+	hbarAllowances  []*HbarAllowance
+	tokenAllowances []*TokenAllowance
+	nftAllowances   []*TokenNftAllowance
+}
+
 // NewAccountAllowanceApproveTransaction
 // Creates an AccountAloowanceApproveTransaction which creates
 // one or more hbar/token approved allowances relative to the owner account specified in the allowances of
@@ -214,6 +233,27 @@ func (tx *AccountAllowanceApproveTransaction) _ApproveTokenNftAllowanceAllSerial
 	return tx
 }
 
+func (tx *AccountAllowanceNftSerialsDeleteTransaction) _DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID *AccountID, spenderAccount AccountID) *AccountAllowanceNftSerialsDeleteTransaction {
+	for _, t := range tx.nftAllowances {
+		if t.TokenID.String() == tokenID.String() {
+			if t.SpenderAccountID.String() == spenderAccount.String() {
+				t.SerialNumbers = []int64{}
+				t.AllSerials = true
+				return tx
+			}
+		}
+	}
+
+	tx.nftAllowances = append(tx.nftAllowances, &TokenNftAllowance{
+		TokenID:          &tokenID,
+		SpenderAccountID: &spenderAccount,
+		SerialNumbers:    []int64{},
+		AllSerials:       false,
+		OwnerAccountID:   ownerAccountID,
+	})
+	return tx
+}
+
 // AddAllTokenNftApproval
 // Approve allowance of non-fungible token transfers for a spender.
 // Spender has access to all of the owner's NFT units of type tokenId (currently
@@ -228,6 +268,13 @@ func (tx *AccountAllowanceApproveTransaction) AddAllTokenNftApproval(tokenID Tok
 // owned and any in the future).
 func (tx *AccountAllowanceApproveTransaction) ApproveTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID AccountID, spenderAccount AccountID) *AccountAllowanceApproveTransaction {
 	return tx._ApproveTokenNftAllowanceAllSerials(tokenID, &ownerAccountID, spenderAccount)
+}
+
+// DeleteTokenNftAllowanceAllSerials
+// Revokes an allowance that permits a spender to transfer all of the owner's non-fungible tokens (NFTs) of a specific type (tokenId).
+// This action applies to both the NFTs currently owned by the owner and any future NFTs of the same type.
+func (tx *AccountAllowanceNftSerialsDeleteTransaction) DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID AccountID, spenderAccount AccountID) *AccountAllowanceNftSerialsDeleteTransaction {
+	return tx._DeleteTokenNftAllowanceAllSerials(tokenID, &ownerAccountID, spenderAccount)
 }
 
 // List of NFT allowance records
