@@ -36,9 +36,13 @@ func NewFileAppendTransaction() *FileAppendTransaction {
 }
 
 func _FileAppendTransactionFromProtobuf(tx Transaction[*FileAppendTransaction], pb *services.TransactionBody) FileAppendTransaction {
+	var contents []byte = make([]byte, 0)
+	if pb.GetFileAppend().GetContents() != nil {
+		contents = pb.GetFileAppend().GetContents()
+	}
 	fileAppend := FileAppendTransaction{
 		maxChunks: 20,
-		contents:  pb.GetFileAppend().GetContents(),
+		contents:  contents,
 		chunkSize: 2048,
 		fileID:    _FileIDFromProtobuf(pb.GetFileAppend().GetFileID()),
 	}

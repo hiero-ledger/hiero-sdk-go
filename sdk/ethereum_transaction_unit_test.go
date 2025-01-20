@@ -13,6 +13,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	protobuf "google.golang.org/protobuf/proto"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -132,4 +133,16 @@ func TestUnitEthereumTransactionCoverage(t *testing.T) {
 	case EthereumTransaction:
 		b.AddSignature(newKey.PublicKey(), sig)
 	}
+}
+
+func TestUnitEthereumTransactionFromToBytes(t *testing.T) {
+	tx := NewEthereumTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(EthereumTransaction).buildProtoBody())
 }
