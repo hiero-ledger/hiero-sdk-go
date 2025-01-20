@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -232,4 +233,16 @@ func TestUnitNodeDeleteTransactionCoverage(t *testing.T) {
 	case NodeDeleteTransaction:
 		b.AddSignature(key.PublicKey(), sig)
 	}
+}
+
+func TestUnitNodeDeleteTransactionFromToBytes(t *testing.T) {
+	tx := NewNodeDeleteTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeDeleteTransaction).buildProtoBody())
 }

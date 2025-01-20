@@ -337,3 +337,15 @@ func TestUnitNodeCreateTransactionCoverage(t *testing.T) {
 		b.AddSignature(key.PublicKey(), sig)
 	}
 }
+
+func TestUnitNodeCreateTransactionFromToBytes(t *testing.T) {
+	tx := NewNodeCreateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeCreateTransaction).buildProtoBody())
+}
