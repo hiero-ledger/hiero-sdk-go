@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	protobuf "google.golang.org/protobuf/proto"
 )
@@ -332,4 +333,16 @@ func TestUnitTopicMessageSubmitTransactionSetMessage(t *testing.T) {
 		SetMessage(1234) // wrong type - NOOP
 
 	require.Equal(t, []byte{}, transaction.GetMessage())
+}
+
+func TestUnitTopicMessageSubmitTransactionFromToBytes(t *testing.T) {
+	tx := NewTopicMessageSubmitTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TopicMessageSubmitTransaction).buildProtoBody())
 }

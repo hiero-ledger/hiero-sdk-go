@@ -31,16 +31,25 @@ func NewTopicCreateTransaction() *TopicCreateTransaction {
 }
 
 func _TopicCreateTransactionFromProtobuf(tx Transaction[*TopicCreateTransaction], pb *services.TransactionBody) TopicCreateTransaction {
-	adminKey, _ := _KeyFromProtobuf(pb.GetConsensusCreateTopic().GetAdminKey())
-	submitKey, _ := _KeyFromProtobuf(pb.GetConsensusCreateTopic().GetSubmitKey())
-
-	autoRenew := _DurationFromProtobuf(pb.GetConsensusCreateTopic().GetAutoRenewPeriod())
+	var adminKey Key
+	if pb.GetConsensusCreateTopic().GetAdminKey() != nil {
+		adminKey, _ = _KeyFromProtobuf(pb.GetConsensusCreateTopic().GetAdminKey())
+	}
+	var submitKey Key
+	if pb.GetConsensusCreateTopic().GetSubmitKey() != nil {
+		submitKey, _ = _KeyFromProtobuf(pb.GetConsensusCreateTopic().GetSubmitKey())
+	}
+	var autoRenew *time.Duration
+	if pb.GetConsensusCreateTopic().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetConsensusCreateTopic().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
 	topicCreateTransaction := TopicCreateTransaction{
 		autoRenewAccountID: _AccountIDFromProtobuf(pb.GetConsensusCreateTopic().GetAutoRenewAccount()),
 		adminKey:           adminKey,
 		submitKey:          submitKey,
 		memo:               pb.GetConsensusCreateTopic().GetMemo(),
-		autoRenewPeriod:    &autoRenew,
+		autoRenewPeriod:    autoRenew,
 	}
 
 	tx.childTransaction = &topicCreateTransaction

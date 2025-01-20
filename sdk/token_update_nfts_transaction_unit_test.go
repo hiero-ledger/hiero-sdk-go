@@ -221,3 +221,15 @@ func TestUnitTokenUpdateNftsTransactionSignWithOperator(t *testing.T) {
 	_, err = tokenUpdate.SignWithOperator(client)
 	require.NoError(t, err)
 }
+
+func TestUnitTokenUpdateNftsTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenUpdateNftsTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenUpdateNfts).buildProtoBody())
+}

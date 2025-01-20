@@ -271,3 +271,15 @@ func TestUnitTokenRevokeKycTransactionMock(t *testing.T) {
 	_, err = freez.Sign(newKey).Execute(client)
 	require.NoError(t, err)
 }
+
+func TestUnitTokenRevokeKycTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenRevokeKycTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenRevokeKycTransaction).buildProtoBody())
+}
