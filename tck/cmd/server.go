@@ -45,6 +45,16 @@ func main() {
 		"updateToken":            postHandler(HandleError, handler.New(tokenService.UpdateToken)),
 		"deleteToken":            postHandler(HandleError, handler.New(tokenService.DeleteToken)),
 		"updateTokenFeeSchedule": postHandler(HandleError, handler.New(tokenService.UpdateTokenFeeSchedule)),
+		"associateToken":         postHandler(HandleError, handler.New(tokenService.AssociateToken)),
+		"dissociateToken":        postHandler(HandleError, handler.New(tokenService.DissociatesToken)),
+		"pauseToken":             postHandler(HandleError, handler.New(tokenService.PauseToken)),
+		"unpauseToken":           postHandler(HandleError, handler.New(tokenService.UnpauseToken)),
+		"freezeToken":            postHandler(HandleError, handler.New(tokenService.FreezeToken)),
+		"unfreezeToken":          postHandler(HandleError, handler.New(tokenService.UnfreezeToken)),
+		"grantTokenKyc":          postHandler(HandleError, handler.New(tokenService.GrantTokenKyc)),
+		"revokeTokenKyc":         postHandler(HandleError, handler.New(tokenService.RevokeTokenKyc)),
+		"mintToken":              postHandler(HandleError, handler.New(tokenService.MintToken)),
+		"burnToken":              postHandler(HandleError, handler.New(tokenService.BurnToken)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 

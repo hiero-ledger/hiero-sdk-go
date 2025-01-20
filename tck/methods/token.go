@@ -4,6 +4,8 @@ package methods
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -365,6 +367,7 @@ func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.Up
 		}
 		transaction.SetTokenID(tokenId)
 	}
+
 	if params.CustomFees != nil {
 		customFees, err := utils.ParseCustomFees(*params.CustomFees)
 		if err != nil {
@@ -386,4 +389,447 @@ func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.Up
 	}
 
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// AssociateToken jRPC method for associateToken
+func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenAssociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountId, err := hiero.AccountIDFromString(*params.AccountId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAccountID(accountId)
+	}
+
+	if params.TokenIds != nil {
+
+		// Dereference the pointer to access the slice
+		tokenIds := *params.TokenIds
+
+		// Create a slice to hold the parsed Token IDs
+		var parsedTokenIds []hiero.TokenID
+
+		// Iterate and parse each Token ID
+		for _, tokenIDStr := range tokenIds {
+
+			parsedTokenID, err := hiero.TokenIDFromString(tokenIDStr)
+
+			if err != nil {
+				return nil, err
+			}
+
+			parsedTokenIds = append(parsedTokenIds, parsedTokenID)
+		}
+
+		// Set the parsed Token IDs in the transaction
+		transaction.SetTokenIDs(parsedTokenIds...)
+
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// DisassociateToken jRPC method for dissociateToken
+func (t *TokenService) DissociatesToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenDissociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountId, err := hiero.AccountIDFromString(*params.AccountId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAccountID(accountId)
+	}
+
+	if params.TokenIds != nil {
+
+		tokenIds := *params.TokenIds
+		var parsedTokenIds []hiero.TokenID
+
+		for _, tokenIDStr := range tokenIds {
+			parsedTokenID, err := hiero.TokenIDFromString(tokenIDStr)
+			if err != nil {
+				return nil, err
+			}
+
+			parsedTokenIds = append(parsedTokenIds, parsedTokenID)
+		}
+
+		// Set the parsed Token IDs in the transaction
+		transaction.SetTokenIDs(parsedTokenIds...)
+
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// PauseToken jRPC method for pauseToken
+func (t *TokenService) PauseToken(_ context.Context, params param.PauseUnPauseTokenParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenPauseTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// UnpauseToken jRPC method for unpauseToken
+func (t *TokenService) UnpauseToken(_ context.Context, params param.PauseUnPauseTokenParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenUnpauseTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// FreezeToken jRPC method for freezeToken
+func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenFreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountId, err := hiero.AccountIDFromString(*params.AccountId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAccountID(accountId)
+	}
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// UnfreezeToken jRPC method for unfreezeToken
+func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenUnfreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountId, err := hiero.AccountIDFromString(*params.AccountId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAccountID(accountId)
+	}
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// GrantTokenKyc jRPC method for grantTokenKyc
+func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenGrantKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountId, err := hiero.AccountIDFromString(*params.AccountId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAccountID(accountId)
+	}
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// RevokeTokenKyc jRPC method for revokeTokenKyc
+func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
+
+	transaction := hiero.NewTokenRevokeKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountId, err := hiero.AccountIDFromString(*params.AccountId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetAccountID(accountId)
+	}
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
+// MintToken jRPC method for mintToken
+func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams) (*response.TokenMintResponse, error) {
+
+	transaction := hiero.NewTokenMintTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.Metadata != nil {
+		var allMetadata [][]byte
+		for _, metadataValue := range *params.Metadata {
+			decodedMetadata, err := hex.DecodeString(metadataValue)
+			if err != nil {
+				return nil, fmt.Errorf("failed to decode metadata: %w", err)
+			}
+			allMetadata = append(allMetadata, decodedMetadata)
+		}
+
+		// Set the separate metadata slices on the transaction
+		transaction.SetMetadatas(allMetadata)
+	}
+
+	if params.Amount != nil {
+		amount, err := strconv.ParseUint(*params.Amount, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetAmount(uint64(amount))
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	// Construct the response
+	status := receipt.Status.String()
+	newTotalSupply := strconv.FormatUint(receipt.TotalSupply, 10)
+	serialNumbers := utils.MapSerialNumbersToString(receipt.SerialNumbers)
+
+	return &response.TokenMintResponse{
+		TokenId:        params.TokenId,
+		NewTotalSupply: &newTotalSupply,
+		SerialNumbers:  &serialNumbers,
+		Status:         &status,
+	}, nil
+}
+
+// BurnToken jRPC method for burnToken
+func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams) (*response.TokenBurnResponse, error) {
+
+	transaction := hiero.NewTokenBurnTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTokenID(tokenId)
+	}
+
+	if params.Amount != nil {
+		amount, err := strconv.ParseUint(*params.Amount, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetAmount(uint64(amount))
+	}
+
+	if params.SerialNumbers != nil {
+		var allSerialNumbers []int64
+
+		for _, serialNumber := range *params.SerialNumbers {
+			serial, err := strconv.ParseInt(serialNumber, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse serial number: %w", err)
+			}
+			allSerialNumbers = append(allSerialNumbers, serial)
+		}
+		transaction.SetSerialNumbers(allSerialNumbers)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	// Construct the response
+	status := receipt.Status.String()
+	newTotalSupply := strconv.FormatUint(receipt.TotalSupply, 10)
+
+	return &response.TokenBurnResponse{
+		TokenId:        params.TokenId,
+		NewTotalSupply: &newTotalSupply,
+		Status:         &status,
+	}, nil
 }

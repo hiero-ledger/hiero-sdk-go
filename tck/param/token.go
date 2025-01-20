@@ -60,3 +60,40 @@ type UpdateTokenFeeScheduleParams struct {
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 	CustomFees              *[]CustomFee             `json:"customFees,omitempty"`
 }
+
+type AssociateDissociatesTokenParams struct {
+	AccountId               *string                  `json:"accountId,omitempty"`
+	TokenIds                *[]string                `json:"tokenIds,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
+
+type PauseUnPauseTokenParams struct {
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
+
+type FreezeUnFreezeTokenParams struct {
+	AccountId               *string                  `json:"accountId,omitempty"`
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
+
+type GrantRevokeTokenKycParams struct {
+	AccountId               *string                  `json:"accountId,omitempty"`
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
+
+type MintTokenParams struct {
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	Amount                  *string                  `json:"amount,omitempty"`
+	Metadata                *[]string                `json:"metadata,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
+
+type BurnTokenParams struct {
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	Amount                  *string                  `json:"amount,omitempty"`
+	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
