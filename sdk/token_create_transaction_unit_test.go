@@ -336,3 +336,15 @@ func TestUnitTokenCreateAutoRenewAccountSetting(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, autoRenewAccount, frozenTx.GetAutoRenewAccount())
 }
+
+func TestUnitTokenCreateTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenCreateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenCreateTransaction).buildProtoBody())
+}

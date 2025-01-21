@@ -374,3 +374,15 @@ func TestUnitFileAppendTransactionSerialization(t *testing.T) {
 	require.Equal(t, fileID, result.GetFileID())
 	require.Equal(t, transaction.GetContents(), result.GetContents())
 }
+
+func TestUnitFileAppendTransactionFromToBytes(t *testing.T) {
+	tx := NewFileAppendTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(FileAppendTransaction).buildProtoBody())
+}

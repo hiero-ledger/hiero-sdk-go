@@ -255,3 +255,15 @@ func TestUnitLiveHashAddTransactionMock(t *testing.T) {
 	_, err = freez.Sign(newKey).Execute(client)
 	require.NoError(t, err)
 }
+
+func TestUnitLiveHashAddTransactionFromToBytes(t *testing.T) {
+	tx := NewLiveHashAddTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(LiveHashAddTransaction).buildProtoBody())
+}

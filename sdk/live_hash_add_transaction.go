@@ -43,13 +43,24 @@ func NewLiveHashAddTransaction() *LiveHashAddTransaction {
 }
 
 func _LiveHashAddTransactionFromProtobuf(tx Transaction[*LiveHashAddTransaction], pb *services.TransactionBody) LiveHashAddTransaction {
-	keys, _ := _KeyListFromProtobuf(pb.GetCryptoAddLiveHash().LiveHash.GetKeys())
-	duration := _DurationFromProtobuf(pb.GetCryptoAddLiveHash().LiveHash.Duration)
+	var keys *KeyList
+	if pb.GetCryptoAddLiveHash().GetLiveHash().GetKeys() != nil {
+		keysVal, _ := _KeyListFromProtobuf(pb.GetCryptoAddLiveHash().GetLiveHash().GetKeys())
+		keys = &keysVal
+	}
+	var duration time.Duration
+	if pb.GetCryptoAddLiveHash().GetLiveHash().GetDuration() != nil {
+		duration = _DurationFromProtobuf(pb.GetCryptoAddLiveHash().LiveHash.Duration)
+	}
 
+	var hash []byte = nil
+	if pb.GetCryptoAddLiveHash().LiveHash != nil {
+		hash = pb.GetCryptoAddLiveHash().LiveHash.Hash
+	}
 	liveHashAddTransaction := LiveHashAddTransaction{
 		accountID: _AccountIDFromProtobuf(pb.GetCryptoAddLiveHash().GetLiveHash().GetAccountId()),
-		hash:      pb.GetCryptoAddLiveHash().LiveHash.Hash,
-		keys:      &keys,
+		hash:      hash,
+		keys:      keys,
 		duration:  &duration,
 	}
 	tx.childTransaction = &liveHashAddTransaction
@@ -165,24 +176,25 @@ func (tx LiveHashAddTransaction) buildScheduled() (*services.SchedulableTransact
 }
 
 func (tx LiveHashAddTransaction) buildProtoBody() *services.CryptoAddLiveHashTransactionBody {
-	body := &services.CryptoAddLiveHashTransactionBody{
-		LiveHash: &services.LiveHash{},
-	}
-
-	if tx.accountID != nil {
-		body.LiveHash.AccountId = tx.accountID._ToProtobuf()
-	}
-
-	if tx.duration != nil {
-		body.LiveHash.Duration = _DurationToProtobuf(*tx.duration)
-	}
-
-	if tx.keys != nil {
-		body.LiveHash.Keys = tx.keys._ToProtoKeyList()
-	}
+	body := &services.CryptoAddLiveHashTransactionBody{}
 
 	if tx.hash != nil {
-		body.LiveHash.Hash = tx.hash
+		body.LiveHash = &services.LiveHash{}
+		if tx.accountID != nil {
+			body.LiveHash.AccountId = tx.accountID._ToProtobuf()
+		}
+
+		if tx.duration != nil {
+			body.LiveHash.Duration = _DurationToProtobuf(*tx.duration)
+		}
+
+		if tx.keys != nil {
+			body.LiveHash.Keys = tx.keys._ToProtoKeyList()
+		}
+
+		if tx.hash != nil {
+			body.LiveHash.Hash = tx.hash
+		}
 	}
 
 	return body

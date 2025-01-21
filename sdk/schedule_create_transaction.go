@@ -19,7 +19,7 @@ type ScheduleCreateTransaction struct {
 	payerAccountID  *AccountID
 	adminKey        Key
 	schedulableBody *services.SchedulableTransactionBody
-	memo            string
+	memo            *string
 	expirationTime  *time.Time
 	waitForExpiry   bool
 }
@@ -39,18 +39,27 @@ func NewScheduleCreateTransaction() *ScheduleCreateTransaction {
 }
 
 func _ScheduleCreateTransactionFromProtobuf(tx Transaction[*ScheduleCreateTransaction], pb *services.TransactionBody) ScheduleCreateTransaction {
-	key, _ := _KeyFromProtobuf(pb.GetScheduleCreate().GetAdminKey())
-	var expirationTime time.Time
+	var key Key
+	if pb.GetScheduleCreate().GetAdminKey() != nil {
+		key, _ = _KeyFromProtobuf(pb.GetScheduleCreate().GetAdminKey())
+	}
+	var expirationTime *time.Time
 	if pb.GetScheduleCreate().GetExpirationTime() != nil {
-		expirationTime = _TimeFromProtobuf(pb.GetScheduleCreate().GetExpirationTime())
+		expirationTimeVal := _TimeFromProtobuf(pb.GetScheduleCreate().GetExpirationTime())
+		expirationTime = &expirationTimeVal
+	}
+	var memo *string
+	if pb.GetScheduleCreate().GetMemo() != "" {
+		memoVal := pb.GetScheduleCreate().GetMemo()
+		memo = &memoVal
 	}
 
 	scheduleCreateTransaction := ScheduleCreateTransaction{
 		payerAccountID:  _AccountIDFromProtobuf(pb.GetScheduleCreate().GetPayerAccountID()),
 		adminKey:        key,
 		schedulableBody: pb.GetScheduleCreate().GetScheduledTransactionBody(),
-		memo:            pb.GetScheduleCreate().GetMemo(),
-		expirationTime:  &expirationTime,
+		memo:            memo,
+		expirationTime:  expirationTime,
 		waitForExpiry:   pb.GetScheduleCreate().WaitForExpiry,
 	}
 
@@ -141,14 +150,17 @@ func (tx *ScheduleCreateTransaction) GetAdminKey() *Key {
 // SetScheduleMemo Sets an optional memo with a UTF-8 encoding of no more than 100 bytes which does not contain the zero byte.
 func (tx *ScheduleCreateTransaction) SetScheduleMemo(memo string) *ScheduleCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.memo = memo
+	tx.memo = &memo
 
 	return tx
 }
 
 // GetScheduleMemo returns the optional memo with a UTF-8 encoding of no more than 100 bytes which does not contain the zero byte.
 func (tx *ScheduleCreateTransaction) GetScheduleMemo() string {
-	return tx.memo
+	if tx.memo == nil {
+		return ""
+	}
+	return *tx.memo
 }
 
 // SetScheduledTransaction Sets the scheduled transaction
@@ -202,8 +214,11 @@ func (tx ScheduleCreateTransaction) buildScheduled() (*services.SchedulableTrans
 
 func (tx ScheduleCreateTransaction) buildProtoBody() *services.ScheduleCreateTransactionBody {
 	body := &services.ScheduleCreateTransactionBody{
-		Memo:          tx.memo,
 		WaitForExpiry: tx.waitForExpiry,
+	}
+
+	if tx.memo != nil {
+		body.Memo = *tx.memo
 	}
 
 	if tx.payerAccountID != nil {

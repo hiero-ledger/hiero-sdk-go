@@ -233,7 +233,7 @@ func (tx *AccountAllowanceApproveTransaction) _ApproveTokenNftAllowanceAllSerial
 	return tx
 }
 
-func (tx *AccountAllowanceNftSerialsDeleteTransaction) _DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID *AccountID, spenderAccount AccountID) *AccountAllowanceNftSerialsDeleteTransaction {
+func (tx *AccountAllowanceApproveTransaction) _DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID *AccountID, spenderAccount AccountID) *AccountAllowanceApproveTransaction {
 	for _, t := range tx.nftAllowances {
 		if t.TokenID.String() == tokenID.String() {
 			if t.SpenderAccountID.String() == spenderAccount.String() {
@@ -273,7 +273,7 @@ func (tx *AccountAllowanceApproveTransaction) ApproveTokenNftAllowanceAllSerials
 // DeleteTokenNftAllowanceAllSerials
 // Revokes an allowance that permits a spender to transfer all of the owner's non-fungible tokens (NFTs) of a specific type (tokenId).
 // This action applies to both the NFTs currently owned by the owner and any future NFTs of the same type.
-func (tx *AccountAllowanceNftSerialsDeleteTransaction) DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID AccountID, spenderAccount AccountID) *AccountAllowanceNftSerialsDeleteTransaction {
+func (tx *AccountAllowanceApproveTransaction) DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID AccountID, spenderAccount AccountID) *AccountAllowanceApproveTransaction {
 	return tx._DeleteTokenNftAllowanceAllSerials(tokenID, &ownerAccountID, spenderAccount)
 }
 

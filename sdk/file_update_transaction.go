@@ -40,13 +40,21 @@ func NewFileUpdateTransaction() *FileUpdateTransaction {
 }
 
 func _FileUpdateTransactionFromProtobuf(tx Transaction[*FileUpdateTransaction], pb *services.TransactionBody) FileUpdateTransaction {
-	keys, _ := _KeyListFromProtobuf(pb.GetFileUpdate().GetKeys())
-	expiration := _TimeFromProtobuf(pb.GetFileUpdate().GetExpirationTime())
+	var keys *KeyList
+	if pb.GetFileUpdate().GetKeys() != nil {
+		keysVal, _ := _KeyListFromProtobuf(pb.GetFileUpdate().GetKeys())
+		keys = &keysVal
+	}
+	var expiration *time.Time
+	if pb.GetFileUpdate().GetExpirationTime() != nil {
+		expirationVal := _TimeFromProtobuf(pb.GetFileUpdate().GetExpirationTime())
+		expiration = &expirationVal
+	}
 
 	fileUpdateTransaction := FileUpdateTransaction{
 		fileID:         _FileIDFromProtobuf(pb.GetFileUpdate().GetFileID()),
-		keys:           &keys,
-		expirationTime: &expiration,
+		keys:           keys,
+		expirationTime: expiration,
 		contents:       pb.GetFileUpdate().GetContents(),
 		memo:           pb.GetFileUpdate().GetMemo().Value,
 	}

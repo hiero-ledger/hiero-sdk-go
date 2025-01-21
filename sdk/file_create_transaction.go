@@ -45,11 +45,15 @@ func NewFileCreateTransaction() *FileCreateTransaction {
 }
 
 func _FileCreateTransactionFromProtobuf(tx Transaction[*FileCreateTransaction], pb *services.TransactionBody) FileCreateTransaction {
-	keys, _ := _KeyListFromProtobuf(pb.GetFileCreate().GetKeys())
+	var keys *KeyList
+	if pb.GetFileCreate().GetKeys() != nil {
+		keysValue, _ := _KeyListFromProtobuf(pb.GetFileCreate().GetKeys())
+		keys = &keysValue
+	}
 	expiration := _TimeFromProtobuf(pb.GetFileCreate().GetExpirationTime())
 
 	fileCreateTransaction := FileCreateTransaction{
-		keys:           &keys,
+		keys:           keys,
 		expirationTime: &expiration,
 		contents:       pb.GetFileCreate().GetContents(),
 		memo:           pb.GetMemo(),

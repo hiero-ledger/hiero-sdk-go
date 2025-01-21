@@ -308,3 +308,15 @@ func TestUnitFileUpdateTransactionCoverage(t *testing.T) {
 		b.AddSignature(newKey.PublicKey(), sig)
 	}
 }
+
+func TestUnitFileUpdateTransactionFromToBytes(t *testing.T) {
+	tx := NewFileUpdateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(FileUpdateTransaction).buildProtoBody())
+}

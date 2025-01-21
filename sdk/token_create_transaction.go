@@ -132,20 +132,51 @@ func _TokenCreateTransactionFromProtobuf(tx Transaction[*TokenCreateTransaction]
 	for _, fee := range pb.GetTokenCreation().GetCustomFees() {
 		customFees = append(customFees, _CustomFeeFromProtobuf(fee))
 	}
-	adminKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetAdminKey())
-	kycKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetKycKey())
-	freezeKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetFreezeKey())
-	wipeKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetWipeKey())
-	scheduleKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetFeeScheduleKey())
-	supplyKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetSupplyKey())
-	pauseKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetPauseKey())
-	metadataKey, _ := _KeyFromProtobuf(pb.GetTokenCreation().GetMetadataKey())
+	var adminKey Key
+	if pb.GetTokenCreation().GetAdminKey() != nil {
+		adminKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetAdminKey())
+	}
+	var kycKey Key
+	if pb.GetTokenCreation().GetKycKey() != nil {
+		kycKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetKycKey())
+	}
+	var freezeKey Key
+	if pb.GetTokenCreation().GetFreezeKey() != nil {
+		freezeKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetFreezeKey())
+	}
+	var wipeKey Key
+	if pb.GetTokenCreation().GetWipeKey() != nil {
+		wipeKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetWipeKey())
+	}
+	var scheduleKey Key
+	if pb.GetTokenCreation().GetFeeScheduleKey() != nil {
+		scheduleKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetFeeScheduleKey())
+	}
+	var supplyKey Key
+	if pb.GetTokenCreation().GetSupplyKey() != nil {
+		supplyKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetSupplyKey())
+	}
+	var pauseKey Key
+	if pb.GetTokenCreation().GetPauseKey() != nil {
+		pauseKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetPauseKey())
+	}
+	var metadataKey Key
+	if pb.GetTokenCreation().GetMetadataKey() != nil {
+		metadataKey, _ = _KeyFromProtobuf(pb.GetTokenCreation().GetMetadataKey())
+	}
 
 	freezeDefault := pb.GetTokenCreation().GetFreezeDefault()
 
-	expirationTime := _TimeFromProtobuf(pb.GetTokenCreation().GetExpiry())
-	autoRenew := _DurationFromProtobuf(pb.GetTokenCreation().GetAutoRenewPeriod())
-
+	var expirationTime *time.Time
+	if pb.GetTokenCreation().GetExpiry() != nil {
+		expirationTimeVal := _TimeFromProtobuf(pb.GetTokenCreation().GetExpiry())
+		expirationTime = &expirationTimeVal
+	}
+	var autoRenew *time.Duration
+	if pb.GetTokenCreation().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetTokenCreation().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
 	tokenCreateTransaction := TokenCreateTransaction{
 		treasuryAccountID:  _AccountIDFromProtobuf(pb.GetTokenCreation().GetTreasury()),
 		autoRenewAccountID: _AccountIDFromProtobuf(pb.GetTokenCreation().GetAutoRenewAccount()),
@@ -168,8 +199,8 @@ func _TokenCreateTransactionFromProtobuf(tx Transaction[*TokenCreateTransaction]
 		metadataKey:        metadataKey,
 		initialSupply:      pb.GetTokenCreation().InitialSupply,
 		freezeDefault:      &freezeDefault,
-		expirationTime:     &expirationTime,
-		autoRenewPeriod:    &autoRenew,
+		expirationTime:     expirationTime,
+		autoRenewPeriod:    autoRenew,
 	}
 
 	tx.childTransaction = &tokenCreateTransaction

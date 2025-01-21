@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -112,4 +113,15 @@ func _SetupSystemDeleteTrx() *SystemDeleteTransaction {
 		SetFileID(testFileId).
 		SetTransactionValidDuration(testTrxValidDuration).
 		SetTransactionMemo("memo")
+}
+func TestUnitSystemDeleteTransactionFromToBytes(t *testing.T) {
+	tx := NewSystemDeleteTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(SystemDeleteTransaction).buildProtoBody())
 }

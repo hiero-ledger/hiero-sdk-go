@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	protobuf "google.golang.org/protobuf/proto"
 )
@@ -125,4 +126,16 @@ func TestUnitScheduleSignTransactionMock(t *testing.T) {
 
 	_, err = transaction.Execute(client)
 	require.NoError(t, err)
+}
+
+func TestUnitScheduleSignTransactionFromToBytes(t *testing.T) {
+	tx := NewScheduleSignTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ScheduleSignTransaction).buildProtoBody())
 }

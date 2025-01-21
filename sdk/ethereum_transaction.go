@@ -124,6 +124,22 @@ func (tx EthereumTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx EthereumTransaction) build() *services.TransactionBody {
+	return &services.TransactionBody{
+		TransactionID:            tx.transactionID._ToProtobuf(),
+		TransactionFee:           tx.transactionFee,
+		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
+		Memo:                     tx.Transaction.memo,
+		Data: &services.TransactionBody_EthereumTransaction{
+			EthereumTransaction: tx.buildProtoBody(),
+		},
+	}
+}
+
+func (tx EthereumTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
+	return nil, errors.New("cannot schedule `EthereumTransaction`")
+}
+
+func (tx EthereumTransaction) buildProtoBody() *services.EthereumTransactionBody {
 	body := &services.EthereumTransactionBody{
 		EthereumData:    tx.ethereumData,
 		MaxGasAllowance: tx.MaxGasAllowed,
@@ -132,20 +148,7 @@ func (tx EthereumTransaction) build() *services.TransactionBody {
 	if tx.callData != nil {
 		body.CallData = tx.callData._ToProtobuf()
 	}
-
-	return &services.TransactionBody{
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		TransactionFee:           tx.transactionFee,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		Memo:                     tx.Transaction.memo,
-		Data: &services.TransactionBody_EthereumTransaction{
-			EthereumTransaction: body,
-		},
-	}
-}
-
-func (tx EthereumTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return nil, errors.New("cannot schedule `EthereumTransaction`")
+	return body
 }
 
 func (tx EthereumTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {

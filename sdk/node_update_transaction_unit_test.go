@@ -314,3 +314,15 @@ func TestUnitNodeUpdateTransactionCoverage(t *testing.T) {
 		b.AddSignature(key.PublicKey(), sig)
 	}
 }
+
+func TestUnitNodeUpdateTransactionFromToBytes(t *testing.T) {
+	tx := NewNodeUpdateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeUpdateTransaction).buildProtoBody())
+}
