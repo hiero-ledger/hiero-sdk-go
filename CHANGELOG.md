@@ -1,5 +1,8 @@
 ## v2.54.0
 
+### Added 
+- `DeleteTokenNftAllowanceAllSerials()` method in `AccountAllowanceApproveTransaction`
+
 ### Fixed
 - Overriding the default values of properties in some transactions when doing `transaction.toBytes()` and then `TransactionFromBytes(transaction)`.
 
