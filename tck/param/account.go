@@ -43,3 +43,8 @@ type AccountAllowanceApproveParams struct {
 	Allowances              *[]AllowanceParams       `json:"allowances,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type AccountAllowanceDeleteParams struct {
+	Allowances              *[]DeleteAllowanceParams `json:"allowances,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+}
