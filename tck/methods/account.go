@@ -249,10 +249,6 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 
 		transaction.ApproveTokenAllowance(tokenID, owner, spender, tokenAmount)
 	} else if nft != nil {
-		if nft.DelegateSpenderAccountId == nil || *nft.DelegateSpenderAccountId == "" {
-			return nil, response.InvalidParams.WithData("DelegateSpenderAccountId is empty or nil")
-		}
-
 		tokenID, err := hiero.TokenIDFromString(*nft.TokenId)
 		if err != nil {
 			return nil, err
@@ -270,7 +266,7 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 					SerialNumber: serialNumberParsed,
 				}
 
-				if nft.DelegateSpenderAccountId != nil && *nft.DelegateSpenderAccountId != "" {
+				if nft.DelegateSpenderAccountId != nil {
 					delegateSpenderAccountId, err := hiero.AccountIDFromString(*nft.DelegateSpenderAccountId)
 					if err != nil {
 						return nil, err
