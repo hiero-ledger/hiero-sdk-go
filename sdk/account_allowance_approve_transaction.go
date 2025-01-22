@@ -22,25 +22,6 @@ type AccountAllowanceApproveTransaction struct {
 	nftAllowances   []*TokenNftAllowance
 }
 
-// AccountAllowanceDeleteTransaction
-// This transaction removes one or more hbar or token allowances previously approved for specified spender accounts.
-// Allowances are relative to the owner account defined in the transaction's allowance list. Each allowance previously
-// granted a spender the right to transfer a specific amount of the owner's hbar or tokens to another account of the
-// spender's choosing.
-//
-// If the owner is not explicitly specified in an allowance, the transaction's payer account is assumed to be the owner
-// for that allowance. Setting the allowance amount to zero in a CryptoAllowance or TokenAllowance effectively deletes
-// the respective allowance for the specified spender.
-//
-// For example, if account <tt>0.0.X</tt> is the payer of this transaction and no owner is specified in the allowances,
-// then at consensus, all specified spender accounts will have their hbar or token allowances from <tt>0.0.X</tt> removed.
-type AccountAllowanceNftSerialsDeleteTransaction struct {
-	*Transaction[*AccountAllowanceDeleteTransaction]
-	hbarAllowances  []*HbarAllowance
-	tokenAllowances []*TokenAllowance
-	nftAllowances   []*TokenNftAllowance
-}
-
 // NewAccountAllowanceApproveTransaction
 // Creates an AccountAloowanceApproveTransaction which creates
 // one or more hbar/token approved allowances relative to the owner account specified in the allowances of

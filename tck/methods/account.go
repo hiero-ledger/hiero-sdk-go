@@ -248,6 +248,8 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 		}
 
 		transaction.ApproveTokenAllowance(tokenID, owner, spender, tokenAmount)
+
+		// Process Nft allowance
 	} else if nft != nil {
 		tokenID, err := hiero.TokenIDFromString(*nft.TokenId)
 		if err != nil {
