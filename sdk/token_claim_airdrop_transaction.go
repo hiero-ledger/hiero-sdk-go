@@ -16,7 +16,6 @@ func NewTokenClaimAirdropTransaction() *TokenClaimAirdropTransaction {
 		pendingAirdropIds: make([]*PendingAirdropId, 0),
 	}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(1))
 
 	return tx
 }

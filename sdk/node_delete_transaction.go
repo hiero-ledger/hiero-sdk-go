@@ -32,7 +32,6 @@ type NodeDeleteTransaction struct {
 func NewNodeDeleteTransaction() *NodeDeleteTransaction {
 	tx := &NodeDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

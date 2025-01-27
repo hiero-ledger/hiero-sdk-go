@@ -35,7 +35,6 @@ type AccountAllowanceApproveTransaction struct {
 func NewAccountAllowanceApproveTransaction() *AccountAllowanceApproveTransaction {
 	tx := &AccountAllowanceApproveTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 
 	return tx
 }

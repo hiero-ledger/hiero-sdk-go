@@ -26,7 +26,6 @@ type AccountAllowanceDeleteTransaction struct {
 func NewAccountAllowanceDeleteTransaction() *AccountAllowanceDeleteTransaction {
 	tx := &AccountAllowanceDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 
 	return tx
 }

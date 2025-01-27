@@ -21,8 +21,6 @@ func NewFreezeTransaction() *FreezeTransaction {
 	tx := &FreezeTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
-
 	return tx
 }
 

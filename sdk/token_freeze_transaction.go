@@ -38,8 +38,6 @@ func NewTokenFreezeTransaction() *TokenFreezeTransaction {
 	tx := &TokenFreezeTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(30))
-
 	return tx
 }
 

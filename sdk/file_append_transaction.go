@@ -30,7 +30,6 @@ func NewFileAppendTransaction() *FileAppendTransaction {
 		chunkSize: 2048,
 	}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

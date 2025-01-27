@@ -38,7 +38,7 @@ type LiveHashAddTransaction struct {
 func NewLiveHashAddTransaction() *LiveHashAddTransaction {
 	tx := &LiveHashAddTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
+
 	return tx
 }
 

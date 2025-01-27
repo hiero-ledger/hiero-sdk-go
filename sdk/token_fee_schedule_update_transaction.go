@@ -36,8 +36,6 @@ func NewTokenFeeScheduleUpdateTransaction() *TokenFeeScheduleUpdateTransaction {
 	tx := &TokenFeeScheduleUpdateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
-
 	return tx
 }
 

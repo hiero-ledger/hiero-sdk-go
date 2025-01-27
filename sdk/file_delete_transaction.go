@@ -27,7 +27,6 @@ type FileDeleteTransaction struct {
 func NewFileDeleteTransaction() *FileDeleteTransaction {
 	tx := &FileDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

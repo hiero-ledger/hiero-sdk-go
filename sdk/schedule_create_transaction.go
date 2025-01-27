@@ -33,8 +33,6 @@ func NewScheduleCreateTransaction() *ScheduleCreateTransaction {
 	tx := &ScheduleCreateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
-
 	return tx
 }
 

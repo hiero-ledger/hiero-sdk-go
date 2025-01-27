@@ -43,8 +43,6 @@ func NewTransferTransaction() *TransferTransaction {
 	}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(1))
-
 	return tx
 }
 

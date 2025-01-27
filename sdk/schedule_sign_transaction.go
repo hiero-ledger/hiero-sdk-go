@@ -32,7 +32,6 @@ type ScheduleSignTransaction struct {
 func NewScheduleSignTransaction() *ScheduleSignTransaction {
 	tx := &ScheduleSignTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

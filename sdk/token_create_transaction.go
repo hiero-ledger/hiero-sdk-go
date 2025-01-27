@@ -120,7 +120,7 @@ func NewTokenCreateTransaction() *TokenCreateTransaction {
 	tx.Transaction = _NewTransaction(tx)
 
 	tx.SetAutoRenewPeriod(7890000 * time.Second)
-	tx._SetDefaultMaxTransactionFee(NewHbar(40))
+
 	tx.SetTokenType(TokenTypeFungibleCommon)
 
 	return tx

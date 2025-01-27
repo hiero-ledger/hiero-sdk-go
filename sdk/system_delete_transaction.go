@@ -27,7 +27,6 @@ type SystemDeleteTransaction struct {
 func NewSystemDeleteTransaction() *SystemDeleteTransaction {
 	tx := &SystemDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 
 	return tx
 }

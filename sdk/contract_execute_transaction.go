@@ -26,7 +26,6 @@ type ContractExecuteTransaction struct {
 func NewContractExecuteTransaction() *ContractExecuteTransaction {
 	tx := &ContractExecuteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 
 	return tx
 }

@@ -22,7 +22,6 @@ type EthereumTransaction struct {
 func NewEthereumTransaction() *EthereumTransaction {
 	tx := &EthereumTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 
 	return tx
 }
