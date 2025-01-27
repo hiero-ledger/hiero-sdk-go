@@ -12,19 +12,6 @@ import (
 
 // SPDX-License-Identifier: Apache-2.0
 
-func TestCustomizer(t *testing.T) {
-	t.Parallel()
-	env := NewIntegrationTestEnv(t)
-	newKey, _ := GeneratePrivateKey()
-
-	_, err := createFungibleToken(&env, func(transaction *TokenCreateTransaction) {
-		_, err := transaction.SetAdminKey(newKey).FreezeWith(env.Client)
-		require.NoError(t, err)
-		transaction.Sign(newKey)
-	})
-
-	require.NoError(t, err)
-}
 func TestIntegrationTokenRejectFlowCanExecuteForFungibleToken(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -238,4 +225,102 @@ func TestIntegrationTokenRejectFlowFailsWhenNotRejectingAllNFTs(t *testing.T) {
 	require.NoError(t, err)
 	resp, err = frozenTxn.Sign(key).Execute(env.Client)
 	require.ErrorContains(t, err, "ACCOUNT_STILL_OWNS_NFTS")
+}
+
+func TestIntegrationTokenRejectFlowCanExecuteViaModifyingInividualTransactions(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+
+	// create fungible tokens with treasury
+	tokenID1, err := createFungibleToken(&env)
+	require.NoError(t, err)
+	tokenID2, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	// create receiver account with 0 auto associations
+	receiver, key, err := createAccount(&env)
+	require.NoError(t, err)
+
+	// associate the tokens with the receiver
+	frozenAssociateTxn, err := NewTokenAssociateTransaction().SetAccountID(receiver).AddTokenID(tokenID1).AddTokenID(tokenID2).FreezeWith(env.Client)
+	require.NoError(t, err)
+	resp, err := frozenAssociateTxn.Sign(key).Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	// transfer fts to the receiver
+	tx, err := NewTransferTransaction().
+		AddTokenTransfer(tokenID1, env.Client.GetOperatorAccountID(), -10).
+		AddTokenTransfer(tokenID1, receiver, 10).
+		AddTokenTransfer(tokenID2, env.Client.GetOperatorAccountID(), -10).
+		AddTokenTransfer(tokenID2, receiver, 10).
+		Execute(env.Client)
+	require.NoError(t, err)
+	_, err = tx.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tokenRejectFlow := NewTokenRejectFlow()
+
+	tokenRejectFlow.TokenDissociateTransaction.SetAccountID(receiver)
+	tokenRejectFlow.TokenDissociateTransaction.SetTokenIDs(tokenID1, tokenID2)
+
+	tokenRejectFlow.TokenRejectTransaction.SetOwnerID(receiver)
+	tokenRejectFlow.TokenRejectTransaction.SetTokenIDs(tokenID1, tokenID2)
+
+	// reject the token + dissociate
+	frozenTxn, err := tokenRejectFlow.FreezeWith(env.Client)
+	require.NoError(t, err)
+	resp, err = frozenTxn.Sign(key).Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	// verify the balance of the receiver is 0
+	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
+	require.NoError(t, err)
+	assert.Zero(t, tokenBalance.Tokens.Get(tokenID1))
+	assert.Zero(t, tokenBalance.Tokens.Get(tokenID2))
+
+	// verify the tokens are transferred back to the treasury
+	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(env.OperatorID).Execute(env.Client)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID1))
+	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID2))
+}
+
+func TestIntegrationTokenRejectFlowCannotExecuteWhenIndividualTransactionsAreFrozen(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+
+	// create fungible tokens with treasury
+	tokenID1, err := createFungibleToken(&env)
+	require.NoError(t, err)
+	tokenID2, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	// create receiver account with 0 auto associations
+	receiver, key, err := createAccount(&env)
+	require.NoError(t, err)
+
+	// associate the tokens with the receiver
+	frozenAssociateTxn, err := NewTokenAssociateTransaction().SetAccountID(receiver).AddTokenID(tokenID1).AddTokenID(tokenID2).FreezeWith(env.Client)
+	require.NoError(t, err)
+	resp, err := frozenAssociateTxn.Sign(key).Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tokenRejectFlow := NewTokenRejectFlow().
+		SetOwnerID(receiver).
+		SetTokenIDs(tokenID1, tokenID2)
+
+	tokenRejectFlow.TokenRejectTransaction, err = tokenRejectFlow.TokenRejectTransaction.FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err = tokenRejectFlow.Execute(env.Client)
+	require.ErrorContains(t, err, "transaction is immutable")
 }
