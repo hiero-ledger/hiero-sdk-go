@@ -20,6 +20,7 @@ type ScheduleDeleteTransaction struct {
 func NewScheduleDeleteTransaction() *ScheduleDeleteTransaction {
 	tx := &ScheduleDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
+	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

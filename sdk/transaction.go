@@ -69,6 +69,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 	maxBackoff := 8 * time.Second
 	return &Transaction[T]{
 		BaseTransaction: &BaseTransaction{
+			defaultMaxTransactionFee: uint64(NewHbar(2).AsTinybar()),
 			transactionValidDuration: &duration,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
@@ -106,11 +107,10 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 
 	baseTx := Transaction[TransactionInterface]{
 		BaseTransaction: &BaseTransaction{
-			defaultMaxTransactionFee: uint64(NewHbar(2).AsTinybar()),
-			signedTransactions:       _NewLockableSlice(),
-			publicKeys:               publicKeys,
-			transactionSigners:       transactionSigners,
-			transactions:             transactions,
+			signedTransactions: _NewLockableSlice(),
+			publicKeys:         publicKeys,
+			transactionSigners: transactionSigners,
+			transactions:       transactions,
 		},
 		freezeError:             nil,
 		regenerateTransactionID: true,
@@ -954,6 +954,10 @@ func (tx *Transaction[T]) SetMaxTransactionFee(fee Hbar) T {
 }
 func (tx *Transaction[T]) GetDefaultMaxTransactionFee() Hbar {
 	return HbarFromTinybar(int64(tx.defaultMaxTransactionFee))
+}
+
+func (tx *Transaction[T]) _SetDefaultMaxTransactionFee(fee Hbar) {
+	tx.defaultMaxTransactionFee = uint64(fee.AsTinybar())
 }
 
 // GetRegenerateTransactionID returns true if transaction ID regeneration is enabled

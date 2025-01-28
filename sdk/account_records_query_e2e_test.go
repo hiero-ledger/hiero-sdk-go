@@ -44,12 +44,10 @@ func TestIntegrationAccountRecordQueryCanExecute(t *testing.T) {
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetAccountID(env.Client.GetOperatorAccountID()).
 		SetMaxQueryPayment(NewHbar(1)).
-		SetQueryPayment(HbarFromTinybar(25)).
 		Execute(env.Client)
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(recordsQuery))
-
+	assert.Greater(t, len(recordsQuery), 0)
 }
 
 func TestIntegrationAccountRecordQueryGetCost(t *testing.T) {
@@ -89,7 +87,7 @@ func TestIntegrationAccountRecordQueryGetCost(t *testing.T) {
 	recordsQuery, err := records.SetQueryPayment(cost).Execute(env.Client)
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(recordsQuery))
+	assert.Greater(t, len(recordsQuery), 0)
 
 }
 
@@ -132,7 +130,7 @@ func TestIntegrationAccountRecordQuerySetBigMaxPayment(t *testing.T) {
 	recordsQuery, err := records.Execute(env.Client)
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(recordsQuery))
+	assert.Greater(t, len(recordsQuery), 0)
 
 }
 

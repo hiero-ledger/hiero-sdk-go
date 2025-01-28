@@ -17,6 +17,7 @@ func NewTokenCancelAirdropTransaction() *TokenCancelAirdropTransaction {
 	}
 
 	tx.Transaction = _NewTransaction(tx)
+	tx._SetDefaultMaxTransactionFee(NewHbar(1))
 
 	return tx
 }

@@ -50,6 +50,7 @@ type TokenAssociateTransaction struct {
 func NewTokenAssociateTransaction() *TokenAssociateTransaction {
 	tx := &TokenAssociateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
+	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

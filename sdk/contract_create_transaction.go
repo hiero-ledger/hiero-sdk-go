@@ -39,6 +39,7 @@ func NewContractCreateTransaction() *ContractCreateTransaction {
 	tx.Transaction = _NewTransaction(tx)
 
 	tx.SetAutoRenewPeriod(131500 * time.Minute)
+	tx._SetDefaultMaxTransactionFee(NewHbar(20))
 
 	return tx
 }

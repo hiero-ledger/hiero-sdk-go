@@ -104,13 +104,12 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 	env.OriginalOperatorKey = env.Client.GetOperatorPublicKey()
 
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
-
+	env.NodeAccountIDs = env.Client.network._GetNodeAccountIDsForExecute()
 	return env
 }
 
 func CloseIntegrationTestEnv(env IntegrationTestEnv, token *TokenID) error {
 	var resp TransactionResponse
-	var err error
 	if token != nil {
 		deleteTokenTx, err := NewTokenDeleteTransaction().
 			SetNodeAccountIDs(env.NodeAccountIDs).
@@ -149,21 +148,6 @@ func CloseIntegrationTestEnv(env IntegrationTestEnv, token *TokenID) error {
 		}
 
 		_, err = dissociateTx.SetValidateStatus(true).GetReceipt(env.Client)
-		if err != nil {
-			return err
-		}
-	}
-	if os.Getenv("HEDERA_NETWORK") != "testnet" {
-		resp, err = NewAccountDeleteTransaction().
-			SetNodeAccountIDs(env.NodeAccountIDs).
-			SetAccountID(env.OperatorID).
-			SetTransferAccountID(env.OriginalOperatorID).
-			Execute(env.Client)
-		if err != nil {
-			return err
-		}
-
-		_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 		if err != nil {
 			return err
 		}
