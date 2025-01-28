@@ -84,18 +84,51 @@ func NewTokenUpdateTransaction() *TokenUpdateTransaction {
 }
 
 func _TokenUpdateTransactionFromProtobuf(tx Transaction[*TokenUpdateTransaction], pb *services.TransactionBody) TokenUpdateTransaction {
-	adminKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetAdminKey())
-	kycKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetKycKey())
-	freezeKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetFreezeKey())
-	wipeKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetWipeKey())
-	scheduleKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetFeeScheduleKey())
-	supplyKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetSupplyKey())
-	pauseKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetPauseKey())
-	metadataKey, _ := _KeyFromProtobuf(pb.GetTokenUpdate().GetMetadataKey())
+	var adminKey Key
+	if pb.GetTokenUpdate().GetAdminKey() != nil {
+		adminKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetAdminKey())
+	}
+	var kycKey Key
+	if pb.GetTokenUpdate().GetKycKey() != nil {
+		kycKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetKycKey())
+	}
+	var freezeKey Key
+	if pb.GetTokenUpdate().GetFreezeKey() != nil {
+		freezeKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetFreezeKey())
+	}
+	var wipeKey Key
+	if pb.GetTokenUpdate().GetWipeKey() != nil {
+		wipeKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetWipeKey())
+	}
+	var scheduleKey Key
+	if pb.GetTokenUpdate().GetFeeScheduleKey() != nil {
+		scheduleKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetFeeScheduleKey())
+	}
+	var supplyKey Key
+	if pb.GetTokenUpdate().GetSupplyKey() != nil {
+		supplyKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetSupplyKey())
+	}
+	var pauseKey Key
+	if pb.GetTokenUpdate().GetPauseKey() != nil {
+		pauseKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetPauseKey())
+	}
+	var metadataKey Key
+	if pb.GetTokenUpdate().GetMetadataKey() != nil {
+		metadataKey, _ = _KeyFromProtobuf(pb.GetTokenUpdate().GetMetadataKey())
+	}
+
 	keyVerificationMode := pb.GetTokenUpdate().GetKeyVerificationMode()
 
-	expirationTime := _TimeFromProtobuf(pb.GetTokenUpdate().GetExpiry())
-	autoRenew := _DurationFromProtobuf(pb.GetTokenUpdate().GetAutoRenewPeriod())
+	var expirationTime *time.Time
+	if pb.GetTokenUpdate().GetExpiry() != nil {
+		expirationTimeVal := _TimeFromProtobuf(pb.GetTokenUpdate().GetExpiry())
+		expirationTime = &expirationTimeVal
+	}
+	var autoRenew *time.Duration
+	if pb.GetTokenUpdate().GetAutoRenewPeriod() != nil {
+		autoRenewVal := _DurationFromProtobuf(pb.GetTokenUpdate().GetAutoRenewPeriod())
+		autoRenew = &autoRenewVal
+	}
 
 	var memo *string
 	if m := pb.GetTokenUpdate().GetMemo(); m != nil {
@@ -124,8 +157,8 @@ func _TokenUpdateTransactionFromProtobuf(tx Transaction[*TokenUpdateTransaction]
 		pauseKey:                 pauseKey,
 		metadataKey:              metadataKey,
 		tokenKeyVerificationMode: TokenKeyValidation(keyVerificationMode),
-		expirationTime:           &expirationTime,
-		autoRenewPeriod:          &autoRenew,
+		expirationTime:           expirationTime,
+		autoRenewPeriod:          autoRenew,
 	}
 
 	tx.childTransaction = &tokenUpdateTransaction

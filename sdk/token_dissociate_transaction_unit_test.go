@@ -298,3 +298,15 @@ func TestUnitTokenDissociateTransactionMock(t *testing.T) {
 		Execute(client)
 	require.NoError(t, err)
 }
+
+func TestUnitTokenDissociateTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenDissociateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenDissociateTransaction).buildProtoBody())
+}

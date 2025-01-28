@@ -319,3 +319,15 @@ func TestUnitTopicCreateTransactionSerialization(t *testing.T) {
 	submitKey, _ := result.GetSubmitKey()
 	require.Equal(t, newKey.PublicKey(), submitKey)
 }
+
+func TestUnitTopicCreateTransactionFromToBytes(t *testing.T) {
+	tx := NewTopicCreateTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TopicCreateTransaction).buildProtoBody())
+}

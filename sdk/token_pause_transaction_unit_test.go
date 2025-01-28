@@ -478,3 +478,15 @@ func TestUnitTokenPauseTransaction_SetLogLevel(t *testing.T) {
 	level := transaction.GetLogLevel()
 	require.Equal(t, LoggerLevelDebug, *level)
 }
+
+func TestUnitTokenPauseTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenPauseTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenPauseTransaction).buildProtoBody())
+}

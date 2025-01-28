@@ -37,9 +37,13 @@ func NewTopicMessageSubmitTransaction() *TopicMessageSubmitTransaction {
 }
 
 func _TopicMessageSubmitTransactionFromProtobuf(tx Transaction[*TopicMessageSubmitTransaction], pb *services.TransactionBody) TopicMessageSubmitTransaction {
+	var message = make([]byte, 0)
+	if pb.GetConsensusSubmitMessage().GetMessage() != nil {
+		message = pb.GetConsensusSubmitMessage().GetMessage()
+	}
 	topicMessageSubmitTransaction := TopicMessageSubmitTransaction{
 		maxChunks: 20,
-		message:   pb.GetConsensusSubmitMessage().GetMessage(),
+		message:   message,
 		topicID:   _TopicIDFromProtobuf(pb.GetConsensusSubmitMessage().GetTopicID()),
 	}
 

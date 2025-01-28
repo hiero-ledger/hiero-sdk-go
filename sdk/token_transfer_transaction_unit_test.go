@@ -280,3 +280,15 @@ func TestUnitTokenTransferEncodeDecode(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, transfer, decoded)
 }
+
+func TestUnitTokenTransferTransactionFromToBytes(t *testing.T) {
+	tx := NewTransferTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TransferTransaction).buildProtoBody())
+}

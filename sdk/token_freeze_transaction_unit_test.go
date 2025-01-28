@@ -271,3 +271,15 @@ func TestUnitTokenFreezeTransactionMock(t *testing.T) {
 	_, err = freez.Sign(newKey).Execute(client)
 	require.NoError(t, err)
 }
+
+func TestUnitTokenFreezeTransactionFromToBytes(t *testing.T) {
+	tx := NewTokenFreezeTransaction()
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenFreezeTransaction).buildProtoBody())
+}
