@@ -4,6 +4,7 @@ package methods
 
 import (
 	"context"
+	"errors"
 	"strconv"
 	"time"
 
@@ -189,6 +190,121 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	if params.TransferAccountId != nil {
 		accountId, _ := hiero.AccountIDFromString(*params.TransferAccountId)
 		transaction.SetTransferAccountID(accountId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	return &response.AccountResponse{Status: receipt.Status.String()}, nil
+}
+
+// ApproveAllowance jRPC method for approveAllowance
+func (a *AccountService) ApproveAllowance(_ context.Context, params param.AccountAllowanceApproveParams) (*response.AccountResponse, error) {
+	transaction := hiero.NewAccountAllowanceApproveTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	allowances := *params.Allowances
+
+	for _, allowance := range allowances {
+		owner, err := hiero.AccountIDFromString(*allowance.OwnerAccountId)
+		if err != nil {
+			return nil, err
+		}
+
+		spender, err := hiero.AccountIDFromString(*allowance.SpenderAccountId)
+		if err != nil {
+			return nil, err
+		}
+
+		hbar := allowance.Hbar
+		token := allowance.Token
+		nft := allowance.Nft
+
+		// Process Hbar allowance
+		if hbar != nil {
+			hbarAmount, err := strconv.ParseInt(*hbar.Amount, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			transaction.ApproveHbarAllowance(owner, spender, hiero.HbarFromTinybar(hbarAmount))
+
+			// Process Token allowance
+		} else if token != nil {
+			tokenID, err := hiero.TokenIDFromString(*token.TokenId)
+			if err != nil {
+				return nil, err
+			}
+
+			tokenAmount, err := strconv.ParseInt(*token.Amount, 10, 64)
+			if err != nil {
+				return nil, err
+			}
+
+			transaction.ApproveTokenAllowance(tokenID, owner, spender, tokenAmount)
+
+			// Process Nft allowance
+		} else if nft != nil {
+			tokenID, err := hiero.TokenIDFromString(*nft.TokenId)
+			if err != nil {
+				return nil, err
+			}
+
+			if nft.SerialNumbers != nil {
+				for _, serialNumber := range *nft.SerialNumbers {
+					serialNumberParsed, err := strconv.ParseInt(serialNumber, 10, 64)
+					if err != nil {
+						return nil, err
+					}
+
+					nftID := hiero.NftID{
+						TokenID:      tokenID,
+						SerialNumber: serialNumberParsed,
+					}
+
+					if nft.DelegateSpenderAccountId != nil {
+						delegateSpenderAccountId, err := hiero.AccountIDFromString(*nft.DelegateSpenderAccountId)
+						if err != nil {
+							return nil, err
+						}
+
+						transaction.ApproveTokenNftAllowanceWithDelegatingSpender(
+							nftID,
+							owner,
+							spender,
+							delegateSpenderAccountId,
+						)
+
+					} else {
+						transaction.ApproveTokenNftAllowance(
+							nftID,
+							owner,
+							spender,
+						)
+
+					}
+				}
+			} else if nft.ApprovedForAll != nil && *nft.ApprovedForAll {
+				transaction.ApproveTokenNftAllowanceAllSerials(
+					tokenID,
+					owner,
+					spender,
+				)
+
+			} else {
+				transaction.DeleteTokenNftAllowanceAllSerials(tokenID, owner, spender)
+			}
+		} else {
+			return nil, errors.New("no valid allowance type provided")
+		}
 	}
 
 	if params.CommonTransactionParams != nil {
