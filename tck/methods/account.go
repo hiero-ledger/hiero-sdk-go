@@ -325,27 +325,36 @@ func (a *AccountService) DeleteAllowance(_ context.Context, params param.Account
 
 	allowances := *params.Allowances
 
-	owner, err := hiero.AccountIDFromString(*allowances[0].OwnerAccountId)
-	if err != nil {
-		return nil, err
-	}
-	tokenID, err := hiero.TokenIDFromString(*allowances[0].TokenId)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, serialNumber := range *allowances[0].SerialNumbers {
-		serialNumberParsed, err := strconv.ParseInt(serialNumber, 10, 64)
+	// Loop through each allowance and process
+	for _, allowance := range allowances {
+		owner, err := hiero.AccountIDFromString(*allowance.OwnerAccountId)
 		if err != nil {
 			return nil, err
 		}
 
-		nftID := hiero.NftID{
-			TokenID:      tokenID,
-			SerialNumber: serialNumberParsed,
+		tokenID, err := hiero.TokenIDFromString(*allowance.TokenId)
+		if err != nil {
+			return nil, err
 		}
 
-		transaction.DeleteAllTokenNftAllowances(nftID, &owner)
+		// Process NFT serial numbers if provided
+		if allowance.SerialNumbers != nil {
+			for _, serialNumber := range *allowance.SerialNumbers {
+				serialNumberParsed, err := strconv.ParseInt(serialNumber, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+
+				nftID := hiero.NftID{
+					TokenID:      tokenID,
+					SerialNumber: serialNumberParsed,
+				}
+
+				transaction.DeleteAllTokenNftAllowances(nftID, &owner)
+			}
+		} else {
+			transaction.DeleteAllTokenNftAllowances(hiero.NftID{TokenID: tokenID}, &owner)
+		}
 	}
 
 	if params.CommonTransactionParams != nil {
