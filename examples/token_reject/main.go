@@ -140,19 +140,23 @@ func main() {
 		SetOwnerID(receiver).
 		SetTokenIDs(tokenID).
 		FreezeWith(client)
-	reject, _ := frozenReject.Sign(receiverKey).Execute(client)
-	receipt, err = reject.SetValidateStatus(true).GetReceipt(client)
+	resp, _ := frozenReject.Sign(receiverKey).Execute(client)
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : Error rejecting tokens", err))
 	}
 
-	// reject the NFTs
-	frozenRejectFlow, _ := hiero.NewTokenRejectFlow().
+	tokenRejectFlow := hiero.NewTokenRejectFlow().
 		SetOwnerID(receiver).
-		SetNftIDs(nftID.Nft(serials[0]), nftID.Nft(serials[1]), nftID.Nft(serials[2])).
-		FreezeWith(client)
-	reject, _ = frozenRejectFlow.Sign(receiverKey).Execute(client)
-	receipt, err = reject.SetValidateStatus(true).GetReceipt(client)
+		SetNftIDs(nftID.Nft(serials[0]), nftID.Nft(serials[1]), nftID.Nft(serials[2]))
+
+	tokenRejectFlow.TokenRejectTransaction.SetTransactionMemo("Rejecting NFTs")
+	tokenRejectFlow.TokenDissociateTransaction.SetTransactionMemo("Dissociating NFTs")
+
+	// reject the NFTs
+	frozenRejectFlow, _ := tokenRejectFlow.FreezeWith(client)
+	resp, _ = frozenRejectFlow.Sign(receiverKey).Execute(client)
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : Error rejecting tokens", err))
 	}

@@ -3,17 +3,22 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 type TokenRejectFlow struct {
-	ownerID           *AccountID
-	tokenIDs          []TokenID
-	nftIDs            []NftID
-	freezeWithClient  *Client
-	signPrivateKey    *PrivateKey
-	signPublicKey     *PublicKey
-	transactionSigner *TransactionSigner
+	TokenRejectTransaction     *TokenRejectTransaction
+	TokenDissociateTransaction *TokenDissociateTransaction
+	ownerID                    *AccountID
+	tokenIDs                   []TokenID
+	nftIDs                     []NftID
+	freezeWithClient           *Client
+	signPrivateKey             *PrivateKey
+	signPublicKey              *PublicKey
+	transactionSigner          *TransactionSigner
 }
 
 func NewTokenRejectFlow() *TokenRejectFlow {
-	tx := TokenRejectFlow{}
+	tx := TokenRejectFlow{
+		TokenRejectTransaction:     NewTokenRejectTransaction(),
+		TokenDissociateTransaction: NewTokenDissociateTransaction(),
+	}
 	return &tx
 }
 
@@ -93,14 +98,9 @@ func (tx *TokenRejectFlow) FreezeWith(client *Client) (*TokenRejectFlow, error) 
 	return tx, nil
 }
 
-func (tx *TokenRejectFlow) _CreateTokenDissociateTransaction(client *Client) (*TokenDissociateTransaction, error) {
-	if client == nil {
-		return &TokenDissociateTransaction{}, nil
-	}
-	tokenDissociateTxn := NewTokenDissociateTransaction()
-
+func (tx *TokenRejectFlow) fillTokenDissociate() error {
 	if tx.ownerID != nil {
-		tokenDissociateTxn.SetAccountID(*tx.ownerID)
+		tx.TokenDissociateTransaction.SetAccountID(*tx.ownerID)
 	}
 
 	tokenIDs := make([]TokenID, 0)
@@ -119,69 +119,69 @@ func (tx *TokenRejectFlow) _CreateTokenDissociateTransaction(client *Client) (*T
 	}
 
 	if len(tokenIDs) != 0 {
-		tokenDissociateTxn.SetTokenIDs(tokenIDs...)
+		tx.TokenDissociateTransaction.SetTokenIDs(tokenIDs...)
 	}
 
 	if tx.freezeWithClient != nil {
-		_, err := tokenDissociateTxn.FreezeWith(tx.freezeWithClient)
+		_, err := tx.TokenDissociateTransaction.FreezeWith(tx.freezeWithClient)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if tx.signPrivateKey != nil {
-		tokenDissociateTxn = tokenDissociateTxn.Sign(*tx.signPrivateKey)
+		tx.TokenDissociateTransaction = tx.TokenDissociateTransaction.Sign(*tx.signPrivateKey)
 	}
 
 	if tx.signPublicKey != nil && tx.transactionSigner != nil {
-		tokenDissociateTxn = tokenDissociateTxn.SignWith(*tx.signPublicKey, *tx.transactionSigner)
+		tx.TokenDissociateTransaction = tx.TokenDissociateTransaction.SignWith(*tx.signPublicKey, *tx.transactionSigner)
 	}
-
-	return tokenDissociateTxn, nil
+	return nil
 }
 
-func (tx *TokenRejectFlow) _CreateTokenRejectTransaction(client *Client) (*TokenRejectTransaction, error) {
-	if client == nil {
-		return &TokenRejectTransaction{}, nil
-	}
-	tokenRejectTxn := NewTokenRejectTransaction()
-
+func (tx *TokenRejectFlow) fillTokenReject() error {
 	if tx.ownerID != nil {
-		tokenRejectTxn.SetOwnerID(*tx.ownerID)
+		tx.TokenRejectTransaction.SetOwnerID(*tx.ownerID)
 	}
 
 	if tx.tokenIDs != nil {
-		tokenRejectTxn.SetTokenIDs(tx.tokenIDs...)
+		tx.TokenRejectTransaction.SetTokenIDs(tx.tokenIDs...)
 	}
 
 	if tx.nftIDs != nil {
-		tokenRejectTxn.SetNftIDs(tx.nftIDs...)
+		tx.TokenRejectTransaction.SetNftIDs(tx.nftIDs...)
 	}
 
 	if tx.freezeWithClient != nil {
-		_, err := tokenRejectTxn.FreezeWith(tx.freezeWithClient)
+		_, err := tx.TokenRejectTransaction.FreezeWith(tx.freezeWithClient)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
 	if tx.signPrivateKey != nil {
-		tokenRejectTxn = tokenRejectTxn.Sign(*tx.signPrivateKey)
+		tx.TokenRejectTransaction = tx.TokenRejectTransaction.Sign(*tx.signPrivateKey)
 	}
 
 	if tx.signPublicKey != nil && tx.transactionSigner != nil {
-		tokenRejectTxn = tokenRejectTxn.SignWith(*tx.signPublicKey, *tx.transactionSigner)
+		tx.TokenRejectTransaction = tx.TokenRejectTransaction.SignWith(*tx.signPublicKey, *tx.transactionSigner)
 	}
 
-	return tokenRejectTxn, nil
+	return nil
 }
 
 func (tx *TokenRejectFlow) Execute(client *Client) (TransactionResponse, error) {
-	tokenRejectTxn, err := tx._CreateTokenRejectTransaction(client)
+	err := tx.fillTokenReject()
 	if err != nil {
 		return TransactionResponse{}, err
 	}
-	tokenRejectResponse, err := tokenRejectTxn.Execute(client)
+
+	err = tx.fillTokenDissociate()
+	if err != nil {
+		return TransactionResponse{}, err
+	}
+
+	tokenRejectResponse, err := tx.TokenRejectTransaction.Execute(client)
 	if err != nil {
 		return TransactionResponse{}, err
 	}
@@ -190,11 +190,7 @@ func (tx *TokenRejectFlow) Execute(client *Client) (TransactionResponse, error) 
 		return TransactionResponse{}, err
 	}
 
-	tokenDissociateTxn, err := tx._CreateTokenDissociateTransaction(client)
-	if err != nil {
-		return TransactionResponse{}, err
-	}
-	tokenDissociateResponse, err := tokenDissociateTxn.Execute(client)
+	tokenDissociateResponse, err := tx.TokenDissociateTransaction.Execute(client)
 	if err != nil {
 		return TransactionResponse{}, err
 	}

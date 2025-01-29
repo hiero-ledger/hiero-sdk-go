@@ -33,6 +33,7 @@ type TokenRejectTransaction struct {
 func NewTokenRejectTransaction() *TokenRejectTransaction {
 	tx := &TokenRejectTransaction{}
 	tx.Transaction = _NewTransaction(tx)
+	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 	return tx
 }
 
