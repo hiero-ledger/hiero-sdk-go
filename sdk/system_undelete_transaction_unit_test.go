@@ -57,27 +57,27 @@ func TestUnitSystemUndeleteTrxBuild(t *testing.T) {
 	require.Equal(t, int64(testTrxValidDuration.Seconds()), trxBody.TransactionValidDuration.Seconds)
 }
 
-// func TestUnitSystemUndeleteTrxExecute(t *testing.T) {
-// 	t.Parallel()
-// 	client, err := _NewMockClient()
-// 	client.SetLedgerID(*NewLedgerIDTestnet())
-// 	require.NoError(t, err)
-// 	client.SetAutoValidateChecksums(true)
-// 	require.NoError(t, err)
-// 	undeleteTrx := _SetupSystemUndeleteTrx()
+func TestUnitSystemUndeleteTrxExecute(t *testing.T) {
+	t.Parallel()
+	client, err := _NewMockClient()
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	require.NoError(t, err)
+	client.SetAutoValidateChecksums(true)
+	require.NoError(t, err)
+	undeleteTrx := _SetupSystemUndeleteTrx()
 
-// 	contractId, _ := ContractIDFromString("0.0.123-esxsf")
-// 	undeleteTrx.SetContractID(contractId)
+	contractId, _ := ContractIDFromString("0.0.123-esxsf")
+	undeleteTrx.SetContractID(contractId)
 
-// 	fileId, _ := FileIDFromString("0.0.123-esxsf")
-// 	undeleteTrx.SetFileID(fileId)
+	fileId, _ := FileIDFromString("0.0.123-esxsf")
+	undeleteTrx.SetFileID(fileId)
 
-// 	_, err = undeleteTrx.FreezeWith(client)
-// 	undeleteTrx.Sign(*client.operator.privateKey)
-// 	response, _ := undeleteTrx.Execute(client)
+	_, err = undeleteTrx.FreezeWith(client)
+	undeleteTrx.Sign(*client.operator.privateKey)
+	response, _ := undeleteTrx.Execute(client)
 
-// 	require.Equal(t, undeleteTrx.transactionID, response.TransactionID)
-// }
+	require.Equal(t, undeleteTrx.transactionID, response.TransactionID)
+}
 
 func TestUnitSystemConstructNewScheduleUndeleteTransactionProtobuf(t *testing.T) {
 	t.Parallel()

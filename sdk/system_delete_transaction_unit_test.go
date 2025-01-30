@@ -63,27 +63,27 @@ func TestUnitSystemDeleteTrxBuild(t *testing.T) {
 	require.Equal(t, int64(testTrxValidDuration.Seconds()), trxBody.TransactionValidDuration.Seconds)
 }
 
-// func TestUnitSystemDeleteTrxExecute(t *testing.T) {
-// 	t.Parallel()
-// 	client, err := _NewMockClient()
-// 	client.SetLedgerID(*NewLedgerIDTestnet())
-// 	require.NoError(t, err)
-// 	client.SetAutoValidateChecksums(true)
-// 	require.NoError(t, err)
-// 	deleteTrx := _SetupSystemDeleteTrx()
+func TestUnitSystemDeleteTrxExecute(t *testing.T) {
+	t.Parallel()
+	client, err := _NewMockClient()
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	require.NoError(t, err)
+	client.SetAutoValidateChecksums(true)
+	require.NoError(t, err)
+	deleteTrx := _SetupSystemDeleteTrx()
 
-// 	contractId, _ := ContractIDFromString("0.0.123-esxsf")
-// 	deleteTrx.SetContractID(contractId)
+	contractId, _ := ContractIDFromString("0.0.123-esxsf")
+	deleteTrx.SetContractID(contractId)
 
-// 	fileId, _ := FileIDFromString("0.0.123-esxsf")
-// 	deleteTrx.SetFileID(fileId)
+	fileId, _ := FileIDFromString("0.0.123-esxsf")
+	deleteTrx.SetFileID(fileId)
 
-// 	_, err = deleteTrx.FreezeWith(client)
+	_, err = deleteTrx.FreezeWith(client)
 
-// 	deleteTrx.Sign(*client.operator.privateKey)
-// 	response, _ := deleteTrx.Execute(client)
-// 	require.Equal(t, deleteTrx.transactionID, response.TransactionID)
-// }
+	deleteTrx.Sign(*client.operator.privateKey)
+	response, _ := deleteTrx.Execute(client)
+	require.Equal(t, deleteTrx.transactionID, response.TransactionID)
+}
 
 func TestUnitSystemConstructNewScheduleDeleteTransactionProtobuf(t *testing.T) {
 	t.Parallel()
