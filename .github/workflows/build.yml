@@ -55,7 +55,7 @@ jobs:
                   args: --timeout=5m
 
     test:
-        name: Test
+        name: Unit and Integration Tests
         if: success()
         runs-on: hiero-client-sdk-linux-medium
 
