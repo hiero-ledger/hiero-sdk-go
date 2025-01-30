@@ -52,8 +52,6 @@ func NewTokenWipeTransaction() *TokenWipeTransaction {
 	tx := &TokenWipeTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(30))
-
 	return tx
 }
 

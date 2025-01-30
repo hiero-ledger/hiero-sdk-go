@@ -321,3 +321,56 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 	}
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
+
+// DeleteAllowance jRPC method for deleteAllowance
+func (a *AccountService) DeleteAllowance(_ context.Context, params param.AccountAllowanceDeleteParams) (*response.AccountResponse, error) {
+	transaction := hiero.NewAccountAllowanceDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	allowances := *params.Allowances
+
+	// Loop through each allowance and process
+	for _, allowance := range allowances {
+		owner, err := hiero.AccountIDFromString(*allowance.OwnerAccountId)
+		if err != nil {
+			return nil, err
+		}
+
+		tokenID, err := hiero.TokenIDFromString(*allowance.TokenId)
+		if err != nil {
+			return nil, err
+		}
+
+		// Process NFT serial numbers if provided
+		if allowance.SerialNumbers != nil {
+			for _, serialNumber := range *allowance.SerialNumbers {
+				serialNumberParsed, err := strconv.ParseInt(serialNumber, 10, 64)
+				if err != nil {
+					return nil, err
+				}
+
+				nftID := hiero.NftID{
+					TokenID:      tokenID,
+					SerialNumber: serialNumberParsed,
+				}
+
+				transaction.DeleteAllTokenNftAllowances(nftID, &owner)
+			}
+		} else {
+			transaction.DeleteAllTokenNftAllowances(hiero.NftID{TokenID: tokenID}, &owner)
+		}
+	}
+
+	if params.CommonTransactionParams != nil {
+		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+	}
+
+	txResponse, err := transaction.Execute(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	return &response.AccountResponse{Status: receipt.Status.String()}, nil
+}

@@ -26,3 +26,9 @@ type NftAllowanceParams struct {
 	ApprovedForAll           *bool     `json:"approvedForAll,omitempty"`
 	DelegateSpenderAccountId *string   `json:"delegateSpenderAccountId,omitempty"`
 }
+
+type DeleteAllowanceParams struct {
+	TokenId        *string   `json:"tokenId,omitempty"`
+	OwnerAccountId *string   `json:"ownerAccountId,omitempty"`
+	SerialNumbers  *[]string `json:"serialNumbers,omitempty"`
+}

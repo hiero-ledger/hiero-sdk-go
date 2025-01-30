@@ -20,7 +20,6 @@ func NewTokenAirdropTransaction() *TokenAirdropTransaction {
 		nftTransfers:   make(map[TokenID][]*_TokenNftTransfer),
 	}
 	tx.Transaction = _NewTransaction(tx)
-
 	tx._SetDefaultMaxTransactionFee(NewHbar(1))
 
 	return tx

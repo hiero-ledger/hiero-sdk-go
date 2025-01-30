@@ -45,7 +45,6 @@ type TokenDissociateTransaction struct {
 func NewTokenDissociateTransaction() *TokenDissociateTransaction {
 	tx := &TokenDissociateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-
 	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx

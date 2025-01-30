@@ -64,8 +64,8 @@ jobs:
         needs:
             - build
         env:
-          OPERATOR_KEY: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
-          OPERATOR_ID: "0.0.2"
+          OPERATOR_KEY: "9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
+          OPERATOR_ID: "0.0.1031"
           HEDERA_NETWORK: "localhost"
 
         steps:
@@ -95,7 +95,7 @@ jobs:
 
             - name: Start the local node
               if: success()
-              run: npx @hashgraph/hedera-local start -d --network local --network-tag=0.57.0
+              run: npx @hashgraph/hedera-local start -d --network local --network-tag=0.57.0 --balance=100000
 
             - name: Tests Unit
               if: success()
@@ -157,7 +157,7 @@ jobs:
 
             - name: Start the local node
               if: success()
-              run: npx @hashgraph/hedera-local start -d --network local --network-tag=0.57.0
+              run: npx @hashgraph/hedera-local start -d --network local --network-tag=0.57.0 --balance=100000
 
             - name: Run Examples
               if: success()

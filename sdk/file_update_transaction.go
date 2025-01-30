@@ -35,7 +35,7 @@ type FileUpdateTransaction struct {
 func NewFileUpdateTransaction() *FileUpdateTransaction {
 	tx := &FileUpdateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
+
 	return tx
 }
 

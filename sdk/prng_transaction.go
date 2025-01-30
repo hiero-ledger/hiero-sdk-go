@@ -18,8 +18,6 @@ func NewPrngTransaction() *PrngTransaction {
 	tx := &PrngTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
-
 	return tx
 }
 

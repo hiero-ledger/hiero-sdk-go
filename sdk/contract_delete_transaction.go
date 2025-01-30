@@ -21,7 +21,6 @@ type ContractDeleteTransaction struct {
 func NewContractDeleteTransaction() *ContractDeleteTransaction {
 	tx := &ContractDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
 
 	return tx
 }

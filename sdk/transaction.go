@@ -70,6 +70,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 	maxBackoff := 8 * time.Second
 	return &Transaction[T]{
 		BaseTransaction: &BaseTransaction{
+			defaultMaxTransactionFee: uint64(NewHbar(2).AsTinybar()),
 			transactionValidDuration: &duration,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
@@ -958,7 +959,6 @@ func (tx *Transaction[T]) GetDefaultMaxTransactionFee() Hbar {
 	return HbarFromTinybar(int64(tx.defaultMaxTransactionFee))
 }
 
-// SetMaxTransactionFee sets the max Transaction fee for this Transaction.
 func (tx *Transaction[T]) _SetDefaultMaxTransactionFee(fee Hbar) {
 	tx.defaultMaxTransactionFee = uint64(fee.AsTinybar())
 }

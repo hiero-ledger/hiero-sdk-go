@@ -43,7 +43,6 @@ type NodeUpdateTransaction struct {
 func NewNodeUpdateTransaction() *NodeUpdateTransaction {
 	tx := &NodeUpdateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
-	tx._SetDefaultMaxTransactionFee(NewHbar(5))
 
 	return tx
 }

@@ -50,7 +50,7 @@ tasks:
                       pushd "$example" > /dev/null
                       if [ -f main.go ]; then
                           echo "Running $example/main.go"
-                          env OPERATOR_KEY="302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137" OPERATOR_ID="0.0.2" HEDERA_NETWORK="localhost" go run main.go
+                          env OPERATOR_KEY="9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd" OPERATOR_ID="0.0.1031" HEDERA_NETWORK="localhost" go run main.go
                       fi
                       popd > /dev/null
                   fi

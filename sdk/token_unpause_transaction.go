@@ -29,8 +29,6 @@ func NewTokenUnpauseTransaction() *TokenUnpauseTransaction {
 	tx := &TokenUnpauseTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(30))
-
 	return tx
 }
 

@@ -89,9 +89,6 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 	assert.NotNil(t, env.Client.GetOperatorAccountID())
 	assert.NotNil(t, env.Client.GetOperatorPublicKey())
 
-	newKey, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-
 	env.Client.SetMaxNodeAttempts(1)
 	env.Client.SetMinBackoff(250 * time.Millisecond)
 	env.Client.SetMaxBackoff(8 * time.Second)
@@ -106,28 +103,13 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 	env.OriginalOperatorID = env.Client.GetOperatorAccountID()
 	env.OriginalOperatorKey = env.Client.GetOperatorPublicKey()
 
-	resp, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(newKey.PublicKey()).
-		SetInitialBalance(NewHbar(150)).
-		SetAutoRenewPeriod(time.Hour*24*81 + time.Minute*26 + time.Second*39).
-		Execute(env.Client)
-
-	require.NoError(t, err)
-
-	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
-	require.NoError(t, err)
-
-	env.OperatorID = *receipt.AccountID
-	env.OperatorKey = newKey
-	env.NodeAccountIDs = []AccountID{resp.NodeID}
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
-
+	env.NodeAccountIDs = env.Client.network._GetNodeAccountIDsForExecute()
 	return env
 }
 
 func CloseIntegrationTestEnv(env IntegrationTestEnv, token *TokenID) error {
 	var resp TransactionResponse
-	var err error
 	if token != nil {
 		deleteTokenTx, err := NewTokenDeleteTransaction().
 			SetNodeAccountIDs(env.NodeAccountIDs).
@@ -166,21 +148,6 @@ func CloseIntegrationTestEnv(env IntegrationTestEnv, token *TokenID) error {
 		}
 
 		_, err = dissociateTx.SetValidateStatus(true).GetReceipt(env.Client)
-		if err != nil {
-			return err
-		}
-	}
-	if os.Getenv("HEDERA_NETWORK") != "testnet" {
-		resp, err = NewAccountDeleteTransaction().
-			SetNodeAccountIDs(env.NodeAccountIDs).
-			SetAccountID(env.OperatorID).
-			SetTransferAccountID(env.OriginalOperatorID).
-			Execute(env.Client)
-		if err != nil {
-			return err
-		}
-
-		_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 		if err != nil {
 			return err
 		}

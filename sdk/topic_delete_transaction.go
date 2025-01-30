@@ -18,8 +18,6 @@ func NewTopicDeleteTransaction() *TopicDeleteTransaction {
 	tx := &TopicDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx._SetDefaultMaxTransactionFee(NewHbar(2))
-
 	return tx
 }
 
