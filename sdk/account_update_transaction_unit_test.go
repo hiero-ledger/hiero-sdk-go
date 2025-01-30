@@ -135,7 +135,7 @@ func TestUnitAccountUpdateTransactionGet(t *testing.T) {
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetAccountID(spenderAccountID1).
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetProxyAccountID(spenderAccountID1).
 		SetAccountMemo("").
 		SetReceiverSignatureRequired(true).
@@ -217,7 +217,7 @@ func TestUnitAccountUpdateTransactionProtoCheck(t *testing.T) {
 	transaction, err := NewAccountUpdateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetAccountID(accountID).
 		SetAccountMemo("ty").
 		SetReceiverSignatureRequired(true).
@@ -267,7 +267,7 @@ func TestUnitAccountUpdateTransactionCoverage(t *testing.T) {
 	transaction, err := NewAccountUpdateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetAccountID(account).
 		SetAccountMemo("ty").
 		SetReceiverSignatureRequired(true).

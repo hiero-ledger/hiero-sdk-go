@@ -39,7 +39,7 @@ func main() {
 
 	bobsAccountCreate, err := hiero.NewAccountCreateTransaction().
 		SetReceiverSignatureRequired(true).
-		SetKey(bobsKey).
+		SetKeyWithoutAlias(bobsKey).
 		SetInitialBalance(hiero.NewHbar(10)).
 		FreezeWith(client)
 	if err != nil {

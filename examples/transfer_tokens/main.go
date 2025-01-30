@@ -50,7 +50,7 @@ func main() {
 	transactionResponse, err := hiero.NewAccountCreateTransaction().
 		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
 		// it must also sign any transfer into the account.
-		SetKey(key1.PublicKey()).
+		SetKeyWithoutAlias(key1.PublicKey()).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating account", err))
@@ -71,7 +71,7 @@ func main() {
 	transactionResponse, err = hiero.NewAccountCreateTransaction().
 		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
 		// it must also sign any transfer into the account.
-		SetKey(key2.PublicKey()).
+		SetKeyWithoutAlias(key2.PublicKey()).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating second account", err))

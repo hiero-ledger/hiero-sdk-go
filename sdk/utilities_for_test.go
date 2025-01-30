@@ -107,7 +107,7 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 	env.OriginalOperatorKey = env.Client.GetOperatorPublicKey()
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(NewHbar(150)).
 		SetAutoRenewPeriod(time.Hour*24*81 + time.Minute*26 + time.Second*39).
 		Execute(env.Client)
@@ -316,7 +316,7 @@ func createAccount(env *IntegrationTestEnv, opts ...AccountCreateTransactionCust
 	}
 
 	accountCreate := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1))
 

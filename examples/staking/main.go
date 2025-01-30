@@ -43,7 +43,7 @@ func main() {
 
 	transactionResponse, err := hiero.NewAccountCreateTransaction().
 		// The key that must sign each transfer out of the account.
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		// If true, this account's key must sign any transaction depositing into this account (in
 		// addition to all withdrawals)
 		SetReceiverSignatureRequired(false).

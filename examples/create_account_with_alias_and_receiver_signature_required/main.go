@@ -50,14 +50,10 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	// Extract the ECDSA public key public key
-	publicKey := privateKey.PublicKey()
-	// Extract the Ethereum public address
-	evmAddress := publicKey.ToEvmAddress()
 
 	// Use the `AccountCreateTransaction` and set the EVM address field to the Ethereum public address
 	frozenTxn, err := hiero.NewAccountCreateTransaction().SetReceiverSignatureRequired(true).SetInitialBalance(hiero.HbarFromTinybar(100)).
-		SetKey(adminKey).SetAlias(evmAddress).FreezeWith(client)
+		SetKeyWithAlias(adminKey, privateKey).FreezeWith(client)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -80,7 +76,7 @@ func main() {
 		panic(err.Error())
 	}
 	// Verify account is created with the provided EVM address
-	fmt.Println(info.ContractAccountID == evmAddress)
+	fmt.Println(info.ContractAccountID == privateKey.PublicKey().ToEvmAddress())
 	// Verify the account Id is the same from the create account transaction
 	fmt.Println(info.AccountID.String() == newAccountId.String())
 }

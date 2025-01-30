@@ -154,7 +154,7 @@ func DisabledTestUnitMockBackoff(t *testing.T) {
 
 	_, err = NewAccountCreateTransaction().
 		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetTransactionID(tran).
 		SetInitialBalance(newBalance).
 		SetMaxAutomaticTokenAssociations(100).

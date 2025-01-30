@@ -35,7 +35,7 @@ func main() {
 	// create treasury account
 	treasuryKey, _ := hiero.PrivateKeyGenerateEd25519()
 	accountCreate, _ := hiero.NewAccountCreateTransaction().
-		SetKey(treasuryKey).
+		SetKeyWithoutAlias(treasuryKey).
 		SetMaxAutomaticTokenAssociations(100).
 		Execute(client)
 	receipt, err := accountCreate.SetValidateStatus(true).GetReceipt(client)
@@ -48,7 +48,7 @@ func main() {
 	// create receiver account with unlimited auto associations
 	receiverKey, _ := hiero.PrivateKeyGenerateEd25519()
 	accountCreate, _ = hiero.NewAccountCreateTransaction().
-		SetKey(receiverKey).
+		SetKeyWithoutAlias(receiverKey).
 		SetMaxAutomaticTokenAssociations(-1).
 		Execute(client)
 	receipt, err = accountCreate.SetValidateStatus(true).GetReceipt(client)

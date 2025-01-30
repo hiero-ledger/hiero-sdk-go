@@ -55,7 +55,7 @@ func TestIntegrationTransferTransactionTransferHbarPositiveFlippedAmount(t *test
 	newBalance := NewHbar(10)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -132,7 +132,7 @@ func TestIntegrationTransferTransactionCanTransferFromBytes(t *testing.T) {
 	newBalance := NewHbar(10)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -181,7 +181,7 @@ func TestIntegrationTransferTransactionCanTransferFromBytesAfter(t *testing.T) {
 	newBalance := NewHbar(10)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -227,7 +227,7 @@ func TestIntegrationTransferTransactionCanTransferSignature(t *testing.T) {
 	newBalance := NewHbar(10)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
