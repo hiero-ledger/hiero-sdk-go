@@ -83,7 +83,6 @@ func TestUnitSystemDeleteTrxExecute(t *testing.T) {
 	deleteTrx.Sign(*client.operator.privateKey)
 	response, _ := deleteTrx.Execute(client)
 	require.Equal(t, deleteTrx.transactionID, response.TransactionID)
-
 }
 
 func TestUnitSystemConstructNewScheduleDeleteTransactionProtobuf(t *testing.T) {
