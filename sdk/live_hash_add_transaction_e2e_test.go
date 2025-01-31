@@ -27,7 +27,7 @@ func TestIntegrationLiveHashAddTransactionCanExecute(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1)).
 		Execute(env.Client)

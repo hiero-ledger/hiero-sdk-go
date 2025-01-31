@@ -28,7 +28,7 @@ func TestIntegrationTokenUnfreezeTransactionCanExecute(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -106,7 +106,7 @@ func TestIntegrationTokenUnfreezeTransactionNoTokenID(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -183,7 +183,7 @@ func TestIntegrationTokenUnfreezeTransactionNoAccountID(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)

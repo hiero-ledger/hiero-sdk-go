@@ -45,7 +45,7 @@ func TestIntegrationTokenCreateTransactionMultipleKeys(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(pubKeys[0]).
+		SetKeyWithoutAlias(pubKeys[0]).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -88,7 +88,7 @@ func TestIntegrationTokenCreateTransactionNoKeys(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(pubKeys[0]).
+		SetKeyWithoutAlias(pubKeys[0]).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -155,7 +155,7 @@ func TestIntegrationTokenCreateTransactionAdminSign(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(pubKeys[0]).
+		SetKeyWithoutAlias(pubKeys[0]).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -382,7 +382,7 @@ func TestIntegrationTokenAccountStillOwnsNfts(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -453,7 +453,7 @@ func TestIntegrationTokenCreateTransactionMetadataKey(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(pubKey).
+		SetKeyWithoutAlias(pubKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)

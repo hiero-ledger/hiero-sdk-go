@@ -54,7 +54,7 @@ func main() {
 
 	// Transaction used to show default logging functionality from client
 	_, err = hiero.NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing account create transaction}", err))
@@ -65,7 +65,7 @@ func main() {
 
 	// Create account transaction used to show logging functionality
 	_, err = hiero.NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		// Set logging level for the specific transaction
 		SetLogLevel(hiero.LoggerLevelTrace).
 		Execute(client)

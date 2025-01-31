@@ -24,7 +24,7 @@ func TestIntegrationVerifySignatureFlowCanExecute(t *testing.T) {
 	newBalance := NewHbar(10)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -82,7 +82,7 @@ func TestIntegrationVerifySignatureFlowKeyList(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(thresholdPublicKeys).
+		SetKeyWithoutAlias(thresholdPublicKeys).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)

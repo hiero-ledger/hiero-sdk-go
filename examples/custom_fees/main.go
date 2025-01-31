@@ -43,7 +43,7 @@ func main() {
 
 	aliceAccountCreate, err := hiero.NewAccountCreateTransaction().
 		SetInitialBalance(hiero.NewHbar(10)).
-		SetKey(aliceKey).
+		SetKeyWithoutAlias(aliceKey).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing account create for alice", err))
@@ -74,7 +74,7 @@ func main() {
 
 	bobAccountCreate, err := hiero.NewAccountCreateTransaction().
 		SetInitialBalance(hiero.NewHbar(10)).
-		SetKey(bobKey).
+		SetKeyWithoutAlias(bobKey).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing account create for bob", err))
@@ -105,7 +105,7 @@ func main() {
 
 	charlieAccountCreate, err := hiero.NewAccountCreateTransaction().
 		SetInitialBalance(hiero.NewHbar(10)).
-		SetKey(charlieKey).
+		SetKeyWithoutAlias(charlieKey).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing account create for charlie", err))

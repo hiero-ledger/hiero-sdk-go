@@ -30,7 +30,7 @@ func TestIntegrationAccountUpdateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -47,7 +47,7 @@ func TestIntegrationAccountUpdateTransactionCanExecute(t *testing.T) {
 		SetAccountID(accountID).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetExpirationTime(time.Now().Add(time.Hour * 24 * 92)).
-		SetKey(newKey2.PublicKey()).
+		SetKeyWithoutAlias(newKey2.PublicKey()).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
@@ -104,7 +104,7 @@ func TestIntegrationAccountUpdateTransactionNoSigning(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -120,7 +120,7 @@ func TestIntegrationAccountUpdateTransactionNoSigning(t *testing.T) {
 	_, err = NewAccountUpdateTransaction().
 		SetAccountID(accountID).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetKey(newKey2.PublicKey()).
+		SetKeyWithoutAlias(newKey2.PublicKey()).
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -183,7 +183,7 @@ func TestIntegrationAccountUpdateTransactionAccountIDNotSet(t *testing.T) {
 //	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 //
 //	resp, err := NewAccountCreateTransaction().
-//		SetKey(newKey.PublicKey()).
+//		SetKeyWithoutAlias(newKey.PublicKey()).
 //		SetNodeAccountIDs(env.NodeAccountIDs).
 //		SetInitialBalance(newBalance).
 //		Execute(env.Client)
@@ -201,7 +201,7 @@ func TestIntegrationAccountUpdateTransactionAccountIDNotSet(t *testing.T) {
 //		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 //		SetExpirationTime(time.Now().Add(time.Hour * 24 * 120)).
 //		SetTransactionID(TransactionIDGenerate(accountID)).
-//		SetKey(newKey2.PublicKey()).
+//		SetKeyWithoutAlias(newKey2.PublicKey()).
 //		FreezeWith(env.Client)
 //	require.NoError(t, err)
 //

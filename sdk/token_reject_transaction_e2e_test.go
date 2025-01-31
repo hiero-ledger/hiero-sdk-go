@@ -233,7 +233,7 @@ func TestIntegrationTokenRejectTransactionReceiverSigRequired(t *testing.T) {
 	require.NoError(t, err)
 
 	accountCreateFrozen, err := NewAccountCreateTransaction().
-		SetKey(treasuryKey).
+		SetKeyWithoutAlias(treasuryKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(0)).
 		SetReceiverSignatureRequired(true).

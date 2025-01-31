@@ -219,7 +219,7 @@ func TestMirrorNodeContractQueryCanSimulateWithSenderSet(t *testing.T) {
 
 	receiverId, _, err := createAccount(&env, func(transaction *AccountCreateTransaction) {
 		pk, _ := PrivateKeyGenerateEd25519()
-		transaction.SetKey(pk)
+		transaction.SetKeyWithoutAlias(pk)
 	})
 	require.NoError(t, err)
 	receiverEvmAddress := receiverId.ToSolidityAddress()

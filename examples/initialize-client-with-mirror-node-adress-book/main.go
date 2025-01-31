@@ -41,7 +41,7 @@ func main() {
 
 	txResponse, err := hiero.NewAccountCreateTransaction().
 		SetInitialBalance(hiero.NewHbar(1)).
-		SetKey(publicKey).
+		SetKeyWithoutAlias(publicKey).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing account create transaction", err))

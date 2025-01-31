@@ -64,7 +64,7 @@ func main() {
 	}
 	alicePublicKey := alicePrivateKey.PublicKey()
 	accountCreateResponse, err := hiero.NewAccountCreateTransaction().
-		SetKey(alicePublicKey).
+		SetKeyWithoutAlias(alicePublicKey).
 		SetInitialBalance(hiero.NewHbar(1)).
 		Execute(client)
 	if err != nil {
@@ -105,7 +105,7 @@ func main() {
 
 	keyList := hiero.KeyListWithThreshold(1).Add(operatorKey.PublicKey()).Add(contractHelper.ContractID)
 
-	tx, err := hiero.NewAccountUpdateTransaction().SetAccountID(operatorAccountID).SetKey(keyList).Execute(client)
+	tx, err := hiero.NewAccountUpdateTransaction().SetAccountID(operatorAccountID).SetKeyWithoutAlias(keyList).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error updating alice's account", err))
 	}
@@ -115,7 +115,7 @@ func main() {
 	}
 	keyList = hiero.KeyListWithThreshold(1).Add(alicePublicKey).Add(contractHelper.ContractID)
 
-	frozenTxn, err := hiero.NewAccountUpdateTransaction().SetAccountID(aliceAccountID).SetKey(keyList).FreezeWith(client)
+	frozenTxn, err := hiero.NewAccountUpdateTransaction().SetAccountID(aliceAccountID).SetKeyWithoutAlias(keyList).FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error updating alice's account", err))
 	}

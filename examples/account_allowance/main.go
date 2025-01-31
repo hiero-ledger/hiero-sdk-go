@@ -47,7 +47,7 @@ func main() {
 	}
 
 	transactionResponse, err := hiero.NewAccountCreateTransaction().
-		SetKey(aliceKey.PublicKey()).
+		SetKeyWithoutAlias(aliceKey.PublicKey()).
 		SetInitialBalance(hiero.NewHbar(5)).
 		Execute(client)
 
@@ -64,7 +64,7 @@ func main() {
 
 	transactionResponse, err = hiero.NewAccountCreateTransaction().
 		SetNodeAccountIDs([]hiero.AccountID{transactionResponse.NodeID}).
-		SetKey(bobKey.PublicKey()).
+		SetKeyWithoutAlias(bobKey.PublicKey()).
 		SetInitialBalance(hiero.NewHbar(5)).
 		Execute(client)
 	if err != nil {
@@ -80,7 +80,7 @@ func main() {
 
 	transactionResponse, err = hiero.NewAccountCreateTransaction().
 		SetNodeAccountIDs([]hiero.AccountID{transactionResponse.NodeID}).
-		SetKey(charlieKey.PublicKey()).
+		SetKeyWithoutAlias(charlieKey.PublicKey()).
 		SetInitialBalance(hiero.NewHbar(5)).
 		Execute(client)
 	if err != nil {

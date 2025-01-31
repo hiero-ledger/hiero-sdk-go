@@ -1029,7 +1029,7 @@ func TestUnitPrivateKeyECDSASignTransaction(t *testing.T) {
 	txID := TransactionIDGenerate(AccountID{Account: 123})
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetTransactionID(txID).
 		SetInitialBalance(newBalance).

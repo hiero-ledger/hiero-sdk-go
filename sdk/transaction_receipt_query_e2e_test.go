@@ -26,7 +26,7 @@ func TestIntegrationTransactionReceiptQueryCanExecute(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		FreezeWith(env.Client)
@@ -56,7 +56,7 @@ func DisabledTestIntegrationTransactionReceiptQueryInvalidTransactionID(t *testi
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -142,7 +142,7 @@ func TestIntegrationTransactionReceiptQueryGetExchageRates(t *testing.T) {
 	newBalance := NewHbar(2)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)

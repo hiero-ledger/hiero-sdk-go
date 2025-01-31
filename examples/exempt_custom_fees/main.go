@@ -40,7 +40,7 @@ func main() {
 	}
 	firstPublicKey := firstAccountPrivateKey.PublicKey()
 	firstAccount, err := hiero.NewAccountCreateTransaction().
-		SetKey(firstPublicKey).
+		SetKeyWithoutAlias(firstPublicKey).
 		SetInitialBalance(hiero.HbarFrom(1000, hiero.HbarUnits.Tinybar)).
 		Execute(client)
 	if err != nil {
@@ -61,7 +61,7 @@ func main() {
 	}
 	secondAccountPublicKey := secondAccountPrivateKey.PublicKey()
 	secondAccount, err := hiero.NewAccountCreateTransaction().
-		SetKey(secondAccountPublicKey).
+		SetKeyWithoutAlias(secondAccountPublicKey).
 		SetInitialBalance(hiero.HbarFrom(1000, hiero.HbarUnits.Tinybar)).
 		Execute(client)
 	if err != nil {
@@ -82,7 +82,7 @@ func main() {
 	}
 	thirdAccountPublicKey := thirdAccountPrivateKey.PublicKey()
 	thirdAccount, err := hiero.NewAccountCreateTransaction().
-		SetKey(thirdAccountPublicKey).
+		SetKeyWithoutAlias(thirdAccountPublicKey).
 		SetInitialBalance(hiero.HbarFrom(1000, hiero.HbarUnits.Tinybar)).
 		Execute(client)
 	if err != nil {

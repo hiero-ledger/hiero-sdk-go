@@ -121,7 +121,7 @@ func TestUnitAccountCreateTransactionMock(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetTransactionID(tran).
 		SetInitialBalance(newBalance).
 		SetMaxAutomaticTokenAssociations(100).
@@ -145,7 +145,7 @@ func TestUnitAccountCreateTransactionGet(t *testing.T) {
 	transaction, err := NewAccountCreateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetAccountMemo("").
 		SetReceiverSignatureRequired(true).
 		SetMaxAutomaticTokenAssociations(2).
@@ -228,7 +228,7 @@ func TestUnitAccountCreateTransactionProtoCheck(t *testing.T) {
 	transaction, err := NewAccountCreateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetInitialBalance(NewHbar(3)).
 		SetAccountMemo("ty").
 		SetReceiverSignatureRequired(true).
@@ -279,7 +279,7 @@ func TestUnitAccountCreateTransactionCoverage(t *testing.T) {
 	trx, err := NewAccountCreateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetInitialBalance(NewHbar(3)).
 		SetAccountMemo("ty").
 		SetReceiverSignatureRequired(true).

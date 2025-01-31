@@ -283,7 +283,7 @@ func createAccount(env *IntegrationTestEnv, opts ...AccountCreateTransactionCust
 	}
 
 	accountCreate := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1))
 

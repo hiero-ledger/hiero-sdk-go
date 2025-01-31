@@ -66,7 +66,7 @@ func main() {
 	// setup account create transaction with the public threshold keys, then freeze it for singing
 	transaction, err := hiero.NewAccountCreateTransaction().
 		// Only thing required to create account is the key
-		SetKey(thresholdPublicKeys).
+		SetKeyWithoutAlias(thresholdPublicKeys).
 		// Setting the initial balance to be 6 Hbars
 		SetInitialBalance(hiero.NewHbar(6)).
 		// Presetting transaction ID, this is not required

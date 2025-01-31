@@ -45,7 +45,7 @@ func main() {
 	 */
 	privateKey1, _ := hiero.PrivateKeyGenerateEd25519()
 	accountCreateResp, err := hiero.NewAccountCreateTransaction().
-		SetKey(privateKey1).
+		SetKeyWithoutAlias(privateKey1).
 		SetInitialBalance(hiero.NewHbar(10)).
 		SetMaxAutomaticTokenAssociations(-1).
 		Execute(client)
@@ -60,7 +60,7 @@ func main() {
 
 	privateKey2, _ := hiero.PrivateKeyGenerateEd25519()
 	accountCreateResp, err = hiero.NewAccountCreateTransaction().
-		SetKey(privateKey2).
+		SetKeyWithoutAlias(privateKey2).
 		SetInitialBalance(hiero.NewHbar(10)).
 		SetMaxAutomaticTokenAssociations(1).
 		Execute(client)
@@ -75,7 +75,7 @@ func main() {
 
 	privateKey3, _ := hiero.PrivateKeyGenerateEd25519()
 	accountCreateResp, err = hiero.NewAccountCreateTransaction().
-		SetKey(privateKey3).
+		SetKeyWithoutAlias(privateKey3).
 		SetInitialBalance(hiero.NewHbar(10)).
 		SetMaxAutomaticTokenAssociations(0).
 		Execute(client)
@@ -90,7 +90,7 @@ func main() {
 
 	treasuryKey, _ := hiero.PrivateKeyGenerateEd25519()
 	accountCreateResp, err = hiero.NewAccountCreateTransaction().
-		SetKey(treasuryKey).
+		SetKeyWithoutAlias(treasuryKey).
 		SetInitialBalance(hiero.NewHbar(10)).
 		Execute(client)
 	if err != nil {

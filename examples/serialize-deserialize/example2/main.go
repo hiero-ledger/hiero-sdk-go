@@ -37,7 +37,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	resp, err := hiero.NewAccountCreateTransaction().SetKey(newKey).Execute(client)
+	resp, err := hiero.NewAccountCreateTransaction().SetKeyWithoutAlias(newKey).Execute(client)
 	receipt, err := resp.GetReceipt(client)
 	newAccountId := *receipt.AccountID
 

@@ -113,7 +113,7 @@ func main() {
 
 	// Create account owner of nft
 	accountCreateTransaction, err := hiero.NewAccountCreateTransaction().
-		SetKey(operatorKey).SetMaxAutomaticTokenAssociations(10). // If the account does not have any automatic token association slots open ONLY then associate the NFT to the account
+		SetKeyWithoutAlias(operatorKey).SetMaxAutomaticTokenAssociations(10). // If the account does not have any automatic token association slots open ONLY then associate the NFT to the account
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating account", err))
