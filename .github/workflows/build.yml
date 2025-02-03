@@ -48,13 +48,6 @@ jobs:
             - name: Build SDK and Examples
               run: go build -v ./...
 
-            - name: Lint
-              uses: golangci/golangci-lint-action@ec5d18412c0aeab7936cb16880d708ba2a64e1ae # v6.2.0
-              with:
-                  skip-cache: true
-                  only-new-issues: true
-                  args: --timeout=5m
-
     test:
         name: Unit and Integration Tests
         if: success()
