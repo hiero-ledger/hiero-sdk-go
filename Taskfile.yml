@@ -1,6 +1,10 @@
 version: "3"
 
 tasks:
+    update-addressbook:
+        cmds:
+            - go test ./sdk -tags="all" -v -run TestIntegrationAddressBookQueryUpdateAll
+
     run-examples:
         cmds:
             - |
