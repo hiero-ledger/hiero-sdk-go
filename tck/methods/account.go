@@ -83,7 +83,10 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 		transaction.SetAlias(*params.Alias)
 	}
 	if params.CommonTransactionParams != nil {
-		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
 	}
 	txResponse, err := transaction.Execute(a.sdkService.Client)
 	if err != nil {
@@ -165,7 +168,10 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 	}
 
 	if params.CommonTransactionParams != nil {
-		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
@@ -193,7 +199,10 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	}
 
 	if params.CommonTransactionParams != nil {
-		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
@@ -282,14 +291,12 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 							spender,
 							delegateSpenderAccountId,
 						)
-
 					} else {
 						transaction.ApproveTokenNftAllowance(
 							nftID,
 							owner,
 							spender,
 						)
-
 					}
 				}
 			} else if nft.ApprovedForAll != nil && *nft.ApprovedForAll {
@@ -298,7 +305,6 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 					owner,
 					spender,
 				)
-
 			} else {
 				transaction.DeleteTokenNftAllowanceAllSerials(tokenID, owner, spender)
 			}
@@ -308,7 +314,10 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 	}
 
 	if params.CommonTransactionParams != nil {
-		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
@@ -361,7 +370,10 @@ func (a *AccountService) DeleteAllowance(_ context.Context, params param.Account
 	}
 
 	if params.CommonTransactionParams != nil {
-		params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
