@@ -16,6 +16,10 @@ type LiveHashQuery struct {
 }
 
 // NewLiveHashQuery creates a LiveHashQuery that requests a livehash associated to an account.
+
+// Deprecated
+// This transaction is obsolete, not supported, and SHALL fail with a
+// pre-check result of `NOT_SUPPORTED`.`
 func NewLiveHashQuery() *LiveHashQuery {
 	header := services.QueryHeader{}
 	return &LiveHashQuery{
@@ -127,7 +131,7 @@ func (q *LiveHashQuery) SetLogLevel(level LogLevel) *LiveHashQuery {
 
 func (q *LiveHashQuery) getMethod(channel *_Channel) _Method {
 	return _Method{
-		query: channel._GetCrypto().GetLiveHash,
+		query: channel._GetCrypto().GetLiveHash, // nolint
 	}
 }
 

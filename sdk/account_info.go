@@ -92,7 +92,7 @@ func _AccountInfoFromProtobuf(pb *services.CryptoGetInfoResponse_AccountInfo) (A
 		AccountID:                      accountID,
 		ContractAccountID:              pb.ContractAccountID,
 		IsDeleted:                      pb.Deleted,
-		ProxyReceived:                  HbarFromTinybar(pb.ProxyReceived),
+		ProxyReceived:                  HbarFromTinybar(pb.StakingInfo.StakedToMe),
 		Key:                            pubKey,
 		Balance:                        HbarFromTinybar(int64(pb.Balance)),
 		GenerateSendRecordThreshold:    HbarFromTinybar(int64(pb.GenerateSendRecordThreshold)),    // nolint

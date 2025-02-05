@@ -16,6 +16,24 @@ type SystemUndeleteTransaction struct {
 
 // NewSystemUndeleteTransaction creates a SystemUndeleteTransaction transaction which can be
 // used to construct and execute a System Undelete Transaction.
+
+// Deprecated: Do not use.
+// *
+// Un-Delete a smart contract, returning it (mostly) to its state
+// prior to deletion.
+// <p>
+// The contract to be restored MUST have been deleted via `systemDelete`.
+// If the contract was deleted via `deleteContract`, it
+// SHALL NOT be recoverable.
+// <blockquote>
+// This call is an administrative function of the Hedera network, and
+// SHALL require network administration authorization.<br/>
+// This transaction MUST be signed by one of the network administration
+// accounts (typically `0.0.2` through `0.0.59`, as defined in the
+// `api-permission.properties` file).
+// </blockquote>
+// If this call succeeds then subsequent calls to that smart
+// contract MAY succeed.<br/>
 func NewSystemUndeleteTransaction() *SystemUndeleteTransaction {
 	tx := &SystemUndeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
@@ -139,7 +157,7 @@ func (tx SystemUndeleteTransaction) getMethod(channel *_Channel) _Method {
 	}
 
 	return _Method{
-		transaction: channel._GetContract().SystemUndelete,
+		transaction: channel._GetContract().SystemUndelete, // nolint
 	}
 }
 

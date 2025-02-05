@@ -35,6 +35,10 @@ type LiveHashAddTransaction struct {
 // livehash mechanism acts as a revocation service.  An account cannot have two identical livehashes
 // associated. To modify the list of keys in a livehash, the livehash should first be deleted, then
 // recreated with a new list of keys.
+
+// Deprecated
+// This transaction is obsolete, not supported, and SHALL fail with a
+// pre-check result of `NOT_SUPPORTED`.`
 func NewLiveHashAddTransaction() *LiveHashAddTransaction {
 	tx := &LiveHashAddTransaction{}
 	tx.Transaction = _NewTransaction(tx)
@@ -42,6 +46,7 @@ func NewLiveHashAddTransaction() *LiveHashAddTransaction {
 	return tx
 }
 
+// nolint
 func _LiveHashAddTransactionFromProtobuf(tx Transaction[*LiveHashAddTransaction], pb *services.TransactionBody) LiveHashAddTransaction {
 	var keys *KeyList
 	if pb.GetCryptoAddLiveHash().GetLiveHash().GetKeys() != nil {
@@ -202,7 +207,7 @@ func (tx LiveHashAddTransaction) buildProtoBody() *services.CryptoAddLiveHashTra
 
 func (tx LiveHashAddTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
-		transaction: channel._GetCrypto().AddLiveHash,
+		transaction: channel._GetCrypto().AddLiveHash, // nolint
 	}
 }
 
