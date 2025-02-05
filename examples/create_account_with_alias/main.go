@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 
@@ -32,6 +33,16 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
+	/*
+	 * Demonstrate different account creation methods.
+	 */
+	createAccountWithAlias(client)
+	createAccountWithAliasAndBothKeys(client, operatorKey)
+	createAccountWithoutAlias(client)
+
+}
+
+func createAccountWithAlias(client *hiero.Client) {
 	/**
 	 * Step 1
 	 *
@@ -39,7 +50,7 @@ func main() {
 	 */
 	ecdsaPrivateKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 
 	/**
@@ -54,7 +65,7 @@ func main() {
 		SetECDSAKeyWithAlias(ecdsaPrivateKey).
 		FreezeWith(client)
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 
 	/**
@@ -65,7 +76,7 @@ func main() {
 	 */
 	response, err := frozenTxn.Sign(ecdsaPrivateKey).Execute(client)
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 
 	/**
@@ -89,79 +100,139 @@ func main() {
 	 */
 	info, err := hiero.NewAccountInfoQuery().SetAccountID(newAccountId).Execute(client)
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
-	// Verify account is created with the provided EVM address
-	fmt.Println(info.ContractAccountID == ecdsaPrivateKey.PublicKey().ToEvmAddress())
-	// Verify the account Id is the same from the create account transaction
-	fmt.Println(info.AccountID.String() == newAccountId.String())
-	// Verify the account key is the same as the ecdsaKey key
-	fmt.Println(info.Key.String() == ecdsaPrivateKey.PublicKey().String())
+	fmt.Printf("Initial EVM address: %s is the same as %s \n", ecdsaPrivateKey.PublicKey().ToEvmAddress(), info.ContractAccountID)
+}
 
+func createAccountWithAliasAndBothKeys(client *hiero.Client, operatorKey hiero.PrivateKey) {
 	/**
-	 * Step 6
+	 * Step 1
 	 *
 	 * Create an account key and an ECSDA private alias key
 	 */
-	ecdsaPrivateKey, err = hiero.PrivateKeyGenerateEcdsa()
+	ecdsaPrivateKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 
 	/**
 	 *
-	 * Step 7
+	 * Step 2
 	 *
 	 * Use the `AccountCreateTransaction`
 	 *   - Populate `SetKeyWithAlias(key, ecdsaPrivateKey)` field with the generated ECDSA private key
 	 */
-	frozenTxn, err = hiero.NewAccountCreateTransaction().
+	frozenTxn, err := hiero.NewAccountCreateTransaction().
 		SetInitialBalance(hiero.HbarFromTinybar(100)).
-		SetKeyWithAlias(operatorKey, ecdsaPrivateKey).
+		SetKeyWithAlias(operatorKey.PublicKey(), ecdsaPrivateKey).
 		FreezeWith(client)
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 
 	/**
 	 *
-	 * Step 8
+	 * Step 3
 	 *
 	 * Sign the `AccountCreateTransaction` transaction with both keys and execute.
 	 */
-	response, err = frozenTxn.Sign(ecdsaPrivateKey).Sign(operatorKey).Execute(client)
+	response, err := frozenTxn.Sign(ecdsaPrivateKey).Sign(operatorKey).Execute(client)
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
 
 	/**
 	 *
-	 * Step 9
+	 * Step 4
 	 *
 	 * Get the account ID of the newly created account
 	 */
-	transactionReceipt, err = response.GetReceipt(client)
+	transactionReceipt, err := response.GetReceipt(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting receipt}", err))
 	}
 
-	newAccountId = *transactionReceipt.AccountID
+	newAccountId := *transactionReceipt.AccountID
 
 	/**
 	 *
-	 * Step 10
+	 * Step 5
 	 *
 	 * Get the `AccountInfo` and examine the created account key and alias
 	 */
-	info, err = hiero.NewAccountInfoQuery().SetAccountID(newAccountId).Execute(client)
+	info, err := hiero.NewAccountInfoQuery().SetAccountID(newAccountId).Execute(client)
 	if err != nil {
-		println(err.Error())
+		panic(err.Error())
 	}
-	// Verify account is created with the provided EVM address
-	fmt.Println(info.ContractAccountID == ecdsaPrivateKey.PublicKey().ToEvmAddress())
-	// Verify the account Id is the same from the create account transaction
-	fmt.Println(info.AccountID.String() == newAccountId.String())
-	// Verify the account key is the same as the operator key
-	fmt.Println(info.Key.String() == operatorKey.PublicKey().String())
 
+	fmt.Printf("Account's key: %s is the same as %s \n", info.Key.String(), operatorKey.PublicKey().String())
+	fmt.Printf("Initial EVM address: %s is the same as %s \n", ecdsaPrivateKey.PublicKey().ToEvmAddress(), info.ContractAccountID)
+}
+
+func createAccountWithoutAlias(client *hiero.Client) {
+	/**
+	 * Step 1
+	 *
+	 * Create an account key and an ECSDA private alias key
+	 */
+	ecdsaPrivateKey, err := hiero.PrivateKeyGenerateEcdsa()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	/**
+	 *
+	 * Step 2
+	 *
+	 * Use the `AccountCreateTransaction`
+	 *   - Populate `SetKeyWithoutAlias(Key)` field with the generated ECDSA private key
+	 */
+	response, err := hiero.NewAccountCreateTransaction().
+		SetInitialBalance(hiero.HbarFromTinybar(100)).
+		SetKeyWithoutAlias(ecdsaPrivateKey).
+		Execute(client)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	/**
+	 *
+	 * Step 3
+	 *
+	 * Get the account ID of the newly created account
+	 */
+	transactionReceipt, err := response.GetReceipt(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error getting receipt}", err))
+	}
+
+	newAccountId := *transactionReceipt.AccountID
+
+	/**
+	 *
+	 * Step 4
+	 *
+	 * Get the `AccountInfo` and examine the created account key and alias
+	 */
+	info, err := hiero.NewAccountInfoQuery().SetAccountID(newAccountId).Execute(client)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	fmt.Printf("Account's key: %s is the same as %s \n", info.Key.String(), ecdsaPrivateKey.PublicKey().String())
+	hexBytes, err := hex.DecodeString(info.ContractAccountID)
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Printf("Account has no alias: %v \n", isLongZero(hexBytes))
+}
+
+func isLongZero(address []byte) bool {
+	for i := 0; i < 12; i++ {
+		if address[i] != 0 {
+			return false
+		}
+	}
+	return true
 }

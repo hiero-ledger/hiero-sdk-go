@@ -255,7 +255,7 @@ func main() {
 	fmt.Println("Updating Alice's key to be the 1st key")
 	frozenAccountUpdate, err := hiero.NewAccountUpdateTransaction().
 		SetAccountID(alice).
-		SetKeyWithoutAlias(publicKey1).
+		SetKey(publicKey1).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error updating account key", err))

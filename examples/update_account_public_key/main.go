@@ -77,7 +77,7 @@ func main() {
 	accountUpdateTx, err := hiero.NewAccountUpdateTransaction().
 		SetAccountID(accountID).
 		// The new key
-		SetKeyWithoutAlias(key2.PublicKey()).
+		SetKey(key2.PublicKey()).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing account update transaction", err))

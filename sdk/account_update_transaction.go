@@ -105,7 +105,7 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 }
 
 // SetKey Sets the new key for the Account
-func (tx *AccountUpdateTransaction) SetKeyWithoutAlias(key Key) *AccountUpdateTransaction {
+func (tx *AccountUpdateTransaction) SetKey(key Key) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.key = key
 	return tx

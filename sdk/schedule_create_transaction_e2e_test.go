@@ -868,7 +868,7 @@ func TestIntegrationScheduleCreateTransactionUpdateSignRequirements(t *testing.T
 	// Update the signing requirements
 	frozenUpdate, err := NewAccountUpdateTransaction().
 		SetAccountID(accountId).
-		SetKeyWithoutAlias(key4.PublicKey()).
+		SetKey(key4.PublicKey()).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
@@ -985,7 +985,7 @@ func TestIntegrationScheduleCreateTransactionMultiSig(t *testing.T) {
 	// Update the signing requirements
 	frozenUpdate, err := NewAccountUpdateTransaction().
 		SetAccountID(accountId).
-		SetKeyWithoutAlias(key1.PublicKey()).
+		SetKey(key1.PublicKey()).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
