@@ -116,7 +116,7 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetKeyWithoutAlias(key)
+		transaction.SetKey(key)
 	}
 
 	if params.ExpirationTime != nil {
