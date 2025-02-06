@@ -65,6 +65,25 @@ func (fee CustomFixedFee) validateNetworkOnIDs(client *Client) error {
 	return nil
 }
 
+func (fee CustomFixedFee) _ToTopicFeeProtobuf() *services.FixedCustomFee {
+	var tokenID *services.TokenID
+	if fee.DenominationTokenID != nil {
+		tokenID = fee.DenominationTokenID._ToProtobuf()
+	}
+
+	var feeCollectorAccountID *services.AccountID
+	if fee.FeeCollectorAccountID != nil {
+		feeCollectorAccountID = fee.CustomFee.FeeCollectorAccountID._ToProtobuf()
+	}
+
+	fixedFee := &services.FixedFee{
+		Amount:              fee.Amount,
+		DenominatingTokenId: tokenID,
+	}
+
+	return &services.FixedCustomFee{FixedFee: fixedFee, FeeCollectorAccountId: feeCollectorAccountID}
+}
+
 func (fee CustomFixedFee) _ToProtobuf() *services.CustomFee {
 	var tokenID *services.TokenID
 	if fee.DenominationTokenID != nil {

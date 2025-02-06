@@ -17,9 +17,10 @@ const chunkSize = 1024
 // Sends a message/messages to the Topic ID
 type TopicMessageSubmitTransaction struct {
 	*Transaction[*TopicMessageSubmitTransaction]
-	maxChunks uint64
-	message   []byte
-	topicID   *TopicID
+	maxChunks  uint64
+	message    []byte
+	topicID    *TopicID
+	customFees []CustomFixedFee
 }
 
 // NewTopicMessageSubmitTransaction createsTopicMessageSubmitTransaction which
@@ -94,6 +95,34 @@ func (tx *TopicMessageSubmitTransaction) SetMaxChunks(maxChunks uint64) *TopicMe
 // GetMaxChunks returns the maximum amount of chunks to use to send the message
 func (tx *TopicMessageSubmitTransaction) GetMaxChunks() uint64 {
 	return tx.maxChunks
+}
+
+// SetCustomFees Sets the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) SetCustomFees(payer AccountID, fees []CustomFixedFee) *TopicMessageSubmitTransaction {
+	tx._RequireNotFrozen()
+	// set max custom fees to base transaction
+	var protoCustomFeeLimit services.CustomFeeLimit = services.CustomFeeLimit{
+		AccountId: payer._ToProtobuf(),
+		Fees:      make([]*services.FixedFee, 0),
+	}
+
+	for _, fee := range fees {
+		protoCustomFeeLimit.Fees = append(protoCustomFeeLimit.Fees, fee._ToProtobuf().GetFixedFee())
+	}
+	var protoCustomFeeLimitList = make([]*services.CustomFeeLimit, 1)
+
+	// use only one custom fee limit - since we have only one custom fee payer in this transaction
+	protoCustomFeeLimitList[0] = &protoCustomFeeLimit
+	tx.Transaction.maxCustomFees = protoCustomFeeLimitList
+
+	// set max custom fees to topic message submit transaction
+	tx.customFees = fees
+	return tx
+}
+
+// GetCustomFees Gets the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) GetCustomFees() []CustomFixedFee {
+	return tx.customFees
 }
 
 func (tx *TopicMessageSubmitTransaction) Freeze() (*TopicMessageSubmitTransaction, error) {

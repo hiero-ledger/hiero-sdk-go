@@ -48,6 +48,7 @@ type BaseTransaction struct {
 
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
+	maxCustomFees      []*services.CustomFeeLimit
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -73,6 +74,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 			transactionValidDuration: &duration,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
+			maxCustomFees:            nil,
 		},
 		childTransaction:        concreteTransaction,
 		freezeError:             nil,
@@ -765,6 +767,10 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		originalBody.TransactionFee = tx.transactionFee
 	} else {
 		originalBody.TransactionFee = tx.defaultMaxTransactionFee
+	}
+
+	if tx.maxCustomFees != nil {
+		originalBody.MaxCustomFees = tx.maxCustomFees
 	}
 
 	updatedBody, err := protobuf.Marshal(&originalBody)

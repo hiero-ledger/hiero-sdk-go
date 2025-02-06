@@ -14,6 +14,9 @@ type TopicCreateTransaction struct {
 	autoRenewAccountID *AccountID
 	adminKey           Key
 	submitKey          Key
+	feeScheduleKey     Key
+	feeExemptKeys      []Key
+	customFees         []CustomFixedFee
 	memo               string
 	autoRenewPeriod    *time.Duration
 }
@@ -38,6 +41,26 @@ func _TopicCreateTransactionFromProtobuf(tx Transaction[*TopicCreateTransaction]
 	if pb.GetConsensusCreateTopic().GetSubmitKey() != nil {
 		submitKey, _ = _KeyFromProtobuf(pb.GetConsensusCreateTopic().GetSubmitKey())
 	}
+	var feeScheduleKey Key
+	if pb.GetConsensusCreateTopic().GetFeeScheduleKey() != nil {
+		feeScheduleKey, _ = _KeyFromProtobuf(pb.GetConsensusCreateTopic().GetFeeScheduleKey())
+	}
+	var feeExemptKeys []Key = nil
+	if pb.GetConsensusCreateTopic().GetFeeExemptKeyList() != nil {
+		protobufKeysList := pb.GetConsensusCreateTopic().GetFeeExemptKeyList()
+		for _, key := range protobufKeysList {
+			key, _ := _KeyFromProtobuf(key)
+			feeExemptKeys = append(feeExemptKeys, key)
+		}
+	}
+	var customFixedFees []CustomFixedFee = nil
+	if pb.GetConsensusCreateTopic().GetCustomFees() != nil {
+		protobufCustomFixedFees := pb.GetConsensusCreateTopic().GetCustomFees()
+		for _, customFixedFee := range protobufCustomFixedFees {
+			customFee := CustomFee{FeeCollectorAccountID: _AccountIDFromProtobuf(customFixedFee.FeeCollectorAccountId)}
+			customFixedFees = append(customFixedFees, _CustomFixedFeeFromProtobuf(customFixedFee.FixedFee, customFee))
+		}
+	}
 	var autoRenew *time.Duration
 	if pb.GetConsensusCreateTopic().GetAutoRenewPeriod() != nil {
 		autoRenewVal := _DurationFromProtobuf(pb.GetConsensusCreateTopic().GetAutoRenewPeriod())
@@ -47,6 +70,9 @@ func _TopicCreateTransactionFromProtobuf(tx Transaction[*TopicCreateTransaction]
 		autoRenewAccountID: _AccountIDFromProtobuf(pb.GetConsensusCreateTopic().GetAutoRenewAccount()),
 		adminKey:           adminKey,
 		submitKey:          submitKey,
+		feeScheduleKey:     feeScheduleKey,
+		feeExemptKeys:      feeExemptKeys,
+		customFees:         customFixedFees,
 		memo:               pb.GetConsensusCreateTopic().GetMemo(),
 		autoRenewPeriod:    autoRenew,
 	}
@@ -79,6 +105,42 @@ func (tx *TopicCreateTransaction) SetSubmitKey(publicKey Key) *TopicCreateTransa
 // GetSubmitKey returns the key required for submitting messages to the topic
 func (tx *TopicCreateTransaction) GetSubmitKey() (Key, error) {
 	return tx.submitKey, nil
+}
+
+// SetFeeScheduleKey sets the key which allows updates to the new topic’s fees.
+func (tx *TopicCreateTransaction) SetFeeScheduleKey(publicKey Key) *TopicCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.feeScheduleKey = publicKey
+	return tx
+}
+
+// GetFeeScheduleKey returns the key which allows updates to the new topic’s fees.
+func (tx *TopicCreateTransaction) GetFeeScheduleKey() (Key, error) {
+	return tx.feeScheduleKey, nil
+}
+
+// SetFeeExemptKeys sets the keys that will be exempt from paying fees.
+func (tx *TopicCreateTransaction) SetFeeExemptKeys(keys []Key) *TopicCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.feeExemptKeys = keys
+	return tx
+}
+
+// GetFeeExemptKeys returns the keys that will be exempt from paying fees.
+func (tx *TopicCreateTransaction) GetFeeExemptKeys() []Key {
+	return tx.feeExemptKeys
+}
+
+// SetCustomFees Sets the fixed fees to assess when a message is submitted to the new topic.
+func (tx *TopicCreateTransaction) SetCustomFees(fees []CustomFixedFee) *TopicCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.customFees = fees
+	return tx
+}
+
+// GetCustomFees returns the fixed fees to assess when a message is submitted to the new topic.
+func (tx *TopicCreateTransaction) GetCustomFees() []CustomFixedFee {
+	return tx.customFees
 }
 
 // SetTopicMemo sets a short publicly visible memo about the topic. No guarantee of uniqueness.
@@ -193,6 +255,26 @@ func (tx TopicCreateTransaction) buildProtoBody() *services.ConsensusCreateTopic
 
 	if tx.submitKey != nil {
 		body.SubmitKey = tx.submitKey._ToProtoKey()
+	}
+
+	if tx.feeScheduleKey != nil {
+		body.FeeScheduleKey = tx.feeScheduleKey._ToProtoKey()
+	}
+
+	if tx.feeExemptKeys != nil {
+		protobufKeysList := make([]*services.Key, 0)
+		for _, key := range tx.feeExemptKeys {
+			protobufKeysList = append(protobufKeysList, key._ToProtoKey())
+		}
+		body.FeeExemptKeyList = protobufKeysList
+	}
+
+	if tx.customFees != nil {
+		protobufCustomFixedFees := make([]*services.FixedCustomFee, 0)
+		for _, customFixedFee := range tx.customFees {
+			protobufCustomFixedFees = append(protobufCustomFixedFees, customFixedFee._ToTopicFeeProtobuf())
+		}
+		body.CustomFees = protobufCustomFixedFees
 	}
 
 	return body
