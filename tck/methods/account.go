@@ -36,7 +36,7 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetKeyWithoutAlias(key)
+		transaction.SetKey(key)
 	}
 	if params.InitialBalance != nil {
 		initialBalance, err := strconv.ParseInt(*params.InitialBalance, 10, 64)
