@@ -23,7 +23,7 @@ func (t *TokenService) SetSdkService(service *SDKService) {
 	t.sdkService = service
 }
 
-//nolint:gocyclo // CreateToken jRPC method for createToken
+//nolint:gocyclo,gocritic // CreateToken jRPC method for createToken
 func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 

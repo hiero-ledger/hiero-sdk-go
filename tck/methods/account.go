@@ -216,7 +216,7 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-// ApproveAllowance jRPC method for approveAllowance
+//nolint:gocritic // ApproveAllowance jRPC method for approveAllowance
 func (a *AccountService) ApproveAllowance(_ context.Context, params param.AccountAllowanceApproveParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountAllowanceApproveTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
