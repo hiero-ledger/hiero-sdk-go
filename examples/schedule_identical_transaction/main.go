@@ -57,7 +57,7 @@ func main() {
 		createResponse, err := hiero.NewAccountCreateTransaction().
 			// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
 			// it must also sign any transfer into the account.
-			SetKey(newKey).
+			SetKeyWithoutAlias(newKey).
 			SetInitialBalance(hiero.NewHbar(1)).
 			Execute(client)
 		if err != nil {
@@ -92,7 +92,7 @@ func main() {
 	createResponse, err := hiero.NewAccountCreateTransaction().
 		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
 		// it must also sign any transfer into the account.
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetInitialBalance(hiero.NewHbar(10)).
 		Execute(client)
 	if err != nil {

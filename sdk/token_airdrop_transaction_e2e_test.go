@@ -332,7 +332,7 @@ func TestIntegrationTokenAirdropTransactionWithReceiverSigTrue(t *testing.T) {
 	require.NoError(t, err)
 
 	accountCreateFrozen, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetInitialBalance(NewHbar(3)).
 		SetReceiverSignatureRequired(true).
 		SetMaxAutomaticTokenAssociations(-1).

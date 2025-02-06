@@ -58,6 +58,7 @@ type Transaction[T TransactionInterface] struct {
 	childTransaction T
 
 	freezeError error
+	keyError    error
 
 	regenerateTransactionID bool
 }
@@ -76,6 +77,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 		},
 		childTransaction:        concreteTransaction,
 		freezeError:             nil,
+		keyError:                nil,
 		regenerateTransactionID: true,
 		executable: &executable{
 			transactionIDs: _NewLockableSlice(),
@@ -113,6 +115,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			transactions:       transactions,
 		},
 		freezeError:             nil,
+		keyError:                nil,
 		regenerateTransactionID: true,
 		executable: &executable{
 			transactionIDs: _NewLockableSlice(),
@@ -1182,6 +1185,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 
 	if tx.freezeError != nil {
 		return TransactionResponse{}, tx.freezeError
+	}
+
+	if tx.keyError != nil {
+		return TransactionResponse{}, tx.keyError
 	}
 
 	if !tx.IsFrozen() {

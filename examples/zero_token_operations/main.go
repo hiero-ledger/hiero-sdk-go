@@ -51,7 +51,7 @@ func main() {
 
 	//Create new account and assign the public key
 	aliceAccount, err := hiero.NewAccountCreateTransaction().
-		SetKey(newAccountPublicKey).
+		SetKeyWithoutAlias(newAccountPublicKey).
 		SetInitialBalance(hiero.HbarFrom(1000, hiero.HbarUnits.Tinybar)).
 		Execute(client)
 	if err != nil {

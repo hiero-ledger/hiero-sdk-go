@@ -66,7 +66,7 @@ func main() {
 	*/
 	fmt.Println("Creating new account...")
 	createResponse, err := hiero.NewAccountCreateTransaction().
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetInitialBalance(hiero.NewHbar(2)).
 		Execute(client)
 	if err != nil {

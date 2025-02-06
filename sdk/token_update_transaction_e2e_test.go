@@ -62,7 +62,7 @@ func TestIntegrationTokenUpdateTransactionDifferentKeys(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(pubKeys[0]).
+		SetKeyWithoutAlias(pubKeys[0]).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -139,7 +139,7 @@ func DisabledTestIntegrationTokenUpdateTransactionTreasury(t *testing.T) { // no
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)

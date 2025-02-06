@@ -17,13 +17,13 @@ func TestIntegrationCantTransferOnBehalfOfSpenderWithoutAllowanceApproval(t *tes
 	defer CloseIntegrationTestEnv(env, nil)
 	spenderKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
-	spenderCreate, err := NewAccountCreateTransaction().SetKey(spenderKey).SetInitialBalance(NewHbar(2)).Execute(env.Client)
+	spenderCreate, err := NewAccountCreateTransaction().SetKeyWithoutAlias(spenderKey).SetInitialBalance(NewHbar(2)).Execute(env.Client)
 	require.NoError(t, err)
 	spenderReceipt, err := spenderCreate.SetValidateStatus(true).GetReceipt(env.Client)
 	spenderAccountId := spenderReceipt.AccountID
 	receiverKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
-	receiverCreate, err := NewAccountCreateTransaction().SetKey(receiverKey).SetInitialBalance(NewHbar(2)).SetMaxAutomaticTokenAssociations(10).Execute(env.Client)
+	receiverCreate, err := NewAccountCreateTransaction().SetKeyWithoutAlias(receiverKey).SetInitialBalance(NewHbar(2)).SetMaxAutomaticTokenAssociations(10).Execute(env.Client)
 	require.NoError(t, err)
 	receiverReceipt, err := receiverCreate.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
@@ -63,7 +63,7 @@ func TestIntegrationCantTransferOnBehalfOfSpenderAfterRemovingTheAllowanceApprov
 	require.NoError(t, err)
 
 	spenderCreate, err := NewAccountCreateTransaction().
-		SetKey(spenderKey.PublicKey()).
+		SetKeyWithoutAlias(spenderKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -73,7 +73,7 @@ func TestIntegrationCantTransferOnBehalfOfSpenderAfterRemovingTheAllowanceApprov
 	require.NoError(t, err)
 
 	receiverCreate, err := NewAccountCreateTransaction().
-		SetKey(receiverKey.PublicKey()).
+		SetKeyWithoutAlias(receiverKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -141,7 +141,7 @@ func TestIntegrationCantRemoveSingleSerialNumberAllowanceWhenAllowanceIsForAllSe
 	require.NoError(t, err)
 
 	spenderCreate, err := NewAccountCreateTransaction().
-		SetKey(spenderKey.PublicKey()).
+		SetKeyWithoutAlias(spenderKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -151,7 +151,7 @@ func TestIntegrationCantRemoveSingleSerialNumberAllowanceWhenAllowanceIsForAllSe
 	receiverKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 	receiverCreate, err := NewAccountCreateTransaction().
-		SetKey(receiverKey.PublicKey()).
+		SetKeyWithoutAlias(receiverKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -217,7 +217,7 @@ func TestIntegrationAfterGivenAllowanceForAllSerialsCanGiveSingleSerialToOtherAc
 	require.NoError(t, err)
 
 	spenderCreate, err := NewAccountCreateTransaction().
-		SetKey(spenderKey.PublicKey()).
+		SetKeyWithoutAlias(spenderKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -226,7 +226,7 @@ func TestIntegrationAfterGivenAllowanceForAllSerialsCanGiveSingleSerialToOtherAc
 
 	delegateSpenderKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
-	delegateSpenderCreate, err := NewAccountCreateTransaction().SetKey(delegateSpenderKey.PublicKey()).SetInitialBalance(NewHbar(2)).Execute(env.Client)
+	delegateSpenderCreate, err := NewAccountCreateTransaction().SetKeyWithoutAlias(delegateSpenderKey.PublicKey()).SetInitialBalance(NewHbar(2)).Execute(env.Client)
 	require.NoError(t, err)
 	delegateSpenderAccountReceipt, err := delegateSpenderCreate.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
@@ -234,7 +234,7 @@ func TestIntegrationAfterGivenAllowanceForAllSerialsCanGiveSingleSerialToOtherAc
 
 	receiverKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
-	receiverCreate, err := NewAccountCreateTransaction().SetKey(receiverKey.PublicKey()).SetInitialBalance(NewHbar(2)).Execute(env.Client)
+	receiverCreate, err := NewAccountCreateTransaction().SetKeyWithoutAlias(receiverKey.PublicKey()).SetInitialBalance(NewHbar(2)).Execute(env.Client)
 	require.NoError(t, err)
 	receiverAccountReceipt, err := receiverCreate.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
@@ -310,7 +310,7 @@ func TestIntegrationCantSendIfTokenNftSerialsDeleted(t *testing.T) {
 	require.NoError(t, err)
 
 	spenderCreate, err := NewAccountCreateTransaction().
-		SetKey(spenderKey.PublicKey()).
+		SetKeyWithoutAlias(spenderKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -320,7 +320,7 @@ func TestIntegrationCantSendIfTokenNftSerialsDeleted(t *testing.T) {
 	receiverKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 	receiverCreate, err := NewAccountCreateTransaction().
-		SetKey(receiverKey.PublicKey()).
+		SetKeyWithoutAlias(receiverKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
