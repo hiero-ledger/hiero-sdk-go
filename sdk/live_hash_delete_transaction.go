@@ -8,6 +8,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+// Deprecated: Do not use.
 // LiveHashDeleteTransaction At consensus, deletes a livehash associated to the given account. The transaction must be signed
 // by either the key of the owning account, or at least one of the keys associated to the livehash.
 type LiveHashDeleteTransaction struct {
@@ -16,10 +17,9 @@ type LiveHashDeleteTransaction struct {
 	hash      []byte
 }
 
+// Deprecated: Do not use.
 // NewLiveHashDeleteTransaction creates LiveHashDeleteTransaction which at consensus, deletes a livehash associated to the given account.
 // The transaction must be signed by either the key of the owning account, or at least one of the keys associated to the livehash.
-
-// Deprecated
 // This transaction is obsolete, not supported, and SHALL fail with a
 // pre-check result of `NOT_SUPPORTED`.`
 func NewLiveHashDeleteTransaction() *LiveHashDeleteTransaction {

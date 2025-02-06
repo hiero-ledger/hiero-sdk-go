@@ -6,6 +6,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+// Deprecated: Do not use.
 // Undelete a file or smart contract that was deleted by AdminDelete.
 // Can only be done with a Hiero admin.
 type SystemUndeleteTransaction struct {
@@ -13,9 +14,6 @@ type SystemUndeleteTransaction struct {
 	contractID *ContractID
 	fileID     *FileID
 }
-
-// NewSystemUndeleteTransaction creates a SystemUndeleteTransaction transaction which can be
-// used to construct and execute a System Undelete Transaction.
 
 // Deprecated: Do not use.
 // *

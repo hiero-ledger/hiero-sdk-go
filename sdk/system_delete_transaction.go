@@ -8,6 +8,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+// Deprecated: Do not use.
 // Delete a file or smart contract - can only be done with a Hiero admin.
 // When it is deleted, it immediately disappears from the system as seen by the user,
 // but is still stored internally until the expiration time, at which time it
@@ -21,9 +22,6 @@ type SystemDeleteTransaction struct {
 	fileID         *FileID
 	expirationTime *time.Time
 }
-
-// NewSystemDeleteTransaction creates a SystemDeleteTransaction transaction which can be
-// used to construct and execute a System Delete Transaction.
 
 // Deprecated: Do not use.
 // *
