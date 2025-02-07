@@ -184,5 +184,9 @@ func (fee *CustomFixedFee) String() string {
 		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d, denominatingTokenID: %s", fee.FeeCollectorAccountID.String(), fee.Amount, fee.DenominationTokenID.String())
 	}
 
-	return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d", fee.FeeCollectorAccountID.String(), fee.Amount)
+	if fee.FeeCollectorAccountID != nil {
+		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d", fee.FeeCollectorAccountID.String(), fee.Amount)
+	}
+
+	return fmt.Sprintf("feeCollectorAccountID: nil, amount: %d", fee.Amount)
 }

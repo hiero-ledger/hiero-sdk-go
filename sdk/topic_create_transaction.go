@@ -115,8 +115,8 @@ func (tx *TopicCreateTransaction) SetFeeScheduleKey(publicKey Key) *TopicCreateT
 }
 
 // GetFeeScheduleKey returns the key which allows updates to the new topic’s fees.
-func (tx *TopicCreateTransaction) GetFeeScheduleKey() (Key, error) {
-	return tx.feeScheduleKey, nil
+func (tx *TopicCreateTransaction) GetFeeScheduleKey() Key {
+	return tx.feeScheduleKey
 }
 
 // SetFeeExemptKeys sets the keys that will be exempt from paying fees.

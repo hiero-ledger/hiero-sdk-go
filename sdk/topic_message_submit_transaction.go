@@ -40,10 +40,18 @@ func _TopicMessageSubmitTransactionFromProtobuf(tx Transaction[*TopicMessageSubm
 	if pb.GetConsensusSubmitMessage().GetMessage() != nil {
 		message = pb.GetConsensusSubmitMessage().GetMessage()
 	}
+	var customFees []CustomFixedFee
+	if pb.GetMaxCustomFees() != nil {
+		customFeeLimit := pb.GetMaxCustomFees()[0]
+		for _, fee := range customFeeLimit.Fees {
+			customFees = append(customFees, _CustomFixedFeeFromProtobuf(fee, CustomFee{}))
+		}
+	}
 	topicMessageSubmitTransaction := TopicMessageSubmitTransaction{
-		maxChunks: 20,
-		message:   message,
-		topicID:   _TopicIDFromProtobuf(pb.GetConsensusSubmitMessage().GetTopicID()),
+		maxChunks:  20,
+		message:    message,
+		topicID:    _TopicIDFromProtobuf(pb.GetConsensusSubmitMessage().GetTopicID()),
+		customFees: customFees,
 	}
 
 	tx.childTransaction = &topicMessageSubmitTransaction

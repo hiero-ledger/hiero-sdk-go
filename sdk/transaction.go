@@ -113,6 +113,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			publicKeys:         publicKeys,
 			transactionSigners: transactionSigners,
 			transactions:       transactions,
+			maxCustomFees:      nil,
 		},
 		freezeError:             nil,
 		regenerateTransactionID: true,
@@ -191,6 +192,10 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 
 		if body.GetNodeAccountID() != nil {
 			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
+		}
+
+		if body.GetMaxCustomFees() != nil {
+			baseTx.maxCustomFees = body.GetMaxCustomFees()
 		}
 
 		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty

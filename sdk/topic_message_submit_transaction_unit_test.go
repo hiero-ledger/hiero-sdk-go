@@ -206,6 +206,41 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestUnitTopicMessageSubmitTransactionProtoCheck(t *testing.T) {
+	t.Parallel()
+
+	checksum := "dmqui"
+	topic := TopicID{Topic: 3, checksum: &checksum}
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	client, err := _NewMockClient()
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	require.NoError(t, err)
+	client.SetAutoValidateChecksums(true)
+	customFixedFee := NewCustomFixedFee()
+
+	transaction, err := NewTopicMessageSubmitTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetTopicID(topic).
+		SetMessage([]byte("nothing to see here")).
+		SetMaxChunks(30).
+		SetCustomFees(client.GetOperatorAccountID(), []CustomFixedFee{*customFixedFee}).
+		Freeze()
+	require.NoError(t, err)
+
+	proto := transaction.build().GetConsensusSubmitMessage()
+	assert.Equal(t, proto.TopicID, topic._ToProtobuf())
+	assert.Equal(t, proto.Message, []byte("nothing to see here"))
+
+	// TODO: in theory should work, but `_BuildTransaction` sets only encoded `SignedTransactionBytes`
+	// baseTransactionProto, err := transaction._BuildTransaction(0)
+	// require.NoError(t, err)
+	// assert.Equal(t, baseTransactionProto.Body.MaxCustomFees[0].AccountId, client.GetOperatorAccountID()._ToProtobuf())
+	// assert.Equal(t, baseTransactionProto.Body.MaxCustomFees[0].Fees[0], customFixedFee._ToProtobuf())
+}
+
 func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	t.Parallel()
 
@@ -222,6 +257,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -229,6 +265,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
+		SetCustomFees(client.GetOperatorAccountID(), []CustomFixedFee{*customFixedFee}).
 		SetGrpcDeadline(&grpc).
 		SetMaxTransactionFee(NewHbar(3)).
 		SetMaxRetry(3).
@@ -266,6 +303,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	transaction.GetTopicID()
 	transaction.GetMessage()
 	transaction.GetMaxChunks()
+	transaction.GetCustomFees()
 	_, err = transaction.GetSignatures()
 	require.NoError(t, err)
 	transaction.getName()
@@ -281,6 +319,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 	topic := TopicID{Topic: 3}
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -288,6 +327,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
+		SetCustomFees(nodeAccountID[0], []CustomFixedFee{*customFixedFee}).
 		SetTransactionMemo("no").
 		Freeze()
 	require.NoError(t, err)
@@ -304,6 +344,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 	require.Equal(t, transactionID.AccountID, result.GetTransactionID().AccountID)
 	require.Equal(t, transaction.GetMessage(), result.GetMessage())
 	require.Equal(t, transaction.GetTransactionMemo(), result.GetTransactionMemo())
+	require.Equal(t, transaction.GetCustomFees()[0].String(), result.GetCustomFees()[0].String())
 }
 
 func TestUnitTopicMessageSubmitTransactionSetMessage(t *testing.T) {
