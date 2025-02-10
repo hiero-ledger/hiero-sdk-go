@@ -180,12 +180,12 @@ func (fee *CustomFixedFee) ToBytes() []byte {
 
 // String returns a string representation of the CustomFixedFee
 func (fee *CustomFixedFee) String() string {
-	if fee.DenominationTokenID != nil {
+	if fee.DenominationTokenID != nil && fee.FeeCollectorAccountID != nil {
 		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d, denominatingTokenID: %s", fee.FeeCollectorAccountID.String(), fee.Amount, fee.DenominationTokenID.String())
 	}
 
 	if fee.FeeCollectorAccountID != nil {
-		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d", fee.FeeCollectorAccountID.String(), fee.Amount)
+		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d, denominatingTokenID: nil", fee.FeeCollectorAccountID.String(), fee.Amount)
 	}
 
 	return fmt.Sprintf("feeCollectorAccountID: nil, amount: %d", fee.Amount)

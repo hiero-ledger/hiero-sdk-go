@@ -48,7 +48,7 @@ type BaseTransaction struct {
 
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
-	maxCustomFees      []*services.CustomFeeLimit
+	customFeeLimits    []CustomFeeLimit
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -74,7 +74,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 			transactionValidDuration: &duration,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
-			maxCustomFees:            nil,
+			customFeeLimits:          nil,
 		},
 		childTransaction:        concreteTransaction,
 		freezeError:             nil,
@@ -113,7 +113,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			publicKeys:         publicKeys,
 			transactionSigners: transactionSigners,
 			transactions:       transactions,
-			maxCustomFees:      nil,
+			customFeeLimits:    nil,
 		},
 		freezeError:             nil,
 		regenerateTransactionID: true,
@@ -195,7 +195,9 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		}
 
 		if body.GetMaxCustomFees() != nil {
-			baseTx.maxCustomFees = body.GetMaxCustomFees()
+			for _, customFeeLimit := range body.GetMaxCustomFees() {
+				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+			}
 		}
 
 		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
@@ -774,8 +776,10 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		originalBody.TransactionFee = tx.defaultMaxTransactionFee
 	}
 
-	if tx.maxCustomFees != nil {
-		originalBody.MaxCustomFees = tx.maxCustomFees
+	if tx.customFeeLimits != nil {
+		for _, customFeeLimit := range tx.customFeeLimits {
+			originalBody.MaxCustomFees = append(originalBody.MaxCustomFees, customFeeLimit.toProtobuf())
+		}
 	}
 
 	updatedBody, err := protobuf.Marshal(&originalBody)

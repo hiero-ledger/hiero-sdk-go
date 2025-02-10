@@ -158,6 +158,20 @@ func (tx *TopicUpdateTransaction) SetFeeExemptKeys(keys []Key) *TopicUpdateTrans
 	return tx
 }
 
+// AddFeeExemptKey adds a key that will be exempt from paying fees.
+func (tx *TopicUpdateTransaction) AddFeeExemptKey(key Key) *TopicUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.feeExemptKeys = append(tx.feeExemptKeys, key)
+	return tx
+}
+
+// ClearFeeExemptKeys removes all keys that will be exempt from paying fees.
+func (tx *TopicUpdateTransaction) ClearFeeExemptKeys() *TopicUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.feeExemptKeys = []Key{}
+	return tx
+}
+
 // GetFeeExemptKeys returns the keys that will be exempt from paying fees.
 func (tx *TopicUpdateTransaction) GetFeeExemptKeys() []Key {
 	return tx.feeExemptKeys
@@ -167,6 +181,20 @@ func (tx *TopicUpdateTransaction) GetFeeExemptKeys() []Key {
 func (tx *TopicUpdateTransaction) SetCustomFees(fees []CustomFixedFee) *TopicUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.customFees = fees
+	return tx
+}
+
+// AddCustomFee adds a fixed fee to assess when a message is submitted to the new topic.
+func (tx *TopicUpdateTransaction) AddCustomFee(fee CustomFixedFee) *TopicUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.customFees = append(tx.customFees, fee)
+	return tx
+}
+
+// ClearCustomFees removes all fixed fees to assess when a message is submitted to the new topic.
+func (tx *TopicUpdateTransaction) ClearCustomFees() *TopicUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.customFees = []CustomFixedFee{}
 	return tx
 }
 

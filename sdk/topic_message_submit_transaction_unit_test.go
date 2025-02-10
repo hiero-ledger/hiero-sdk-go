@@ -218,7 +218,9 @@ func TestUnitTopicMessageSubmitTransactionProtoCheck(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
-	customFixedFee := NewCustomFixedFee()
+	customFeeLimit := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -226,7 +228,7 @@ func TestUnitTopicMessageSubmitTransactionProtoCheck(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
-		SetCustomFees(client.GetOperatorAccountID(), []CustomFixedFee{*customFixedFee}).
+		SetCustomFeeLimits([]CustomFeeLimit{*customFeeLimit}).
 		Freeze()
 	require.NoError(t, err)
 
@@ -257,7 +259,9 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
-	customFixedFee := NewCustomFixedFee()
+	customFeeLimit := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -265,7 +269,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
-		SetCustomFees(client.GetOperatorAccountID(), []CustomFixedFee{*customFixedFee}).
+		SetCustomFeeLimits([]CustomFeeLimit{*customFeeLimit}).
 		SetGrpcDeadline(&grpc).
 		SetMaxTransactionFee(NewHbar(3)).
 		SetMaxRetry(3).
@@ -303,7 +307,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	transaction.GetTopicID()
 	transaction.GetMessage()
 	transaction.GetMaxChunks()
-	transaction.GetCustomFees()
+	transaction.GetCustomFeeLimits()
 	_, err = transaction.GetSignatures()
 	require.NoError(t, err)
 	transaction.getName()
@@ -319,7 +323,9 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 	topic := TopicID{Topic: 3}
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
-	customFixedFee := NewCustomFixedFee()
+	customFeeLimit := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -327,7 +333,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
-		SetCustomFees(nodeAccountID[0], []CustomFixedFee{*customFixedFee}).
+		SetCustomFeeLimits([]CustomFeeLimit{*customFeeLimit}).
 		SetTransactionMemo("no").
 		Freeze()
 	require.NoError(t, err)
@@ -344,7 +350,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 	require.Equal(t, transactionID.AccountID, result.GetTransactionID().AccountID)
 	require.Equal(t, transaction.GetMessage(), result.GetMessage())
 	require.Equal(t, transaction.GetTransactionMemo(), result.GetTransactionMemo())
-	require.Equal(t, transaction.GetCustomFees()[0].String(), result.GetCustomFees()[0].String())
+	require.Equal(t, transaction.GetCustomFeeLimits()[0].String(), result.GetCustomFeeLimits()[0].String())
 }
 
 func TestUnitTopicMessageSubmitTransactionSetMessage(t *testing.T) {
