@@ -74,7 +74,7 @@ func TestUnitTopicCreateTransactionGet(t *testing.T) {
 		SetSubmitKey(newKey).
 		SetFeeScheduleKey(newKey).
 		SetFeeExemptKeys([]Key{newKey}).
-		SetCustomFees([]CustomFixedFee{*customFixedFee}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetTopicMemo("ad").
 		SetAutoRenewPeriod(60 * time.Second).
 		SetMaxTransactionFee(NewHbar(10)).
@@ -164,7 +164,7 @@ func TestUnitTopicCreateTransactionProtoCheck(t *testing.T) {
 		SetSubmitKey(newKey2).
 		SetFeeScheduleKey(newKey).
 		SetFeeExemptKeys([]Key{newKey}).
-		SetCustomFees([]CustomFixedFee{*customFixedFee}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetAutoRenewAccountID(accountID).
 		SetTopicMemo("memo").
 		SetAutoRenewPeriod(time.Second * 3).
@@ -212,7 +212,7 @@ func TestUnitTopicCreateTransactionCoverage(t *testing.T) {
 		SetSubmitKey(newKey).
 		SetFeeScheduleKey(newKey).
 		SetFeeExemptKeys([]Key{newKey}).
-		SetCustomFees([]CustomFixedFee{*customFixedFee}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetAutoRenewAccountID(account).
 		SetAutoRenewPeriod(time.Second * 30).
 		SetGrpcDeadline(&grpc).
@@ -326,7 +326,7 @@ func TestUnitTopicCreateTransactionSerialization(t *testing.T) {
 		SetSubmitKey(newKey).
 		SetFeeScheduleKey(newKey).
 		SetFeeExemptKeys([]Key{newKey}).
-		SetCustomFees([]CustomFixedFee{*customFixedFee}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetTopicMemo("ad").
 		SetAutoRenewPeriod(time.Second * 30).
 		Freeze()

@@ -19,7 +19,7 @@ type TopicInfo struct {
 	SubmitKey          Key
 	FeeScheduleKey     Key
 	FeeExemptKeys      []Key
-	CustomFees         []CustomFixedFee
+	CustomFees         []*CustomFixedFee
 	AutoRenewPeriod    time.Duration
 	AutoRenewAccountID *AccountID
 	LedgerID           LedgerID

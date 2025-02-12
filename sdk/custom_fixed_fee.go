@@ -34,8 +34,8 @@ func NewCustomFixedFee() *CustomFixedFee {
 	}
 }
 
-func _CustomFixedFeeFromProtobuf(fixedFee *services.FixedFee, customFee CustomFee) CustomFixedFee {
-	return CustomFixedFee{
+func _CustomFixedFeeFromProtobuf(fixedFee *services.FixedFee, customFee CustomFee) *CustomFixedFee {
+	return &CustomFixedFee{
 		CustomFee:           customFee,
 		Amount:              fixedFee.Amount,
 		DenominationTokenID: _TokenIDFromProtobuf(fixedFee.DenominatingTokenId),

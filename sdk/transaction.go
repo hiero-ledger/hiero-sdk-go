@@ -48,7 +48,7 @@ type BaseTransaction struct {
 
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
-	customFeeLimits    []CustomFeeLimit
+	customFeeLimits    []*CustomFeeLimit
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.

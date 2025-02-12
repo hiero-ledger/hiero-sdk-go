@@ -13,9 +13,9 @@ func NewCustomFeeLimit() *CustomFeeLimit {
 	return &CustomFeeLimit{}
 }
 
-func customFeeLimitFromProtobuf(customFeeLimit *services.CustomFeeLimit) CustomFeeLimit {
+func customFeeLimitFromProtobuf(customFeeLimit *services.CustomFeeLimit) *CustomFeeLimit {
 	if customFeeLimit == nil {
-		return CustomFeeLimit{}
+		return &CustomFeeLimit{}
 	}
 
 	var payerId *AccountID
@@ -26,10 +26,10 @@ func customFeeLimitFromProtobuf(customFeeLimit *services.CustomFeeLimit) CustomF
 	var customFees []*CustomFixedFee
 	for _, customFee := range customFeeLimit.Fees {
 		customFixedFee := _CustomFixedFeeFromProtobuf(customFee, CustomFee{})
-		customFees = append(customFees, &customFixedFee)
+		customFees = append(customFees, customFixedFee)
 	}
 
-	return CustomFeeLimit{
+	return &CustomFeeLimit{
 		PayerId:    payerId,
 		CustomFees: customFees,
 	}
@@ -64,8 +64,13 @@ func (feeLimit *CustomFeeLimit) toProtobuf() *services.CustomFeeLimit {
 		fees = append(fees, customFee._ToProtobuf().GetFixedFee())
 	}
 
+	var payerId *services.AccountID
+	if feeLimit.PayerId != nil {
+		payerId = feeLimit.PayerId._ToProtobuf()
+	}
+
 	return &services.CustomFeeLimit{
-		AccountId: feeLimit.PayerId._ToProtobuf(),
+		AccountId: payerId,
 		Fees:      fees,
 	}
 }

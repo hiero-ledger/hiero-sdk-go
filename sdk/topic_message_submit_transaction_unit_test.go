@@ -228,7 +228,7 @@ func TestUnitTopicMessageSubmitTransactionProtoCheck(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
-		SetCustomFeeLimits([]CustomFeeLimit{*customFeeLimit}).
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit}).
 		Freeze()
 	require.NoError(t, err)
 
@@ -269,7 +269,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
-		SetCustomFeeLimits([]CustomFeeLimit{*customFeeLimit}).
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit}).
 		SetGrpcDeadline(&grpc).
 		SetMaxTransactionFee(NewHbar(3)).
 		SetMaxRetry(3).
@@ -333,7 +333,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
-		SetCustomFeeLimits([]CustomFeeLimit{*customFeeLimit}).
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit}).
 		SetTransactionMemo("no").
 		Freeze()
 	require.NoError(t, err)

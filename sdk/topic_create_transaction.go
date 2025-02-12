@@ -16,7 +16,7 @@ type TopicCreateTransaction struct {
 	submitKey          Key
 	feeScheduleKey     Key
 	feeExemptKeys      []Key
-	customFees         []CustomFixedFee
+	customFees         []*CustomFixedFee
 	memo               string
 	autoRenewPeriod    *time.Duration
 }
@@ -53,7 +53,7 @@ func _TopicCreateTransactionFromProtobuf(tx Transaction[*TopicCreateTransaction]
 			feeExemptKeys = append(feeExemptKeys, key)
 		}
 	}
-	var customFixedFees []CustomFixedFee = nil
+	var customFixedFees []*CustomFixedFee = nil
 	if pb.GetConsensusCreateTopic().GetCustomFees() != nil {
 		protobufCustomFixedFees := pb.GetConsensusCreateTopic().GetCustomFees()
 		for _, customFixedFee := range protobufCustomFixedFees {
@@ -146,14 +146,14 @@ func (tx *TopicCreateTransaction) GetFeeExemptKeys() []Key {
 }
 
 // SetCustomFees Sets the fixed fees to assess when a message is submitted to the new topic.
-func (tx *TopicCreateTransaction) SetCustomFees(fees []CustomFixedFee) *TopicCreateTransaction {
+func (tx *TopicCreateTransaction) SetCustomFees(fees []*CustomFixedFee) *TopicCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.customFees = fees
 	return tx
 }
 
 // AddCustomFee adds a fixed fee to assess when a message is submitted to the new topic.
-func (tx *TopicCreateTransaction) AddCustomFee(fee CustomFixedFee) *TopicCreateTransaction {
+func (tx *TopicCreateTransaction) AddCustomFee(fee *CustomFixedFee) *TopicCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.customFees = append(tx.customFees, fee)
 	return tx
@@ -162,12 +162,12 @@ func (tx *TopicCreateTransaction) AddCustomFee(fee CustomFixedFee) *TopicCreateT
 // ClearCustomFees removes all custom fees to assess when a message is submitted to the new topic.
 func (tx *TopicCreateTransaction) ClearCustomFees() *TopicCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.customFees = []CustomFixedFee{}
+	tx.customFees = []*CustomFixedFee{}
 	return tx
 }
 
 // GetCustomFees returns the fixed fees to assess when a message is submitted to the new topic.
-func (tx *TopicCreateTransaction) GetCustomFees() []CustomFixedFee {
+func (tx *TopicCreateTransaction) GetCustomFees() []*CustomFixedFee {
 	return tx.customFees
 }
 
