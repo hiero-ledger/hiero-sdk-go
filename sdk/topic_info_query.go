@@ -12,7 +12,6 @@ import (
 type TopicInfoQuery struct {
 	Query
 	topicID *TopicID
-	// TODO add new fields
 }
 
 // NewTopicInfoQuery creates a TopicInfoQuery query which can be used to construct and execute a

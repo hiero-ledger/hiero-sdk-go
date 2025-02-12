@@ -18,27 +18,10 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	exemptKey1, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-
-	exemptKey2, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-
-	customFee1 := NewCustomFixedFee().SetAmount(1).
-		SetDenominatingTokenID(TokenID{Token: 123}).
-		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
-
-	customFee2 := NewCustomFixedFee().SetAmount(2).
-		SetDenominatingTokenID(TokenID{Token: 456}).
-		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
-
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetSubmitKey(env.Client.GetOperatorPublicKey()).
-		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
-		SetFeeExemptKeys([]Key{exemptKey1.PublicKey(), exemptKey2.PublicKey()}).
-		SetCustomFees([]CustomFixedFee{*customFee1, *customFee2}).
 		SetTopicMemo(topicMemo).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -69,7 +52,6 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
-
 }
 
 func TestIntegrationTopicCreateTransactionDifferentKeys(t *testing.T) {

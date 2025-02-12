@@ -77,6 +77,10 @@ func _TopicUpdateTransactionFromProtobuf(tx Transaction[*TopicUpdateTransaction]
 		autoRenewVal := _DurationFromProtobuf(pb.GetConsensusUpdateTopic().GetAutoRenewPeriod())
 		autoRenew = &autoRenewVal
 	}
+	var memo string
+	if pb.GetConsensusUpdateTopic().GetMemo() != nil {
+		memo = pb.GetConsensusUpdateTopic().GetMemo().Value
+	}
 	TopicUpdateTransaction := TopicUpdateTransaction{
 		topicID:            _TopicIDFromProtobuf(pb.GetConsensusUpdateTopic().GetTopicID()),
 		autoRenewAccountID: _AccountIDFromProtobuf(pb.GetConsensusUpdateTopic().GetAutoRenewAccount()),
@@ -85,7 +89,7 @@ func _TopicUpdateTransactionFromProtobuf(tx Transaction[*TopicUpdateTransaction]
 		feeScheduleKey:     feeScheduleKey,
 		feeExemptKeys:      feeExemptKeys,
 		customFees:         customFixedFees,
-		memo:               pb.GetConsensusUpdateTopic().GetMemo().Value,
+		memo:               memo,
 		autoRenewPeriod:    autoRenew,
 		expirationTime:     expirationTime,
 	}
@@ -341,8 +345,10 @@ func (tx TopicUpdateTransaction) buildScheduled() (*services.SchedulableTransact
 }
 
 func (tx TopicUpdateTransaction) buildProtoBody() *services.ConsensusUpdateTopicTransactionBody {
-	body := &services.ConsensusUpdateTopicTransactionBody{
-		Memo: &wrapperspb.StringValue{Value: tx.memo},
+	body := &services.ConsensusUpdateTopicTransactionBody{}
+
+	if tx.memo != "" {
+		body.Memo = &wrapperspb.StringValue{Value: tx.memo}
 	}
 
 	if tx.topicID != nil {
