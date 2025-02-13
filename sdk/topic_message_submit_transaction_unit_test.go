@@ -393,3 +393,44 @@ func TestUnitTopicMessageSubmitTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TopicMessageSubmitTransaction).buildProtoBody())
 }
+
+func TestUnitTopicMessageSubmitTransactionSetCustomFeeLimits(t *testing.T) {
+	t.Parallel()
+
+	customFeeLimit1 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	customFeeLimit2 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 11}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).
+			SetDenominatingTokenID(TokenID{Token: 11}))
+
+	transaction := NewTopicMessageSubmitTransaction().
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit1, customFeeLimit2})
+
+	require.Equal(t, 2, len(transaction.GetCustomFeeLimits()))
+	require.Equal(t, customFeeLimit1.String(), transaction.GetCustomFeeLimits()[0].String())
+	require.Equal(t, customFeeLimit2.String(), transaction.GetCustomFeeLimits()[1].String())
+}
+
+func TestUnitTopicMessageSubmitTransactionAddCustomFeeLimit(t *testing.T) {
+	t.Parallel()
+
+	customFeeLimit1 := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	customFeeLimit2 := NewCustomFeeLimit().SetPayerId(AccountID{Account: 11}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).
+			SetDenominatingTokenID(TokenID{Token: 11}))
+
+	transaction := NewTopicMessageSubmitTransaction().
+		AddCustomFeeLimit(customFeeLimit1).
+		AddCustomFeeLimit(customFeeLimit2)
+
+	require.Equal(t, 2, len(transaction.GetCustomFeeLimits()))
+	require.Equal(t, customFeeLimit1.String(), transaction.GetCustomFeeLimits()[0].String())
+	require.Equal(t, customFeeLimit2.String(), transaction.GetCustomFeeLimits()[1].String())
+}

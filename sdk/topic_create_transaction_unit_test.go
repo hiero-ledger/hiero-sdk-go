@@ -365,3 +365,35 @@ func TestUnitTopicCreateTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TopicCreateTransaction).buildProtoBody())
 }
+
+func TestUnitTopicCreateTransactionFeeExemptKeys(t *testing.T) {
+	t.Parallel()
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	newKey2, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	transaction := NewTopicCreateTransaction().
+		SetFeeExemptKeys([]Key{newKey}).
+		AddFeeExemptKey(newKey2)
+	require.Equal(t, 2, len(transaction.GetFeeExemptKeys()))
+
+	transaction.ClearFeeExemptKeys()
+	require.Equal(t, 0, len(transaction.GetFeeExemptKeys()))
+}
+
+func TestUnitTopicCreateTransactionCustomFees(t *testing.T) {
+	t.Parallel()
+
+	customFixedFee := NewCustomFixedFee()
+	customFixedFee2 := NewCustomFixedFee()
+
+	transaction := NewTopicCreateTransaction().
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
+		AddCustomFee(customFixedFee2)
+	require.Equal(t, 2, len(transaction.GetCustomFees()))
+
+	transaction.ClearCustomFees()
+	require.Equal(t, 0, len(transaction.GetCustomFees()))
+}
