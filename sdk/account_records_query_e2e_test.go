@@ -22,7 +22,7 @@ func TestIntegrationAccountRecordQueryCanExecute(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1)).
 		Execute(env.Client)
@@ -59,7 +59,7 @@ func TestIntegrationAccountRecordQueryGetCost(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1)).
 		Execute(env.Client)
@@ -100,7 +100,7 @@ func TestIntegrationAccountRecordQuerySetBigMaxPayment(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1)).
 		Execute(env.Client)
@@ -143,7 +143,7 @@ func TestIntegrationAccountRecordQuerySetSmallMaxPayment(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1)).
 		Execute(env.Client)
@@ -186,7 +186,7 @@ func TestIntegrationAccountRecordQueryInsufficientFee(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(1)).
 		Execute(env.Client)

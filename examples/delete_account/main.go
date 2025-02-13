@@ -45,7 +45,7 @@ func main() {
 	// First create an account
 	transactionResponse, err := hiero.NewAccountCreateTransaction().
 		// This key will be required to delete the account later
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		// Initial balance
 		SetInitialBalance(hiero.NewHbar(2)).
 		SetTransactionMemo("go sdk example delete_account/main.go").

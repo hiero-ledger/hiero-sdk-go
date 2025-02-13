@@ -6,6 +6,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -26,7 +27,7 @@ func TestIntegrationAccountCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		SetMaxAutomaticTokenAssociations(100).
@@ -70,7 +71,7 @@ func TestIntegrationAccountCreateTransactionCanFreezeModify(t *testing.T) {
 	assert.Equal(t, HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetMaxTransactionFee(NewHbar(2)).
 		SetInitialBalance(newBalance).
@@ -128,7 +129,7 @@ func TestIntegrationAccountCreateTransactionAddSignature(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -174,7 +175,7 @@ func DisabledTestIntegrationAccountCreateTransactionSetProxyAccountID(t *testing
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -187,7 +188,7 @@ func DisabledTestIntegrationAccountCreateTransactionSetProxyAccountID(t *testing
 	accountID := *receipt.AccountID
 
 	resp, err = NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		SetProxyAccountID(accountID).
@@ -239,7 +240,7 @@ func TestIntegrationAccountCreateTransactionNetwork(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
@@ -283,12 +284,12 @@ func TestIntegrationAccountCreateTransactionWithAliasFromAdminKey(t *testing.T) 
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -323,13 +324,13 @@ func TestIntegrationAccountCreateTransactionWithAliasFromAdminKeyWithReceiverSig
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
 	frozenTxn, err := NewAccountCreateTransaction().
 		SetReceiverSignatureRequired(true).
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
@@ -367,13 +368,13 @@ func TestIntegrationAccountCreateTransactionWithAliasFromAdminKeyWithReceiverSig
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
 		SetReceiverSignatureRequired(true).
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -398,7 +399,7 @@ func TestIntegrationAccountCreateTransactionWithAlias(t *testing.T) {
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -406,7 +407,7 @@ func TestIntegrationAccountCreateTransactionWithAlias(t *testing.T) {
 	evmAddress := key.PublicKey().ToEvmAddress()
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
@@ -442,7 +443,7 @@ func TestIntegrationAccountCreateTransactionWithAliasWithoutSignature(t *testing
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -450,7 +451,7 @@ func TestIntegrationAccountCreateTransactionWithAliasWithoutSignature(t *testing
 	evmAddress := key.PublicKey().ToEvmAddress()
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -475,7 +476,7 @@ func TestIntegrationAccountCreateTransactionWithAliasWithReceiverSigRequired(t *
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -484,7 +485,7 @@ func TestIntegrationAccountCreateTransactionWithAliasWithReceiverSigRequired(t *
 
 	frozenTxn, err := NewAccountCreateTransaction().
 		SetReceiverSignatureRequired(true).
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
@@ -521,7 +522,7 @@ func TestIntegrationAccountCreateTransactionWithAliasWithReceiverSigRequiredWith
 
 	// Create the admin account
 	_, err = NewAccountCreateTransaction().
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -530,7 +531,7 @@ func TestIntegrationAccountCreateTransactionWithAliasWithReceiverSigRequiredWith
 
 	frozenTxn, err := NewAccountCreateTransaction().
 		SetReceiverSignatureRequired(true).
-		SetKey(adminKey).
+		SetKeyWithoutAlias(adminKey).
 		SetAlias(evmAddress).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
@@ -561,7 +562,7 @@ func TestIntegrationSerializeTransactionWithoutNodeAccountIdDeserialiseAndExecut
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	transactionOriginal := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance)
 
 	require.NoError(t, err)
@@ -591,7 +592,7 @@ func TestIntegrationAccountCreateTransactionSetStakingNodeID(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		SetStakedAccountID(env.OperatorID).
@@ -603,4 +604,155 @@ func TestIntegrationAccountCreateTransactionSetStakingNodeID(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+func TestIntegrationAccountCreateTransactionWithAliasCannotExecuteWithoutBothSignatures(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	newBalance := NewHbar(2)
+
+	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithAlias(edKey, ecdsaKey).
+		SetInitialBalance(newBalance).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "INVALID_SIGNATURE")
+}
+
+func TestIntegrationAccountCreateTransactionWithAliasCannotExecuteWithEdKey(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	newBalance := NewHbar(2)
+
+	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
+
+	_, err = NewAccountCreateTransaction().
+		SetECDSAKeyWithAlias(edKey).
+		SetInitialBalance(newBalance).
+		Execute(env.Client)
+	require.ErrorContains(t, err, "Private key is not ECDSA")
+}
+
+func TestIntegrationAccountCreateTransactionWithEcdsaAlias(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	alias := ecdsaKey.PublicKey().ToEvmAddress()
+
+	newBalance := NewHbar(2)
+
+	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
+
+	frozenTxn, err := NewAccountCreateTransaction().
+		SetECDSAKeyWithAlias(ecdsaKey).
+		SetInitialBalance(newBalance).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err := frozenTxn.Sign(ecdsaKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountId := *receipt.AccountID
+
+	accountInfo, err := NewAccountInfoQuery().
+		SetAccountID(accountId).
+		Execute(env.Client)
+
+	assert.NotNil(t, accountInfo.AccountID)
+	assert.Equal(t, ecdsaKey.PublicKey().String(), accountInfo.Key.String())
+	assert.Equal(t, alias, accountInfo.ContractAccountID)
+}
+
+func TestIntegrationAccountCreateTransactionWithEcdsaAndEdAlias(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	alias := ecdsaKey.PublicKey().ToEvmAddress()
+
+	newBalance := NewHbar(2)
+
+	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
+
+	frozenTxn, err := NewAccountCreateTransaction().
+		SetKeyWithAlias(edKey, ecdsaKey).
+		SetInitialBalance(newBalance).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err := frozenTxn.Sign(ecdsaKey).Sign(edKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountId := *receipt.AccountID
+
+	accountInfo, err := NewAccountInfoQuery().
+		SetAccountID(accountId).
+		Execute(env.Client)
+
+	assert.NotNil(t, accountInfo.AccountID)
+	assert.Equal(t, edKey.PublicKey().String(), accountInfo.Key.String())
+	assert.Equal(t, alias, accountInfo.ContractAccountID)
+}
+
+func TestIntegrationAccountCreateTransactionWithoutAlias(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	newBalance := NewHbar(2)
+
+	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(ecdsaKey).
+		SetInitialBalance(newBalance).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountId := *receipt.AccountID
+
+	accountInfo, err := NewAccountInfoQuery().
+		SetAccountID(accountId).
+		Execute(env.Client)
+
+	assert.NotNil(t, accountInfo.AccountID)
+	assert.Equal(t, ecdsaKey.PublicKey().String(), accountInfo.Key.String())
+	decodedAddress, err := hex.DecodeString(accountInfo.ContractAccountID)
+	require.NoError(t, err)
+	assert.True(t, isLongZero(decodedAddress))
+}
+
+func isLongZero(address []byte) bool {
+	for i := 0; i < 12; i++ {
+		if address[i] != 0 {
+			return false
+		}
+	}
+	return true
 }

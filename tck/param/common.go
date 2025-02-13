@@ -17,33 +17,55 @@ type CommonTransactionParams struct {
 	Signers                  *[]string `json:"signers"`
 }
 
-func (common *CommonTransactionParams) FillOutTransaction(transactionInterface hiero.TransactionInterface, client *hiero.Client) {
+func (common *CommonTransactionParams) FillOutTransaction(transactionInterface hiero.TransactionInterface, client *hiero.Client) error {
 	if common.TransactionId != nil {
 		txId, _ := hiero.TransactionIdFromString(*common.TransactionId)
-		hiero.TransactionSetTransactionID(transactionInterface, txId)
+		_, err := hiero.TransactionSetTransactionID(transactionInterface, txId)
+		if err != nil {
+			return err
+		}
 	}
 
 	if common.MaxTransactionFee != nil {
-		hiero.TransactionSetMaxTransactionFee(transactionInterface, hiero.HbarFromTinybar(*common.MaxTransactionFee))
+		_, err := hiero.TransactionSetMaxTransactionFee(transactionInterface, hiero.HbarFromTinybar(*common.MaxTransactionFee))
+		if err != nil {
+			return err
+		}
 	}
 
 	if common.ValidTransactionDuration != nil {
-		hiero.TransactionSetTransactionValidDuration(transactionInterface, time.Duration(*common.ValidTransactionDuration)*time.Second)
+		_, err := hiero.TransactionSetTransactionValidDuration(transactionInterface, time.Duration(*common.ValidTransactionDuration)*time.Second)
+		if err != nil {
+			return err
+		}
 	}
 
 	if common.Memo != nil {
-		hiero.TransactionSetTransactionMemo(transactionInterface, *common.Memo)
+		_, err := hiero.TransactionSetTransactionMemo(transactionInterface, *common.Memo)
+		if err != nil {
+			return err
+		}
 	}
 
 	if common.RegenerateTransactionId != nil {
-		hiero.TransactionSetTransactionID(transactionInterface, hiero.TransactionIDGenerate(client.GetOperatorAccountID()))
+		_, err := hiero.TransactionSetTransactionID(transactionInterface, hiero.TransactionIDGenerate(client.GetOperatorAccountID()))
+		if err != nil {
+			return err
+		}
 	}
 
 	if common.Signers != nil {
-		hiero.TransactionFreezeWith(transactionInterface, client)
+		_, err := hiero.TransactionFreezeWith(transactionInterface, client)
+		if err != nil {
+			return err
+		}
 		for _, signer := range *common.Signers {
 			s, _ := hiero.PrivateKeyFromString(signer)
-			hiero.TransactionSign(transactionInterface, s)
+			_, err = hiero.TransactionSign(transactionInterface, s)
+			if err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }

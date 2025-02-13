@@ -11,7 +11,8 @@ import (
 
 func ParseCustomFees(paramFees []param.CustomFee) ([]hiero.Fee, error) {
 	var customFeeList []hiero.Fee
-	for _, customFee := range paramFees {
+	for i := range paramFees {
+		customFee := &paramFees[i]
 		// Handle Fixed Fee
 		if customFee.FixedFee != nil {
 			fee := hiero.NewCustomFixedFee()
