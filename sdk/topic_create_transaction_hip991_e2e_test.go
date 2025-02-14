@@ -791,3 +791,76 @@ func TestIntegrationRevenueGeneratingTopicCannotExecuteWithInvalidCustomFeeLimit
 		Execute(env.Client)
 	require.ErrorContains(t, err, "exceptional precheck status DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST")
 }
+
+func TestIntegrationRevenueGeneratingTopicDoesNotChargeTreasuries(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	// Create payer with unlimited token associations
+	payerId, payerPrivateKey, err := createAccount(&env, func(transaction *AccountCreateTransaction) {
+		transaction.SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	// Create token with payer as treasury - should have 1 token
+	tokenId, err := createFungibleToken(&env, func(transaction *TokenCreateTransaction) {
+		frozenTxn, _ := transaction.
+			SetInitialSupply(1).
+			SetTreasuryAccountID(payerId).
+			FreezeWith(env.Client)
+		frozenTxn.Sign(payerPrivateKey)
+	})
+	require.NoError(t, err)
+
+	// Associate token with operator/collector
+	resp, err := NewTokenAssociateTransaction().
+		SetAccountID(env.Client.GetOperatorAccountID()).
+		AddTokenID(tokenId).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	// Create custom fee with the token and amount of 1
+	customFee := NewCustomFixedFee().
+		SetAmount(1).
+		SetDenominatingTokenID(tokenId).
+		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
+
+	// Create a revenue generating topic
+	resp, err = NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
+		AddCustomFee(customFee).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	// Submit a message to the revenue generating topic with custom fee limit
+	env.Client.SetOperator(payerId, payerPrivateKey)
+	resp, err = NewTopicMessageSubmitTransaction().
+		SetMessage("message").
+		SetTopicID(topicID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
+
+	// Verify the custom did not charge
+	accountBalance, err := NewAccountBalanceQuery().
+		SetAccountID(payerId).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.True(t, accountBalance.Tokens.Get(tokenId) == 1)
+}
