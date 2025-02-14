@@ -95,7 +95,6 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 	env.Client.SetNodeMinReadmitPeriod(5 * time.Second)
 	env.Client.SetNodeMaxReadmitPeriod(1 * time.Hour)
 	env.Client.SetMaxAttempts(15)
-	env.Client.SetDefaultMaxTransactionFee(NewHbar(50))
 	env.Client.SetDefaultMaxQueryPayment(NewHbar(50))
 	logger := NewLogger("Hiero sdk", LoggerLevelError)
 	env.Client.SetLogger(logger)
