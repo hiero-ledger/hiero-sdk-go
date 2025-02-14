@@ -194,6 +194,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
 		}
 
+		baseTx.transactionFee = body.GetTransactionFee()
+
 		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
 		if transactionID.AccountID.Account != 0 {
 			baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
@@ -665,6 +667,13 @@ func (tx *Transaction[T]) buildUnsignedTransaction(index int) (*services.Transac
 	if body.NodeAccountID == nil && !tx.nodeAccountIDs._IsEmpty() {
 		body.NodeAccountID = tx.nodeAccountIDs._Get(index).(AccountID)._ToProtobuf()
 	}
+	var transactionFee uint64
+	if tx.transactionFee != 0 {
+		transactionFee = tx.transactionFee
+	} else {
+		transactionFee = tx.defaultMaxTransactionFee
+	}
+	body.TransactionFee = transactionFee
 
 	bodyBytes, err := protobuf.Marshal(body)
 	if err != nil {
