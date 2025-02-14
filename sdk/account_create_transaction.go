@@ -90,7 +90,49 @@ func _AccountCreateTransactionFromProtobuf(tx Transaction[*AccountCreateTransact
 
 // SetKey sets the key that must sign each transfer out of the account. If RecieverSignatureRequired is true, then it
 // must also sign any transfer into the account.
+
+// Deprecated: Use SetKeyWithoutAlias
 func (tx *AccountCreateTransaction) SetKey(key Key) *AccountCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.key = key
+	return tx
+}
+
+// SetKeyWithAlias sets ECDSA private key, derives and sets it's EVM address in the background.
+// Essentially does SetKey and SetAlias in one call.
+func (tx *AccountCreateTransaction) SetECDSAKeyWithAlias(ecdsaKey PrivateKey) *AccountCreateTransaction {
+	tx._RequireNotFrozen()
+	if ecdsaKey.ecdsaPrivateKey == nil {
+		tx.freezeError = _NewErrBadKeyf("Private key is not ECDSA")
+	} else {
+		evmAddress := ecdsaKey.PublicKey().ToEvmAddress()
+		evmAddress = strings.TrimPrefix(evmAddress, "0x")
+		evmAddressBytes, _ := hex.DecodeString(evmAddress)
+		tx.alias = evmAddressBytes
+		tx.key = ecdsaKey
+	}
+	return tx
+}
+
+// SetKeyWithAlias sets the account key and a separate ECDSA key that the EVM address is derived from.
+// A user must sign the transaction with both keys for this flow to be successful.
+func (tx *AccountCreateTransaction) SetKeyWithAlias(key Key, ecdsaKey PrivateKey) *AccountCreateTransaction {
+	tx._RequireNotFrozen()
+	if ecdsaKey.ecdsaPrivateKey == nil {
+		tx.freezeError = _NewErrBadKeyf("Private key is not ECDSA")
+	} else {
+		evmAddress := ecdsaKey.PublicKey().ToEvmAddress()
+		evmAddress = strings.TrimPrefix(evmAddress, "0x")
+		evmAddressBytes, _ := hex.DecodeString(evmAddress)
+		tx.alias = evmAddressBytes
+		tx.key = key
+	}
+	return tx
+}
+
+// SetKeyWithoutAlias sets the key that must sign each transfer out of the account. If RecieverSignatureRequired is true, then it
+// must also sign any transfer into the account.
+func (tx *AccountCreateTransaction) SetKeyWithoutAlias(key Key) *AccountCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.key = key
 	return tx

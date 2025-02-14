@@ -25,7 +25,7 @@ func TestIntegrationTransactionAddSignature(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestIntegrationTransactionSignTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -103,7 +103,7 @@ func TestIntegrationTransactionGetHash(t *testing.T) {
 	require.NoError(t, err)
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
@@ -279,7 +279,7 @@ func TestIntegrationTransactionFailsWhenSigningWithoutFreezing(t *testing.T) {
 	require.NoError(t, err)
 
 	tx := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs)
 
 	_, err = tx.Sign(newKey).Execute(env.Client)

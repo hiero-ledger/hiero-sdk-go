@@ -21,7 +21,7 @@ func TestUnitTokenNftGetInfoByNftIDValidate(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
-	nftID, err := NftIDFromString("2@0.0.123-esxsf")
+	nftID, err := NftIDFromString("0.0.123-esxsf@2")
 	require.NoError(t, err)
 
 	nftInfo := NewTokenNftInfoQuery().
@@ -38,7 +38,7 @@ func TestUnitTokenNftGetInfoByNftIDValidateWrong(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
-	nftID, err := NftIDFromString("2@0.0.123-rmkykd")
+	nftID, err := NftIDFromString("0.0.123-rmkykd@2")
 	require.NoError(t, err)
 
 	nftInfo := NewTokenNftInfoQuery().

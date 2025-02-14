@@ -49,7 +49,7 @@ func main() {
 		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
 		// it must also sign any transfer into the account.
 		// Using the public key for this, but a PrivateKey or a KeyList can also be used
-		SetKey(key1.PublicKey()).
+		SetKeyWithoutAlias(key1.PublicKey()).
 		SetInitialBalance(hiero.ZeroHbar).
 		SetTransactionID(hiero.TransactionIDGenerate(client.GetOperatorAccountID())).
 		SetTransactionMemo("sdk example create_account__with_manual_signing/main.go").

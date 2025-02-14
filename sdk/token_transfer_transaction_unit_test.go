@@ -116,7 +116,7 @@ func TestUnitTokenTransferTransactionValidate(t *testing.T) {
 	require.NoError(t, err)
 	tokenID, err := TokenIDFromString("0.0.123-esxsf")
 	require.NoError(t, err)
-	nftID, err := NftIDFromString("2@0.0.123-esxsf")
+	nftID, err := NftIDFromString("0.0.123-esxsf@2")
 	require.NoError(t, err)
 
 	tokenTransfer := NewTransferTransaction().
@@ -138,7 +138,7 @@ func TestUnitTokenTransferTransactionValidateWrong(t *testing.T) {
 	require.NoError(t, err)
 	tokenID, err := TokenIDFromString("0.0.123-rmkykd")
 	require.NoError(t, err)
-	nftID, err := NftIDFromString("2@0.0.123-rmkykd")
+	nftID, err := NftIDFromString("0.0.123-rmkykd@2")
 	require.NoError(t, err)
 
 	tokenTransfer := NewTransferTransaction().

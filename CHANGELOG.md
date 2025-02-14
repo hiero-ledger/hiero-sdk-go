@@ -1,3 +1,14 @@
+## v2.55.0
+
+### Added
+
+- New APIs in `AccountCreateTransaction` : `SetECDSAKeyWithAlias(ECDSAKey)`, `setKeyWithAlias(Key, ECDSAKey)` and `setKeyWithoutAlias(Key)`.
+
+### Changed
+
+- Deprecated `setKey` in `AccountCreateTransaction`.
+- Set default max fee for transaction to 2 HBars.
+
 ## v2.54.0
 
 ### Added 
