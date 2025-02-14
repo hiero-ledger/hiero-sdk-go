@@ -95,7 +95,7 @@ jobs:
 
             - name: Start the local node
               if: success()
-              run: npx @hashgraph/hedera-local start -d --network local --network-tag=0.57.0 --balance=100000
+              run: npx @hashgraph/hedera-local start -d --network local --balance=100000
 
             - name: Tests Unit
               if: success()
@@ -157,7 +157,7 @@ jobs:
 
             - name: Start the local node
               if: success()
-              run: npx @hashgraph/hedera-local start -d --network local --network-tag=0.57.0 --balance=100000
+              run: npx @hashgraph/hedera-local start -d --network local --balance=100000
 
             - name: Run Examples
               if: success()

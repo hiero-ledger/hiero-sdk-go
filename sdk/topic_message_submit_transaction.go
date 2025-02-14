@@ -111,6 +111,13 @@ func (tx *TopicMessageSubmitTransaction) AddCustomFeeLimit(customFeeLimit *Custo
 	return tx
 }
 
+// ClearCustomFeeLimits Clears the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) ClearCustomFeeLimits() *TopicMessageSubmitTransaction {
+	tx._RequireNotFrozen()
+	tx.Transaction.customFeeLimits = []*CustomFeeLimit{}
+	return tx
+}
+
 // GetCustomFeeLimits Gets the maximum custom fee that the user is willing to pay for the message.
 func (tx *TopicMessageSubmitTransaction) GetCustomFeeLimits() []*CustomFeeLimit {
 	return tx.Transaction.customFeeLimits

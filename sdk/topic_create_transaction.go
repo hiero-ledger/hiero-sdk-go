@@ -28,6 +28,7 @@ func NewTopicCreateTransaction() *TopicCreateTransaction {
 	tx.Transaction = _NewTransaction(tx)
 
 	tx.SetAutoRenewPeriod(7890000 * time.Second)
+	tx.SetMaxTransactionFee(NewHbar(25))
 
 	return tx
 }
