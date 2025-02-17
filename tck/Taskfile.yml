@@ -1,0 +1,65 @@
+version: "3"
+
+tasks:
+    check-go:
+        desc: "Check if Go is installed and meets the version requirement"
+        silent: true
+        cmds:
+            - echo "Checking Go version..."
+            - |
+                if ! command -v go &> /dev/null || [ "$(go version | awk '{print $3}' | cut -c 3-)" \< "1.20" ]; then
+                  echo "Go 1.20 or higher is required. Please install it."
+                  exit 1
+                fi
+
+    install-hedera-local:
+        desc: "Install Hedera Local Node CLI tool if not installed"
+        silent: true
+        cmds:
+            - echo "Checking for Hedera Local Node CLI..."
+            - |
+                if ! command -v hedera &> /dev/null; then
+                  echo "Hedera Local Node CLI not found, installing..."
+                  npm install @hashgraph/hedera-local -g
+                else
+                  echo "Hedera Local Node CLI is already installed."
+                fi
+
+    start-local-node:
+        desc: "Start the local Hedera network"
+        silent: true
+        deps: [check-go, install-hedera-local]
+        cmds:
+            - echo "Starting local Hedera network..."
+            - hedera start
+
+    build-tck-go-server:
+        desc: "Build the Docker image for tck-go-server"
+        silent: true
+        dir: tck
+        cmds:
+            - echo "Building Docker image for tck-go-server..."
+            - docker build -t tck-server-go -f Dockerfile .
+
+    run-specific-test:
+        desc: "Run all services with a specific test"
+        silent: true
+        deps: [start-local-node, build-tck-go-server]
+        vars:
+            TEST: "{{.TEST}}"
+        cmds:
+            - echo "Running all services with TEST=${TEST}..."
+            - TEST=${TEST} docker compose up
+
+    start-all-tests:
+        desc: "Start Docker Compose services"
+        silent: true
+        deps: [start-local-node]
+        cmds:
+            - echo "Starting Docker Compose services..."
+            - docker compose up
+
+    default:
+        desc: "Start local node and Docker Compose"
+        silent: true
+        deps: [start-all-tests]

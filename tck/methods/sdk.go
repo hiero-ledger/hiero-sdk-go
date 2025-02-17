@@ -4,6 +4,7 @@ package methods
 
 import (
 	"context"
+	"os"
 
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/response"
@@ -34,6 +35,16 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 		// Default to testnet
 		s.Client = hiero.ClientForTestnet()
 		clientType = "testnet"
+	}
+
+	// Check if running in Docker
+	if os.Getenv("RUNNING_IN_DOCKER") != "" {
+		// Create a network map for Docker
+		network := make(map[string]hiero.AccountID)
+		network["host.docker.internal:50211"] = hiero.AccountID{Account: 3}
+
+		// Set the network on the client
+		s.Client.SetNetwork(network)
 	}
 
 	// Set operator (adjustments may be needed based on the Hiero SDK)
