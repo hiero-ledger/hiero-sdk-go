@@ -7,8 +7,13 @@ tasks:
         cmds:
             - echo "Checking Go version..."
             - |
-                if ! command -v go &> /dev/null || [ "$(go version | awk '{print $3}' | cut -c 3-)" \< "1.20" ]; then
-                  echo "Go 1.20 or higher is required. Please install it."
+                if ! command -v go &> /dev/null; then
+                  echo "Go is not installed. Please install Go 1.20 or higher."
+                  exit 1
+                fi
+                GO_VERSION=$(go version | awk '{print $3}' | cut -c 3-)
+                if [ $(echo -e "1.20\n$GO_VERSION" | sort -V | head -n1) != "1.20" ]; then
+                  echo "Go 1.20 or higher is required. Current version: $GO_VERSION"
                   exit 1
                 fi
 
@@ -36,10 +41,10 @@ tasks:
     build-tck-go-server:
         desc: "Build the Docker image for tck-go-server"
         silent: true
-        dir: tck
+        dir: ../
         cmds:
             - echo "Building Docker image for tck-go-server..."
-            - docker build -t tck-server-go -f Dockerfile .
+            - docker build -t tck-go-server -f tck/Dockerfile .
 
     run-specific-test:
         desc: "Run all services with a specific test"
