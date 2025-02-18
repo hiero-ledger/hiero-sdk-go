@@ -81,7 +81,7 @@ func _TopicUpdateTransactionFromProtobuf(tx Transaction[*TopicUpdateTransaction]
 	if pb.GetConsensusUpdateTopic().GetMemo() != nil {
 		memo = pb.GetConsensusUpdateTopic().GetMemo().Value
 	}
-	TopicUpdateTransaction := TopicUpdateTransaction{
+	topicUpdateTransaction := TopicUpdateTransaction{
 		topicID:            _TopicIDFromProtobuf(pb.GetConsensusUpdateTopic().GetTopicID()),
 		autoRenewAccountID: _AccountIDFromProtobuf(pb.GetConsensusUpdateTopic().GetAutoRenewAccount()),
 		adminKey:           adminKey,
@@ -94,9 +94,9 @@ func _TopicUpdateTransactionFromProtobuf(tx Transaction[*TopicUpdateTransaction]
 		expirationTime:     expirationTime,
 	}
 
-	tx.childTransaction = &TopicUpdateTransaction
-	TopicUpdateTransaction.Transaction = &tx
-	return TopicUpdateTransaction
+	tx.childTransaction = &topicUpdateTransaction
+	topicUpdateTransaction.Transaction = &tx
+	return topicUpdateTransaction
 }
 
 // SetTopicID sets the topic to be updated.

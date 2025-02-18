@@ -5,6 +5,7 @@ import "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 // SPDX-License-Identifier: Apache-2.0
 
 // A maximum custom fee that the user is willing to pay.
+// See HIP-991 for more information hips.hedera.com/hip/hip-991
 type CustomFeeLimit struct {
 	PayerId    *AccountID
 	CustomFees []*CustomFixedFee

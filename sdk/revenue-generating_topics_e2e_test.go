@@ -131,31 +131,20 @@ func TestIntegrationRevenueGeneratingTopicCannotCreateWithInvalidExemptKey(t *te
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.ErrorContains(t, err, "exceptional receipt status: INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST")
 
-	exemptKey2, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey3, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey4, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey5, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey6, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey7, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey8, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey9, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey10, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	exemptKey11, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
+	// Generate exempt keys
+	var exemptKeys []Key
+	for i := 2; i <= 11; i++ {
+		key, err := PrivateKeyGenerateEd25519()
+		require.NoError(t, err)
+		exemptKeys = append(exemptKeys, key)
+	}
+
+	exemptKeys = append(exemptKeys, exemptKey1)
 
 	// Set 11 keys - fails with MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED
 	resp, err = NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetFeeExemptKeys([]Key{exemptKey1, exemptKey2, exemptKey3, exemptKey4, exemptKey5, exemptKey6, exemptKey7, exemptKey8, exemptKey9, exemptKey10, exemptKey11}).
+		SetFeeExemptKeys(exemptKeys).
 		Execute(env.Client)
 	require.NoError(t, err)
 

@@ -235,12 +235,6 @@ func TestUnitTopicMessageSubmitTransactionProtoCheck(t *testing.T) {
 	proto := transaction.build().GetConsensusSubmitMessage()
 	assert.Equal(t, proto.TopicID, topic._ToProtobuf())
 	assert.Equal(t, proto.Message, []byte("nothing to see here"))
-
-	// TODO: in theory should work, but `_BuildTransaction` sets only encoded `SignedTransactionBytes`
-	// baseTransactionProto, err := transaction._BuildTransaction(0)
-	// require.NoError(t, err)
-	// assert.Equal(t, baseTransactionProto.Body.MaxCustomFees[0].AccountId, client.GetOperatorAccountID()._ToProtobuf())
-	// assert.Equal(t, baseTransactionProto.Body.MaxCustomFees[0].Fees[0], customFixedFee._ToProtobuf())
 }
 
 func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
