@@ -1,3 +1,20 @@
+## v2.56.0
+
+### Removed
+- `AccountStakersQuery`, since it was not supported in consensus node for a long time and now it's removed permanently.
+
+### Deprecated
+- `Livehash` transactions and queries `SystemDeleteTransaction` and `SystemUndeleteTransaction`.
+
+### Changed
+- `NftId` string format from `serial@tokenid` to `tokenid@serial`.
+
+### Added
+- Support for HIP-991: revenue generating topics.
+
+### Fixed
+- Keeping the `transactionFee` for a transaction while serializing/deserializing when the transaction was not frozen.
+
 ## v2.55.0
 
 ### Added
