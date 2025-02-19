@@ -41,7 +41,7 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 	if os.Getenv("RUNNING_IN_DOCKER") != "" {
 		// Create a network map for Docker
 		network := make(map[string]hiero.AccountID)
-		network["host.docker.internal:50211"] = hiero.AccountID{Account: 3}
+		network["network-node:50211"] = hiero.AccountID{Account: 3}
 
 		// Set the network on the client
 		s.Client.SetNetwork(network)

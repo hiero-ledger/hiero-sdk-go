@@ -16,13 +16,13 @@ go mod tidy
 go run cmd/server.go
 ```
 
-This will start the server on port **80**. You can change the port by setting the `TCK_PORT` environment variable or by adding a .env file with the same variable.
+This will start the server on port **8054**. You can change the port by setting the `TCK_PORT` environment variable or by adding a .env file with the same variable.
 
 Once started, your TCK server will be up and running! 🚦
 
 # Start all TCK tests with Docker 🐳
 
-This guide will help you set up and start the TCK server, local node and run all TCK tests using Docker. Follow these steps to ensure all dependencies are installed and the server runs smoothly.
+This section covers setting up and running TCK tests using Docker.
 
 ## Prerequisites
 
@@ -33,67 +33,25 @@ Before you begin, ensure you have the following installed:
 -   **Docker Compose**: Latest version
 -   **Task**: Latest version
 
-### Installing Task
-
-You can install Task using one of these methods:
+## 🔹 Run a specific test
 
 ```bash
-# Using Homebrew (macOS)
-brew install go-task
-
-# Using Go
-go install github.com/go-task/task/v3/cmd/task@latest
-```
-
-## 🔧 Setup Instructions
-
-### 1. Check Go Version
-
-Verify that Go is installed and meets the version requirements:
-
-```bash
-go version
-```
-
-### 2. Install Hedera Local Node CLI
-
-If not already installed, run the following command:
-
-```bash
-npm install @hashgraph/hedera-local -g
-```
-
-### 3. Start the Local Hedera Network
-
-Run the following command to start the local Hedera network:
-
-```bash
-task start-local-node
-```
-
-### 4. Build the Docker Image
-
-Build the Docker image for the TCK Go server:
-
-```bash
-task build-tck-go-server
-```
-
-### 5. Run a specific test
-
-```bash
-task run-specific-test -- TEST=AccountCreate
+task run-specific-test TEST=AccountCreate
 ```
 
 This will:
 
--   Spin up the TCK server
--   Start required containers
--   Run only the **AccountCreate** tests
+-   Verifies prerequisites
 
-### 6. Start All Services
+-   Starts the TCK server
 
-Now, let's fire up all the services using Docker Compose:
+-   Launches required containers
+
+-   Run only the `AccountCreate` tests
+
+## 🔹 Run all tests
+
+To run all tests:
 
 ```bash
 task start-all-tests
@@ -101,12 +59,33 @@ task start-all-tests
 
 This will:
 
--   Spin up the TCK server
--   Start required containers
+-   Verifies prerequisites
+
+-   Starts the TCK server
+
+-   Launches required containers
+
 -   Run all tests automatically
 
-Sit back and let Docker do the magic!
+Sit back and let Docker do the work! 🚀
+
+### ⚙️ Running Tests Against Hiero Testnet
+
+To run tests against the Hiero Testnet, use the following command:
+
+```bash
+task run-specific-test \
+  NETWORK=testnet \
+  OPERATOR_ACCOUNT_ID=your-account-id \
+  OPERATOR_ACCOUNT_PRIVATE_KEY=your-private-key \
+  # Run specific test
+  TEST=AccountCreate
+```
 
 ### 🎉 All Done!
 
-Your Go TCK server is now running inside Docker! 🚀 You can now execute tests and validate the system.
+Your TCK server is now running inside Docker! 🚀 You can now execute tests and validate the system.
+
+Need help? Reach out to the team! 💬👨‍💻
+
+Happy coding! 💻✨
