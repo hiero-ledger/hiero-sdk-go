@@ -44,7 +44,9 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 		network["network-node:50211"] = hiero.AccountID{Account: 3}
 
 		// Set the network on the client
-		s.Client.SetNetwork(network)
+		if err := s.Client.SetNetwork(network); err != nil {
+			return response.SetupResponse{}, err
+		}
 	}
 
 	// Set operator (adjustments may be needed based on the Hiero SDK)
