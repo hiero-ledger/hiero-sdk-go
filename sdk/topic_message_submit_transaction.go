@@ -96,6 +96,33 @@ func (tx *TopicMessageSubmitTransaction) GetMaxChunks() uint64 {
 	return tx.maxChunks
 }
 
+// SetCustomFeeLimits Sets the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) SetCustomFeeLimits(customFeeLimits []*CustomFeeLimit) *TopicMessageSubmitTransaction {
+	tx._RequireNotFrozen()
+	// set max custom fees to base transaction
+	tx.Transaction.customFeeLimits = append(tx.Transaction.customFeeLimits, customFeeLimits...)
+	return tx
+}
+
+// AddCustomFeeLimit Adds the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) AddCustomFeeLimit(customFeeLimit *CustomFeeLimit) *TopicMessageSubmitTransaction {
+	tx._RequireNotFrozen()
+	tx.Transaction.customFeeLimits = append(tx.Transaction.customFeeLimits, customFeeLimit)
+	return tx
+}
+
+// ClearCustomFeeLimits Clears the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) ClearCustomFeeLimits() *TopicMessageSubmitTransaction {
+	tx._RequireNotFrozen()
+	tx.Transaction.customFeeLimits = []*CustomFeeLimit{}
+	return tx
+}
+
+// GetCustomFeeLimits Gets the maximum custom fee that the user is willing to pay for the message.
+func (tx *TopicMessageSubmitTransaction) GetCustomFeeLimits() []*CustomFeeLimit {
+	return tx.Transaction.customFeeLimits
+}
+
 func (tx *TopicMessageSubmitTransaction) Freeze() (*TopicMessageSubmitTransaction, error) {
 	return tx.FreezeWith(nil)
 }

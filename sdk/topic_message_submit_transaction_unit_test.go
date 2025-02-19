@@ -206,6 +206,37 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestUnitTopicMessageSubmitTransactionProtoCheck(t *testing.T) {
+	t.Parallel()
+
+	checksum := "dmqui"
+	topic := TopicID{Topic: 3, checksum: &checksum}
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	client, err := _NewMockClient()
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	require.NoError(t, err)
+	client.SetAutoValidateChecksums(true)
+	customFeeLimit := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	transaction, err := NewTopicMessageSubmitTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetTopicID(topic).
+		SetMessage([]byte("nothing to see here")).
+		SetMaxChunks(30).
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit}).
+		Freeze()
+	require.NoError(t, err)
+
+	proto := transaction.build().GetConsensusSubmitMessage()
+	assert.Equal(t, proto.TopicID, topic._ToProtobuf())
+	assert.Equal(t, proto.Message, []byte("nothing to see here"))
+}
+
 func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	t.Parallel()
 
@@ -222,6 +253,9 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
+	customFeeLimit := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -229,6 +263,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit}).
 		SetGrpcDeadline(&grpc).
 		SetMaxTransactionFee(NewHbar(3)).
 		SetMaxRetry(3).
@@ -266,6 +301,7 @@ func TestUnitTopicMessageSubmitTransactionCoverage(t *testing.T) {
 	transaction.GetTopicID()
 	transaction.GetMessage()
 	transaction.GetMaxChunks()
+	transaction.GetCustomFeeLimits()
 	_, err = transaction.GetSignatures()
 	require.NoError(t, err)
 	transaction.getName()
@@ -281,6 +317,9 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 	topic := TopicID{Topic: 3}
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	customFeeLimit := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTransactionID(transactionID).
@@ -288,6 +327,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 		SetTopicID(topic).
 		SetMessage([]byte("nothing to see here")).
 		SetMaxChunks(30).
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit}).
 		SetTransactionMemo("no").
 		Freeze()
 	require.NoError(t, err)
@@ -304,6 +344,7 @@ func TestUnitTopicMessageSubmitTransactionSerialization(t *testing.T) {
 	require.Equal(t, transactionID.AccountID, result.GetTransactionID().AccountID)
 	require.Equal(t, transaction.GetMessage(), result.GetMessage())
 	require.Equal(t, transaction.GetTransactionMemo(), result.GetTransactionMemo())
+	require.Equal(t, transaction.GetCustomFeeLimits()[0].String(), result.GetCustomFeeLimits()[0].String())
 }
 
 func TestUnitTopicMessageSubmitTransactionSetMessage(t *testing.T) {
@@ -345,4 +386,67 @@ func TestUnitTopicMessageSubmitTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TopicMessageSubmitTransaction).buildProtoBody())
+}
+
+func TestUnitTopicMessageSubmitTransactionSetCustomFeeLimits(t *testing.T) {
+	t.Parallel()
+
+	customFeeLimit1 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	customFeeLimit2 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 11}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).
+			SetDenominatingTokenID(TokenID{Token: 11}))
+
+	transaction := NewTopicMessageSubmitTransaction().
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit1, customFeeLimit2})
+
+	require.Equal(t, 2, len(transaction.GetCustomFeeLimits()))
+	require.Equal(t, customFeeLimit1.String(), transaction.GetCustomFeeLimits()[0].String())
+	require.Equal(t, customFeeLimit2.String(), transaction.GetCustomFeeLimits()[1].String())
+}
+
+func TestUnitTopicMessageSubmitTransactionAddCustomFeeLimit(t *testing.T) {
+	t.Parallel()
+
+	customFeeLimit1 := NewCustomFeeLimit().SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	customFeeLimit2 := NewCustomFeeLimit().SetPayerId(AccountID{Account: 11}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).
+			SetDenominatingTokenID(TokenID{Token: 11}))
+
+	transaction := NewTopicMessageSubmitTransaction().
+		AddCustomFeeLimit(customFeeLimit1).
+		AddCustomFeeLimit(customFeeLimit2)
+
+	require.Equal(t, 2, len(transaction.GetCustomFeeLimits()))
+	require.Equal(t, customFeeLimit1.String(), transaction.GetCustomFeeLimits()[0].String())
+	require.Equal(t, customFeeLimit2.String(), transaction.GetCustomFeeLimits()[1].String())
+}
+
+func TestUnitTopicMessageSubmitTransactionClearCustomFeeLimit(t *testing.T) {
+	t.Parallel()
+
+	customFeeLimit1 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	customFeeLimit2 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 11}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).
+			SetDenominatingTokenID(TokenID{Token: 11}))
+
+	transaction := NewTopicMessageSubmitTransaction().
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit1, customFeeLimit2})
+
+	require.Equal(t, 2, len(transaction.GetCustomFeeLimits()))
+
+	transaction.ClearCustomFeeLimits()
+	require.Equal(t, 0, len(transaction.GetCustomFeeLimits()))
 }

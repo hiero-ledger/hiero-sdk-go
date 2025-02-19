@@ -70,6 +70,7 @@ func TestUnitTopicUpdateTransactionGet(t *testing.T) {
 
 	nodeAccountID := []AccountID{{Account: 10}, {Account: 11}, {Account: 12}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicUpdateTransaction().
 		SetTransactionID(transactionID).
@@ -78,6 +79,9 @@ func TestUnitTopicUpdateTransactionGet(t *testing.T) {
 		SetTopicID(TopicID{Topic: 7}).
 		SetAdminKey(newKey).
 		SetSubmitKey(newKey).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetTopicMemo("ad").
 		SetAutoRenewPeriod(60 * time.Second).
 		SetMaxTransactionFee(NewHbar(10)).
@@ -97,6 +101,9 @@ func TestUnitTopicUpdateTransactionGet(t *testing.T) {
 	transaction.GetAutoRenewAccountID()
 	transaction.GetAdminKey()
 	transaction.GetSubmitKey()
+	transaction.GetFeeScheduleKey()
+	transaction.GetFeeExemptKeys()
+	transaction.GetCustomFees()
 	transaction.GetTopicMemo()
 	transaction.GetAutoRenewPeriod()
 	transaction.GetMaxTransactionFee()
@@ -131,6 +138,9 @@ func TestUnitTopicUpdateTransactionNothingSet(t *testing.T) {
 	transaction.GetAutoRenewAccountID()
 	transaction.GetAdminKey()
 	transaction.GetSubmitKey()
+	transaction.GetFeeScheduleKey()
+	transaction.GetFeeExemptKeys()
+	transaction.GetCustomFees()
 	transaction.GetTopicMemo()
 	transaction.GetAutoRenewPeriod()
 	transaction.GetMaxTransactionFee()
@@ -155,6 +165,7 @@ func TestUnitTopicUpdateTransactionProtoCheck(t *testing.T) {
 	require.NoError(t, err)
 	newKey2, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicUpdateTransaction().
 		SetTransactionID(transactionID).
@@ -163,6 +174,9 @@ func TestUnitTopicUpdateTransactionProtoCheck(t *testing.T) {
 		SetAutoRenewAccountID(accountID).
 		SetAdminKey(newKey).
 		SetSubmitKey(newKey2).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetTopicMemo("memo").
 		SetAutoRenewPeriod(time.Second * 3).
 		SetExpirationTime(time.Unix(34, 12)).
@@ -177,6 +191,10 @@ func TestUnitTopicUpdateTransactionProtoCheck(t *testing.T) {
 	require.Equal(t, proto.TopicID.String(), topicID._ToProtobuf().String())
 	require.Equal(t, proto.AutoRenewAccount.String(), accountID._ToProtobuf().String())
 	require.Equal(t, proto.SubmitKey.String(), newKey2._ToProtoKey().String())
+	require.Equal(t, proto.FeeScheduleKey.String(), newKey._ToProtoKey().String())
+	require.Equal(t, proto.FeeExemptKeyList.Keys[0].String(), newKey._ToProtoKey().String())
+	require.Equal(t, proto.CustomFees.Fees[0].FixedFee.Amount, int64(0))
+	require.Nil(t, proto.CustomFees.Fees[0].FixedFee.DenominatingTokenId)
 	require.Equal(t, proto.Memo.Value, "memo")
 	require.Equal(t, proto.AutoRenewPeriod.Seconds, _DurationToProtobuf(time.Second*3).Seconds)
 	require.Equal(t, proto.ExpirationTime.String(), _TimeToProtobuf(time.Unix(34, 12)).String())
@@ -199,6 +217,7 @@ func TestUnitTopicUpdateTransactionCoverage(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicUpdateTransaction().
 		SetTransactionID(transactionID).
@@ -207,6 +226,9 @@ func TestUnitTopicUpdateTransactionCoverage(t *testing.T) {
 		SetAdminKey(newKey).
 		SetTopicMemo("ad").
 		SetSubmitKey(newKey).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetAutoRenewAccountID(account).
 		SetAutoRenewPeriod(time.Second * 30).
 		SetGrpcDeadline(&grpc).
@@ -245,6 +267,9 @@ func TestUnitTopicUpdateTransactionCoverage(t *testing.T) {
 	transaction.GetRegenerateTransactionID()
 	transaction.GetAdminKey()
 	transaction.GetSubmitKey()
+	transaction.GetFeeScheduleKey()
+	transaction.GetFeeExemptKeys()
+	transaction.GetCustomFees()
 	transaction.GetTopicMemo()
 	transaction.GetAutoRenewAccountID()
 	transaction.GetAutoRenewPeriod()
@@ -252,7 +277,7 @@ func TestUnitTopicUpdateTransactionCoverage(t *testing.T) {
 	require.NoError(t, err)
 	transaction.getName()
 	switch b := txFromBytes.(type) {
-	case TopicCreateTransaction:
+	case TopicUpdateTransaction:
 		b.AddSignature(newKey.PublicKey(), sig)
 	}
 }
@@ -303,6 +328,51 @@ func TestUnitTopicUpdateTransactionMock(t *testing.T) {
 
 	_, err = freez.Sign(newKey).Execute(client)
 	require.NoError(t, err)
+}
+
+func TestUnitTopicUpdateTransactionSerialization(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	customFixedFee := NewCustomFixedFee()
+
+	topicUpdate, err := NewTopicUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetAdminKey(newKey).
+		SetNodeAccountIDs(nodeAccountID).
+		SetSubmitKey(newKey).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
+		SetTopicMemo("ad").
+		SetAutoRenewPeriod(time.Second * 30).
+		Freeze()
+	require.NoError(t, err)
+
+	transactionBytes, err := topicUpdate.ToBytes()
+	require.NoError(t, err)
+
+	txParsed, err := TransactionFromBytes(transactionBytes)
+	require.NoError(t, err)
+
+	result, ok := txParsed.(TopicUpdateTransaction)
+	require.True(t, ok)
+
+	require.Equal(t, topicUpdate.GetTopicMemo(), result.GetTopicMemo())
+	require.Equal(t, topicUpdate.GetAutoRenewPeriod(), result.GetAutoRenewPeriod())
+	adminKey, _ := result.GetAdminKey()
+	require.Equal(t, newKey.PublicKey(), adminKey)
+	submitKey, _ := result.GetSubmitKey()
+	require.Equal(t, newKey.PublicKey(), submitKey)
+	feeScheduleKey := result.GetFeeScheduleKey()
+	require.Equal(t, newKey.PublicKey(), feeScheduleKey)
+	feeExemptKey := result.GetFeeExemptKeys()[0]
+	require.Equal(t, newKey.PublicKey(), feeExemptKey)
+	require.Equal(t, topicUpdate.GetCustomFees()[0].String(), result.GetCustomFees()[0].String())
+
 }
 
 func TestUnitTopicUpdateTransactionFromToBytes(t *testing.T) {

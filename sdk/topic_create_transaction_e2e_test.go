@@ -52,7 +52,6 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
-
 }
 
 func TestIntegrationTopicCreateTransactionDifferentKeys(t *testing.T) {
@@ -131,5 +130,34 @@ func TestIntegrationTopicCreateTransactionJustSetMemo(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
 
+func TestIntegrationTopicCreateTransactionClearFeeExemptKeys(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewTopicCreateTransaction().
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		ClearFeeExemptKeys().
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTopicCreateTransactionClearCustomFees(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewTopicCreateTransaction().
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		ClearCustomFees().
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
 }

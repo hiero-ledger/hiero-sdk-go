@@ -48,6 +48,7 @@ type BaseTransaction struct {
 
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
+	customFeeLimits    []*CustomFeeLimit
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -74,6 +75,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 			transactionValidDuration: &duration,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
+			customFeeLimits:          nil,
 		},
 		childTransaction:        concreteTransaction,
 		freezeError:             nil,
@@ -113,6 +115,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			publicKeys:         publicKeys,
 			transactionSigners: transactionSigners,
 			transactions:       transactions,
+			customFeeLimits:    nil,
 		},
 		freezeError:             nil,
 		keyError:                nil,
@@ -192,6 +195,12 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 
 		if body.GetNodeAccountID() != nil {
 			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
+		}
+
+		if body.GetMaxCustomFees() != nil {
+			for _, customFeeLimit := range body.GetMaxCustomFees() {
+				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+			}
 		}
 
 		baseTx.transactionFee = body.GetTransactionFee()
@@ -777,6 +786,12 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		originalBody.TransactionFee = tx.transactionFee
 	} else {
 		originalBody.TransactionFee = tx.defaultMaxTransactionFee
+	}
+
+	if tx.customFeeLimits != nil {
+		for _, customFeeLimit := range tx.customFeeLimits {
+			originalBody.MaxCustomFees = append(originalBody.MaxCustomFees, customFeeLimit.toProtobuf())
+		}
 	}
 
 	updatedBody, err := protobuf.Marshal(&originalBody)

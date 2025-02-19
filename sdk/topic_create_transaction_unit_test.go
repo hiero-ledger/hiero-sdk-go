@@ -64,6 +64,7 @@ func TestUnitTopicCreateTransactionGet(t *testing.T) {
 
 	nodeAccountID := []AccountID{{Account: 10}, {Account: 11}, {Account: 12}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicCreateTransaction().
 		SetTransactionID(transactionID).
@@ -71,6 +72,9 @@ func TestUnitTopicCreateTransactionGet(t *testing.T) {
 		SetAutoRenewAccountID(accountID).
 		SetAdminKey(newKey).
 		SetSubmitKey(newKey).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetTopicMemo("ad").
 		SetAutoRenewPeriod(60 * time.Second).
 		SetMaxTransactionFee(NewHbar(10)).
@@ -89,6 +93,9 @@ func TestUnitTopicCreateTransactionGet(t *testing.T) {
 	transaction.GetAutoRenewAccountID()
 	transaction.GetAdminKey()
 	transaction.GetSubmitKey()
+	transaction.GetFeeScheduleKey()
+	transaction.GetFeeExemptKeys()
+	transaction.GetCustomFees()
 	transaction.GetTopicMemo()
 	transaction.GetAutoRenewPeriod()
 	transaction.GetMaxTransactionFee()
@@ -122,6 +129,9 @@ func TestUnitTopicCreateTransactionNothingSet(t *testing.T) {
 	transaction.GetAutoRenewAccountID()
 	transaction.GetAdminKey()
 	transaction.GetSubmitKey()
+	transaction.GetFeeScheduleKey()
+	transaction.GetFeeExemptKeys()
+	transaction.GetCustomFees()
 	transaction.GetTopicMemo()
 	transaction.GetAutoRenewPeriod()
 	transaction.GetMaxTransactionFee()
@@ -145,12 +155,16 @@ func TestUnitTopicCreateTransactionProtoCheck(t *testing.T) {
 	require.NoError(t, err)
 	newKey2, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicCreateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetAdminKey(newKey).
 		SetSubmitKey(newKey2).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetAutoRenewAccountID(accountID).
 		SetTopicMemo("memo").
 		SetAutoRenewPeriod(time.Second * 3).
@@ -163,6 +177,10 @@ func TestUnitTopicCreateTransactionProtoCheck(t *testing.T) {
 	proto := transaction.build().GetConsensusCreateTopic()
 	require.Equal(t, proto.AdminKey.String(), newKey._ToProtoKey().String())
 	require.Equal(t, proto.SubmitKey.String(), newKey2._ToProtoKey().String())
+	require.Equal(t, proto.FeeScheduleKey.String(), newKey._ToProtoKey().String())
+	require.Equal(t, proto.FeeExemptKeyList[0].String(), newKey._ToProtoKey().String())
+	require.Equal(t, proto.CustomFees[0].FixedFee.Amount, int64(0))
+	require.Nil(t, proto.CustomFees[0].FixedFee.DenominatingTokenId)
 	require.Equal(t, proto.Memo, "memo")
 	require.Equal(t, proto.AutoRenewPeriod.Seconds, _DurationToProtobuf(time.Second*3).Seconds)
 	require.Equal(t, proto.AutoRenewAccount.String(), accountID._ToProtobuf().String())
@@ -184,6 +202,7 @@ func TestUnitTopicCreateTransactionCoverage(t *testing.T) {
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	require.NoError(t, err)
 	client.SetAutoValidateChecksums(true)
+	customFixedFee := NewCustomFixedFee()
 
 	transaction, err := NewTopicCreateTransaction().
 		SetTransactionID(transactionID).
@@ -191,6 +210,9 @@ func TestUnitTopicCreateTransactionCoverage(t *testing.T) {
 		SetAdminKey(newKey).
 		SetTopicMemo("ad").
 		SetSubmitKey(newKey).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetAutoRenewAccountID(account).
 		SetAutoRenewPeriod(time.Second * 30).
 		SetGrpcDeadline(&grpc).
@@ -229,6 +251,9 @@ func TestUnitTopicCreateTransactionCoverage(t *testing.T) {
 	transaction.GetRegenerateTransactionID()
 	transaction.GetAdminKey()
 	transaction.GetSubmitKey()
+	transaction.GetFeeScheduleKey()
+	transaction.GetFeeExemptKeys()
+	transaction.GetCustomFees()
 	transaction.GetTopicMemo()
 	transaction.GetAutoRenewAccountID()
 	transaction.GetAutoRenewPeriod()
@@ -292,12 +317,16 @@ func TestUnitTopicCreateTransactionSerialization(t *testing.T) {
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
+	customFixedFee := NewCustomFixedFee()
 
 	topicCreate, err := NewTopicCreateTransaction().
 		SetTransactionID(transactionID).
 		SetAdminKey(newKey).
 		SetNodeAccountIDs(nodeAccountID).
 		SetSubmitKey(newKey).
+		SetFeeScheduleKey(newKey).
+		SetFeeExemptKeys([]Key{newKey}).
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
 		SetTopicMemo("ad").
 		SetAutoRenewPeriod(time.Second * 30).
 		Freeze()
@@ -318,6 +347,11 @@ func TestUnitTopicCreateTransactionSerialization(t *testing.T) {
 	require.Equal(t, newKey.PublicKey(), adminKey)
 	submitKey, _ := result.GetSubmitKey()
 	require.Equal(t, newKey.PublicKey(), submitKey)
+	feeScheduleKey := result.GetFeeScheduleKey()
+	require.Equal(t, newKey.PublicKey(), feeScheduleKey)
+	feeExemptKey := result.GetFeeExemptKeys()[0]
+	require.Equal(t, newKey.PublicKey(), feeExemptKey)
+	require.Equal(t, topicCreate.GetCustomFees()[0].String(), result.GetCustomFees()[0].String())
 }
 
 func TestUnitTopicCreateTransactionFromToBytes(t *testing.T) {
@@ -330,4 +364,36 @@ func TestUnitTopicCreateTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TopicCreateTransaction).buildProtoBody())
+}
+
+func TestUnitTopicCreateTransactionFeeExemptKeys(t *testing.T) {
+	t.Parallel()
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	newKey2, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	transaction := NewTopicCreateTransaction().
+		SetFeeExemptKeys([]Key{newKey}).
+		AddFeeExemptKey(newKey2)
+	require.Equal(t, 2, len(transaction.GetFeeExemptKeys()))
+
+	transaction.ClearFeeExemptKeys()
+	require.Equal(t, 0, len(transaction.GetFeeExemptKeys()))
+}
+
+func TestUnitTopicCreateTransactionCustomFees(t *testing.T) {
+	t.Parallel()
+
+	customFixedFee := NewCustomFixedFee()
+	customFixedFee2 := NewCustomFixedFee()
+
+	transaction := NewTopicCreateTransaction().
+		SetCustomFees([]*CustomFixedFee{customFixedFee}).
+		AddCustomFee(customFixedFee2)
+	require.Equal(t, 2, len(transaction.GetCustomFees()))
+
+	transaction.ClearCustomFees()
+	require.Equal(t, 0, len(transaction.GetCustomFees()))
 }

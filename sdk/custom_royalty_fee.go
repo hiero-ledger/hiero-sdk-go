@@ -87,7 +87,7 @@ func (fee *CustomRoyaltyFee) SetAllCollectorsAreExempt(exempt bool) *CustomRoyal
 }
 
 func _CustomRoyaltyFeeFromProtobuf(royalty *services.RoyaltyFee, fee CustomFee) CustomRoyaltyFee {
-	var fallback CustomFixedFee
+	var fallback *CustomFixedFee
 	if royalty.FallbackFee != nil {
 		fallback = _CustomFixedFeeFromProtobuf(royalty.FallbackFee, fee)
 	}
@@ -95,7 +95,7 @@ func _CustomRoyaltyFeeFromProtobuf(royalty *services.RoyaltyFee, fee CustomFee) 
 		CustomFee:   fee,
 		Numerator:   royalty.ExchangeValueFraction.Numerator,
 		Denominator: royalty.ExchangeValueFraction.Denominator,
-		FallbackFee: &fallback,
+		FallbackFee: fallback,
 	}
 }
 

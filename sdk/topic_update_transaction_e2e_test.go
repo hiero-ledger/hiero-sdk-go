@@ -78,7 +78,6 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
-
 }
 
 func TestIntegrationTopicUpdateTransactionNoMemo(t *testing.T) {
@@ -129,7 +128,6 @@ func TestIntegrationTopicUpdateTransactionNoMemo(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
-
 }
 
 func TestIntegrationTopicUpdateTransactionNoTopicID(t *testing.T) {
@@ -178,5 +176,100 @@ func TestIntegrationTopicUpdateTransactionNoTopicID(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+func TestIntegrationTopicUpdateTransactionClearFeeExemptKeys(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	feeExemptKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		AddFeeExemptKey(feeExemptKey).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	require.NoError(t, err)
+
+	info, err := NewTopicInfoQuery().
+		SetTopicID(topicID).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, feeExemptKey.PublicKey().String(), info.FeeExemptKeys[0].String())
+
+	resp, err = NewTopicUpdateTransaction().
+		SetTopicID(topicID).
+		ClearFeeExemptKeys().
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	info, err = NewTopicInfoQuery().
+		SetTopicID(topicID).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Nil(t, info.FeeExemptKeys)
+}
+
+func TestIntegrationTopicUpdateTransactionClearCustomFees(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	customFee := NewCustomFixedFee().
+		SetAmount(1).
+		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
+
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
+		SetCustomFees([]*CustomFixedFee{customFee}).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	require.NoError(t, err)
+
+	info, err := NewTopicInfoQuery().
+		SetTopicID(topicID).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, customFee, info.CustomFees[0])
+
+	resp, err = NewTopicUpdateTransaction().
+		SetTopicID(topicID).
+		ClearCustomFees().
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	info, err = NewTopicInfoQuery().
+		SetTopicID(topicID).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Nil(t, info.CustomFees)
 
 }
