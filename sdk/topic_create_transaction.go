@@ -317,7 +317,11 @@ func (tx TopicCreateTransaction) getMethod(channel *_Channel) _Method {
 
 func (tx TopicCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
 	if selfTokenCreate, ok := self.(*TopicCreateTransaction); ok {
-		if selfTokenCreate.GetAutoRenewAccountID()._IsZero() && selfTokenCreate.GetAutoRenewPeriod() != 0 && client != nil {
+		if selfTokenCreate.GetAutoRenewAccountID()._IsZero() &&
+			selfTokenCreate.GetAutoRenewPeriod() != 0 &&
+			client != nil &&
+			// note: if the admin key is not set, the transaction will fail with AUTORENEW_ACCOUNT_NOT_ALLOWED
+			selfTokenCreate.adminKey != nil {
 			selfTokenCreate.SetAutoRenewAccountID(client.GetOperatorAccountID())
 		}
 	}
