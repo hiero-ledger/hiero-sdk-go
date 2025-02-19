@@ -43,6 +43,7 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, topicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
 	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
+	assert.NotNil(t, info.AutoRenewAccountID)
 
 	resp, err = NewTopicDeleteTransaction().
 		SetTopicID(topicID).

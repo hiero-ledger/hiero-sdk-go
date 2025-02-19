@@ -26,9 +26,9 @@ type TransactionInterface interface {
 	regenerateID(*Client) bool // creates new transaction ID
 
 	// methods implemented by every concrete transaction
-	build() *services.TransactionBody                                         // build a protobuf payload for the transaction
-	buildScheduled() (*services.SchedulableTransactionBody, error)            // builds the protobuf payload for the scheduled transaction
-	preFreezeWith(*Client)                                                    // utility method to set the transaction fields before freezing
+	build() *services.TransactionBody                              // build a protobuf payload for the transaction
+	buildScheduled() (*services.SchedulableTransactionBody, error) // builds the protobuf payload for the scheduled transaction
+	preFreezeWith(*Client, TransactionInterface)
 	constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) // TODO remove this method if possible
 	// NOTE: Any changes to the baseTransaction retuned by getBaseTransaction()
 	// will be reflected in the transaction object
@@ -1108,7 +1108,7 @@ func (tx *Transaction[T]) AddSignature(publicKey PublicKey, signature []byte) T 
 	return tx.childTransaction
 }
 
-func (tx *Transaction[T]) preFreezeWith(*Client) {
+func (tx *Transaction[T]) preFreezeWith(*Client, TransactionInterface) {
 	// No-op for every transaction except TokenCreateTransaction and TopicCreateTransaction
 }
 
@@ -1262,7 +1262,7 @@ func (tx *Transaction[T]) FreezeWith(client *Client) (T, error) {
 		return tx.childTransaction, nil
 	}
 
-	tx.childTransaction.preFreezeWith(client)
+	tx.childTransaction.preFreezeWith(client, tx.childTransaction)
 
 	tx._InitFee(client)
 	if err := tx._InitTransactionID(client); err != nil {
