@@ -315,6 +315,12 @@ func (tx TopicCreateTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
+func (tx TopicCreateTransaction) preFreezeWith(client *Client) {
+	if tx.GetAutoRenewAccountID()._IsZero() && tx.GetAutoRenewPeriod() != 0 && client != nil {
+		tx.SetAutoRenewAccountID(client.GetOperatorAccountID())
+	}
+}
+
 func (tx TopicCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
 	return tx.buildScheduled()
 }
