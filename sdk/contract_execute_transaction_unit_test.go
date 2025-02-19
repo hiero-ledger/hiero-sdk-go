@@ -302,3 +302,24 @@ func TestUnitContractExecuteTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ContractExecuteTransaction).buildProtoBody())
 }
+
+func TestUnitAddAddressArrayShouldErrorWithIncorrectLengthAddress(t *testing.T) {
+	incorrectLengthAddresses := []string{
+		"0x0000000000000000000000000000000000000001",
+		"0x0000000000000000000000000000000000000001",
+	}
+
+	_, err := NewContractFunctionParameters().AddAddressArray(incorrectLengthAddresses)
+
+	require.NotNil(t, err)
+	assert.Equal(t, "address is required to be 40 characters", err.Error())
+}
+
+func TestUnitAddFunctionShouldErrorWithIncorrectLengthAddress(t *testing.T) {
+	incorrectLengthAddress := "0x0000000000000000000000000000000000000001"
+
+	_, err := NewContractFunctionParameters().AddFunction(incorrectLengthAddress, NewContractFunctionSelector(""))
+
+	require.NotNil(t, err)
+	assert.Equal(t, "address is required to be 40 characters", err.Error())
+}
