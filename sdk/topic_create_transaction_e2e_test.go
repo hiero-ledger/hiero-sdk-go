@@ -17,9 +17,11 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	txID := TransactionIDGenerate(env.Client.GetOperatorAccountID())
 
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetTransactionID(txID).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetSubmitKey(env.Client.GetOperatorPublicKey()).
 		SetTopicMemo(topicMemo).
@@ -43,7 +45,7 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, topicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
 	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
-	assert.NotNil(t, info.AutoRenewAccountID)
+	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
 
 	resp, err = NewTopicDeleteTransaction().
 		SetTopicID(topicID).
@@ -53,6 +55,36 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+func TestIntegrationTopicCreateTransactionDoesNotSetAutorenewAccountIfAdminKeyIsNotSet(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewTopicCreateTransaction().
+		SetSubmitKey(env.Client.GetOperatorPublicKey()).
+		SetTopicMemo(topicMemo).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	info, err := NewTopicInfoQuery().
+		SetTopicID(topicID).
+		SetQueryPayment(NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, topicMemo, info.TopicMemo)
+	assert.Equal(t, uint64(0), info.SequenceNumber)
+	assert.Nil(t, info.AdminKey)
+	assert.Nil(t, info.AutoRenewAccountID)
 }
 
 func TestIntegrationTopicCreateTransactionDifferentKeys(t *testing.T) {

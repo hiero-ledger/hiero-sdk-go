@@ -26,9 +26,9 @@ type TransactionInterface interface {
 	regenerateID(*Client) bool // creates new transaction ID
 
 	// methods implemented by every concrete transaction
-	build() *services.TransactionBody                              // build a protobuf payload for the transaction
-	buildScheduled() (*services.SchedulableTransactionBody, error) // builds the protobuf payload for the scheduled transaction
-	preFreezeWith(*Client, TransactionInterface)
+	build() *services.TransactionBody                                         // build a protobuf payload for the transaction
+	buildScheduled() (*services.SchedulableTransactionBody, error)            // builds the protobuf payload for the scheduled transaction
+	preFreezeWith(*Client, TransactionInterface)                              // utility method to set the transaction fields before freezing
 	constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) // TODO remove this method if possible
 	// NOTE: Any changes to the baseTransaction retuned by getBaseTransaction()
 	// will be reflected in the transaction object
