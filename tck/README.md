@@ -78,6 +78,8 @@ task run-specific-test \
   NETWORK=testnet \
   OPERATOR_ACCOUNT_ID=your-account-id \
   OPERATOR_ACCOUNT_PRIVATE_KEY=your-private-key \
+  MIRROR_NODE_REST_URL=https://testnet.mirrornode.hedera.com \
+  MIRROR_NODE_REST_JAVA_URL=https://testnet.mirrornode.hedera.com \
   # Run specific test
   TEST=AccountCreate
 ```

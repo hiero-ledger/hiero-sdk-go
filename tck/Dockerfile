@@ -25,5 +25,4 @@ RUN chmod +x /app/server
 # Install necessary libraries
 RUN apk add --no-cache libc6-compat
 
-ENV RUNNING_IN_DOCKER=true
 CMD ["./server"]
