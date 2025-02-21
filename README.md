@@ -16,17 +16,6 @@ the Protobufs definitions for the protocol are available in the [hashgraph/heder
 $ go install github.com/hiero-ledger/hiero-sdk-go/v2@latest
 ```
 
-> [!NOTE]  
->  `google.golang.org/protobuf` v1.27.1 Breaks the SDK as it contains multiple protobuf files
-> with the same name. Make sure to use v1.26.1 instead. The follow snippet can be used in
-> `go.mod` to force the project to use v1.26.1
-
-```
-replace (
-	google.golang.org/protobuf v1.27.1 => google.golang.org/protobuf v1.26.1-0.20210525005349-febffdd88e85
-)
-```
-
 ### Running Tests
 
 # Integration
