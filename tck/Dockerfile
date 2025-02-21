@@ -16,7 +16,7 @@ RUN go mod tidy
 RUN go build -o server cmd/server.go
 
 
-FROM alpine:latest
+FROM alpine:3.20
 
 WORKDIR /app
 COPY --from=builder /app/hiero-sdk-go/tck/server .
