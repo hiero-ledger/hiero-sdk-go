@@ -7,6 +7,7 @@ package hiero
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 
@@ -304,10 +305,11 @@ func TestUnitContractExecuteTransactionFromToBytes(t *testing.T) {
 }
 
 func TestUnitAddAddressArrayShouldErrorWithIncorrectLengthAddress(t *testing.T) {
-	incorrectLengthAddresses := []string{
-		"0x0000000000000000000000000000000000000001",
-		"0x0000000000000000000000000000000000000001",
-	}
+	addressLength := 42
+	address := "0x" + strings.Repeat("0", addressLength-2)
+
+	incorrectLengthAddresses := []string{}
+	incorrectLengthAddresses = append(incorrectLengthAddresses, address)
 
 	_, err := NewContractFunctionParameters().AddAddressArray(incorrectLengthAddresses)
 
