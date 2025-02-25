@@ -57,6 +57,37 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestIntegrationTopicCreateTransactionSetsAutorenewAccount(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	txID := TransactionIDGenerate(env.Client.GetOperatorAccountID())
+
+	resp, err := NewTopicCreateTransaction().
+		SetTransactionID(txID).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetSubmitKey(env.Client.GetOperatorPublicKey()).
+		SetTopicMemo(topicMemo).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	info, err := NewTopicInfoQuery().
+		SetTopicID(topicID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetQueryPayment(NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
+}
+
 func TestIntegrationTopicCreateTransactionDoesNotSetAutorenewAccountIfAdminKeyIsNotSet(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
