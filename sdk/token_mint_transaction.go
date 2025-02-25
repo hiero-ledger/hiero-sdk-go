@@ -63,9 +63,7 @@ func (tx *TokenMintTransaction) GetTokenID() TokenID {
 	return *tx.tokenID
 }
 
-// SetAmount Sets the amount to mint from the Treasury Account. Amount must be a positive non-zero number, not
-// bigger than the token balance of the treasury account (0; balance], represented in the lowest
-// denomination.
+// SetAmount Sets the amount to mint from the Treasury Account. Amount must be a positive non-zero number.
 func (tx *TokenMintTransaction) SetAmount(amount uint64) *TokenMintTransaction {
 	tx._RequireNotFrozen()
 	tx.amount = amount

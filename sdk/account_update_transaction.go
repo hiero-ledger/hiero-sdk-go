@@ -197,7 +197,7 @@ func (tx *AccountUpdateTransaction) GetDeclineStakingReward() bool {
 }
 
 // SetMaxAutomaticTokenAssociations
-// Sets the maximum number of tokens that an Account can be implicitly associated with. Up to a 1000
+// Sets the maximum number of tokens that an Account can be implicitly associated with. Up to a 5000
 // including implicit and explicit associations.
 func (tx *AccountUpdateTransaction) SetMaxAutomaticTokenAssociations(max int32) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
@@ -240,6 +240,8 @@ func (tx *AccountUpdateTransaction) GetProxyAccountID() AccountID {
 }
 
 // SetAutoRenewPeriod Sets the duration in which it will automatically extend the expiration period.
+// Min value for this property 2,592,000 seconds
+// Max value for this property is 8,000,001 seconds
 func (tx *AccountUpdateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
@@ -255,6 +257,8 @@ func (tx *AccountUpdateTransaction) GetAutoRenewPeriod() time.Duration {
 }
 
 // SetExpirationTime sets the new expiration time to extend to (ignored if equal to or before the current one)
+// Min value for this property is current time + 1 second
+// Max value for this property is current time + 8,000,001 seconds
 func (tx *AccountUpdateTransaction) SetExpirationTime(expirationTime time.Time) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.expirationTime = &expirationTime

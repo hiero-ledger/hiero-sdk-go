@@ -245,6 +245,8 @@ func (tx *TokenCreateTransaction) GetTokenSymbol() string {
 }
 
 // SetDecimals Sets the number of decimal places a token is divisible by. This field can never be changed!
+// Min value for this property is 0
+// Max value for this property is 2,147,483,647
 func (tx *TokenCreateTransaction) SetDecimals(decimals uint) *TokenCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.decimals = uint32(decimals)

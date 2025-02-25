@@ -157,7 +157,7 @@ func (tx *AccountCreateTransaction) GetInitialBalance() Hbar {
 
 // SetMaxAutomaticTokenAssociations
 // Set the maximum number of tokens that an Account can be implicitly associated with. Defaults to 0
-// and up to a maximum value of 1000.
+// and up to a maximum value of 5000.
 func (tx *AccountCreateTransaction) SetMaxAutomaticTokenAssociations(max int32) *AccountCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.maxAutomaticTokenAssociations = max
@@ -175,6 +175,8 @@ func (tx *AccountCreateTransaction) GetMaxAutomaticTokenAssociations() int32 {
 // renew for another auto renew period. If it does not have enough hbars to renew for that long, then the  remaining
 // hbars are used to extend its expiration as long as possible. If it is has a zero balance when it expires,
 // then it is deleted.
+// Min value for this property 2,592,000 seconds
+// Max value for this property is 8,000,001 seconds
 func (tx *AccountCreateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *AccountCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
