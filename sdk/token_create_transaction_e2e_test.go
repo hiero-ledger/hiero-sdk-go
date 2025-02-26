@@ -138,6 +138,44 @@ func TestIntegrationTokenCreateTransactionSetExpirationTime(t *testing.T) {
 	assert.Equal(t, info.ExpirationTime.Unix(), expirationTime.Unix())
 }
 
+func TestIntegrationTokenCreateTransactionSetsAutorenewAccountFromTransactionID(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	accountId, accountKey, err := createAccount(&env, func(transaction *AccountCreateTransaction) {
+		transaction.SetInitialBalance(NewHbar(10))
+	})
+	require.NoError(t, err)
+
+	txId := TransactionIDGenerate(accountId)
+
+	frozenTxn, err := NewTokenCreateTransaction().
+		SetTokenName("ffff").
+		SetTokenSymbol("F").
+		SetTreasuryAccountID(accountId).
+		SetTransactionID(txId).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err := frozenTxn.Sign(accountKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tokenID := *receipt.TokenID
+
+	info, err := NewTokenInfoQuery().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetTokenID(tokenID).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+	assert.NotNil(t, info.AutoRenewAccountID)
+	assert.Equal(t, info.AutoRenewAccountID.String(), accountId.String())
+}
+
 func TestIntegrationTokenCreateTransactionNoKeys(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
