@@ -1109,7 +1109,7 @@ func (tx *Transaction[T]) AddSignature(publicKey PublicKey, signature []byte) T 
 }
 
 func (tx *Transaction[T]) preFreezeWith(*Client, TransactionInterface) {
-	// No-op for every transaction except TokenCreateTransaction
+	// No-op for every transaction except TokenCreateTransaction and TopicCreateTransaction
 }
 
 func (tx *Transaction[T]) getLogID(transactionInterface Executable) string {
