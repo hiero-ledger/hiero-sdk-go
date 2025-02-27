@@ -82,7 +82,7 @@ func (transaction *EthereumFlow) GetNodeAccountIDs() []AccountID {
 }
 
 func (transaction *EthereumFlow) _CreateFile(callData []byte, client *Client) (FileID, error) {
-	fileCreate := NewFileCreateTransaction()
+	fileCreate := NewFileCreateTransaction().SetKeys(client.GetOperatorPublicKey())
 	if len(transaction.nodeAccountIDs) > 0 {
 		fileCreate.SetNodeAccountIDs(transaction.nodeAccountIDs)
 	}

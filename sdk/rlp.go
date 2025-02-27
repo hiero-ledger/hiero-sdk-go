@@ -1,5 +1,7 @@
 package hiero
 
+import "encoding/hex"
+
 // SPDX-License-Identifier: Apache-2.0
 
 // RLPType represents the type of RLP item.
@@ -54,7 +56,11 @@ func (item *RLPItem) GetItemValue() []byte {
 // Assign methods to set values for the RLPItem
 func (item *RLPItem) AssignValue(value []byte) *RLPItem {
 	item.itemType = VALUE_TYPE
-	item.itemValue = value
+	if hex.EncodeToString(value) == "00" {
+		item.itemValue = []byte{}
+	} else {
+		item.itemValue = value
+	}
 	return item
 }
 
@@ -111,7 +117,8 @@ func (item *RLPItem) Write() ([]byte, error) {
 		}
 		bytes = append(bytes, childBytes...)
 	}
-	return append(encodeLength(len(bytes), 0xC0), bytes...), nil
+	test := append(encodeLength(len(bytes), 0xC0), bytes...)
+	return test, nil
 }
 
 // Read decodes a byte slice into an RLPItem.
