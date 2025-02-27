@@ -5,6 +5,7 @@ package hiero
 
 import (
 	"encoding/hex"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -68,20 +69,21 @@ func getCallData(privateKey PrivateKey, nonce int, contract []byte, callData str
 	objectsList := &RLPItem{}
 	objectsList.AssignList()
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(chainId))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(nonceBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxPriorityGas))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxGas))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(gasLimitBytes))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(contract))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(valueBytes))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(callDataBytes))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue([]byte{}))
+	objectsList.PushBack(NewRLPItem(LIST_TYPE).AssignValue([]byte{}))
 
-	message := NewRLPItem(LIST_TYPE)
-	message.PushBack(NewRLPItem(VALUE_TYPE).AssignValue([]byte{0x02}))
-	message.PushBack(objectsList)
+	// message := NewRLPItem(LIST_TYPE)
+	// message.PushBack(NewRLPItem(VALUE_TYPE).AssignValue([]byte{0x02}))
+	// message.PushBack(objectsList)
 
-	messageBytes, err := message.Write()
+	messageBytes, err := objectsList.Write()
+	fmt.Println(messageBytes)
 	require.NoError(t, err)
 
 	sig := privateKey.Sign(messageBytes)
@@ -89,6 +91,7 @@ func getCallData(privateKey PrivateKey, nonce int, contract []byte, callData str
 	s := sig[32:]
 	recId := []byte{1}
 
+	// ["0x012a","0x02","0x2f","0x2f","0x018000","0x7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181","0x0de0b6b3a7640000","0x123456",[],"0x01","0xdf48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479","0x1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"]
 	signedTxn := NewEthereumEIP1559Transaction(
 		chainId,
 		nonceBytes,
