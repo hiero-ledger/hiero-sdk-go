@@ -216,7 +216,7 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-//nolint:gocritic // ApproveAllowance jRPC method for approveAllowance
+// ApproveAllowance jRPC method for approveAllowance
 func (a *AccountService) ApproveAllowance(_ context.Context, params param.AccountAllowanceApproveParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountAllowanceApproveTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -237,37 +237,36 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 		token := allowance.Token
 		nft := allowance.Nft
 
-		// Process Hbar allowance
-		if hbar != nil {
+		switch {
+		case hbar != nil:
+			// Process Hbar allowance
 			hbarAmount, err := strconv.ParseInt(*hbar.Amount, 10, 64)
 			if err != nil {
 				return nil, err
 			}
-
 			transaction.ApproveHbarAllowance(owner, spender, hiero.HbarFromTinybar(hbarAmount))
 
+		case token != nil:
 			// Process Token allowance
-		} else if token != nil {
 			tokenID, err := hiero.TokenIDFromString(*token.TokenId)
 			if err != nil {
 				return nil, err
 			}
-
 			tokenAmount, err := strconv.ParseInt(*token.Amount, 10, 64)
 			if err != nil {
 				return nil, err
 			}
-
 			transaction.ApproveTokenAllowance(tokenID, owner, spender, tokenAmount)
 
+		case nft != nil:
 			// Process Nft allowance
-		} else if nft != nil {
 			tokenID, err := hiero.TokenIDFromString(*nft.TokenId)
 			if err != nil {
 				return nil, err
 			}
 
-			if nft.SerialNumbers != nil {
+			switch {
+			case nft.SerialNumbers != nil:
 				for _, serialNumber := range *nft.SerialNumbers {
 					serialNumberParsed, err := strconv.ParseInt(serialNumber, 10, 64)
 					if err != nil {
@@ -299,16 +298,17 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 						)
 					}
 				}
-			} else if nft.ApprovedForAll != nil && *nft.ApprovedForAll {
+			case nft.ApprovedForAll != nil && *nft.ApprovedForAll:
 				transaction.ApproveTokenNftAllowanceAllSerials(
 					tokenID,
 					owner,
 					spender,
 				)
-			} else {
+			default:
 				transaction.DeleteTokenNftAllowanceAllSerials(tokenID, owner, spender)
 			}
-		} else {
+
+		default:
 			return nil, errors.New("no valid allowance type provided")
 		}
 	}

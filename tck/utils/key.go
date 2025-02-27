@@ -35,3 +35,15 @@ func GetKeyFromString(keyStr string) (hiero.Key, error) {
 	}
 	return key, nil
 }
+
+func SetKeyIfPresent[T any](keyStr *string, setter func(hiero.Key) T) error {
+	if keyStr == nil {
+		return nil
+	}
+	key, err := GetKeyFromString(*keyStr)
+	if err != nil {
+		return err
+	}
+	setter(key)
+	return nil
+}
