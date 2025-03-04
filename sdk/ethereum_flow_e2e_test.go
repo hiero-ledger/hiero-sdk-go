@@ -5,7 +5,6 @@ package hiero
 
 import (
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,29 +20,67 @@ func TestIntegrationEthereumFlowCanCreateLargeContract(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	operatorPrivateKey, err := PrivateKeyFromStringECDSA("7f109a9e3b0d8ecfba9cc23a3614433ce0fa7ddcc80f2a8f10b222179a5a80d6")
-	if err != nil {
-		t.Fatalf("Failed to parse private key: %v", err)
-	}
-	operatorId := AccountID{Account: 1002}
+	ecdsaPrivateKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	aliasAccountId := ecdsaPrivateKey.ToAccountID(0, 0)
 
-	env.Client.SetOperator(operatorId, operatorPrivateKey)
-
-	// Create an alias for this key in order to execute ethereum transactions
-	tx, err := NewAccountCreateTransaction().
-		SetKey(operatorPrivateKey.PublicKey()).
-		SetInitialBalance(HbarFrom(100, HbarUnits.Hbar)).
+	// Create a shallow account for the ECDSA key
+	resp, err := NewTransferTransaction().
+		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
+		AddHbarTransfer(*aliasAccountId, NewHbar(1)).
 		Execute(env.Client)
 	require.NoError(t, err)
 
-	_, err = tx.SetValidateStatus(true).GetReceipt(env.Client)
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	callData, err := getCallData(operatorPrivateKey, 0, []byte{}, LARGE_SMART_CONTRACT_BYTECODE, 12_000_000, 1, t)
+	chainId, err := hex.DecodeString("012a")
+	maxPriorityGas, err := hex.DecodeString("00")
+	nonce, err := hex.DecodeString("00")
+	maxGas, err := hex.DecodeString("B71B00")        // 12mil
+	gasLimitBytes, err := hex.DecodeString("B71B00") // 12mil
+	contractBytes, err := hex.DecodeString("00")
+	value, err := hex.DecodeString("00")
+	callDataBytes, err := hex.DecodeString(LARGE_SMART_CONTRACT_BYTECODE)
 	require.NoError(t, err)
+
+	objectsList := &RLPItem{}
+	objectsList.AssignList()
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(chainId))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(nonce))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxPriorityGas))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxGas))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(gasLimitBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(contractBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(value))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(callDataBytes))
+	objectsList.PushBack(NewRLPItem(LIST_TYPE))
+
+	messageBytes, err := objectsList.Write()
+	require.NoError(t, err)
+	messageBytes = append([]byte{0x02}, messageBytes...)
+
+	sig := ecdsaPrivateKey.Sign(messageBytes)
+
+	v := sig[0]
+	r := sig[1:33]
+	s := sig[33:65]
+	vInt := int(v)
+
+	// The compact sig recovery code is the value 27 + public key recovery code + 4
+	recId := vInt - 27 - 4
+	recIdBytes := []byte{byte(recId)}
+
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(recIdBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(r))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(s))
+
+	messageBytes, err = objectsList.Write()
+	require.NoError(t, err)
+	messageBytes = append([]byte{0x02}, messageBytes...)
 
 	response, err := NewEthereumFlow().
-		SetEthereumDataBytes(callData).
+		SetEthereumDataBytes(messageBytes).
 		SetMaxGasAllowance(HbarFrom(10, HbarUnits.Hbar)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -52,62 +89,4 @@ func TestIntegrationEthereumFlowCanCreateLargeContract(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, record.CallResult.SignerNonce, int64(1))
-}
-
-func getCallData(privateKey PrivateKey, nonce int, contract []byte, callData string, gasLimit int, value int, t *testing.T) ([]byte, error) {
-	chainId, err := hex.DecodeString("012a")
-	nonceBytes := intToBytes(nonce)
-	maxPriorityGas := intToBytes(10)
-	maxGas := intToBytes(10)
-	gasLimitBytes := intToBytes(gasLimit)
-	valueBytes := intToBytes(value * 8_000_000)
-	callDataBytes, err := hex.DecodeString(callData)
-	require.NoError(t, err)
-
-	accessList := [][]byte{}
-
-	objectsList := &RLPItem{}
-	objectsList.AssignList()
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(chainId))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxPriorityGas))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxGas))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(gasLimitBytes))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(contract))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(valueBytes))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(callDataBytes))
-	objectsList.PushBack(NewRLPItem(LIST_TYPE).AssignValue([]byte{}))
-
-	// message := NewRLPItem(LIST_TYPE)
-	// message.PushBack(NewRLPItem(VALUE_TYPE).AssignValue([]byte{0x02}))
-	// message.PushBack(objectsList)
-
-	messageBytes, err := objectsList.Write()
-	fmt.Println(messageBytes)
-	require.NoError(t, err)
-
-	sig := privateKey.Sign(messageBytes)
-	r := sig[:32]
-	s := sig[32:]
-	recId := []byte{1}
-
-	// ["0x012a","0x02","0x2f","0x2f","0x018000","0x7e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181","0x0de0b6b3a7640000","0x123456",[],"0x01","0xdf48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479","0x1aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66"]
-	signedTxn := NewEthereumEIP1559Transaction(
-		chainId,
-		nonceBytes,
-		maxPriorityGas,
-		maxGas,
-		gasLimitBytes,
-		contract,
-		valueBytes,
-		callDataBytes,
-		recId, r, s,
-		accessList,
-	)
-
-	return signedTxn.ToBytes()
-}
-
-func intToBytes(n int) []byte {
-	return []byte{byte(n)}
 }
