@@ -312,13 +312,9 @@ func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.Up
 func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenAssociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenIds != nil {
@@ -366,13 +362,9 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 func (t *TokenService) DissociatesToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenDissociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenIds != nil {
@@ -479,13 +471,9 @@ func (t *TokenService) UnpauseToken(_ context.Context, params param.PauseUnPause
 func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenFreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
@@ -520,13 +508,9 @@ func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreez
 func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenUnfreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
@@ -561,13 +545,9 @@ func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFre
 func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenGrantKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
@@ -602,13 +582,9 @@ func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevoke
 func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenRevokeKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set accountId
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {

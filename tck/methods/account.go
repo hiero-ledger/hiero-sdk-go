@@ -31,12 +31,9 @@ func (a *AccountService) SetSdkService(service *SDKService) {
 func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.Key != nil {
-		key, err := utils.GetKeyFromString(*params.Key)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetKeyWithoutAlias(key)
+	// Set key
+	if err := utils.SetKeyIfPresent(params.Key, transaction.SetKeyWithoutAlias); err != nil {
+		return nil, err
 	}
 	if params.InitialBalance != nil {
 		initialBalance, err := strconv.ParseInt(*params.InitialBalance, 10, 64)
@@ -51,12 +48,9 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 	if params.MaxAutomaticTokenAssociations != nil {
 		transaction.SetMaxAutomaticTokenAssociations(*params.MaxAutomaticTokenAssociations)
 	}
-	if params.StakedAccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.StakedAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetStakedAccountID(accountId)
+	// Set staked account ID
+	if err := utils.SetAccountIDIfPresent(params.StakedAccountId, transaction.SetStakedAccountID); err != nil {
+		return nil, err
 	}
 	if params.StakedNodeId != nil {
 		stakedNodeID, err := params.StakedNodeId.Int64()
@@ -106,17 +100,14 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 // UpdateAccount jRPC method for updateAccount
 func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
-	if params.AccountId != nil {
-		accountId, _ := hiero.AccountIDFromString(*params.AccountId)
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
-	if params.Key != nil {
-		key, err := utils.GetKeyFromString(*params.Key)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetKey(key)
+	// Set key
+	if err := utils.SetKeyIfPresent(params.Key, transaction.SetKey); err != nil {
+		return nil, err
 	}
 
 	if params.ExpirationTime != nil {
@@ -135,12 +126,9 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 		transaction.SetMaxAutomaticTokenAssociations(*params.MaxAutomaticTokenAssociations)
 	}
 
-	if params.StakedAccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.StakedAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetStakedAccountID(accountId)
+	// Set staked account ID
+	if err := utils.SetAccountIDIfPresent(params.StakedAccountId, transaction.SetStakedAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.StakedNodeId != nil {
@@ -188,14 +176,14 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 // DeleteAccount jRPC method for deleteAccount
 func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
-	if params.DeleteAccountId != nil {
-		accountId, _ := hiero.AccountIDFromString(*params.DeleteAccountId)
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.DeleteAccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
-	if params.TransferAccountId != nil {
-		accountId, _ := hiero.AccountIDFromString(*params.TransferAccountId)
-		transaction.SetTransferAccountID(accountId)
+	// Set transfer account ID
+	if err := utils.SetAccountIDIfPresent(params.TransferAccountId, transaction.SetTransferAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.CommonTransactionParams != nil {
