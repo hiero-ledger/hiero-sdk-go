@@ -66,11 +66,16 @@ func main() {
 	http.HandleFunc("/", bridge.ServeHTTP)
 	port := os.Getenv("TCK_PORT")
 	if port == "" {
-		port = "80"
+		port = "8544"
 	}
 	log.Println("Server is listening on port: " + port)
 
-	server := &http.Server{Addr: ":" + port}
+	server := &http.Server{
+		Addr:         ":" + port,
+		ReadTimeout:  5 * time.Second,  // Limit time to read the request
+		WriteTimeout: 10 * time.Second, // Limit time to write the response
+		IdleTimeout:  60 * time.Second, // Limit idle connections
+	}
 
 	// Start the server in a separate goroutine
 	go func() {

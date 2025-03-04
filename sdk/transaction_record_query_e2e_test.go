@@ -26,7 +26,7 @@ func TestIntegrationTransactionRecordQueryCanExecute(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		FreezeWith(env.Client)
@@ -82,7 +82,7 @@ func TestIntegrationTransactionRecordQueryReceiptPaymentZero(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		FreezeWith(env.Client)
@@ -133,7 +133,7 @@ func TestIntegrationTransactionRecordQueryInsufficientFee(t *testing.T) {
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	tx, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(newBalance).
 		FreezeWith(env.Client)
@@ -190,7 +190,7 @@ func DisabledTestIntegrationTokenTransferRecordsQuery(t *testing.T) { // nolint
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -294,7 +294,7 @@ func DisabledTestIntegrationTokenNftTransferRecordQuery(t *testing.T) { // nolin
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -393,7 +393,7 @@ func TestIntegrationTransactionRecordQueryGetScheduleRef(t *testing.T) {
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key.PublicKey()).
+		SetKeyWithoutAlias(key.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)

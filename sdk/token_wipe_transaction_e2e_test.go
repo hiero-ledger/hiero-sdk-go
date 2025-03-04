@@ -28,7 +28,7 @@ func TestIntegrationTokenWipeTransactionCanExecute(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -148,7 +148,7 @@ func TestIntegrationTokenWipeTransactionNoAmount(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -246,7 +246,7 @@ func TestIntegrationTokenWipeTransactionNoTokenID(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -339,7 +339,7 @@ func TestIntegrationTokenWipeTransactionNoAccountID(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -434,7 +434,7 @@ func TestIntegrationTokenWipeTransactionNotZeroTokensAtDelete(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -571,7 +571,7 @@ func DisabledTestIntegrationTokenWipeTransactionNftsIfNotOwned(t *testing.T) { /
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)

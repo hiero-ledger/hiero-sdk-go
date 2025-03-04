@@ -22,7 +22,7 @@ func TestIntegrationSerializeTransactionDeserializeAndAgainSerializeHasTheSameBy
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 
 	transactionOriginal, _ := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).SignWithOperator(env.Client)
 	transactionOriginal, _ = transactionOriginal.FreezeWith(env.Client)
 
@@ -49,7 +49,7 @@ func TestIntegrationSerializeTransactionDeserializeAndAgainSerializeHasTheSameBy
 
 	assert.Equal(t, 2*HbarUnits.Hbar._NumberOfTinybar(), newBalance.tinybar)
 	originalTransaction := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance)
 	firstBytes, err := originalTransaction.ToBytes()
 	require.NoError(t, err)
@@ -73,7 +73,7 @@ func TestIntegrationAddSignatureSerializeDeserializeAddAnotherSignatureExecute(t
 	if err != nil {
 		panic(err)
 	}
-	resp, err := NewAccountCreateTransaction().SetKey(newKey).Execute(env.Client)
+	resp, err := NewAccountCreateTransaction().SetKeyWithoutAlias(newKey).Execute(env.Client)
 	receipt, err := resp.GetReceipt(env.Client)
 	newAccountId := *receipt.AccountID
 
@@ -137,7 +137,7 @@ func TestIntegrationAddSignatureSerializeDeserialiseExecute(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
 	require.NoError(t, err)

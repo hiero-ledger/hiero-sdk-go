@@ -28,7 +28,7 @@ func TestIntegrationTokenRevokeKycTransactionCanExecute(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func TestIntegrationTokenRevokeKycTransactionNoTokenID(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -187,7 +187,7 @@ func TestIntegrationTokenRevokeKycTransactionNoAccountID(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)

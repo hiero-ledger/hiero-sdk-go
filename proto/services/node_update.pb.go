@@ -61,7 +61,8 @@ type NodeUpdateTransactionBody struct {
 	// *
 	// A short description of the node.
 	// <p>
-	// This value, if set, MUST NOT exceed 100 bytes when encoded as UTF-8.<br/>
+	// This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+	// (default 100) bytes when encoded as UTF-8.<br/>
 	// If set, this value SHALL replace the previous value.
 	Description *wrapperspb.StringValue `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
 	// *

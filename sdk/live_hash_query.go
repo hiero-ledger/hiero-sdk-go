@@ -8,6 +8,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+// Deprecated: Do not use.
 // LiveHashQuery Requests a livehash associated to an account.
 type LiveHashQuery struct {
 	Query
@@ -15,7 +16,9 @@ type LiveHashQuery struct {
 	hash      []byte
 }
 
-// NewLiveHashQuery creates a LiveHashQuery that requests a livehash associated to an account.
+// Deprecated: Do not use.
+// This transaction is obsolete, not supported, and SHALL fail with a
+// pre-check result of `NOT_SUPPORTED`.
 func NewLiveHashQuery() *LiveHashQuery {
 	header := services.QueryHeader{}
 	return &LiveHashQuery{
@@ -127,7 +130,7 @@ func (q *LiveHashQuery) SetLogLevel(level LogLevel) *LiveHashQuery {
 
 func (q *LiveHashQuery) getMethod(channel *_Channel) _Method {
 	return _Method{
-		query: channel._GetCrypto().GetLiveHash,
+		query: channel._GetCrypto().GetLiveHash, // nolint
 	}
 }
 

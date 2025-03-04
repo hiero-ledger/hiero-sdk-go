@@ -8,6 +8,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+// Deprecated: Do not use.
 // LiveHashDeleteTransaction At consensus, deletes a livehash associated to the given account. The transaction must be signed
 // by either the key of the owning account, or at least one of the keys associated to the livehash.
 type LiveHashDeleteTransaction struct {
@@ -16,8 +17,11 @@ type LiveHashDeleteTransaction struct {
 	hash      []byte
 }
 
+// Deprecated: Do not use.
 // NewLiveHashDeleteTransaction creates LiveHashDeleteTransaction which at consensus, deletes a livehash associated to the given account.
 // The transaction must be signed by either the key of the owning account, or at least one of the keys associated to the livehash.
+// This transaction is obsolete, not supported, and SHALL fail with a
+// pre-check result of `NOT_SUPPORTED`.`
 func NewLiveHashDeleteTransaction() *LiveHashDeleteTransaction {
 	tx := &LiveHashDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
@@ -25,6 +29,7 @@ func NewLiveHashDeleteTransaction() *LiveHashDeleteTransaction {
 	return tx
 }
 
+// nolint
 func _LiveHashDeleteTransactionFromProtobuf(tx Transaction[*LiveHashDeleteTransaction], pb *services.TransactionBody) LiveHashDeleteTransaction {
 	liveHashDeleteTransaction := LiveHashDeleteTransaction{
 		accountID: _AccountIDFromProtobuf(pb.GetCryptoDeleteLiveHash().GetAccountOfLiveHash()),
@@ -116,7 +121,7 @@ func (tx LiveHashDeleteTransaction) buildProtoBody() *services.CryptoDeleteLiveH
 
 func (tx LiveHashDeleteTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
-		transaction: channel._GetCrypto().DeleteLiveHash,
+		transaction: channel._GetCrypto().DeleteLiveHash, // nolint
 	}
 }
 

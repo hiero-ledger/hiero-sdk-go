@@ -27,7 +27,7 @@ func TestIntegrationTokenTransferTransactionCanExecute(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestIntegrationTokenTransferTransactionNotZeroSum(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -219,7 +219,7 @@ func DisabledTestIntegrationNftTransferTransaction(t *testing.T) { // nolint
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -333,7 +333,7 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateRecursionDepthTransaction(t *t
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -422,7 +422,7 @@ func TestIntegrationTokenFeeScheduleUpdateHugeAmountTransaction(t *testing.T) {
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -508,7 +508,7 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateHugeAmountOneTransaction(t *te
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -520,7 +520,7 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateHugeAmountOneTransaction(t *te
 
 	resp, err = NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -606,7 +606,7 @@ func TestIntegrationNftTransferTransactionAccountAmountTransfersOnlyForFungibleC
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -703,7 +703,7 @@ func DisabledTestIntegrationNftAccountStillOwnsNfts(t *testing.T) { // nolint
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -805,7 +805,7 @@ func TestIntegrationTokenFeeScheduleUpdateTokenNotAssociatedToFeeCollector(t *te
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -852,7 +852,7 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateCustomFeeChargingExceededMax(t
 
 	resp, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -864,7 +864,7 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateCustomFeeChargingExceededMax(t
 
 	resp, err = NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -876,7 +876,7 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateCustomFeeChargingExceededMax(t
 
 	resp, err = NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(newKey.PublicKey()).
+		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetInitialBalance(newBalance).
 		Execute(env.Client)
 	require.NoError(t, err)

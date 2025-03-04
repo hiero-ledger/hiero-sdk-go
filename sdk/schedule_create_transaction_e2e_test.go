@@ -33,7 +33,7 @@ func TestIntegrationScheduleCreateTransactionCanExecute(t *testing.T) {
 		AddAllPublicKeys(pubKeys)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(10)).
 		Execute(env.Client)
@@ -125,7 +125,7 @@ func TestIntegrationScheduleCreateTransactionMultiSign(t *testing.T) {
 		AddAllPublicKeys(pubKeys)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetInitialBalance(NewHbar(10)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -197,7 +197,7 @@ func TestIntegrationScheduleDeleteTransactionCanExecute(t *testing.T) {
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetInitialBalance(NewHbar(10)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -270,7 +270,7 @@ func TestIntegrationScheduleCreateTransactionCheckValidGetTransaction(t *testing
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetInitialBalance(NewHbar(10)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -352,7 +352,7 @@ func TestIntegrationScheduleCreateTransactionWithTransferTransaction(t *testing.
 	require.NoError(t, err)
 
 	_Response, err := NewAccountCreateTransaction().
-		SetKey(key).
+		SetKeyWithoutAlias(key).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -429,7 +429,7 @@ func TestIntegrationScheduledTokenNftTransferTransaction(t *testing.T) {
 
 	frozen, err := NewAccountCreateTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetReceiverSignatureRequired(true).
 		SetInitialBalance(newBalance).
 		FreezeWith(env.Client)
@@ -574,7 +574,7 @@ func TestIntegrationScheduleCreateTransactionSign(t *testing.T) {
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key.PublicKey()).
+		SetKeyWithoutAlias(key.PublicKey()).
 		SetInitialBalance(NewHbar(1)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -638,7 +638,7 @@ func TestIntegrationScheduleCreateTransactionInvalidExpiry(t *testing.T) {
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key.PublicKey()).
+		SetKeyWithoutAlias(key.PublicKey()).
 		SetInitialBalance(NewHbar(1)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -675,7 +675,7 @@ func TestIntegrationScheduleCreateTransactionInvalidExpiryInThePast(t *testing.T
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key.PublicKey()).
+		SetKeyWithoutAlias(key.PublicKey()).
 		SetInitialBalance(NewHbar(1)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -712,7 +712,7 @@ func TestIntegrationScheduleCreateTransactionWaitForExpiry(t *testing.T) {
 	require.NoError(t, err)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(key.PublicKey()).
+		SetKeyWithoutAlias(key.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -811,7 +811,7 @@ func TestIntegrationScheduleCreateTransactionUpdateSignRequirements(t *testing.T
 		SetThreshold(2)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetInitialBalance(NewHbar(1)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
@@ -928,7 +928,7 @@ func TestIntegrationScheduleCreateTransactionMultiSig(t *testing.T) {
 		SetThreshold(2)
 
 	createResponse, err := NewAccountCreateTransaction().
-		SetKey(keyList).
+		SetKeyWithoutAlias(keyList).
 		SetInitialBalance(NewHbar(1)).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)

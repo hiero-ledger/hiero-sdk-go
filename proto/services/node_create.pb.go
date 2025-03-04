@@ -29,9 +29,9 @@ const (
 // address book. The transaction, once complete, enables a new consensus node
 // to join the network, and requires governing council authorization.
 //
-//   - A `NodeCreateTransactionBody` MUST be signed by the governing council.
 //   - A `NodeCreateTransactionBody` MUST be signed by the `Key` assigned to the
-//     `admin_key` field.
+//     `admin_key` field and one of those keys: treasure account (2) key,
+//     systemAdmin(50) key, or addressBookAdmin(55) key.
 //   - The newly created node information SHALL be added to the network address
 //     book information in the network state.
 //   - The new entry SHALL be created in "state" but SHALL NOT participate in
@@ -41,9 +41,11 @@ const (
 //     configuration during the next `freeze` transaction with the field
 //     `freeze_type` set to `PREPARE_UPGRADE`.
 //
-// ### Record Stream Effects
-// Upon completion the newly assigned `node_id` SHALL be in the transaction
-// receipt.
+// ### Block Stream Effects
+// Upon completion the newly assigned `node_id` SHALL be recorded in
+// the transaction receipt.<br/>
+// This value SHALL be the next available node identifier.<br/>
+// Node identifiers SHALL NOT be reused.
 type NodeCreateTransactionBody struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -61,7 +63,8 @@ type NodeCreateTransactionBody struct {
 	// *
 	// A short description of the node.
 	// <p>
-	// This value, if set, MUST NOT exceed 100 bytes when encoded as UTF-8.<br/>
+	// This value, if set, MUST NOT exceed `transaction.maxMemoUtf8Bytes`
+	// (default 100) bytes when encoded as UTF-8.<br/>
 	// This field is OPTIONAL.
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// *

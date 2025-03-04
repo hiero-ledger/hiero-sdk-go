@@ -550,7 +550,7 @@ func TestUnlimitedMaxAutoAssociationsFailsWithInvalid(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(0)).
 		SetMaxAutomaticTokenAssociations(-2).
@@ -558,7 +558,7 @@ func TestUnlimitedMaxAutoAssociationsFailsWithInvalid(t *testing.T) {
 	require.ErrorContains(t, err, "INVALID_MAX_AUTO_ASSOCIATIONS")
 
 	_, err = NewAccountCreateTransaction().
-		SetKey(newKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetInitialBalance(NewHbar(0)).
 		SetMaxAutomaticTokenAssociations(-1000).

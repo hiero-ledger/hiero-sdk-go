@@ -1,8 +1,8 @@
 package hiero
 
-// SPDX-License-Identifier: Apache-2.0
-
 import "fmt"
+
+// SPDX-License-Identifier: Apache-2.0
 
 type Status uint32
 
@@ -338,6 +338,21 @@ const (
 	StatusScheduleExpiryIsBusy                                     Status = 370
 	StatusInvalidGrpcCertificateHash                               Status = 371
 	StatusMissingExpiryTime                                        Status = 372
+	NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION                Status = 373
+	RECURSIVE_SCHEDULING_LIMIT_REACHED                             Status = 374
+	WAITING_FOR_LEDGER_ID                                          Status = 375
+	MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED                   Status = 376
+	FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS                   Status = 377
+	INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST                             Status = 378
+	INVALID_FEE_SCHEDULE_KEY                                       Status = 379
+	FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED                             Status = 380
+	FEE_SCHEDULE_KEY_NOT_SET                                       Status = 381
+	MAX_CUSTOM_FEE_LIMIT_EXCEEDED                                  Status = 382
+	NO_VALID_MAX_CUSTOM_FEE                                        Status = 383
+	INVALID_MAX_CUSTOM_FEES                                        Status = 384
+	DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST                  Status = 385
+	DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST                    Status = 386
+	MAX_CUSTOM_FEES_IS_NOT_SUPPORTED                               Status = 387
 )
 
 // String() returns a string representation of the status
@@ -1005,6 +1020,36 @@ func (status Status) String() string { // nolint
 		return "SCHEDULE_EXPIRY_IS_BUSY"
 	case StatusMissingExpiryTime:
 		return "MISSING_EXPIRY_TIME"
+	case NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION:
+		return "NO_SCHEDULING_ALLOWED_AFTER_SCHEDULED_RECURSION"
+	case RECURSIVE_SCHEDULING_LIMIT_REACHED:
+		return "RECURSIVE_SCHEDULING_LIMIT_REACHED"
+	case WAITING_FOR_LEDGER_ID:
+		return "WAITING_FOR_LEDGER_ID"
+	case MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED:
+		return "MAX_ENTRIES_FOR_FEE_EXEMPT_KEY_LIST_EXCEEDED"
+	case FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS:
+		return "FEE_EXEMPT_KEY_LIST_CONTAINS_DUPLICATED_KEYS"
+	case INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST:
+		return "INVALID_KEY_IN_FEE_EXEMPT_KEY_LIST"
+	case INVALID_FEE_SCHEDULE_KEY:
+		return "INVALID_FEE_SCHEDULE_KEY"
+	case FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED:
+		return "FEE_SCHEDULE_KEY_CANNOT_BE_UPDATED"
+	case FEE_SCHEDULE_KEY_NOT_SET:
+		return "FEE_SCHEDULE_KEY_NOT_SET"
+	case MAX_CUSTOM_FEE_LIMIT_EXCEEDED:
+		return "MAX_CUSTOM_FEE_LIMIT_EXCEEDED"
+	case NO_VALID_MAX_CUSTOM_FEE:
+		return "NO_VALID_MAX_CUSTOM_FEE"
+	case INVALID_MAX_CUSTOM_FEES:
+		return "INVALID_MAX_CUSTOM_FEES"
+	case DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST:
+		return "DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST"
+	case DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST:
+		return "DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST"
+	case MAX_CUSTOM_FEES_IS_NOT_SUPPORTED:
+		return "MAX_CUSTOM_FEES_IS_NOT_SUPPORTED"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))

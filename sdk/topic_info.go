@@ -17,6 +17,9 @@ type TopicInfo struct {
 	ExpirationTime     time.Time
 	AdminKey           Key
 	SubmitKey          Key
+	FeeScheduleKey     Key
+	FeeExemptKeys      []Key
+	CustomFees         []*CustomFixedFee
 	AutoRenewPeriod    time.Duration
 	AutoRenewAccountID *AccountID
 	LedgerID           LedgerID
@@ -50,6 +53,25 @@ func _TopicInfoFromProtobuf(topicInfo *services.ConsensusTopicInfo) (TopicInfo, 
 		tempTopicInfo.SubmitKey, err = _KeyFromProtobuf(submitKey)
 	}
 
+	if feeScheduleKey := topicInfo.FeeScheduleKey; feeScheduleKey != nil {
+		tempTopicInfo.FeeScheduleKey, err = _KeyFromProtobuf(feeScheduleKey)
+	}
+
+	if len(topicInfo.FeeExemptKeyList) > 0 {
+		for _, protoFeeExemptKey := range topicInfo.FeeExemptKeyList {
+			feeExemptKey, _ := _KeyFromProtobuf(protoFeeExemptKey)
+			tempTopicInfo.FeeExemptKeys = append(tempTopicInfo.FeeExemptKeys, feeExemptKey)
+		}
+	}
+
+	if len(topicInfo.CustomFees) > 0 {
+		for _, protoCustomFee := range topicInfo.CustomFees {
+			customFee := CustomFee{FeeCollectorAccountID: _AccountIDFromProtobuf(protoCustomFee.FeeCollectorAccountId)}
+			customFixedFee := _CustomFixedFeeFromProtobuf(protoCustomFee.FixedFee, customFee)
+			tempTopicInfo.CustomFees = append(tempTopicInfo.CustomFees, customFixedFee)
+		}
+	}
+
 	if autoRenewAccount := topicInfo.AutoRenewAccount; autoRenewAccount != nil {
 		tempTopicInfo.AutoRenewAccountID = _AccountIDFromProtobuf(autoRenewAccount)
 	}
@@ -58,7 +80,7 @@ func _TopicInfoFromProtobuf(topicInfo *services.ConsensusTopicInfo) (TopicInfo, 
 }
 
 func (topicInfo *TopicInfo) _ToProtobuf() *services.ConsensusTopicInfo {
-	return &services.ConsensusTopicInfo{
+	txBody := &services.ConsensusTopicInfo{
 		Memo:           topicInfo.TopicMemo,
 		RunningHash:    topicInfo.RunningHash,
 		SequenceNumber: topicInfo.SequenceNumber,
@@ -68,10 +90,29 @@ func (topicInfo *TopicInfo) _ToProtobuf() *services.ConsensusTopicInfo {
 		},
 		AdminKey:         topicInfo.AdminKey._ToProtoKey(),
 		SubmitKey:        topicInfo.SubmitKey._ToProtoKey(),
+		FeeScheduleKey:   topicInfo.FeeScheduleKey._ToProtoKey(),
 		AutoRenewPeriod:  _DurationToProtobuf(topicInfo.AutoRenewPeriod),
 		AutoRenewAccount: topicInfo.AutoRenewAccountID._ToProtobuf(),
 		LedgerId:         topicInfo.LedgerID.ToBytes(),
 	}
+
+	if len(topicInfo.FeeExemptKeys) > 0 {
+		for _, feeExemptKey := range topicInfo.FeeExemptKeys {
+			txBody.FeeExemptKeyList = append(txBody.FeeExemptKeyList, feeExemptKey._ToProtoKey())
+		}
+	}
+
+	if len(topicInfo.CustomFees) > 0 {
+		for _, customFee := range topicInfo.CustomFees {
+			protoCustomFee := &services.FixedCustomFee{
+				FeeCollectorAccountId: customFee.FeeCollectorAccountID._ToProtobuf(),
+				FixedFee:              customFee._ToProtobuf().GetFixedFee(),
+			}
+			txBody.CustomFees = append(txBody.CustomFees, protoCustomFee)
+		}
+	}
+
+	return txBody
 }
 
 // ToBytes returns a byte array representation of the TopicInfo object

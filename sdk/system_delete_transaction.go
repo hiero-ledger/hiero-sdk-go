@@ -8,6 +8,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+// Deprecated: Do not use.
 // Delete a file or smart contract - can only be done with a Hiero admin.
 // When it is deleted, it immediately disappears from the system as seen by the user,
 // but is still stored internally until the expiration time, at which time it
@@ -22,8 +23,19 @@ type SystemDeleteTransaction struct {
 	expirationTime *time.Time
 }
 
-// NewSystemDeleteTransaction creates a SystemDeleteTransaction transaction which can be
-// used to construct and execute a System Delete Transaction.
+// Deprecated: Do not use.
+// *
+// Delete a smart contract, as a system-initiated deletion, this
+// SHALL NOT transfer balances.
+// <blockquote>
+// This call is an administrative function of the Hedera network, and
+// SHALL require network administration authorization.<br/>
+// This transaction MUST be signed by one of the network administration
+// accounts (typically `0.0.2` through `0.0.59`, as defined in the
+// `api-permission.properties` file).
+// </blockquote>
+// If this call succeeds then all subsequent calls to that smart
+// contract SHALL fail.<br/>
 func NewSystemDeleteTransaction() *SystemDeleteTransaction {
 	tx := &SystemDeleteTransaction{}
 	tx.Transaction = _NewTransaction(tx)
@@ -176,7 +188,7 @@ func (tx SystemDeleteTransaction) getMethod(channel *_Channel) _Method {
 	}
 
 	return _Method{
-		transaction: channel._GetContract().SystemDelete,
+		transaction: channel._GetContract().SystemDelete, // nolint
 	}
 }
 

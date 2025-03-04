@@ -48,6 +48,7 @@ type BaseTransaction struct {
 
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
+	customFeeLimits    []*CustomFeeLimit
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -58,6 +59,7 @@ type Transaction[T TransactionInterface] struct {
 	childTransaction T
 
 	freezeError error
+	keyError    error
 
 	regenerateTransactionID bool
 }
@@ -73,9 +75,11 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 			transactionValidDuration: &duration,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
+			customFeeLimits:          nil,
 		},
 		childTransaction:        concreteTransaction,
 		freezeError:             nil,
+		keyError:                nil,
 		regenerateTransactionID: true,
 		executable: &executable{
 			transactionIDs: _NewLockableSlice(),
@@ -111,8 +115,10 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			publicKeys:         publicKeys,
 			transactionSigners: transactionSigners,
 			transactions:       transactions,
+			customFeeLimits:    nil,
 		},
 		freezeError:             nil,
+		keyError:                nil,
 		regenerateTransactionID: true,
 		executable: &executable{
 			transactionIDs: _NewLockableSlice(),
@@ -190,6 +196,14 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		if body.GetNodeAccountID() != nil {
 			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
 		}
+
+		if body.GetMaxCustomFees() != nil {
+			for _, customFeeLimit := range body.GetMaxCustomFees() {
+				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+			}
+		}
+
+		baseTx.transactionFee = body.GetTransactionFee()
 
 		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
 		if transactionID.AccountID.Account != 0 {
@@ -662,6 +676,13 @@ func (tx *Transaction[T]) buildUnsignedTransaction(index int) (*services.Transac
 	if body.NodeAccountID == nil && !tx.nodeAccountIDs._IsEmpty() {
 		body.NodeAccountID = tx.nodeAccountIDs._Get(index).(AccountID)._ToProtobuf()
 	}
+	var transactionFee uint64
+	if tx.transactionFee != 0 {
+		transactionFee = tx.transactionFee
+	} else {
+		transactionFee = tx.defaultMaxTransactionFee
+	}
+	body.TransactionFee = transactionFee
 
 	bodyBytes, err := protobuf.Marshal(body)
 	if err != nil {
@@ -767,6 +788,12 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		originalBody.TransactionFee = tx.defaultMaxTransactionFee
 	}
 
+	if tx.customFeeLimits != nil {
+		for _, customFeeLimit := range tx.customFeeLimits {
+			originalBody.MaxCustomFees = append(originalBody.MaxCustomFees, customFeeLimit.toProtobuf())
+		}
+	}
+
 	updatedBody, err := protobuf.Marshal(&originalBody)
 	if err != nil {
 		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
@@ -847,10 +874,6 @@ func (tx *Transaction[T]) GetSignatures() (map[AccountID]map[*PublicKey][]byte, 
 				inner[&key] = sigPair.GetContract()
 			case *services.SignaturePair_Ed25519:
 				inner[&key] = sigPair.GetEd25519()
-			case *services.SignaturePair_RSA_3072:
-				inner[&key] = sigPair.GetRSA_3072()
-			case *services.SignaturePair_ECDSA_384:
-				inner[&key] = sigPair.GetECDSA_384()
 			}
 		}
 
@@ -1182,6 +1205,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 
 	if tx.freezeError != nil {
 		return TransactionResponse{}, tx.freezeError
+	}
+
+	if tx.keyError != nil {
+		return TransactionResponse{}, tx.keyError
 	}
 
 	if !tx.IsFrozen() {

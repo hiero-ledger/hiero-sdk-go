@@ -34,8 +34,8 @@ func NewCustomFixedFee() *CustomFixedFee {
 	}
 }
 
-func _CustomFixedFeeFromProtobuf(fixedFee *services.FixedFee, customFee CustomFee) CustomFixedFee {
-	return CustomFixedFee{
+func _CustomFixedFeeFromProtobuf(fixedFee *services.FixedFee, customFee CustomFee) *CustomFixedFee {
+	return &CustomFixedFee{
 		CustomFee:           customFee,
 		Amount:              fixedFee.Amount,
 		DenominationTokenID: _TokenIDFromProtobuf(fixedFee.DenominatingTokenId),
@@ -63,6 +63,25 @@ func (fee CustomFixedFee) validateNetworkOnIDs(client *Client) error {
 	}
 
 	return nil
+}
+
+func (fee CustomFixedFee) _ToTopicFeeProtobuf() *services.FixedCustomFee {
+	var tokenID *services.TokenID
+	if fee.DenominationTokenID != nil {
+		tokenID = fee.DenominationTokenID._ToProtobuf()
+	}
+
+	var feeCollectorAccountID *services.AccountID
+	if fee.FeeCollectorAccountID != nil {
+		feeCollectorAccountID = fee.CustomFee.FeeCollectorAccountID._ToProtobuf()
+	}
+
+	fixedFee := &services.FixedFee{
+		Amount:              fee.Amount,
+		DenominatingTokenId: tokenID,
+	}
+
+	return &services.FixedCustomFee{FixedFee: fixedFee, FeeCollectorAccountId: feeCollectorAccountID}
 }
 
 func (fee CustomFixedFee) _ToProtobuf() *services.CustomFee {
@@ -161,9 +180,13 @@ func (fee *CustomFixedFee) ToBytes() []byte {
 
 // String returns a string representation of the CustomFixedFee
 func (fee *CustomFixedFee) String() string {
-	if fee.DenominationTokenID != nil {
+	if fee.DenominationTokenID != nil && fee.FeeCollectorAccountID != nil {
 		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d, denominatingTokenID: %s", fee.FeeCollectorAccountID.String(), fee.Amount, fee.DenominationTokenID.String())
 	}
 
-	return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d", fee.FeeCollectorAccountID.String(), fee.Amount)
+	if fee.FeeCollectorAccountID != nil {
+		return fmt.Sprintf("feeCollectorAccountID: %s, amount: %d, denominatingTokenID: nil", fee.FeeCollectorAccountID.String(), fee.Amount)
+	}
+
+	return fmt.Sprintf("feeCollectorAccountID: nil, amount: %d", fee.Amount)
 }
