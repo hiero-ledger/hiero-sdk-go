@@ -77,40 +77,8 @@ func TestIntegrationEthereumTransaction(t *testing.T) {
 	callDataBytes := callData._Build(&function)
 	require.NoError(t, err)
 
-	objectsList := &RLPItem{}
-	objectsList.AssignList()
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(chainId))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(nonce))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxPriorityGas))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxGas))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(gasLimitBytes))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(contractBytes))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(value))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(callDataBytes))
-	objectsList.PushBack(NewRLPItem(LIST_TYPE))
-
-	messageBytes, err := objectsList.Write()
+	messageBytes, err := getCallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes, ecdsaPrivateKey)
 	require.NoError(t, err)
-	messageBytes = append([]byte{0x02}, messageBytes...)
-
-	sig := ecdsaPrivateKey.Sign(messageBytes)
-
-	v := sig[0]
-	r := sig[1:33]
-	s := sig[33:65]
-	vInt := int(v)
-
-	// The compact sig recovery code is the value 27 + public key recovery code + 4
-	recId := vInt - 27 - 4
-	recIdBytes := []byte{byte(recId)}
-
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(recIdBytes))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(r))
-	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(s))
-
-	messageBytes, err = objectsList.Write()
-	require.NoError(t, err)
-	messageBytes = append([]byte{0x02}, messageBytes...)
 
 	resp, err = NewEthereumTransaction().SetEthereumData(messageBytes).Execute(env.Client)
 	require.NoError(t, err)
@@ -136,4 +104,47 @@ func TestIntegrationEthereumTransaction(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+func getCallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes []byte, ecdsaPrivateKey PrivateKey) ([]byte, error) {
+	objectsList := &RLPItem{}
+	objectsList.AssignList()
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(chainId))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(nonce))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxPriorityGas))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(maxGas))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(gasLimitBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(contractBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(value))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(callDataBytes))
+	objectsList.PushBack(NewRLPItem(LIST_TYPE))
+
+	messageBytes, err := objectsList.Write()
+	if err != nil {
+		return nil, err
+	}
+	messageBytes = append([]byte{0x02}, messageBytes...)
+
+	sig := ecdsaPrivateKey.Sign(messageBytes)
+
+	v := sig[0]
+	r := sig[1:33]
+	s := sig[33:65]
+	vInt := int(v)
+
+	// The compact sig recovery code is the value 27 + public key recovery code + 4
+	recId := vInt - 27 - 4
+	recIdBytes := []byte{byte(recId)}
+
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(recIdBytes))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(r))
+	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(s))
+
+	messageBytes, err = objectsList.Write()
+	if err != nil {
+		return nil, err
+	}
+	messageBytes = append([]byte{0x02}, messageBytes...)
+
+	return messageBytes, nil
 }
