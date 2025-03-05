@@ -3,6 +3,8 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"strconv"
+
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
@@ -62,5 +64,8 @@ func (nodeAdd NodeAddress) String() string {
 	for _, k := range nodeAdd.Addresses {
 		Addresses += k.String()
 	}
-	return nodeAdd.AccountID.String() + " " + Addresses + "\n" + "CertHash " + string(nodeAdd.CertHash)
+	return "NodeAccountId: " + nodeAdd.AccountID.String() + " " + Addresses + 
+	"\n" + "CertHash: " + string(nodeAdd.CertHash) + 
+	"\n" + "NodeId:" + strconv.FormatInt(nodeAdd.NodeID, 10) + 
+	"\n" + "PubKey:" + nodeAdd.PublicKey
 }
