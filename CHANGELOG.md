@@ -1,3 +1,13 @@
+## v2.57.0
+
+### Added
+- Docs for min/max values of some parameters.
+- Support for HIP-1021: improve assignment of auto renew account id for topics
+
+### Fixed
+- Errors are returning as `nil` in 2 functions for `ContractFunctionParameters`.
+- `EthereumFlow` for creating large contracts.
+
 ## v2.56.0
 
 ### Removed

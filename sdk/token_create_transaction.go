@@ -245,6 +245,8 @@ func (tx *TokenCreateTransaction) GetTokenSymbol() string {
 }
 
 // SetDecimals Sets the number of decimal places a token is divisible by. This field can never be changed!
+// Min value for this property is 0
+// Max value for this property is 2,147,483,647
 func (tx *TokenCreateTransaction) SetDecimals(decimals uint) *TokenCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.decimals = uint32(decimals)
@@ -456,6 +458,8 @@ func (tx *TokenCreateTransaction) GetFreezeDefault() bool {
 }
 
 // The epoch second at which the token should expire; if an auto-renew account and period are specified, this is coerced to the current epoch second plus the autoRenewPeriod
+// If autoRenewPeriod is set - this value will be ignored and the expiration time will be calculated based on the autoRenewPeriod + time.now()
+// Setting this value will clear the autoRenewPeriod as the autoRenewPeriod period has default value of 7890000 seconds and leaving it set will override the expiration time
 func (tx *TokenCreateTransaction) SetExpirationTime(expirationTime time.Time) *TokenCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = nil
@@ -488,6 +492,7 @@ func (tx *TokenCreateTransaction) GetAutoRenewAccount() AccountID {
 }
 
 // The interval at which the auto-renew account will be charged to extend the token's expiry
+// If expirationTime is set - autoRenewPeriod will be effectively ignored and it's effect will be replaced by expirationTime
 func (tx *TokenCreateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *TokenCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
@@ -642,7 +647,11 @@ func (tx TokenCreateTransaction) getMethod(channel *_Channel) _Method {
 
 func (tx TokenCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
 	if selfTokenCreate, ok := self.(*TokenCreateTransaction); ok {
-		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && selfTokenCreate.GetAutoRenewPeriod() != 0 && client != nil {
+		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && tx.Transaction.transactionIDs != nil && !tx.Transaction.transactionIDs._IsEmpty() {
+			selfTokenCreate.SetAutoRenewAccount(*tx.Transaction.GetTransactionID().AccountID)
+		}
+
+		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && client != nil {
 			selfTokenCreate.SetAutoRenewAccount(client.GetOperatorAccountID())
 		}
 	}

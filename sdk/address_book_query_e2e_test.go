@@ -6,7 +6,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"fmt"
 	"os"
 	"testing"
 
@@ -90,8 +89,5 @@ func TestIntegrationAddressBookQueryLocal(t *testing.T) {
 	addressbook, err := NewAddressBookQuery().
 		SetFileID(FileIDForAddressBook()).
 		Execute(env.Client)
-
-	fmt.Println(addressbook.NodeAddresses[0].String())
-
 	require.NoError(t, err)
 }

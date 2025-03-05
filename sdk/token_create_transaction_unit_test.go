@@ -216,7 +216,7 @@ func TestUnitTokenCreateTransactionNothingSet(t *testing.T) {
 	transaction.GetMaxTransactionFee()
 	transaction.GetRegenerateTransactionID()
 	proto := transaction.build().GetTokenCreation()
-	require.Nil(t, proto.AutoRenewAccount)
+	require.NotNil(t, proto.AutoRenewAccount)
 	require.Nil(t, proto.AdminKey)
 	require.Nil(t, proto.Expiry)
 	require.Nil(t, proto.FeeScheduleKey)

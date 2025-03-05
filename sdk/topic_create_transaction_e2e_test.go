@@ -43,6 +43,7 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, topicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
 	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
+	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
 
 	resp, err = NewTopicDeleteTransaction().
 		SetTopicID(topicID).
@@ -52,6 +53,70 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+func TestIntegrationTopicCreateTransactionSetsAutorenewAccountFromTransactionID(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	accountId, accountKey, err := createAccount(&env)
+	require.NoError(t, err)
+
+	txId := TransactionIDGenerate(accountId)
+
+	frozenTxn, err := NewTopicCreateTransaction().
+		SetTransactionID(txId).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err := frozenTxn.Sign(accountKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	info, err := NewTopicInfoQuery().
+		SetTopicID(topicID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetQueryPayment(NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, accountId.String(), info.AutoRenewAccountID.String())
+}
+
+func TestIntegrationTopicCreateTransactionSetsAutorenewAccount(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewTopicCreateTransaction().
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetSubmitKey(env.Client.GetOperatorPublicKey()).
+		SetTopicMemo(topicMemo).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	info, err := NewTopicInfoQuery().
+		SetTopicID(topicID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetQueryPayment(NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
 }
 
 func TestIntegrationTopicCreateTransactionDifferentKeys(t *testing.T) {
