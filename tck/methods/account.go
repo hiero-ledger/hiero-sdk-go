@@ -31,12 +31,9 @@ func (a *AccountService) SetSdkService(service *SDKService) {
 func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.Key != nil {
-		key, err := utils.GetKeyFromString(*params.Key)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetKeyWithoutAlias(key)
+	// Set key
+	if err := utils.SetKeyIfPresent(params.Key, transaction.SetKeyWithoutAlias); err != nil {
+		return nil, err
 	}
 	if params.InitialBalance != nil {
 		initialBalance, err := strconv.ParseInt(*params.InitialBalance, 10, 64)
@@ -51,12 +48,9 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 	if params.MaxAutomaticTokenAssociations != nil {
 		transaction.SetMaxAutomaticTokenAssociations(*params.MaxAutomaticTokenAssociations)
 	}
-	if params.StakedAccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.StakedAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetStakedAccountID(accountId)
+	// Set staked account ID
+	if err := utils.SetAccountIDIfPresent(params.StakedAccountId, transaction.SetStakedAccountID); err != nil {
+		return nil, err
 	}
 	if params.StakedNodeId != nil {
 		stakedNodeID, err := params.StakedNodeId.Int64()
@@ -106,17 +100,14 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 // UpdateAccount jRPC method for updateAccount
 func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
-	if params.AccountId != nil {
-		accountId, _ := hiero.AccountIDFromString(*params.AccountId)
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
-	if params.Key != nil {
-		key, err := utils.GetKeyFromString(*params.Key)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetKey(key)
+	// Set key
+	if err := utils.SetKeyIfPresent(params.Key, transaction.SetKey); err != nil {
+		return nil, err
 	}
 
 	if params.ExpirationTime != nil {
@@ -135,12 +126,9 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 		transaction.SetMaxAutomaticTokenAssociations(*params.MaxAutomaticTokenAssociations)
 	}
 
-	if params.StakedAccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.StakedAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetStakedAccountID(accountId)
+	// Set staked account ID
+	if err := utils.SetAccountIDIfPresent(params.StakedAccountId, transaction.SetStakedAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.StakedNodeId != nil {
@@ -188,14 +176,14 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 // DeleteAccount jRPC method for deleteAccount
 func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
-	if params.DeleteAccountId != nil {
-		accountId, _ := hiero.AccountIDFromString(*params.DeleteAccountId)
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.DeleteAccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
-	if params.TransferAccountId != nil {
-		accountId, _ := hiero.AccountIDFromString(*params.TransferAccountId)
-		transaction.SetTransferAccountID(accountId)
+	// Set transfer account ID
+	if err := utils.SetAccountIDIfPresent(params.TransferAccountId, transaction.SetTransferAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.CommonTransactionParams != nil {
@@ -216,7 +204,7 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-//nolint:gocritic // ApproveAllowance jRPC method for approveAllowance
+// ApproveAllowance jRPC method for approveAllowance
 func (a *AccountService) ApproveAllowance(_ context.Context, params param.AccountAllowanceApproveParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountAllowanceApproveTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -237,37 +225,36 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 		token := allowance.Token
 		nft := allowance.Nft
 
-		// Process Hbar allowance
-		if hbar != nil {
+		switch {
+		case hbar != nil:
+			// Process Hbar allowance
 			hbarAmount, err := strconv.ParseInt(*hbar.Amount, 10, 64)
 			if err != nil {
 				return nil, err
 			}
-
 			transaction.ApproveHbarAllowance(owner, spender, hiero.HbarFromTinybar(hbarAmount))
 
+		case token != nil:
 			// Process Token allowance
-		} else if token != nil {
 			tokenID, err := hiero.TokenIDFromString(*token.TokenId)
 			if err != nil {
 				return nil, err
 			}
-
 			tokenAmount, err := strconv.ParseInt(*token.Amount, 10, 64)
 			if err != nil {
 				return nil, err
 			}
-
 			transaction.ApproveTokenAllowance(tokenID, owner, spender, tokenAmount)
 
+		case nft != nil:
 			// Process Nft allowance
-		} else if nft != nil {
 			tokenID, err := hiero.TokenIDFromString(*nft.TokenId)
 			if err != nil {
 				return nil, err
 			}
 
-			if nft.SerialNumbers != nil {
+			switch {
+			case nft.SerialNumbers != nil:
 				for _, serialNumber := range *nft.SerialNumbers {
 					serialNumberParsed, err := strconv.ParseInt(serialNumber, 10, 64)
 					if err != nil {
@@ -299,16 +286,17 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 						)
 					}
 				}
-			} else if nft.ApprovedForAll != nil && *nft.ApprovedForAll {
+			case nft.ApprovedForAll != nil && *nft.ApprovedForAll:
 				transaction.ApproveTokenNftAllowanceAllSerials(
 					tokenID,
 					owner,
 					spender,
 				)
-			} else {
+			default:
 				transaction.DeleteTokenNftAllowanceAllSerials(tokenID, owner, spender)
 			}
-		} else {
+
+		default:
 			return nil, errors.New("no valid allowance type provided")
 		}
 	}
