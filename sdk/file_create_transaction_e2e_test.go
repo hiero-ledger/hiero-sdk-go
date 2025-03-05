@@ -3,15 +3,14 @@
 
 package hiero
 
-// SPDX-License-Identifier: Apache-2.0
-
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 )
+
+// SPDX-License-Identifier: Apache-2.0
 
 func TestIntegrationFileCreateTransactionCanExecute(t *testing.T) {
 	t.Parallel()

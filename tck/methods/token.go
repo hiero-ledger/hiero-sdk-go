@@ -23,72 +23,41 @@ func (t *TokenService) SetSdkService(service *SDKService) {
 	t.sdkService = service
 }
 
-//nolint:gocyclo,gocritic // CreateToken jRPC method for createToken
+// CreateToken jRPC method for createToken
 func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AdminKey != nil {
-		key, err := utils.GetKeyFromString(*params.AdminKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAdminKey(key)
+	// Set admin key
+	if err := utils.SetKeyIfPresent(params.AdminKey, transaction.SetAdminKey); err != nil {
+		return nil, err
 	}
-
-	if params.KycKey != nil {
-		key, err := utils.GetKeyFromString(*params.KycKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetKycKey(key)
+	// Set kyc key
+	if err := utils.SetKeyIfPresent(params.KycKey, transaction.SetKycKey); err != nil {
+		return nil, err
 	}
-
-	if params.FreezeKey != nil {
-		key, err := utils.GetKeyFromString(*params.FreezeKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetFreezeKey(key)
+	// Set freeze key
+	if err := utils.SetKeyIfPresent(params.FreezeKey, transaction.SetFreezeKey); err != nil {
+		return nil, err
 	}
-
-	if params.WipeKey != nil {
-		key, err := utils.GetKeyFromString(*params.WipeKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetWipeKey(key)
+	// Set wipe key
+	if err := utils.SetKeyIfPresent(params.WipeKey, transaction.SetWipeKey); err != nil {
+		return nil, err
 	}
-
-	if params.PauseKey != nil {
-		key, err := utils.GetKeyFromString(*params.PauseKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetPauseKey(key)
+	// Set pause key
+	if err := utils.SetKeyIfPresent(params.PauseKey, transaction.SetPauseKey); err != nil {
+		return nil, err
 	}
-
-	if params.MetadataKey != nil {
-		key, err := utils.GetKeyFromString(*params.MetadataKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetMetadataKey(key)
+	// Set metadata key
+	if err := utils.SetKeyIfPresent(params.MetadataKey, transaction.SetMetadataKey); err != nil {
+		return nil, err
 	}
-
-	if params.SupplyKey != nil {
-		key, err := utils.GetKeyFromString(*params.SupplyKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetSupplyKey(key)
+	// Set supply key
+	if err := utils.SetKeyIfPresent(params.SupplyKey, transaction.SetSupplyKey); err != nil {
+		return nil, err
 	}
-
-	if params.FeeScheduleKey != nil {
-		key, err := utils.GetKeyFromString(*params.FeeScheduleKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetFeeScheduleKey(key)
+	// Set fee schedule key
+	if err := utils.SetKeyIfPresent(params.FeeScheduleKey, transaction.SetFeeScheduleKey); err != nil {
+		return nil, err
 	}
 
 	if params.Name != nil {
@@ -103,44 +72,20 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 	if params.Memo != nil {
 		transaction.SetTokenMemo(*params.Memo)
 	}
-	if params.TokenType != nil {
-		if *params.TokenType == "ft" {
-			transaction.SetTokenType(hiero.TokenTypeFungibleCommon)
-		} else if *params.TokenType == "nft" {
-			transaction.SetTokenType(hiero.TokenTypeNonFungibleUnique)
-		} else {
-			return nil, response.InvalidParams.WithData("Invalid token type")
-		}
+
+	// Set token types
+	if err := utils.SetTokenTypes(transaction, params); err != nil {
+		return nil, err
 	}
-	if params.SupplyType != nil {
-		if *params.SupplyType == "finite" {
-			transaction.SetSupplyType(hiero.TokenSupplyTypeFinite)
-		} else if *params.SupplyType == "infinite" {
-			transaction.SetSupplyType(hiero.TokenSupplyTypeInfinite)
-		} else {
-			return nil, response.InvalidParams.WithData("Invalid supply type")
-		}
+
+	// Set token supply params
+	if err := utils.SetTokenSupplyParams(transaction, params); err != nil {
+		return nil, err
 	}
-	if params.MaxSupply != nil {
-		maxSupply, err := strconv.ParseInt(*params.MaxSupply, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetMaxSupply(maxSupply)
-	}
-	if params.InitialSupply != nil {
-		initialSupply, err := strconv.ParseInt(*params.InitialSupply, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetInitialSupply(uint64(initialSupply))
-	}
-	if params.TreasuryAccountId != nil {
-		accountID, err := hiero.AccountIDFromString(*params.TreasuryAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetTreasuryAccountID(accountID)
+
+	// Set treasury account ID
+	if err := utils.SetAccountIDIfPresent(params.TreasuryAccountId, transaction.SetTreasuryAccountID); err != nil {
+		return nil, err
 	}
 	if params.FreezeDefault != nil {
 		transaction.SetFreezeDefault(*params.FreezeDefault)
@@ -152,12 +97,10 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 		}
 		transaction.SetExpirationTime(time.Unix(expirationTime, 0))
 	}
-	if params.AutoRenewAccountId != nil {
-		autoRenewAccountId, err := hiero.AccountIDFromString(*params.AutoRenewAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAutoRenewAccount(autoRenewAccountId)
+
+	// Set auto renew account ID
+	if err := utils.SetAccountIDIfPresent(params.AutoRenewAccountId, transaction.SetAutoRenewAccount); err != nil {
+		return nil, err
 	}
 	if params.AutoRenewPeriod != nil {
 		autoRenewPeriodSeconds, err := strconv.ParseInt(*params.AutoRenewPeriod, 10, 64)
@@ -198,7 +141,7 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 	return &response.TokenResponse{TokenId: receipt.TokenID.String(), Status: receipt.Status.String()}, nil
 }
 
-//nolint:gocyclo // UpdateToken jRPC method for updateToken
+// UpdateToken jRPC method for updateToken
 func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -209,68 +152,38 @@ func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenPa
 		}
 		transaction.SetTokenID(tokenId)
 	}
-	if params.AdminKey != nil {
-		key, err := utils.GetKeyFromString(*params.AdminKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAdminKey(key)
-	}
 
-	if params.KycKey != nil {
-		key, err := utils.GetKeyFromString(*params.KycKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetKycKey(key)
+	// Set admin key
+	if err := utils.SetKeyIfPresent(params.AdminKey, transaction.SetAdminKey); err != nil {
+		return nil, err
 	}
-
-	if params.FreezeKey != nil {
-		key, err := utils.GetKeyFromString(*params.FreezeKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetFreezeKey(key)
+	// Set kyc key
+	if err := utils.SetKeyIfPresent(params.KycKey, transaction.SetKycKey); err != nil {
+		return nil, err
 	}
-
-	if params.WipeKey != nil {
-		key, err := utils.GetKeyFromString(*params.WipeKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetWipeKey(key)
+	// Set freeze key
+	if err := utils.SetKeyIfPresent(params.FreezeKey, transaction.SetFreezeKey); err != nil {
+		return nil, err
 	}
-
-	if params.PauseKey != nil {
-		key, err := utils.GetKeyFromString(*params.PauseKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetPauseKey(key)
+	// Set wipe key
+	if err := utils.SetKeyIfPresent(params.WipeKey, transaction.SetWipeKey); err != nil {
+		return nil, err
 	}
-
-	if params.MetadataKey != nil {
-		key, err := utils.GetKeyFromString(*params.MetadataKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetMetadataKey(key)
+	// Set pause key
+	if err := utils.SetKeyIfPresent(params.PauseKey, transaction.SetPauseKey); err != nil {
+		return nil, err
 	}
-
-	if params.SupplyKey != nil {
-		key, err := utils.GetKeyFromString(*params.SupplyKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetSupplyKey(key)
+	// Set metadata key
+	if err := utils.SetKeyIfPresent(params.MetadataKey, transaction.SetMetadataKey); err != nil {
+		return nil, err
 	}
-
-	if params.FeeScheduleKey != nil {
-		key, err := utils.GetKeyFromString(*params.FeeScheduleKey)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetFeeScheduleKey(key)
+	// Set supply key
+	if err := utils.SetKeyIfPresent(params.SupplyKey, transaction.SetSupplyKey); err != nil {
+		return nil, err
+	}
+	// Set fee schedule key
+	if err := utils.SetKeyIfPresent(params.FeeScheduleKey, transaction.SetFeeScheduleKey); err != nil {
+		return nil, err
 	}
 
 	if params.Name != nil {
@@ -282,13 +195,11 @@ func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenPa
 	if params.Memo != nil {
 		transaction.SetTokenMemo(*params.Memo)
 	}
-	if params.TreasuryAccountId != nil {
-		accountID, err := hiero.AccountIDFromString(*params.TreasuryAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetTreasuryAccountID(accountID)
+	// Set treasury account ID
+	if err := utils.SetAccountIDIfPresent(params.TreasuryAccountId, transaction.SetTreasuryAccountID); err != nil {
+		return nil, err
 	}
+
 	if params.ExpirationTime != nil {
 		expirationTime, err := strconv.ParseInt(*params.ExpirationTime, 10, 64)
 		if err != nil {
@@ -296,12 +207,9 @@ func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenPa
 		}
 		transaction.SetExpirationTime(time.Unix(expirationTime, 0))
 	}
-	if params.AutoRenewAccountId != nil {
-		autoRenewAccountId, err := hiero.AccountIDFromString(*params.AutoRenewAccountId)
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAutoRenewAccount(autoRenewAccountId)
+	// Set auto renew account ID
+	if err := utils.SetAccountIDIfPresent(params.AutoRenewAccountId, transaction.SetAutoRenewAccount); err != nil {
+		return nil, err
 	}
 	if params.AutoRenewPeriod != nil {
 		autoRenewPeriodSeconds, err := strconv.ParseInt(*params.AutoRenewPeriod, 10, 64)
@@ -404,13 +312,9 @@ func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.Up
 func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenAssociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenIds != nil {
@@ -458,13 +362,9 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 func (t *TokenService) DissociatesToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenDissociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenIds != nil {
@@ -571,13 +471,9 @@ func (t *TokenService) UnpauseToken(_ context.Context, params param.PauseUnPause
 func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenFreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
@@ -612,13 +508,9 @@ func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreez
 func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFreezeTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenUnfreezeTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
@@ -653,13 +545,9 @@ func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFre
 func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenGrantKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
@@ -694,13 +582,9 @@ func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevoke
 func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevokeTokenKycParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenRevokeKycTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.AccountId != nil {
-		accountId, err := hiero.AccountIDFromString(*params.AccountId)
-
-		if err != nil {
-			return nil, err
-		}
-		transaction.SetAccountID(accountId)
+	// Set accountId
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	if params.TokenId != nil {
