@@ -117,8 +117,7 @@ func (item *RLPItem) Write() ([]byte, error) {
 		}
 		bytes = append(bytes, childBytes...)
 	}
-	test := append(encodeLength(len(bytes), 0xC0), bytes...)
-	return test, nil
+	return append(encodeLength(len(bytes), 0xC0), bytes...), nil
 }
 
 // Read decodes a byte slice into an RLPItem.
