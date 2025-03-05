@@ -5,7 +5,6 @@ package hiero
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"math/big"
 	"strings"
@@ -52,7 +51,7 @@ func (contract *ContractFunctionParameters) AddBool(value bool) *ContractFunctio
 // AddFunction adds a Solidity function reference and a function selector.
 func (contract *ContractFunctionParameters) AddFunction(address string, selector ContractFunctionSelector) (*ContractFunctionParameters, error) {
 	if len(address) != 40 {
-		return contract, errors.Unwrap(fmt.Errorf("address is required to be 40 characters"))
+		return contract, fmt.Errorf("address is required to be 40 characters")
 	}
 
 	argument := _NewArgument()
@@ -1658,7 +1657,7 @@ func (contract *ContractFunctionParameters) AddAddressArray(value []string) (*Co
 
 	for i, v := range value {
 		if len(v) != 40 {
-			return contract, errors.Unwrap(fmt.Errorf("address is required to be 40 characters"))
+			return contract, fmt.Errorf("address is required to be 40 characters")
 		}
 
 		addressBytes, err := hex.DecodeString(v)
