@@ -17,11 +17,9 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	txID := TransactionIDGenerate(env.Client.GetOperatorAccountID())
 
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetTransactionID(txID).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetSubmitKey(env.Client.GetOperatorPublicKey()).
 		SetTopicMemo(topicMemo).
