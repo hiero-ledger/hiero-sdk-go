@@ -1,0 +1,112 @@
+version: "3"
+
+tasks:
+    check-go:
+        desc: "Check if Go is installed and meets the version requirement"
+        silent: true
+        cmds:
+            - echo "Checking Go version..."
+            - |
+                if ! command -v go &> /dev/null; then
+                  echo "Go is not installed. Please install Go 1.20 or higher."
+                  exit 1
+                fi
+                GO_VERSION=$(go version | awk '{print $3}' | cut -c 3-)
+                if [ $(echo -e "1.20\n$GO_VERSION" | sort -V | head -n1) != "1.20" ]; then
+                  echo "Go 1.20 or higher is required. Current version: $GO_VERSION"
+                  exit 1
+                fi
+
+    install-hedera-local:
+        desc: "Install Hedera Local Node CLI tool if not installed"
+        silent: true
+        cmds:
+            - echo "Checking for Hedera Local Node CLI..."
+            - |
+                if ! command -v hedera &> /dev/null; then
+                  echo "Hedera Local Node CLI not found, installing..."
+                  npm install @hashgraph/hedera-local -g
+                else
+                  echo "Hedera Local Node CLI is already installed."
+                fi
+
+    start-local-node:
+        desc: "Start the local Hedera network"
+        silent: true
+        deps: [check-go, install-hedera-local]
+        cmds:
+            - echo "Starting local Hedera network..."
+            - hedera start
+
+    pull-tck-client-server:
+        desc: "Pull the Docker image for tck-client"
+        cmds:
+            - echo "Pulling Docker image for tck-client..."
+            - docker pull ivaylogarnev/tck-client
+
+    build-tck-go-server:
+        desc: "Build the Docker image for tck-go-server & pulling tck-client image"
+        deps: [pull-tck-client-server]
+        silent: true
+        dir: ../
+        cmds:
+            - echo "Building Docker image for tck-go-server..."
+            - docker build -t tck-go-server -f tck/Dockerfile .
+
+    run-specific-test:
+        desc: "Run all services with a specific test"
+        silent: true
+        deps: [start-local-node, build-tck-go-server]
+        vars:
+            TEST: '{{.TEST | default "ALL"}}'
+            NETWORK: '{{.NETWORK | default "local"}}'
+            OPERATOR_ACCOUNT_ID: "{{.OPERATOR_ACCOUNT_ID}}"
+            OPERATOR_ACCOUNT_PRIVATE_KEY: "{{.OPERATOR_ACCOUNT_PRIVATE_KEY}}"
+            MIRROR_NODE_REST_URL: "{{.MIRROR_NODE_REST_URL}}"
+            MIRROR_NODE_REST_JAVA_URL: "{{.MIRROR_NODE_REST_JAVA_URL}}"
+        cmds:
+            - |
+                export TEST={{.TEST | default "ALL"}}
+                export NETWORK={{.NETWORK | default "local"}}
+                export OPERATOR_ACCOUNT_ID={{.OPERATOR_ACCOUNT_ID}}
+                export OPERATOR_ACCOUNT_PRIVATE_KEY="{{.OPERATOR_ACCOUNT_PRIVATE_KEY}}"
+                export MIRROR_NODE_REST_URL="{{.MIRROR_NODE_REST_URL}}"
+                export MIRROR_NODE_REST_JAVA_URL="{{.MIRROR_NODE_REST_JAVA_URL}}"
+                if [ "$NETWORK" = "testnet" ]; then
+                    if [ -z "$OPERATOR_ACCOUNT_ID" ] || [ -z "$OPERATOR_ACCOUNT_PRIVATE_KEY" ]; then
+                        echo "Error: OPERATOR_ACCOUNT_ID and OPERATOR_ACCOUNT_PRIVATE_KEY must be provided for testnet."
+                        exit 1
+                    fi
+                fi
+                docker compose up
+
+    start-all-tests:
+        desc: "Start Docker Compose services"
+        silent: true
+        deps: [start-local-node, build-tck-go-server]
+        vars:
+            NETWORK: '{{.NETWORK | default "local"}}'
+            OPERATOR_ACCOUNT_ID: "{{.OPERATOR_ACCOUNT_ID}}"
+            OPERATOR_ACCOUNT_PRIVATE_KEY: "{{.OPERATOR_ACCOUNT_PRIVATE_KEY}}"
+            MIRROR_NODE_REST_URL: "{{.MIRROR_NODE_REST_URL}}"
+            MIRROR_NODE_REST_JAVA_URL: "{{.MIRROR_NODE_REST_JAVA_URL}}"
+        cmds:
+            - echo "Starting Docker Compose services..."
+            - |
+                export TEST={{.TEST | default "ALL"}}
+                export NETWORK={{.NETWORK | default "local"}}
+                export OPERATOR_ACCOUNT_ID={{.OPERATOR_ACCOUNT_ID}} 
+                export OPERATOR_ACCOUNT_PRIVATE_KEY="{{.OPERATOR_ACCOUNT_PRIVATE_KEY}}"
+                export MIRROR_NODE_REST_URL="{{.MIRROR_NODE_REST_URL}}"
+                export MIRROR_NODE_REST_JAVA_URL="{{.MIRROR_NODE_REST_JAVA_URL}}"
+                if [ "$NETWORK" = "testnet" ]; then
+                    if [ -z "$OPERATOR_ACCOUNT_ID" ] || [ -z "$OPERATOR_ACCOUNT_PRIVATE_KEY" ]; then
+                        echo "Error: OPERATOR_ACCOUNT_ID and OPERATOR_ACCOUNT_PRIVATE_KEY must be provided for testnet."
+                        exit 1
+                    fi
+                fi
+                docker compose up
+    default:
+        desc: "Start local node and Docker Compose"
+        silent: true
+        deps: [start-all-tests]

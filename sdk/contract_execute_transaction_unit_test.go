@@ -7,6 +7,7 @@ package hiero
 
 import (
 	"bytes"
+	"strings"
 	"testing"
 	"time"
 
@@ -301,4 +302,26 @@ func TestUnitContractExecuteTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ContractExecuteTransaction).buildProtoBody())
+}
+
+func TestUnitAddAddressArrayShouldErrorWithIncorrectLengthAddress(t *testing.T) {
+	addressLength := 42
+	address := "0x" + strings.Repeat("0", addressLength-2)
+
+	incorrectLengthAddresses := []string{}
+	incorrectLengthAddresses = append(incorrectLengthAddresses, address)
+
+	_, err := NewContractFunctionParameters().AddAddressArray(incorrectLengthAddresses)
+
+	require.NotNil(t, err)
+	assert.Equal(t, "address is required to be 40 characters", err.Error())
+}
+
+func TestUnitAddFunctionShouldErrorWithIncorrectLengthAddress(t *testing.T) {
+	incorrectLengthAddress := "0x0000000000000000000000000000000000000001"
+
+	_, err := NewContractFunctionParameters().AddFunction(incorrectLengthAddress, NewContractFunctionSelector(""))
+
+	require.NotNil(t, err)
+	assert.Equal(t, "address is required to be 40 characters", err.Error())
 }

@@ -66,7 +66,7 @@ func main() {
 	http.HandleFunc("/", bridge.ServeHTTP)
 	port := os.Getenv("TCK_PORT")
 	if port == "" {
-		port = "80"
+		port = "8544"
 	}
 	log.Println("Server is listening on port: " + port)
 
