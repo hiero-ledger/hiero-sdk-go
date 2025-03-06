@@ -10,10 +10,10 @@ the Protobufs definitions for the protocol are available in the [hashgraph/heder
 
 ## Usage
 
-### Install
+### Installation
 
 ```sh
-$ go install github.com/hiero-ledger/hiero-sdk-go/v2@latest
+$ go get github.com/hiero-ledger/hiero-sdk-go/v2@latest
 ```
 
 ### Running Tests
