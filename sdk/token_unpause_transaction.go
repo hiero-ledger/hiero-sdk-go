@@ -34,7 +34,7 @@ func NewTokenUnpauseTransaction() *TokenUnpauseTransaction {
 
 func _TokenUnpauseTransactionFromProtobuf(tx Transaction[*TokenUnpauseTransaction], pb *services.TransactionBody) TokenUnpauseTransaction {
 	tokenUnpauseTransaction := TokenUnpauseTransaction{
-		tokenID: _TokenIDFromProtobuf(pb.GetTokenDeletion().GetToken()),
+		tokenID: _TokenIDFromProtobuf(pb.GetTokenUnpause().GetToken()),
 	}
 
 	tx.childTransaction = &tokenUnpauseTransaction
