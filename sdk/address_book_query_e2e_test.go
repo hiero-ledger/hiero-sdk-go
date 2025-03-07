@@ -86,7 +86,7 @@ func TestIntegrationAddressBookQueryLocal(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	addressbook, err := NewAddressBookQuery().
+	_, err := NewAddressBookQuery().
 		SetFileID(FileIDForAddressBook()).
 		Execute(env.Client)
 	require.NoError(t, err)
