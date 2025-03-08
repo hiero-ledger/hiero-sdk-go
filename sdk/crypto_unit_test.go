@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	ecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
 	"github.com/stretchr/testify/assert"
@@ -254,7 +255,14 @@ func TestUnitSigning(t *testing.T) {
 	testSignData := []byte("this is the test data to sign")
 	signature := priKey.Sign(testSignData)
 
-	assert.True(t, ed25519.Verify(pubKey.Bytes(), []byte("this is the test data to sign"), signature))
+	assert.Len(t, signature, 64)
+
+	require.True(t, ed25519.Verify(pubKey.Bytes(), testSignData, signature))
+	require.True(t, pubKey.Verify(testSignData, signature))
+
+	// malform signature, require breakage
+	signature[5]++
+	require.False(t, pubKey.Verify(testSignData, signature))
 }
 
 func TestUnitGenerated24MnemonicToWorkingPrivateKey(t *testing.T) {
@@ -447,14 +455,26 @@ func TestUnitPrivateKeyECDSASignVerify(t *testing.T) {
 	t.Parallel()
 
 	message := []byte("hello world")
-	hash := Keccak256Hash([]byte(message))
+	hash := Keccak256Hash(message)
 	key, err := PrivateKeyFromStringECDSA("8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048")
 	require.NoError(t, err)
 
 	sig := key.Sign(message)
 
 	require.Equal(t, hex.EncodeToString(sig), "20f3a13a555f1f8cd6532716b8f388bd4e9d8ed0b252743e923114c0c6cbfe414c086e3717a6502c3edff6130d34df252fb94b6f662d0cd27e2110903320563851")
-	require.True(t, key.PublicKey().Verify(hash.Bytes(), sig))
+
+	assert.Len(t, sig, 65)
+	assert.NotNil(t, key.PublicKey().ecdsaPublicKey)
+
+	recoveredKey, _, err := ecdsa.RecoverCompact(sig, hash.Bytes())
+	require.NoError(t, err)
+
+	require.True(t, key.PublicKey().ecdsaPublicKey.IsEqual(recoveredKey))
+	require.True(t, key.PublicKey().Verify(message, sig))
+
+	// malform signature, require breakage
+	sig[5]++
+	require.False(t, key.PublicKey().Verify(message, sig))
 }
 
 func TestUnitPrivateKeyECDSASignVerifyFails(t *testing.T) {

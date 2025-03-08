@@ -217,7 +217,8 @@ func (pk _ECDSAPublicKey) _ToSignaturePairProtobuf(signature []byte) *services.S
 }
 
 func (pk _ECDSAPublicKey) _Verify(message []byte, signature []byte) bool {
-	recoveredKey, _, err := ecdsa.RecoverCompact(signature, message)
+	hash := Keccak256Hash(message)
+	recoveredKey, _, err := ecdsa.RecoverCompact(signature, hash.Bytes())
 	if err != nil {
 		return false
 	}
