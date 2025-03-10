@@ -228,7 +228,9 @@ func ClientFromConfig(jsonBytes []byte) (*Client, error) {
 // ClientFromConfigWithoutScheduleNetworkUpdate does not schedule network update
 // the user has to call SetNetworkUpdatePeriod manually
 func ClientFromConfigWithoutScheduleNetworkUpdate(jsonBytes []byte) (*Client, error) {
-	return clientFromConfig(jsonBytes, false)
+	client, err := clientFromConfig(jsonBytes, false)
+	client.SetNetworkUpdatePeriod(0)
+	return client, err
 }
 
 func clientFromConfig(jsonBytes []byte, shouldScheduleNetworkUpdate bool) (*Client, error) {
