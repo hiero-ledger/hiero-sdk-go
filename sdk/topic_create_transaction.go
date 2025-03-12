@@ -317,11 +317,11 @@ func (tx TopicCreateTransaction) getMethod(channel *_Channel) _Method {
 
 func (tx TopicCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
 	if selfTopicCreate, ok := self.(*TopicCreateTransaction); ok {
-		if selfTopicCreate.GetAutoRenewAccountID()._IsZero() && tx.Transaction.transactionIDs != nil && !tx.Transaction.transactionIDs._IsEmpty() {
+		if selfTopicCreate.GetAutoRenewAccountID()._IsZero() && tx.Transaction.transactionIDs != nil && !tx.Transaction.transactionIDs._IsEmpty() && selfTopicCreate.adminKey != nil {
 			selfTopicCreate.SetAutoRenewAccountID(*tx.Transaction.GetTransactionID().AccountID)
 		}
 
-		if selfTopicCreate.GetAutoRenewAccountID()._IsZero() && client != nil {
+		if selfTopicCreate.GetAutoRenewAccountID()._IsZero() && client != nil && selfTopicCreate.adminKey != nil {
 			selfTopicCreate.SetAutoRenewAccountID(client.GetOperatorAccountID())
 		}
 	}
