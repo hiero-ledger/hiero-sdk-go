@@ -1,6 +1,7 @@
 module github.com/hiero-ledger/hiero-sdk-go/v2
 
 go 1.21
+toolchain go1.23.7
 
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
@@ -12,7 +13,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a
-	golang.org/x/crypto v0.33.0
+	golang.org/x/crypto v0.35.0
 	golang.org/x/text v0.22.0
 	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.36.5
@@ -27,7 +28,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
