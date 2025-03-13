@@ -51,7 +51,11 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, topicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
 	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
-	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
+	// TODO
+	// Temporarily disabled due to issues with consensus node version 0.60.
+	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
+	// are on version 0.60.
+	// assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
 
 	resp, err = NewTopicDeleteTransaction().
 		SetTopicID(topicID).
