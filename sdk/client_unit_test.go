@@ -310,3 +310,14 @@ func TestUnitClientLogger(t *testing.T) {
 	hl := client.GetLogger()
 	assert.Equal(t, hl, hederaLoger)
 }
+
+func TestUnitClientClientFromConfigWithoutScheduleNetworkUpdate(t *testing.T) {
+	t.Parallel()
+
+	client, err := ClientFromConfigWithoutScheduleNetworkUpdate([]byte(testClientJSON))
+	require.NoError(t, err)
+	assert.NotNil(t, client)
+
+	assert.True(t, len(client.network.network) > 0)
+	assert.Equal(t, time.Duration(0), client.GetNetworkUpdatePeriod())
+}
