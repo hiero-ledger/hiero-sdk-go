@@ -19,6 +19,14 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	defer CloseIntegrationTestEnv(env, nil)
 
 	resp, err := NewTopicCreateTransaction().
+		SetSubmitKey(env.Client.GetOperatorPublicKey()).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	resp, err = NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetSubmitKey(env.Client.GetOperatorPublicKey()).
@@ -26,7 +34,7 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 		Execute(env.Client)
 	require.NoError(t, err)
 
-	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
 	topicID := *receipt.TopicID
@@ -43,7 +51,11 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, topicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
 	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
-	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
+	// TODO
+	// Temporarily disabled due to issues with consensus node version 0.60.
+	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
+	// are on version 0.60.
+	// assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
 
 	resp, err = NewTopicDeleteTransaction().
 		SetTopicID(topicID).
@@ -56,6 +68,10 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 }
 
 func TestIntegrationTopicCreateTransactionSetsAutorenewAccountFromTransactionID(t *testing.T) {
+	// Temporarily disabled due to issues with consensus node version 0.60.
+	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
+	// are on version 0.60.
+	t.Skip()
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -91,6 +107,10 @@ func TestIntegrationTopicCreateTransactionSetsAutorenewAccountFromTransactionID(
 }
 
 func TestIntegrationTopicCreateTransactionSetsAutorenewAccount(t *testing.T) {
+	// Temporarily disabled due to issues with consensus node version 0.60.
+	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
+	// are on version 0.60.
+	t.Skip()
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
