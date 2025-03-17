@@ -133,7 +133,7 @@ func PrivateKeyGenerateEd25519() (PrivateKey, error) {
 	}, nil
 }
 
-// Deprecated the use of raw bytes for a Ed25519 private key is deprecated; use PrivateKeyFromBytesEd25519() instead.
+// Retrieve a private key from a byte array.
 func PrivateKeyFromBytes(bytes []byte) (PrivateKey, error) {
 	key, err := _Ed25519PrivateKeyFromBytes(bytes)
 	if err != nil {
@@ -214,7 +214,7 @@ func PublicKeyFromBytesECDSA(bytes []byte) (PublicKey, error) {
 	}, nil
 }
 
-// Deprecated the use of raw bytes for a Ed25519 private key is deprecated; use PublicKeyFromBytesEd25519() instead.
+// Create a public key from a byte array.
 func PublicKeyFromBytes(bytes []byte) (PublicKey, error) {
 	key, err := _Ed25519PublicKeyFromBytes(bytes)
 	if err != nil {

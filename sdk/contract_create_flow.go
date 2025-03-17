@@ -257,10 +257,6 @@ func (tx *ContractCreateFlow) _CreateContractCreateTransaction(fileID FileID) *C
 		contractCreateTx.SetAdminKey(*tx.adminKey)
 	}
 
-	if tx.proxyAccountID != nil {
-		contractCreateTx.SetProxyAccountID(*tx.proxyAccountID)
-	}
-
 	if tx.autoRenewPeriod != nil {
 		contractCreateTx.SetAutoRenewPeriod(*tx.autoRenewPeriod)
 	}
