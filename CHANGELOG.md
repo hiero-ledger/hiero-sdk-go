@@ -1,3 +1,14 @@
+## v2.58.0
+
+### Fixed
+- `TokenPauseTransaction` and `TokenUnpauseTransaction` fromBytes.
+
+### Removed
+- Automatic setting of autorenew account for topic create.
+
+### Added
+- `ScheduledNetworkUpdate` example.
+
 ## v2.57.0
 
 ### Added
