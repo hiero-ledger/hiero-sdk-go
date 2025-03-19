@@ -15,6 +15,7 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -246,7 +247,8 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 		var resp interface{}
 
-		ctx := context.TODO()
+		md := metadata.Pairs("x-user-agent", client.userAgent)
+		ctx := metadata.NewOutgoingContext(context.Background(), md)
 		var cancel context.CancelFunc
 
 		if e.GetGrpcDeadline() != nil {
