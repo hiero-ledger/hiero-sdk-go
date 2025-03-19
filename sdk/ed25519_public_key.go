@@ -153,7 +153,11 @@ func (pk _Ed25519PublicKey) _VerifyTransaction(tx *Transaction[TransactionInterf
 		return false
 	}
 
-	_, _ = tx._BuildAllTransactions()
+	for _, signedKey := range tx.publicKeys {
+		if bytes.Equal(signedKey.BytesRaw(), pk._BytesRaw()) {
+			return true
+		}
+	}
 
 	for _, value := range tx.signedTransactions.slice {
 		tx := value.(*services.SignedTransaction)

@@ -229,8 +229,11 @@ func (pk _ECDSAPublicKey) _VerifyTransaction(tx *Transaction[TransactionInterfac
 	if tx.signedTransactions._Length() == 0 {
 		return false
 	}
-
-	_, _ = tx._BuildAllTransactions()
+	for _, signedKey := range tx.publicKeys {
+		if bytes.Equal(signedKey.BytesRaw(), pk._BytesRaw()) {
+			return true
+		}
+	}
 
 	for _, value := range tx.signedTransactions.slice {
 		tx := value.(*services.SignedTransaction)
