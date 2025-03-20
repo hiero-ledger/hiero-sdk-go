@@ -129,12 +129,12 @@ func processKeyRecursively(params param.KeyParams, response *response.GenerateKe
 			}
 			publicKey, ok := key.(hiero.PublicKey)
 			if ok {
-				return publicKey.ToEthereumAddress(), nil
+				return publicKey.ToEvmAddress(), nil
 			}
 
 			privateKey, ok := key.(hiero.PrivateKey)
 			if ok {
-				return privateKey.PublicKey().ToEthereumAddress(), nil
+				return privateKey.PublicKey().ToEvmAddress(), nil
 			}
 			return "", errors.New("invalid parameters: fromKey for evmAddress is not ECDSAsecp256k1")
 		}
@@ -142,7 +142,7 @@ func processKeyRecursively(params param.KeyParams, response *response.GenerateKe
 		if err != nil {
 			return "", err
 		}
-		return privateKey.PublicKey().ToEthereumAddress(), nil
+		return privateKey.PublicKey().ToEvmAddress(), nil
 
 	default:
 		return "", errors.New("invalid request: key type not recognized")
