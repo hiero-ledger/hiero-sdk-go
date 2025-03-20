@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"runtime/debug"
 	"time"
 )
 
@@ -48,7 +47,6 @@ type Client struct {
 	networkUpdateContext       context.Context
 	cancelNetworkUpdate        context.CancelFunc
 	logger                     Logger
-	userAgent                  string
 }
 
 // TransactionSigner is a closure or function that defines how transactions will be signed
@@ -132,7 +130,6 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
 		logger:                          defaultLogger,
-		userAgent:                       getUserAgent(),
 	}
 
 	client.SetMirrorNetwork(mirrorNetwork)
@@ -720,20 +717,4 @@ func (client *Client) GetLogger() Logger {
 func (client *Client) SetLogLevel(level LogLevel) *Client {
 	client.logger.SetLevel(level)
 	return client
-}
-
-// Extract the user agent and software version. This information is used to gather usage metrics.
-// If the version is not available, the user agent will be set to "hiero-sdk-go/DEV".
-func getUserAgent() string {
-	buildInfo, ok := debug.ReadBuildInfo()
-	if !ok {
-		return "hiero-sdk-go/DEV"
-	}
-
-	version := "DEV"
-	if buildInfo.Main.Version != "(devel)" && buildInfo.Main.Version != "" {
-		version = buildInfo.Main.Version
-	}
-
-	return fmt.Sprintf("hiero-sdk-go/%s", version)
 }
