@@ -297,7 +297,8 @@ type TransactionBody struct {
 	// <p>
 	// This field is OPTIONAL.<br/>
 	// If left empty, the users are accepting to pay any custom fee.<br/>
-	// If used with a transaction type that does not support custom fee limits, the transaction will fail.
+	// If used with a transaction type that does not support custom fee limits,
+	// the transaction will fail.
 	MaxCustomFees []*CustomFeeLimit `protobuf:"bytes,1001,rep,name=max_custom_fees,json=maxCustomFees,proto3" json:"max_custom_fees,omitempty"`
 }
 
@@ -1213,13 +1214,15 @@ type TransactionBody_TokenClaimAirdrop struct {
 
 type TransactionBody_StateSignatureTransaction struct {
 	// *
-	// A transaction body for signature of a state root hash gossiped to other nodes
+	// A transaction body for signature of a state root hash gossiped to other
+	// nodes
 	StateSignatureTransaction *StateSignatureTransaction `protobuf:"bytes,65,opt,name=state_signature_transaction,json=stateSignatureTransaction,proto3,oneof"`
 }
 
 type TransactionBody_HistoryProofSignature struct {
 	// *
-	// A transaction body for contributed a signature with a node's proof key to a history proof.
+	// A transaction body for contributed a signature with a node's proof key to
+	// a history proof.
 	HistoryProofSignature *HistoryProofSignatureTransactionBody `protobuf:"bytes,69,opt,name=history_proof_signature,json=historyProofSignature,proto3,oneof"`
 }
 
@@ -1231,7 +1234,8 @@ type TransactionBody_HistoryProofKeyPublication struct {
 
 type TransactionBody_HistoryProofVote struct {
 	// *
-	// A transaction body for voting on a metadata proof descending from the ledger id.
+	// A transaction body for voting on a metadata proof descending from the
+	// ledger id.
 	HistoryProofVote *HistoryProofVoteTransactionBody `protobuf:"bytes,71,opt,name=history_proof_vote,json=historyProofVote,proto3,oneof"`
 }
 
