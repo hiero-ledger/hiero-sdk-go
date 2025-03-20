@@ -144,7 +144,7 @@ func (pk _Ed25519PublicKey) _ToSignaturePairProtobuf(signature []byte) *services
 	}
 }
 
-func (pk _Ed25519PublicKey) _Verify(message []byte, signature []byte) bool {
+func (pk _Ed25519PublicKey) _VerifySignedMessage(message []byte, signature []byte) bool {
 	return ed25519.Verify(pk._Bytes(), message, signature)
 }
 
@@ -153,7 +153,11 @@ func (pk _Ed25519PublicKey) _VerifyTransaction(tx *Transaction[TransactionInterf
 		return false
 	}
 
-	_, _ = tx._BuildAllTransactions()
+	for _, signedKey := range tx.publicKeys {
+		if bytes.Equal(signedKey.BytesRaw(), pk._BytesRaw()) {
+			return true
+		}
+	}
 
 	for _, value := range tx.signedTransactions.slice {
 		tx := value.(*services.SignedTransaction)
@@ -161,7 +165,7 @@ func (pk _Ed25519PublicKey) _VerifyTransaction(tx *Transaction[TransactionInterf
 		for _, sigPair := range tx.SigMap.GetSigPair() {
 			if bytes.Equal(sigPair.GetPubKeyPrefix(), pk._Bytes()) {
 				found = true
-				if !pk._Verify(tx.BodyBytes, sigPair.GetEd25519()) {
+				if !pk._VerifySignedMessage(tx.BodyBytes, sigPair.GetEd25519()) {
 					return false
 				}
 			}

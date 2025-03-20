@@ -43,7 +43,6 @@ func TestIntegrationAccountDeleteTransactionCanExecute(t *testing.T) {
 		SetAccountID(*accountID).
 		SetTransferAccountID(env.Client.GetOperatorAccountID()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetTransactionID(TransactionIDGenerate(*accountID)).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
