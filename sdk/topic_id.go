@@ -79,7 +79,7 @@ func (id TopicID) String() string {
 
 // ToStringWithChecksum returns the string representation of a TopicID in `Shard.Realm.Topic-Checksum` (for example "0.0.3-abcde")
 func (id TopicID) ToStringWithChecksum(client Client) (string, error) {
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult

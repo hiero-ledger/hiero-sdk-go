@@ -186,8 +186,7 @@ func (tx *ContractCreateTransaction) GetAutoRenewPeriod() time.Duration {
 	return time.Duration(0)
 }
 
-// Deprecated
-// SetProxyAccountID sets the ID of the account to which this account is proxy staked. If proxyAccountID is not set,
+// Deprecated: SetProxyAccountID sets the ID of the account to which this account is proxy staked. If proxyAccountID is not set,
 // is an invalID account, or is an account that isn't a _Node, then this account is automatically proxy staked to a _Node
 // chosen by the _Network, but without earning payments. If the proxyAccountID account refuses to accept proxy staking ,
 // or if it is not currently running a _Node, then it will behave as if proxyAccountID was not set.

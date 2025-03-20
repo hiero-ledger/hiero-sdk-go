@@ -161,7 +161,7 @@ func (id AccountID) ToStringWithChecksum(client *Client) (string, error) {
 	if id.AliasKey != nil {
 		return "", errors.New("Account ID contains alias key, unable get checksum")
 	}
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult

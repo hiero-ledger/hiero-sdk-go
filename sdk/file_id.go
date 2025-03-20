@@ -110,7 +110,7 @@ func (id FileID) String() string {
 
 // ToStringWithChecksum returns the string representation of a FileId with checksum.
 func (id FileID) ToStringWithChecksum(client Client) (string, error) {
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult

@@ -106,10 +106,10 @@ func TestUnitTopicMessageSubmitTransactionMock(t *testing.T) {
 			switch k := sigPair.Signature.(type) {
 			case *services.SignaturePair_Ed25519:
 				pbTemp, _ := PublicKeyFromBytesEd25519(sigPair.PubKeyPrefix)
-				verified = pbTemp.Verify(signedTransaction.BodyBytes, k.Ed25519)
+				verified = pbTemp.VerifySignedMessage(signedTransaction.BodyBytes, k.Ed25519)
 			case *services.SignaturePair_ECDSASecp256K1:
 				pbTemp, _ := PublicKeyFromBytesECDSA(sigPair.PubKeyPrefix)
-				verified = pbTemp.Verify(signedTransaction.BodyBytes, k.ECDSASecp256K1)
+				verified = pbTemp.VerifySignedMessage(signedTransaction.BodyBytes, k.ECDSASecp256K1)
 			}
 			require.True(t, verified)
 		}
@@ -176,10 +176,10 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 			switch k := sigPair.Signature.(type) {
 			case *services.SignaturePair_Ed25519:
 				pbTemp, _ := PublicKeyFromBytesEd25519(sigPair.PubKeyPrefix)
-				verified = pbTemp.Verify(signedTransaction.BodyBytes, k.Ed25519)
+				verified = pbTemp.VerifySignedMessage(signedTransaction.BodyBytes, k.Ed25519)
 			case *services.SignaturePair_ECDSASecp256K1:
 				pbTemp, _ := PublicKeyFromBytesECDSA(sigPair.PubKeyPrefix)
-				verified = pbTemp.Verify(signedTransaction.BodyBytes, k.ECDSASecp256K1)
+				verified = pbTemp.VerifySignedMessage(signedTransaction.BodyBytes, k.ECDSASecp256K1)
 			}
 			require.True(t, verified)
 		}

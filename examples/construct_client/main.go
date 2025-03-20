@@ -50,7 +50,7 @@ func main() {
 	// Set network for customClient which uses the above custom network
 	customClient := hiero.ClientForNetwork(customNetwork)
 	// Setting NetworkName for the CustomClient, is only needed if you need to validate ID checksums
-	customClient.SetNetworkName(hiero.NetworkNameTestnet)
+	customClient.SetLedgerID(*hiero.NewLedgerIDTestnet())
 
 	if os.Getenv("CONFIG_FILE") != "" {
 		// Creating client from a file specified in environment variable CONFIG_FILE

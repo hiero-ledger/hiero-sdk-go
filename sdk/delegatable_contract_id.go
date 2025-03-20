@@ -123,7 +123,7 @@ func (id DelegatableContractID) ToStringWithChecksum(client Client) (string, err
 	if id.EvmAddress != nil {
 		return "", errors.New("EvmAddress doesn't support checksums")
 	}
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult
