@@ -21,13 +21,17 @@ func TestIntegrationScheduleCreateTransactionCanExecute(t *testing.T) {
 	keys := make([]PrivateKey, 2)
 	pubKeys := make([]PublicKey, 2)
 
-	for i := range keys {
-		newKey, err := PrivateKeyGenerateEd25519()
-		require.NoError(t, err)
+	newKey0, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
 
-		keys[i] = newKey
-		pubKeys[i] = newKey.PublicKey()
-	}
+	newKey1, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	keys[0] = newKey0
+	keys[1] = newKey1
+
+	pubKeys[0] = newKey0.PublicKey()
+	pubKeys[1] = newKey1.PublicKey()
 
 	keyList := NewKeyList().
 		AddAllPublicKeys(pubKeys)
@@ -70,6 +74,9 @@ func TestIntegrationScheduleCreateTransactionCanExecute(t *testing.T) {
 
 	signTransaction.Sign(keys[0])
 
+	assert.True(t, pubKeys[0].VerifyTransaction(signTransaction))
+	assert.False(t, env.Client.GetOperatorPublicKey().VerifyTransaction(signTransaction))
+
 	resp, err := signTransaction.Execute(env.Client)
 	require.NoError(t, err)
 
@@ -91,6 +98,9 @@ func TestIntegrationScheduleCreateTransactionCanExecute(t *testing.T) {
 
 	// Signing the scheduled transaction
 	signTransaction.Sign(keys[1])
+
+	assert.True(t, pubKeys[1].VerifyTransaction(signTransaction))
+	assert.False(t, env.Client.GetOperatorPublicKey().VerifyTransaction(signTransaction))
 
 	resp, err = signTransaction.Execute(env.Client)
 	require.NoError(t, err)
