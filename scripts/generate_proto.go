@@ -20,20 +20,20 @@ type ProtoConfig struct {
 
 func main() {
 	// Define source and destination directories.
-	sourceDir := "../services/hapi/hedera-protobufs/services/state" // Replace with your source directory
-	destDir := "../services/hapi/hedera-protobufs/services"         // Replace with your destination directory
+	stSourceDir := "../services/hapi/hedera-protobufs/services/state" // Replace with your source directory
+	servicesDir := "../services/hapi/hedera-protobufs/services"       // Replace with your destination directory
 
 	// Move Proto files from source to destination.
-	if err := moveProtoFiles(sourceDir, destDir); err != nil {
+	if err := moveProtoFiles(stSourceDir, servicesDir); err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
 
 	// Define source and destination directories.
-	sourceDir1 := "../services/hapi/hedera-protobufs/services/auxiliary" // Replace with your source directory
+	auxSourceDir := "../services/hapi/hedera-protobufs/services/auxiliary" // Replace with your source directory
 
 	// Move Proto files from source to destination.
-	if err := moveProtoFiles(sourceDir1, destDir); err != nil {
+	if err := moveProtoFiles(auxSourceDir, servicesDir); err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
@@ -113,6 +113,8 @@ func createProtoFileFilter(protoFiles []string) map[string]struct{} {
 }
 
 // getProjectRootPath returns the root path of the project.
+//
+//nolint:dogsled
 func getProjectRootPath() string {
 	_, filename, _, _ := runtime.Caller(0)
 	return path.Join(filename, "../..")
@@ -146,9 +148,6 @@ func buildProtos(protoFilter map[string]struct{}) {
 		fmt.Println("Error running the build command:", err)
 		return
 	}
-
-	// Rename package declarations in the generated gRPC files.
-	renameGrpcPackageDeclarations(getProjectRootPath(), "proto", "services")
 }
 
 // addProtoFilePaths collects Proto file paths and their corresponding module declarations.
@@ -205,28 +204,6 @@ func removeFilesWithExtension(rootDir, module, ext string) {
 		}
 
 		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
-}
-
-// renameGrpcPackageDeclarations updates the package declaration in gRPC files.
-func renameGrpcPackageDeclarations(rootDir, oldPkg, newPkg string) {
-	err := filepath.Walk(path.Join(rootDir, newPkg), func(filename string, info fs.FileInfo, err error) error {
-		if err != nil || !strings.HasSuffix(filename, "_grpc.pb.go") {
-			return err
-		}
-
-		data, err := os.ReadFile(filename)
-		if err != nil {
-			return err
-		}
-
-		contents := string(data)
-		contents = strings.Replace(contents, fmt.Sprintf("package %s", oldPkg), fmt.Sprintf("package %s", newPkg), 1)
-
-		return os.WriteFile(filename, []byte(contents), info.Mode())
 	})
 	if err != nil {
 		panic(err)
