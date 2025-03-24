@@ -332,12 +332,16 @@ func TestIntegrationCantSendIfTokenNftSerialsDeleted(t *testing.T) {
 
 	frozenTxn, err := NewTokenAssociateTransaction().SetTokenIDs(tokenID).SetAccountID(*spenderAccountId).FreezeWith(env.Client)
 	require.NoError(t, err)
-	_, err = frozenTxn.Sign(spenderKey).Execute(env.Client)
+	resp, err := frozenTxn.Sign(spenderKey).Execute(env.Client)
+	require.NoError(t, err)
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
 	frozenTxn, err = NewTokenAssociateTransaction().SetTokenIDs(tokenID).SetAccountID(*receiverAccountId).FreezeWith(env.Client)
 	require.NoError(t, err)
-	_, err = frozenTxn.Sign(receiverKey).Execute(env.Client)
+	resp, err = frozenTxn.Sign(receiverKey).Execute(env.Client)
+	require.NoError(t, err)
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
 	mint, err := NewTokenMintTransaction().SetTokenID(tokenID).SetMetadata([]byte{0x01}).SetMetadata([]byte{0x02}).Execute(env.Client)
@@ -352,7 +356,9 @@ func TestIntegrationCantSendIfTokenNftSerialsDeleted(t *testing.T) {
 	_, err = approveTx.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	resp, err := NewAccountAllowanceApproveTransaction().DeleteTokenNftAllowanceAllSerials(nft1.TokenID, env.OperatorID, *spenderAccountId).Execute(env.Client)
+	resp, err = NewAccountAllowanceApproveTransaction().DeleteTokenNftAllowanceAllSerials(nft1.TokenID, env.OperatorID, *spenderAccountId).Execute(env.Client)
+	require.NoError(t, err)
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
 	onBehalfOfTxId := TransactionIDGenerate(*spenderAccountId)

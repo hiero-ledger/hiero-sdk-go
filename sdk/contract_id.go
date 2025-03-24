@@ -133,7 +133,7 @@ func (id ContractID) ToStringWithChecksum(client Client) (string, error) {
 	if id.EvmAddress != nil {
 		return "", errors.New("EvmAddress doesn't support checksums")
 	}
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult
@@ -167,7 +167,7 @@ func (id *ContractID) PopulateContract(client *Client) error {
 	}
 	mirrorUrl = mirrorUrl[:index]
 	url := fmt.Sprintf("https://%s/api/v1/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
-	if client.GetLedgerID().String() == "" {
+	if client.GetLedgerID() == nil {
 		url = fmt.Sprintf("http://%s:5551/api/v1/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
 	}
 

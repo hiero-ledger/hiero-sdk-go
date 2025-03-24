@@ -82,7 +82,6 @@ func ClientForNetwork(network map[string]AccountID) *Client {
 	net := _NewNetwork()
 	client := _NewClient(net, []string{}, nil, true)
 	_ = client.SetNetwork(network)
-	net._SetLedgerID(*NewLedgerIDMainnet())
 	return client
 }
 
@@ -536,9 +535,13 @@ func (client *Client) SetNetworkName(name NetworkName) {
 }
 
 // Deprecated: Use GetLedgerID instead
-func (client *Client) GetNetworkName() *NetworkName {
-	name, _ := client.GetLedgerID().ToNetworkName()
-	return &name
+func GetNetworkName(client Client) *NetworkName {
+	if ledgerID := client.GetLedgerID(); ledgerID != nil {
+		if name, err := ledgerID.ToNetworkName(); err == nil {
+			return &name
+		}
+	}
+	return nil
 }
 
 // SetLedgerID sets the ledger ID for the Client.
@@ -547,6 +550,7 @@ func (client *Client) SetLedgerID(id LedgerID) {
 }
 
 // GetLedgerID returns the ledger ID for the Client.
+// Will return nil if the client is initialized with custom nodes via [ClientForNetwork].
 func (client *Client) GetLedgerID() *LedgerID {
 	return client.network._GetLedgerID()
 }

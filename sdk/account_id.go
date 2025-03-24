@@ -161,7 +161,7 @@ func (id AccountID) ToStringWithChecksum(client *Client) (string, error) {
 	if id.AliasKey != nil {
 		return "", errors.New("Account ID contains alias key, unable get checksum")
 	}
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult
@@ -340,7 +340,7 @@ func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (ma
 	protocol := "https"
 	port := ""
 
-	if client.GetLedgerID().String() == "" {
+	if client.GetLedgerID() == nil {
 		protocol = "http"
 		port = ":5551"
 	}

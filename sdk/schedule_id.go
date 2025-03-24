@@ -80,7 +80,7 @@ func (id ScheduleID) String() string {
 // ToStringWithChecksum returns the string representation of an ScheduleID in
 // `Shard.Realm.Account-checksum` (for example "0.0.3-laujm")
 func (id ScheduleID) ToStringWithChecksum(client Client) (string, error) {
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult
