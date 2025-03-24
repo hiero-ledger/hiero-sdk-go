@@ -214,7 +214,7 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMir
 	protocol := "https"
 	port := ""
 
-	if client.GetLedgerID().String() == "" {
+	if client.GetLedgerID() == nil {
 		protocol = "http"
 		port = ":8545"
 	}

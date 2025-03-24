@@ -167,7 +167,7 @@ func (id *ContractID) PopulateContract(client *Client) error {
 	}
 	mirrorUrl = mirrorUrl[:index]
 	url := fmt.Sprintf("https://%s/api/v1/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
-	if client.GetLedgerID().String() == "" {
+	if client.GetLedgerID() == nil {
 		url = fmt.Sprintf("http://%s:5551/api/v1/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
 	}
 

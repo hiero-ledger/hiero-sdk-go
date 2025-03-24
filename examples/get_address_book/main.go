@@ -36,7 +36,13 @@ func main() {
 		// Set the file ID for address book which is 0.0.102
 		SetFileID(hiero.FileIDForAddressBook())
 
-	println("the network that address book is for:", client.GetNetworkName().String())
+	var network string
+	if client.GetLedgerID() != nil {
+		network = client.GetLedgerID().String()
+	} else {
+		network = "custom"
+	}
+	println("the network that address book is for:", network)
 
 	cost, err := fileQuery.GetCost(client)
 	if err != nil {
