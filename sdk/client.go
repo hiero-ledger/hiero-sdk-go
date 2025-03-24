@@ -82,7 +82,6 @@ func ClientForNetwork(network map[string]AccountID) *Client {
 	net := _NewNetwork()
 	client := _NewClient(net, []string{}, nil, true)
 	_ = client.SetNetwork(network)
-	net._SetLedgerID(*NewLedgerIDMainnet())
 	return client
 }
 

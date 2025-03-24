@@ -91,3 +91,15 @@ func TestUnitTokenIDProtobuf(t *testing.T) {
 
 	require.Equal(t, id, *pbFrom)
 }
+
+func TestUnitTokenIDChecksumError(t *testing.T) {
+	t.Parallel()
+
+	id, err := TokenIDFromString("0.0.123-rmkyk")
+	require.NoError(t, err)
+
+	client, err := _NewMockClient()
+
+	_, err = id.ToStringWithChecksum(*client)
+	require.Error(t, err)
+}

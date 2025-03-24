@@ -163,3 +163,14 @@ func TestUnitAccountIDPopulateEvmFailWithNoMirrorNetwork(t *testing.T) {
 	err = id.PopulateEvmAddress(client)
 	require.Error(t, err)
 }
+
+func TestUnitAccountIDChecksumError(t *testing.T) {
+	t.Parallel()
+
+	id, err := AccountIDFromString("0.0.123-rmkyk")
+	require.NoError(t, err)
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	_, err = id.ToStringWithChecksum(client)
+	require.Error(t, err)
+}

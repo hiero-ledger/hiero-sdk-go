@@ -145,3 +145,15 @@ func TestUnitDelegatableContractIDToProtoKey(t *testing.T) {
 	pb := id._ToProtoKey()
 	require.Equal(t, pb.GetContractID().GetContractNum(), int64(123))
 }
+
+func TestUnitDelegatableContractIDChecksumError(t *testing.T) {
+	t.Parallel()
+
+	id, err := DelegatableContractIDFromString("0.0.123-rmkyk")
+	require.NoError(t, err)
+
+	client, err := _NewMockClient()
+
+	_, err = id.ToStringWithChecksum(*client)
+	require.Error(t, err)
+}

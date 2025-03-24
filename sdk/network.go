@@ -81,7 +81,7 @@ func (network *_Network) _GetLedgerID() *LedgerID {
 		return network._ManagedNetwork._GetLedgerID()
 	}
 
-	return &LedgerID{}
+	return nil
 }
 
 func (network *_Network) _SetLedgerID(id LedgerID) {
