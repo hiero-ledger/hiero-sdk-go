@@ -144,3 +144,19 @@ func TestUnitContractIDPopulateFailWithNoMirror(t *testing.T) {
 	err = evmAddressAccountID.PopulateContract(client)
 	require.Error(t, err)
 }
+
+func TestUnitContractIDChecksumError(t *testing.T) {
+	t.Parallel()
+
+	id, err := ContractIDFromString("0.0.123-rmkyk")
+	require.NoError(t, err)
+
+	client, err := _NewMockClient()
+
+	_, err = id.ToStringWithChecksum(*client)
+	require.ErrorContains(t, err, "can't derive checksum for ID")
+
+	id.EvmAddress = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	_, err = id.ToStringWithChecksum(*client)
+	require.ErrorContains(t, err, "EvmAddress doesn't support checksums")
+}
