@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"io/fs"
 	"os"
@@ -19,23 +20,30 @@ type ProtoConfig struct {
 }
 
 func main() {
-	// Define source and destination directories.
-	stSourceDir := "../services/hapi/hedera-protobufs/services/state" // Replace with your source directory
-	servicesDir := "../services/hapi/hedera-protobufs/services"       // Replace with your destination directory
+	// Define a slice to store the proto source directories.
+	var protoSourceDirs []string
+	protoServicesDir := flag.String("dest", "", "Path to destination directory")
 
-	// Move Proto files from source to destination.
-	if err := moveProtoFiles(stSourceDir, servicesDir); err != nil {
-		fmt.Println("Error:", err)
+	flag.Func("source", "Comma-separated list of source directories", func(s string) error {
+		protoSourceDirs = strings.Split(s, ",")
+		return nil
+	})
+
+	flag.Parse() // Loads script defined variables
+
+	// Validate input arguments
+	if len(protoSourceDirs) == 0 || *protoServicesDir == "" {
+		fmt.Println("Usage: go run generate_protobuf.go -source <dir1,dir2,...> -dest <destination_dir>")
 		return
 	}
 
-	// Define source and destination directories.
-	auxSourceDir := "../services/hapi/hedera-protobufs/services/auxiliary" // Replace with your source directory
-
-	// Move Proto files from source to destination.
-	if err := moveProtoFiles(auxSourceDir, servicesDir); err != nil {
-		fmt.Println("Error:", err)
-		return
+	// For each proto source directory we have to move the proto defs into the services directory
+	// in order to have a single entry point for the protoc call
+	for _, dir := range protoSourceDirs {
+		if err := moveProtoFiles(dir, *protoServicesDir); err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
 	}
 
 	// Load the Proto configuration from the provided JSON file.
@@ -52,7 +60,8 @@ func main() {
 	removeFilesWithExtension(getProjectRootPath(), "proto/services", ".pb.go")
 
 	// Invoke the build process for the Proto files.
-	buildProtos(protoFilter)
+	// Passing not relative service dir path for the proto commands.
+	buildProtos(protoFilter, strings.ReplaceAll(*protoServicesDir, "../", ""))
 }
 
 // ensureDirectoryExists checks if the destination directory exists.
@@ -121,12 +130,12 @@ func getProjectRootPath() string {
 }
 
 // buildProtos builds the Proto files using the provided filter.
-func buildProtos(protoFilter map[string]struct{}) {
+func buildProtos(protoFilter map[string]struct{}, protoDir string) {
 	var protoFilePaths []string
 	var moduleDecls []string
 
 	// Collect Proto file paths and module declarations.
-	addProtoFilePaths(&protoFilePaths, &moduleDecls, path.Join(getProjectRootPath(), "services/hapi/hedera-protobufs/services"), protoFilter)
+	addProtoFilePaths(&protoFilePaths, &moduleDecls, path.Join(getProjectRootPath(), protoDir), protoFilter)
 
 	// Prepare the command arguments for building Proto files.
 	cmdArgs := []string{
@@ -134,7 +143,7 @@ func buildProtos(protoFilter map[string]struct{}) {
 		"--go_opt=paths=source_relative",
 		"--go-grpc_out=proto/services/",
 		"--go-grpc_opt=paths=source_relative",
-		"-Iservices/hapi/hedera-protobufs/services",
+		"-I" + protoDir,
 	}
 
 	cmdArgs = append(cmdArgs, moduleDecls...)

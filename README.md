@@ -19,6 +19,7 @@ $ go get github.com/hiero-ledger/hiero-sdk-go/v2@latest
 ### Running Tests
 
 # Integration
+
 ```bash
 $ env CONFIG_FILE="<your_config_file>" go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
@@ -29,7 +30,8 @@ or
 $ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go test ./sdk -tags="e2e" -timeout 9999s
 ```
 
-# Unit 
+# Unit
+
 ```bash
 $ go test ./sdk -tags="unit" -v -timeout 9999s
 ```
@@ -49,6 +51,36 @@ This repository uses golangci-lint for linting. You can install a pre-commit git
 ```sh
 scripts/install-hooks.sh
 ```
+
+## Protobuf Generation Script
+
+This script automates the process of moving and compiling `.proto` files using `protoc`. It supports multiple source directories for `proto` definitions and allows for configurable destination directory for the generation output.
+
+### Usage
+
+Run the script with the following command:
+
+```sh
+go run generate_proto.go -source <dir1,dir2,...> -dest <dirn>
+```
+
+### Arguments
+
+-   -source (required): A comma-separated list of directories containing .proto files.
+
+-   -dest (required): The destination directory where all .proto files will be moved before compilation.
+
+### Example
+
+```sh
+go run generate_proto.go -source ../services/hapi/hedera-protobufs/services/state,../services/hapi/hedera-protobufs/services/auxiliary -dest ../services/hapi/hedera-protobufs/services
+```
+
+### Note
+
+-   If proto file definitions are located in the `services` submodule make sure it is initialised.
+-   Keep in mind that the script does not still support protobuf import altering. If errors related to
+    the `proto` import paths occur we resolve them manually.
 
 ## Contributing
 
