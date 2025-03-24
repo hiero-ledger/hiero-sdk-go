@@ -61,7 +61,7 @@ This script automates the process of moving and compiling `.proto` files using `
 Run the script with the following command:
 
 ```sh
-go run generate_proto.go -source <dir1,dir2,...> -dest <dirn>
+go run generate_proto.go -source <dir1,dir2,...> -dest <dir>
 ```
 
 ### Arguments
