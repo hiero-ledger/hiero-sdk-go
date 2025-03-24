@@ -535,13 +535,13 @@ func (client *Client) SetNetworkName(name NetworkName) {
 }
 
 // Deprecated: Use GetLedgerID instead
-func (client *Client) GetNetworkName() *NetworkName {
-	ledgerID := client.GetLedgerID()
-	var name NetworkName
-	if ledgerID != nil {
-		name, _ = ledgerID.ToNetworkName()
+func GetNetworkName(client Client) *NetworkName {
+	if ledgerID := client.GetLedgerID(); ledgerID != nil {
+		if name, err := ledgerID.ToNetworkName(); err == nil {
+			return &name
+		}
 	}
-	return &name
+	return nil
 }
 
 // SetLedgerID sets the ledger ID for the Client.
