@@ -6,19 +6,19 @@
 # NOTE: Must be placed last to ensure enforcement over all other rules
 
 # Protection Rules for Github Configuration Files and Actions Workflows
-/.github/                                       @hiero-ledger/github-maintainers @hiero-ledger/github-committers
-/.github/workflows/                             @hiero-ledger/github-maintainers @hiero-ledger/github-committers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
+/.github/                                       @hiero-ledger/github-maintainers
+/.github/workflows/                             @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
 
 # Legacy Maven project files
 **/pom.xml                                      @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
 
 # Gradle project files and inline plugins
-/gradle/                                        @hiero-ledger/github-maintainers @hiero-ledger/github-committers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
-gradlew                                         @hiero-ledger/github-maintainers @hiero-ledger/github-committers
-gradlew.bat                                     @hiero-ledger/github-maintainers @hiero-ledger/github-committers
-**/build-logic/                                 @hiero-ledger/github-maintainers @hiero-ledger/github-committers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
-**/gradle.*                                     @hiero-ledger/github-maintainers @hiero-ledger/github-committers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
-**/*.gradle.*                                   @hiero-ledger/github-maintainers @hiero-ledger/github-committers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
+/gradle/                                        @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
+gradlew                                         @hiero-ledger/github-maintainers
+gradlew.bat                                     @hiero-ledger/github-maintainers
+**/build-logic/                                 @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
+**/gradle.*                                     @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
+**/*.gradle.*                                   @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
 
 # Codacy Tool Configurations
 /config/                                        @hiero-ledger/github-maintainers @hiero-ledger/hiero-sdk-go-maintainers @hiero-ledger/hiero-sdk-go-committers
