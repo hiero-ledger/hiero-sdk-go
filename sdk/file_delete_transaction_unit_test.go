@@ -79,12 +79,12 @@ func TestUnitFileDeleteTransactionMock(t *testing.T) {
 			switch k := sigPair.Signature.(type) {
 			case *services.SignaturePair_Ed25519:
 				pbTemp, _ := PublicKeyFromBytesEd25519(sigPair.PubKeyPrefix)
-				verified = pbTemp.Verify(signedTransaction.BodyBytes, k.Ed25519)
+				verified = pbTemp.VerifySignedMessage(signedTransaction.BodyBytes, k.Ed25519)
 				key, _ := PrivateKeyFromStringEd25519("302e020100300506032b657004220420d45e1557156908c967804615af59a000be88c7aa7058bfcbe0f46b16c28f887d")
 				require.Equal(t, key.PublicKey().String(), pbTemp.String())
 			case *services.SignaturePair_ECDSASecp256K1:
 				pbTemp, _ := PublicKeyFromBytesECDSA(sigPair.PubKeyPrefix)
-				verified = pbTemp.Verify(signedTransaction.BodyBytes, k.ECDSASecp256K1)
+				verified = pbTemp.VerifySignedMessage(signedTransaction.BodyBytes, k.ECDSASecp256K1)
 			}
 			require.True(t, verified)
 		}

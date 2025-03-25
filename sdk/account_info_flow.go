@@ -13,7 +13,7 @@ func AccountInfoFlowVerifySignature(client *Client, accountID AccountID, message
 	}
 
 	if key, ok := info.Key.(PublicKey); ok {
-		return key.Verify(message, signature), nil
+		return key.VerifySignedMessage(message, signature), nil
 	}
 
 	return false, nil
