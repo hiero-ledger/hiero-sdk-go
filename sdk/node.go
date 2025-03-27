@@ -4,11 +4,14 @@ package hiero
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha512"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
+	"fmt"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -17,6 +20,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -169,7 +173,9 @@ func (node *_Node) _GetChannel(logger Logger) (*_Channel, error) {
 		}))
 	}
 
-	conn, err = grpc.NewClient(node._ManagedNode.address._String(), security, grpc.WithKeepaliveParams(kacp))
+	metadataOption := grpc.WithUnaryInterceptor(unaryInterceptor(metadata.Pairs("x-user-agent", getUserAgent())))
+
+	conn, err = grpc.NewClient(node._ManagedNode.address._String(), security, grpc.WithKeepaliveParams(kacp), metadataOption)
 	if err != nil {
 		return nil, status.Error(codes.ResourceExhausted, "dial timeout of 10sec exceeded")
 	}
@@ -239,4 +245,34 @@ func (node *_Node) _SetVerifyCertificate(verify bool) {
 
 func (node *_Node) _GetVerifyCertificate() bool {
 	return node.verifyCertificate
+}
+
+func unaryInterceptor(md metadata.MD) grpc.UnaryClientInterceptor {
+	return func(
+		ctx context.Context,
+		method string,
+		req, reply interface{},
+		cc *grpc.ClientConn,
+		invoker grpc.UnaryInvoker,
+		opts ...grpc.CallOption,
+	) error {
+		ctx = metadata.NewOutgoingContext(ctx, metadata.Join(metadata.MD{}, md))
+		return invoker(ctx, method, req, reply, cc, opts...)
+	}
+}
+
+// Extract the user agent and software version. This information is used to gather usage metrics.
+// If the version is not available, the user agent will be set to "hiero-sdk-go/DEV".
+func getUserAgent() string {
+	buildInfo, ok := debug.ReadBuildInfo()
+	if !ok {
+		return "hiero-sdk-go/DEV"
+	}
+
+	version := "DEV"
+	if buildInfo.Main.Version != "(devel)" && buildInfo.Main.Version != "" {
+		version = buildInfo.Main.Version
+	}
+
+	return fmt.Sprintf("hiero-sdk-go/%s", version)
 }
