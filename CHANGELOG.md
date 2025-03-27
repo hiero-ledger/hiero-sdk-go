@@ -1,3 +1,17 @@
+## v2.59.0-beta.1
+
+### Added
+- `EIP-2930` transaction type compatibility.
+- Specifying min TLS version for gRPC communication.
+- PublicKey `VerifySignedMessage` method in place of `Verify`
+
+### Deprecated
+- PublicKey `Verify`since it's not keytype agnostic and has different behavior for ed25519 and ecdsa keys.
+
+### Fixed
+- The PublicKey `VerifyTransaction` method was building the proto transaction body, which overrides the signatures and causes `INVALID_SIGNATURE` error. 
+The build logic is now removed and a new check if the pubkey is in the transaction was added.
+
 ## v2.58.0
 
 ### Fixed
