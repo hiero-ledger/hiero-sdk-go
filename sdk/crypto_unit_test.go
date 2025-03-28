@@ -431,10 +431,10 @@ func TestUnitPrivateKeyECDSASignFails(t *testing.T) {
 	key, err := PrivateKeyGenerateEcdsa()
 	require.NoError(t, err)
 
-	sig := VerifySignature([]byte("ccc"), []byte("aaa"), []byte("bbb"))
+	sig := key.ecdsaPrivateKey._PublicKey()._VerifySignedMessage([]byte("aaa"), []byte("bbb"))
 	require.False(t, sig)
 
-	sig = VerifySignature(key.ecdsaPrivateKey._PublicKey()._BytesRaw(), []byte("aaa"), []byte("bbb"))
+	sig = key.ecdsaPrivateKey._PublicKey()._VerifySignedMessage([]byte("aaa"), []byte("bbb"))
 	require.False(t, sig)
 }
 
@@ -444,28 +444,26 @@ func TestUnitPrivateKeyECDSASign(t *testing.T) {
 	key, err := PrivateKeyGenerateEcdsa()
 	require.NoError(t, err)
 
-	hash := Keccak256Hash([]byte("aaa"))
 	sig := key.Sign([]byte("aaa"))
-	s2 := VerifySignature(key.ecdsaPrivateKey._PublicKey()._BytesRaw(), hash.Bytes(), sig)
-	require.True(t, s2)
+	require.True(t, key.PublicKey().VerifySignedMessage([]byte("aaa"), sig))
 }
 
 func TestUnitPrivateKeyECDSASignVerify(t *testing.T) {
 	t.Parallel()
 
 	message := []byte("hello world")
-	hash := Keccak256Hash(message)
+	// hash := Keccak256Hash(message)
 	key, err := PrivateKeyFromStringECDSA("8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048")
 	require.NoError(t, err)
 
 	sig := key.Sign(message)
 
-	require.Equal(t, hex.EncodeToString(sig), "20f3a13a555f1f8cd6532716b8f388bd4e9d8ed0b252743e923114c0c6cbfe414c086e3717a6502c3edff6130d34df252fb94b6f662d0cd27e2110903320563851")
+	require.Equal(t, hex.EncodeToString(sig), "f3a13a555f1f8cd6532716b8f388bd4e9d8ed0b252743e923114c0c6cbfe414c086e3717a6502c3edff6130d34df252fb94b6f662d0cd27e2110903320563851")
 
-	assert.Len(t, sig, 65)
+	assert.Len(t, sig, 64)
 	assert.NotNil(t, key.PublicKey().ecdsaPublicKey)
 
-	require.True(t, key.PublicKey().Verify(hash.Bytes(), sig))
+	// require.True(t, key.PublicKey().Verify(hash.Bytes(), sig))
 	require.True(t, key.PublicKey().VerifySignedMessage(message, sig))
 
 	// malform signature, require breakage

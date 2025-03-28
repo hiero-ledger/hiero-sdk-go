@@ -8,7 +8,10 @@ import (
 	"encoding/asn1"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strings"
+
+	cryptoEcdsa "crypto/ecdsa"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	ecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
@@ -217,13 +220,15 @@ func (pk _ECDSAPublicKey) _ToSignaturePairProtobuf(signature []byte) *services.S
 }
 
 func (pk _ECDSAPublicKey) _VerifySignedMessage(message []byte, signature []byte) bool {
-	hash := Keccak256Hash(message)
-	recoveredKey, _, err := ecdsa.RecoverCompact(signature, hash.Bytes())
-	if err != nil {
+	if len(signature) != 64 {
 		return false
 	}
+	hash := Keccak256Hash(message)
+	r := new(big.Int).SetBytes(signature[:32])
+	s := new(big.Int).SetBytes(signature[32:])
 
-	return pk.IsEqual(recoveredKey)
+	// Verify the signature
+	return cryptoEcdsa.Verify(pk.PublicKey.ToECDSA(), hash.Bytes(), r, s)
 }
 
 // Deprecated: Deprecated in favor of _VerifySignedMessage
