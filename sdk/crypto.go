@@ -937,6 +937,7 @@ func Keccak256Hash(data []byte) (h Hash) {
 	return h
 }
 
+// Deprecated: Use [PublicKey.VerifySignedMessage] instead.
 func VerifySignature(pubkey, digestHash, signature []byte) bool {
 	pubKey, err := btcec.ParsePubKey(pubkey)
 	if err != nil {
