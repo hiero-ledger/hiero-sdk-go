@@ -767,7 +767,10 @@ func (sk PrivateKey) Sign(message []byte) []byte {
 	return []byte{}
 }
 
-// Sign signs the provided message with the Ed25519PrivateKey.
+// GetRecoveryId returns the recovery id of the signature
+// for the given message. The recovery id is used to recover the public key.
+// It is only available for ECDSA keys and returns -1 if the key is not ECDSA or if the
+// signature is not valid.
 func (sk PrivateKey) GetRecoveryId(r []byte, s []byte, message []byte) int {
 	if sk.ed25519PrivateKey != nil {
 		return -1

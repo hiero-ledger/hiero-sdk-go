@@ -452,7 +452,6 @@ func TestUnitPrivateKeyECDSASignVerify(t *testing.T) {
 	t.Parallel()
 
 	message := []byte("hello world")
-	// hash := Keccak256Hash(message)
 	key, err := PrivateKeyFromStringECDSA("8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048")
 	require.NoError(t, err)
 
@@ -463,7 +462,6 @@ func TestUnitPrivateKeyECDSASignVerify(t *testing.T) {
 	assert.Len(t, sig, 64)
 	assert.NotNil(t, key.PublicKey().ecdsaPublicKey)
 
-	// require.True(t, key.PublicKey().Verify(hash.Bytes(), sig))
 	require.True(t, key.PublicKey().VerifySignedMessage(message, sig))
 
 	// malform signature, require breakage
@@ -1475,4 +1473,48 @@ func TestStringMethod(t *testing.T) {
 	assert.Equal(t, ed25519PrivateKey.String(), ed25519PrivateKey.String())
 	assert.Equal(t, ed25519PublicKey.String(), ed25519PublicKey.String())
 
+}
+
+func TestUnitGetRecoveryIdValid(t *testing.T) {
+	t.Parallel()
+
+	privateKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	message := []byte("test message")
+	signature := privateKey.Sign(message)
+
+	r := signature[:32]
+	s := signature[32:]
+
+	recoveryId := privateKey.GetRecoveryId(r, s, message)
+	require.GreaterOrEqual(t, recoveryId, 0)
+}
+
+func TestUnitGetRecoveryIdInvalidSignature(t *testing.T) {
+	t.Parallel()
+
+	privateKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	message := []byte("test message")
+	r := make([]byte, 32)
+	s := make([]byte, 32)
+
+	recoveryId := privateKey.GetRecoveryId(r, s, message)
+	require.Equal(t, -1, recoveryId)
+}
+
+func TestUnitGetRecoveryIdEd25519Key(t *testing.T) {
+	t.Parallel()
+
+	privateKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	message := []byte("test message")
+	r := make([]byte, 32)
+	s := make([]byte, 32)
+
+	recoveryId := privateKey.GetRecoveryId(r, s, message)
+	require.Equal(t, -1, recoveryId)
 }
