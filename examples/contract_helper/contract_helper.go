@@ -49,45 +49,45 @@ func NewContractHelper(bytecode []byte, constructorParameters hiero.ContractFunc
 	return &ContractHelper{}
 }
 
-func (this *ContractHelper) SetResultValidatorForStep(stepIndex int32, validator func(hiero.ContractFunctionResult) bool) *ContractHelper {
-	this.stepResultValidators[stepIndex] = validator
-	return this
+func (ch *ContractHelper) SetResultValidatorForStep(stepIndex int32, validator func(hiero.ContractFunctionResult) bool) *ContractHelper {
+	ch.stepResultValidators[stepIndex] = validator
+	return ch
 }
 
-func (this *ContractHelper) SetParameterSupplierForStep(stepIndex int32, supplier func() *hiero.ContractFunctionParameters) *ContractHelper {
-	this.stepParameterSuppliers[stepIndex] = supplier
-	return this
+func (ch *ContractHelper) SetParameterSupplierForStep(stepIndex int32, supplier func() *hiero.ContractFunctionParameters) *ContractHelper {
+	ch.stepParameterSuppliers[stepIndex] = supplier
+	return ch
 }
 
-func (this *ContractHelper) SetPayableAmountForStep(stepIndex int32, amount hiero.Hbar) *ContractHelper {
-	this.stepPayableAmounts[stepIndex] = &amount
-	return this
+func (ch *ContractHelper) SetPayableAmountForStep(stepIndex int32, amount hiero.Hbar) *ContractHelper {
+	ch.stepPayableAmounts[stepIndex] = &amount
+	return ch
 }
 
-func (this *ContractHelper) AddSignerForStep(stepIndex int32, signer hiero.PrivateKey) *ContractHelper {
-	if _, ok := this.stepSigners[stepIndex]; ok {
-		this.stepSigners[stepIndex] = append(this.stepSigners[stepIndex], signer)
+func (ch *ContractHelper) AddSignerForStep(stepIndex int32, signer hiero.PrivateKey) *ContractHelper {
+	if _, ok := ch.stepSigners[stepIndex]; ok {
+		ch.stepSigners[stepIndex] = append(ch.stepSigners[stepIndex], signer)
 	} else {
-		this.stepSigners[stepIndex] = make([]hiero.PrivateKey, 0)
-		this.stepSigners[stepIndex] = append(this.stepSigners[stepIndex], signer)
+		ch.stepSigners[stepIndex] = make([]hiero.PrivateKey, 0)
+		ch.stepSigners[stepIndex] = append(ch.stepSigners[stepIndex], signer)
 	}
 
-	return this
+	return ch
 }
 
-func (this *ContractHelper) SetFeePayerForStep(stepIndex int32, account hiero.AccountID, accountKey hiero.PrivateKey) *ContractHelper {
-	this.stepFeePayers[stepIndex] = &account
-	return this.AddSignerForStep(stepIndex, accountKey)
+func (ch *ContractHelper) SetFeePayerForStep(stepIndex int32, account hiero.AccountID, accountKey hiero.PrivateKey) *ContractHelper {
+	ch.stepFeePayers[stepIndex] = &account
+	return ch.AddSignerForStep(stepIndex, accountKey)
 }
 
-func (this *ContractHelper) SetStepLogic(stepIndex int32, specialFunction func(address string)) *ContractHelper {
-	this.stepLogic[stepIndex] = specialFunction
-	return this
+func (ch *ContractHelper) SetStepLogic(stepIndex int32, specialFunction func(address string)) *ContractHelper {
+	ch.stepLogic[stepIndex] = specialFunction
+	return ch
 }
 
-func (this *ContractHelper) GetResultValidator(stepIndex int32) func(hiero.ContractFunctionResult) bool {
-	if _, ok := this.stepResultValidators[stepIndex]; ok {
-		return this.stepResultValidators[stepIndex]
+func (ch *ContractHelper) GetResultValidator(stepIndex int32) func(hiero.ContractFunctionResult) bool {
+	if _, ok := ch.stepResultValidators[stepIndex]; ok {
+		return ch.stepResultValidators[stepIndex]
 	}
 
 	return func(result hiero.ContractFunctionResult) bool {
@@ -100,9 +100,9 @@ func (this *ContractHelper) GetResultValidator(stepIndex int32) func(hiero.Contr
 	}
 }
 
-func (this *ContractHelper) GetParameterSupplier(stepIndex int32) func() *hiero.ContractFunctionParameters {
-	if _, ok := this.stepParameterSuppliers[stepIndex]; ok {
-		return this.stepParameterSuppliers[stepIndex]
+func (ch *ContractHelper) GetParameterSupplier(stepIndex int32) func() *hiero.ContractFunctionParameters {
+	if _, ok := ch.stepParameterSuppliers[stepIndex]; ok {
+		return ch.stepParameterSuppliers[stepIndex]
 	}
 
 	return func() *hiero.ContractFunctionParameters {
@@ -110,40 +110,40 @@ func (this *ContractHelper) GetParameterSupplier(stepIndex int32) func() *hiero.
 	}
 }
 
-func (this *ContractHelper) GetPayableAmount(stepIndex int32) *hiero.Hbar {
-	return this.stepPayableAmounts[stepIndex]
+func (ch *ContractHelper) GetPayableAmount(stepIndex int32) *hiero.Hbar {
+	return ch.stepPayableAmounts[stepIndex]
 }
 
-func (this *ContractHelper) GetSigners(stepIndex int32) []hiero.PrivateKey {
-	if _, ok := this.stepSigners[stepIndex]; ok {
-		return this.stepSigners[stepIndex]
+func (ch *ContractHelper) GetSigners(stepIndex int32) []hiero.PrivateKey {
+	if _, ok := ch.stepSigners[stepIndex]; ok {
+		return ch.stepSigners[stepIndex]
 	}
 
 	return []hiero.PrivateKey{}
 }
 
-func (this *ContractHelper) ExecuteSteps(firstStep int32, lastStep int32, client *hiero.Client) (*ContractHelper, error) {
+func (ch *ContractHelper) ExecuteSteps(firstStep int32, lastStep int32, client *hiero.Client) (*ContractHelper, error) {
 	for stepIndex := firstStep; stepIndex <= lastStep; stepIndex++ {
 		println("Attempting to execuite step", stepIndex)
 
 		transaction := hiero.NewContractExecuteTransaction().
-			SetContractID(this.ContractID).
+			SetContractID(ch.ContractID).
 			SetGas(10000000)
 
-		payableAmount := this.GetPayableAmount(stepIndex)
+		payableAmount := ch.GetPayableAmount(stepIndex)
 		if payableAmount != nil {
 			transaction.SetPayableAmount(*payableAmount)
 		}
 
 		functionName := "step" + strconv.Itoa(int(stepIndex))
-		parameters := this.GetParameterSupplier(stepIndex)()
+		parameters := ch.GetParameterSupplier(stepIndex)()
 		if parameters != nil {
 			transaction.SetFunction(functionName, parameters)
 		} else {
 			transaction.SetFunction(functionName, nil)
 		}
 
-		if feePayerAccountID, ok := this.stepFeePayers[stepIndex]; ok {
+		if feePayerAccountID, ok := ch.stepFeePayers[stepIndex]; ok {
 			transaction.SetTransactionID(hiero.TransactionIDGenerate(*feePayerAccountID))
 		}
 
@@ -151,7 +151,7 @@ func (this *ContractHelper) ExecuteSteps(firstStep int32, lastStep int32, client
 		if err != nil {
 			return &ContractHelper{}, err
 		}
-		for _, signer := range this.GetSigners(stepIndex) {
+		for _, signer := range ch.GetSigners(stepIndex) {
 			frozen.Sign(signer)
 		}
 
@@ -170,19 +170,19 @@ func (this *ContractHelper) ExecuteSteps(firstStep int32, lastStep int32, client
 			return &ContractHelper{}, err
 		}
 
-		if this.stepLogic[stepIndex] != nil {
+		if ch.stepLogic[stepIndex] != nil {
 			address := functionResult.GetAddress(1)
-			if function, exists := this.stepLogic[stepIndex]; exists && function != nil {
+			if function, exists := ch.stepLogic[stepIndex]; exists && function != nil {
 				function(hex.EncodeToString(address))
 			}
 		}
 
-		if this.GetResultValidator(stepIndex)(functionResult) {
+		if ch.GetResultValidator(stepIndex)(functionResult) {
 			fmt.Printf("Step %d completed, and returned valid result. (TransactionId %s)", stepIndex, record.TransactionID.String())
 		} else {
 			return &ContractHelper{}, errors.New(fmt.Sprintf("Step %d returned invalid result", stepIndex))
 		}
 	}
 
-	return this, nil
+	return ch, nil
 }

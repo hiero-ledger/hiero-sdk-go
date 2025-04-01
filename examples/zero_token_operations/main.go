@@ -25,7 +25,7 @@ func main() {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
 
-	//Grab your testnet account ID and private key from the environment variable
+	// Grab your testnet account ID and private key from the environment variable
 	myAccountId, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ID"))
 	if err != nil {
 		panic(err)
@@ -36,12 +36,12 @@ func main() {
 		panic(err)
 	}
 
-	//Print your testnet account ID and private key to the console to make sure there was no error
+	// Print your testnet account ID and private key to the console to make sure there was no error
 	fmt.Printf("The account ID is = %v\n", myAccountId)
 	fmt.Printf("The private key is = %v\n", myPrivateKey)
 
 	client.SetOperator(myAccountId, myPrivateKey)
-	//Generate new keys for the account you will create
+	// Generate new keys for the account you will create
 	alicePrivateKey, err := hiero.PrivateKeyGenerateEd25519()
 	if err != nil {
 		panic(err)
@@ -49,7 +49,7 @@ func main() {
 
 	newAccountPublicKey := alicePrivateKey.PublicKey()
 
-	//Create new account and assign the public key
+	// Create new account and assign the public key
 	aliceAccount, err := hiero.NewAccountCreateTransaction().
 		SetKeyWithoutAlias(newAccountPublicKey).
 		SetInitialBalance(hiero.HbarFrom(1000, hiero.HbarUnits.Tinybar)).
@@ -57,22 +57,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	//Request the receipt of the transaction
+	// Request the receipt of the transaction
 	receipt, err := aliceAccount.GetReceipt(client)
 	if err != nil {
 		panic(err)
 	}
 
-	//Get the new account ID from the receipt
+	// Get the new account ID from the receipt
 	aliceAccountId := *receipt.AccountID
 	fmt.Println("aliceAcountid is: ", aliceAccountId)
-	//Transfer hbar from your testnet account to the new account
+
+	// Transfer hbar from your testnet account to the new account
 	transaction := hiero.NewTransferTransaction().
 		AddHbarTransfer(myAccountId, hiero.HbarFrom(-1000, hiero.HbarUnits.Tinybar)).
 		AddHbarTransfer(aliceAccountId, hiero.HbarFrom(1000, hiero.HbarUnits.Tinybar))
 
-	//Submit the transaction to a Hiero network
-	transaction.Execute(client)
+	// Submit the transaction to a Hiero network
+	_, err = transaction.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error submitting transaction", err))
+	}
 
 	rawContract, err := os.ReadFile("../precompile_example/ZeroTokenOperations.json")
 	if err != nil {
@@ -183,7 +187,7 @@ func main() {
 	transactionResponse, err = hiero.NewTransferTransaction().
 		AddTokenTransfer(tokenID, myAccountId, 0).AddTokenTransfer(tokenID, aliceAccountId, 0).Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error transfering token", err))
+		panic(fmt.Sprintf("%v : error transferring token", err))
 	}
 	_, err = transactionResponse.GetRecord(client)
 	if err != nil {

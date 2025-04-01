@@ -58,7 +58,7 @@ func main() {
 	}
 
 	// Initialize contracts
-	var smartContract contracts = contracts{}
+	smartContract := contracts{}
 
 	// Parse the rawSmartContract into smartContract
 	err = json.Unmarshal([]byte(rawSmartContract), &smartContract)

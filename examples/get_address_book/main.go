@@ -84,6 +84,9 @@ func main() {
 	temp := make([]byte, leng)
 
 	_, err = fileString.Read(temp)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error reading the file", err))
+	}
 
 	// Close the files
 	err = fileString.Close()
