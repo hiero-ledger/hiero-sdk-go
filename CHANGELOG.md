@@ -1,12 +1,19 @@
-## v2.59.0-beta.1
+## v2.59.0
 
 ### Added
-- `EIP-2930` transaction type compatibility.
-- Specifying min TLS version for gRPC communication.
-- PublicKey `VerifySignedMessage` method in place of `Verify`
+- `EIP-2930` transaction type compatibility. A new struct `EthereumEIP2930Transaction` is added for RLP encoding `EIP-2930` transactions. #1325
+- Specifying min TLS version for gRPC communication. #1308
+- PublicKey `VerifySignedMessage` method in place of `Verify`. #1314
+- `PrivateKey.GetRecoveryId` method. This method retrieves the recovery ID (also known as the 'v' value) associated with ECDSA signatures,
+facilitating signature verification processes. #1324
+
+### Changed
+- Modification of the `PrivateKey.Sign` method output. The `Sign` method for ECDSA private keys has been updated to return only the r and s components of the signature,
+reducing the output from 65 bytes to 64 bytes.This change aligns the SDK's behavior with standard ECDSA signature formats, which typically include only the r and s values. #1324
 
 ### Deprecated
-- PublicKey `Verify`since it's not keytype agnostic and has different behavior for ed25519 and ecdsa keys.
+- PublicKey `Verify` since it's not keytype agnostic and has different behavior for ed25519 and ecdsa keys. #1314
+- `VerifySignature` is no longer maintained, since it requires the full 65 byte signature and pre-hashing using Keccak256Hash. `PublicKey.VerifySignedMessage` is preferred. #1324
 
 ### Fixed
 - The PublicKey `VerifyTransaction` method was building the proto transaction body, which overrides the signatures and causes `INVALID_SIGNATURE` error. 
