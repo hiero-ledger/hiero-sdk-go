@@ -126,14 +126,10 @@ func getCallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contract
 
 	sig := ecdsaPrivateKey.Sign(messageBytes)
 
-	v := sig[0]
-	r := sig[1:33]
-	s := sig[33:65]
-	vInt := int(v)
-
-	// The compact sig recovery code is the value 27 + public key recovery code + 4
-	recId := vInt - 27 - 4
-	recIdBytes := []byte{byte(recId)}
+	r := sig[0:32]
+	s := sig[32:64]
+	v := ecdsaPrivateKey.GetRecoveryId(r, s, messageBytes)
+	recIdBytes := []byte{byte(v)}
 
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(recIdBytes))
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(r))

@@ -209,7 +209,34 @@ func _ECDSAPrivateKeyReadPem(source io.Reader, passphrase string) (*_ECDSAPrivat
 
 func (sk _ECDSAPrivateKey) _Sign(message []byte) []byte {
 	hash := Keccak256Hash(message)
-	return ecdsa.SignCompact(sk.keyData, hash.Bytes(), true)
+	return ecdsa.SignCompact(sk.keyData, hash.Bytes(), true)[1:]
+}
+
+func (sk _ECDSAPrivateKey) getRecoveryId(r []byte, s []byte, message []byte) int {
+	hash := Keccak256Hash(message)
+
+	// Merge r and s into a single byte slice
+	r = append(r, s...)
+	sig := r
+
+	// Try to recover the public key using the signature and the hash
+	for i := 0; i < 4; i++ {
+		sigWithRecID := make([]byte, 65)
+		copy(sigWithRecID[1:], sig)
+		sigWithRecID[0] = byte(27 + 4 + i)
+
+		recoveredKey, _, err := ecdsa.RecoverCompact(sigWithRecID, hash.Bytes())
+		if err != nil {
+			continue
+		}
+
+		if recoveredKey.IsEqual(sk.keyData.PubKey()) {
+			return i
+		}
+	}
+
+	// If no valid recovery ID is found, return -1
+	return -1
 }
 
 // SupportsDerivation returns true if the _ECDSAPrivateKey supports derivation.
