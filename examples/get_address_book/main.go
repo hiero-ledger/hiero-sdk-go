@@ -71,7 +71,7 @@ func main() {
 	}
 
 	// Write the contents (string([]byte)) into the string file
-	leng, err := fileString.WriteString(string(contents))
+	_, err = fileString.WriteString(string(contents))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error writing contents to file", err))
 	}
@@ -79,13 +79,6 @@ func main() {
 	_, err = fileByte.Write(contents)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error writing contents to file", err))
-	}
-
-	temp := make([]byte, leng)
-
-	_, err = fileString.Read(temp)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error reading the file", err))
 	}
 
 	// Close the files
