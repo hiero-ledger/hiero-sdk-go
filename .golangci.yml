@@ -1,29 +1,40 @@
+version: "2"
 linters:
-  disable-all: true
-  enable:
-    - bodyclose
-    - dogsled
-    - errcheck
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - goimports
-    - gosec
-    - gosimple
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - staticcheck
-    - typecheck
-    - unconvert
-    - unparam
-    - unused
-    - whitespace
-    
-linters-settings:
-  gosec:
-    excludes:
-      - G115
+    default: none
+    enable:
+        - bodyclose
+        - dogsled
+        - errcheck
+        - gochecknoinits
+        - goconst
+        - gocritic
+        - gocyclo
+        - gosec
+        - govet
+        - ineffassign
+        - misspell
+        - nakedret
+        - staticcheck
+        - unconvert
+        - unparam
+        - unused
+    settings:
+        gosec:
+            excludes:
+                - G115
+        staticcheck:
+            checks:
+                - "all" # Enable all checks
+                - "-ST1003" # Disable specific check ST1003
+                - "-QF1008" # Disable specific check ST1003
+    exclusions:
+        generated: lax
+        presets:
+            - comments
+            - common-false-positives
+            - legacy
+            - std-error-handling
+        paths:
+            - third_party$
+            - builtin$
+            - examples$

@@ -60,7 +60,7 @@ func main() {
 	contract := contract{}
 
 	// Unmarshal the json read from the file into the simple contract
-	err = json.Unmarshal([]byte(rawContract), &contract)
+	err = json.Unmarshal(rawContract, &contract)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error unmarshaling the json file", err))
 	}

@@ -83,7 +83,7 @@ func main() {
 		panic(fmt.Sprintf("%v : error reading json", err))
 	}
 
-	err = json.Unmarshal([]byte(rawContract), &contract)
+	err = json.Unmarshal(rawContract, &contract)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error unmarshaling the json file", err))
 	}

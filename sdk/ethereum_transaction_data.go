@@ -47,17 +47,17 @@ func EthereumTransactionDataFromBytes(b []byte) (*EthereumTransactionData, error
 }
 
 // ToBytes returns the raw bytes of the Ethereum transaction.
-func (txData *EthereumTransactionData) ToBytes() ([]byte, error) {
-	if txData.eip1559 != nil {
-		return txData.eip1559.ToBytes()
+func (ethereumTxData *EthereumTransactionData) ToBytes() ([]byte, error) {
+	if ethereumTxData.eip1559 != nil {
+		return ethereumTxData.eip1559.ToBytes()
 	}
 
-	if txData.eip2930 != nil {
-		return txData.eip2930.ToBytes()
+	if ethereumTxData.eip2930 != nil {
+		return ethereumTxData.eip2930.ToBytes()
 	}
 
-	if txData.legacy != nil {
-		return txData.legacy.ToBytes()
+	if ethereumTxData.legacy != nil {
+		return ethereumTxData.legacy.ToBytes()
 	}
 
 	return nil, errors.New("transaction data is empty")
