@@ -478,7 +478,7 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 func (tx TransferTransaction) build() *services.TransactionBody {
 	return &services.TransactionBody{
 		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.memo,
+		Memo:                     tx.Transaction.memo,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		TransactionID:            tx.transactionID._ToProtobuf(),
 		Data: &services.TransactionBody_CryptoTransfer{
@@ -490,7 +490,7 @@ func (tx TransferTransaction) build() *services.TransactionBody {
 func (tx TransferTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
 	return &services.SchedulableTransactionBody{
 		TransactionFee: tx.transactionFee,
-		Memo:           tx.memo,
+		Memo:           tx.Transaction.memo,
 		Data: &services.SchedulableTransactionBody_CryptoTransfer{
 			CryptoTransfer: tx.buildProtoBody(),
 		},
