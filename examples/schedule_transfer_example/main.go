@@ -118,8 +118,7 @@ func main() {
 
 	println("Bob's balance after schedule:", bobsBalanceAfterSchedule.Hbars.String())
 
-	//clean up
-
+	// Clean up
 	deleteAccount, err := hiero.NewAccountDeleteTransaction().
 		SetAccountID(bobsID).
 		SetTransferAccountID(client.GetOperatorAccountID()).

@@ -105,18 +105,19 @@ func main() {
 		fmt.Println("Created NFT ", nftTokenID.String(), " with serial: ", nftCollection[i].SerialNumbers[0])
 	}
 	exampleNftId := nftTokenID.Nft(nftCollection[0].SerialNumbers[0])
+
 	/**
 	 * Step 3
 	 *
 	 * Create an ECDSA public key alias
 	 */
-
 	fmt.Println("Creating new account...")
 	privateKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating private key", err))
 	}
 	publicKey := privateKey.PublicKey()
+
 	// Assuming that the target shard and realm are known.
 	// For now they are virtually always 0 and 0.
 	aliasAccountId := publicKey.ToAccountID(0, 0)
@@ -147,8 +148,6 @@ func main() {
 	 *
 	 * Return the new account ID in the child record
 	 */
-
-	//Returns the info for the specified NFT id
 	nftInfo, err := hiero.NewTokenNftInfoQuery().SetNftID(exampleNftId).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error info query transaction", err))
@@ -214,6 +213,7 @@ func main() {
 		panic(fmt.Sprintf("%v : error generating private key", err))
 	}
 	publicKey2 := privateKey2.PublicKey()
+
 	// Assuming that the target shard and realm are known.
 	// For now they are virtually always 0 and 0.
 	aliasAccountId2 := *publicKey2.ToAccountID(0, 0)
@@ -247,7 +247,6 @@ func main() {
 	 *
 	 * Return the new account ID in the child record
 	 */
-
 	accountId2Info, err := hiero.NewAccountInfoQuery().SetAccountID(aliasAccountId2).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing acount info query", err))
@@ -260,7 +259,6 @@ func main() {
 	 *
 	 * Show the new account ID owns the fungible token
 	 */
-
 	accountBalances, err := hiero.NewAccountBalanceQuery().SetAccountID(aliasAccountId2).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error receiving account balance", err))
@@ -268,7 +266,7 @@ func main() {
 
 	tokenBalanceAccountId2 := accountBalances.Tokens.Get(tokenId)
 	if tokenBalanceAccountId2 == 10 {
-		fmt.Println(`Account is created succesfully using HTS "TransferTransaction"`)
+		fmt.Println(`Account is created successfully using HTS "TransferTransaction"`)
 	} else {
 		fmt.Println("Creating account with HTS using public key alias failed")
 	}

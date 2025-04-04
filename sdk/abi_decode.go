@@ -317,9 +317,10 @@ func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, erro
 	}
 
 	var res reflect.Value
-	if t.kind == KindSlice {
+	switch t.kind {
+	case KindSlice:
 		res = reflect.MakeSlice(t.t, size, size)
-	} else if t.kind == KindArray {
+	case KindArray:
 		res = reflect.New(t.t).Elem()
 	}
 

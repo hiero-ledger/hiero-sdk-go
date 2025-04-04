@@ -14,80 +14,80 @@ func _NewLockableSlice() *_LockableSlice {
 	}
 }
 
-func (this *_LockableSlice) _RequireNotLocked() {
-	if this.locked {
+func (ls *_LockableSlice) _RequireNotLocked() {
+	if ls.locked {
 		panic(errLockedSlice)
 	}
 }
 
-func (this *_LockableSlice) _SetLocked(locked bool) *_LockableSlice { // nolint
-	this.locked = locked
-	return this
+func (ls *_LockableSlice) _SetLocked(locked bool) *_LockableSlice { // nolint
+	ls.locked = locked
+	return ls
 }
 
-func (this *_LockableSlice) _SetSlice(slice []interface{}) *_LockableSlice { //nolint
-	this._RequireNotLocked()
-	this.slice = slice
-	this.index = 0
-	return this
+func (ls *_LockableSlice) _SetSlice(slice []interface{}) *_LockableSlice { //nolint
+	ls._RequireNotLocked()
+	ls.slice = slice
+	ls.index = 0
+	return ls
 }
 
-func (this *_LockableSlice) _Push(items ...interface{}) *_LockableSlice {
-	this._RequireNotLocked()
-	this.slice = append(this.slice, items...)
-	return this
+func (ls *_LockableSlice) _Push(items ...interface{}) *_LockableSlice {
+	ls._RequireNotLocked()
+	ls.slice = append(ls.slice, items...)
+	return ls
 }
 
-func (this *_LockableSlice) _Clear() *_LockableSlice { //nolint
-	this._RequireNotLocked()
-	this.slice = []interface{}{}
-	return this
+func (ls *_LockableSlice) _Clear() *_LockableSlice { //nolint
+	ls._RequireNotLocked()
+	ls.slice = []interface{}{}
+	return ls
 }
 
-func (this *_LockableSlice) _Get(index int) interface{} { //nolint
-	return this.slice[index]
+func (ls *_LockableSlice) _Get(index int) interface{} { //nolint
+	return ls.slice[index]
 }
 
-func (this *_LockableSlice) _Set(index int, item interface{}) *_LockableSlice { //nolint
-	this._RequireNotLocked()
+func (ls *_LockableSlice) _Set(index int, item interface{}) *_LockableSlice { //nolint
+	ls._RequireNotLocked()
 
-	if len(this.slice) == index {
-		this.slice = append(this.slice, item)
+	if len(ls.slice) == index {
+		ls.slice = append(ls.slice, item)
 	} else {
-		this.slice[index] = item
+		ls.slice[index] = item
 	}
 
-	return this
+	return ls
 }
 
-func (this *_LockableSlice) _SetIfAbsent(index int, item interface{}) *_LockableSlice { //nolint
-	this._RequireNotLocked()
-	if len(this.slice) == index || this.slice[index] == nil {
-		this._Set(index, item)
+func (ls *_LockableSlice) _SetIfAbsent(index int, item interface{}) *_LockableSlice { //nolint
+	ls._RequireNotLocked()
+	if len(ls.slice) == index || ls.slice[index] == nil {
+		ls._Set(index, item)
 	}
-	return this
+	return ls
 }
 
-func (this *_LockableSlice) _GetNext() interface{} { //nolint
-	return this._Get(this._Advance())
+func (ls *_LockableSlice) _GetNext() interface{} { //nolint
+	return ls._Get(ls._Advance())
 }
 
-func (this *_LockableSlice) _GetCurrent() interface{} { //nolint
-	return this._Get(this.index)
+func (ls *_LockableSlice) _GetCurrent() interface{} { //nolint
+	return ls._Get(ls.index)
 }
 
-func (this *_LockableSlice) _Advance() int { //nolint
-	index := this.index
-	if len(this.slice) != 0 {
-		this.index = (this.index + 1) % len(this.slice)
+func (ls *_LockableSlice) _Advance() int { //nolint
+	index := ls.index
+	if len(ls.slice) != 0 {
+		ls.index = (ls.index + 1) % len(ls.slice)
 	}
 	return index
 }
 
-func (this *_LockableSlice) _IsEmpty() bool { //nolint
-	return len(this.slice) == 0
+func (ls *_LockableSlice) _IsEmpty() bool { //nolint
+	return len(ls.slice) == 0
 }
 
-func (this *_LockableSlice) _Length() int { //nolint
-	return len(this.slice)
+func (ls *_LockableSlice) _Length() int { //nolint
+	return len(ls.slice)
 }

@@ -31,39 +31,39 @@ func _TokenUpdateNftsTransactionFromProtobuf(tx Transaction[*TokenUpdateNfts], p
 }
 
 // Getter for tokenID
-func (t *TokenUpdateNfts) GetTokenID() *TokenID {
-	return t.tokenID
+func (tx *TokenUpdateNfts) GetTokenID() *TokenID {
+	return tx.tokenID
 }
 
 // Setter for tokenID
-func (t *TokenUpdateNfts) SetTokenID(tokenID TokenID) *TokenUpdateNfts {
-	t._RequireNotFrozen()
-	t.tokenID = &tokenID
-	return t
+func (tx *TokenUpdateNfts) SetTokenID(tokenID TokenID) *TokenUpdateNfts {
+	tx._RequireNotFrozen()
+	tx.tokenID = &tokenID
+	return tx
 }
 
 // Getter for serialNumbers
-func (t *TokenUpdateNfts) GetSerialNumbers() []int64 {
-	return t.serialNumbers
+func (tx *TokenUpdateNfts) GetSerialNumbers() []int64 {
+	return tx.serialNumbers
 }
 
 // Setter for serialNumbers
-func (t *TokenUpdateNfts) SetSerialNumbers(serialNumbers []int64) *TokenUpdateNfts {
-	t._RequireNotFrozen()
-	t.serialNumbers = serialNumbers
-	return t
+func (tx *TokenUpdateNfts) SetSerialNumbers(serialNumbers []int64) *TokenUpdateNfts {
+	tx._RequireNotFrozen()
+	tx.serialNumbers = serialNumbers
+	return tx
 }
 
 // Getter for metadata
-func (t *TokenUpdateNfts) GetMetadata() *[]byte {
-	return t.metadata
+func (tx *TokenUpdateNfts) GetMetadata() *[]byte {
+	return tx.metadata
 }
 
 // Setter for metadata
-func (t *TokenUpdateNfts) SetMetadata(metadata []byte) *TokenUpdateNfts {
-	t._RequireNotFrozen()
-	t.metadata = &metadata
-	return t
+func (tx *TokenUpdateNfts) SetMetadata(metadata []byte) *TokenUpdateNfts {
+	tx._RequireNotFrozen()
+	tx.metadata = &metadata
+	return tx
 }
 
 // ----------- Overridden functions ----------------
