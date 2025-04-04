@@ -60,10 +60,10 @@ func _ChecksumParseAddress(ledgerID *LedgerID, address string) (_ParseAddressRes
 	checksum := _CheckChecksum(ledgerID._LedgerIDBytes, ad)
 
 	var status int
-	switch m := matchArray[4]; {
-	case m == "":
+	switch matchArray[4] {
+	case "":
 		status = 2
-	case m == checksum:
+	case checksum:
 		status = 3
 	default:
 		status = 1

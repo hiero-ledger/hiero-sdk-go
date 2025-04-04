@@ -45,15 +45,15 @@ func _NewManagedNetwork() _ManagedNetwork {
 	}
 }
 
-func (this *_ManagedNetwork) _SetNetwork(network map[string]_IManagedNode) error {
-	newNodes := make([]_IManagedNode, len(this.nodes))
+func (mn *_ManagedNetwork) _SetNetwork(network map[string]_IManagedNode) error {
+	newNodes := make([]_IManagedNode, len(mn.nodes))
 	newNodeKeys := map[string]bool{}
 	newNodeValues := map[string]bool{}
 
 	// Copy all the nodes into the `newNodes` list
-	copy(newNodes, this.nodes)
+	copy(newNodes, mn.nodes)
 
-	// Remove nodes from the old this which do not belong to the new this
+	// Remove nodes from the old mn which do not belong to the new mn
 	for _, index := range _GetNodesToRemove(network, newNodes) {
 		node := newNodes[index]
 
@@ -86,135 +86,135 @@ func (this *_ManagedNetwork) _SetNetwork(network map[string]_IManagedNode) error
 
 	newNetwork, newHealthyNodes := _CreateNetworkFromNodes(newNodes)
 
-	this.nodes = newNodes
-	this.network = newNetwork
-	this.healthyNodes = newHealthyNodes
+	mn.nodes = newNodes
+	mn.network = newNetwork
+	mn.healthyNodes = newHealthyNodes
 
 	return nil
 }
 
-func (this *_ManagedNetwork) _ReadmitNodes() {
+func (mn *_ManagedNetwork) _ReadmitNodes() {
 	now := time.Now()
 
-	this.healthyNodesMutex.Lock()
-	defer this.healthyNodesMutex.Unlock()
+	mn.healthyNodesMutex.Lock()
+	defer mn.healthyNodesMutex.Unlock()
 
-	if this.earliestReadmitTime.Before(now) {
-		nextEarliestReadmitTime := now.Add(this.maxNodeReadmitPeriod)
+	if mn.earliestReadmitTime.Before(now) {
+		nextEarliestReadmitTime := now.Add(mn.maxNodeReadmitPeriod)
 
-		for _, node := range this.nodes {
+		for _, node := range mn.nodes {
 			if node._GetReadmitTime() != nil && node._GetReadmitTime().After(now) && node._GetReadmitTime().Before(nextEarliestReadmitTime) {
 				nextEarliestReadmitTime = *node._GetReadmitTime()
 			}
 		}
 
-		this.earliestReadmitTime = nextEarliestReadmitTime
-		if this.earliestReadmitTime.Before(now.Add(this.minNodeReadmitPeriod)) {
-			this.earliestReadmitTime = now.Add(this.minNodeReadmitPeriod)
+		mn.earliestReadmitTime = nextEarliestReadmitTime
+		if mn.earliestReadmitTime.Before(now.Add(mn.minNodeReadmitPeriod)) {
+			mn.earliestReadmitTime = now.Add(mn.minNodeReadmitPeriod)
 		}
 
 	outer:
-		for _, node := range this.nodes {
-			for _, healthyNode := range this.healthyNodes {
+		for _, node := range mn.nodes {
+			for _, healthyNode := range mn.healthyNodes {
 				if node == healthyNode {
 					continue outer
 				}
 			}
 
 			if node._GetReadmitTime().Before(now) {
-				this.healthyNodes = append(this.healthyNodes, node)
+				mn.healthyNodes = append(mn.healthyNodes, node)
 			}
 		}
 	}
 }
 
-func (this *_ManagedNetwork) _GetNumberOfNodesForTransaction() int { // nolint
-	this._ReadmitNodes()
-	if this.maxNodesPerTransaction != nil {
-		return int(math.Min(float64(*this.maxNodesPerTransaction), float64(len(this.network))))
+func (mn *_ManagedNetwork) _GetNumberOfNodesForTransaction() int { // nolint
+	mn._ReadmitNodes()
+	if mn.maxNodesPerTransaction != nil {
+		return int(math.Min(float64(*mn.maxNodesPerTransaction), float64(len(mn.network))))
 	}
 
-	return (len(this.network) + 3 - 1) / 3
+	return (len(mn.network) + 3 - 1) / 3
 }
 
-func (this *_ManagedNetwork) _SetMaxNodesPerTransaction(max int) {
-	this.maxNodesPerTransaction = &max
+func (mn *_ManagedNetwork) _SetMaxNodesPerTransaction(max int) {
+	mn.maxNodesPerTransaction = &max
 }
 
-func (this *_ManagedNetwork) _SetMaxNodeAttempts(max int) {
-	this.maxNodeAttempts = max
+func (mn *_ManagedNetwork) _SetMaxNodeAttempts(max int) {
+	mn.maxNodeAttempts = max
 }
 
-func (this *_ManagedNetwork) _GetMaxNodeAttempts() int {
-	return this.maxNodeAttempts
+func (mn *_ManagedNetwork) _GetMaxNodeAttempts() int {
+	return mn.maxNodeAttempts
 }
 
-func (this *_ManagedNetwork) _SetMinNodeReadmitPeriod(min time.Duration) {
-	this.minNodeReadmitPeriod = min
-	this.earliestReadmitTime = time.Now().Add(this.minNodeReadmitPeriod)
+func (mn *_ManagedNetwork) _SetMinNodeReadmitPeriod(min time.Duration) {
+	mn.minNodeReadmitPeriod = min
+	mn.earliestReadmitTime = time.Now().Add(mn.minNodeReadmitPeriod)
 }
 
-func (this *_ManagedNetwork) _GetMinNodeReadmitPeriod() time.Duration {
-	return this.minNodeReadmitPeriod
+func (mn *_ManagedNetwork) _GetMinNodeReadmitPeriod() time.Duration {
+	return mn.minNodeReadmitPeriod
 }
 
-func (this *_ManagedNetwork) _SetMaxNodeReadmitPeriod(max time.Duration) {
-	this.maxNodeReadmitPeriod = max
+func (mn *_ManagedNetwork) _SetMaxNodeReadmitPeriod(max time.Duration) {
+	mn.maxNodeReadmitPeriod = max
 }
 
-func (this *_ManagedNetwork) _GetMaxNodeReadmitPeriod() time.Duration {
-	return this.maxNodeReadmitPeriod
+func (mn *_ManagedNetwork) _GetMaxNodeReadmitPeriod() time.Duration {
+	return mn.maxNodeReadmitPeriod
 }
 
-func (this *_ManagedNetwork) _SetMinBackoff(minBackoff time.Duration) {
-	this.minBackoff = minBackoff
-	for _, nod := range this.healthyNodes {
+func (mn *_ManagedNetwork) _SetMinBackoff(minBackoff time.Duration) {
+	mn.minBackoff = minBackoff
+	for _, nod := range mn.healthyNodes {
 		if nod != nil {
 			nod._SetMinBackoff(minBackoff)
 		}
 	}
 }
 
-func (this *_ManagedNetwork) _GetNode() _IManagedNode {
-	this._ReadmitNodes()
-	this.healthyNodesMutex.RLock()
-	defer this.healthyNodesMutex.RUnlock()
+func (mn *_ManagedNetwork) _GetNode() _IManagedNode {
+	mn._ReadmitNodes()
+	mn.healthyNodesMutex.RLock()
+	defer mn.healthyNodesMutex.RUnlock()
 
-	if len(this.healthyNodes) == 0 {
+	if len(mn.healthyNodes) == 0 {
 		panic("failed to find a healthy working node")
 	}
 
-	bg := big.NewInt(int64(len(this.healthyNodes)))
+	bg := big.NewInt(int64(len(mn.healthyNodes)))
 	index, _ := rand.Int(rand.Reader, bg)
-	return this.healthyNodes[index.Int64()]
+	return mn.healthyNodes[index.Int64()]
 }
 
-func (this *_ManagedNetwork) _GetMinBackoff() time.Duration {
-	return this.minBackoff
+func (mn *_ManagedNetwork) _GetMinBackoff() time.Duration {
+	return mn.minBackoff
 }
 
-func (this *_ManagedNetwork) _SetMaxBackoff(maxBackoff time.Duration) {
-	this.maxBackoff = maxBackoff
-	for _, node := range this.healthyNodes {
+func (mn *_ManagedNetwork) _SetMaxBackoff(maxBackoff time.Duration) {
+	mn.maxBackoff = maxBackoff
+	for _, node := range mn.healthyNodes {
 		node._SetMaxBackoff(maxBackoff)
 	}
 }
 
-func (this *_ManagedNetwork) _GetMaxBackoff() time.Duration {
-	return this.maxBackoff
+func (mn *_ManagedNetwork) _GetMaxBackoff() time.Duration {
+	return mn.maxBackoff
 }
 
-func (this *_ManagedNetwork) _GetLedgerID() *LedgerID {
-	return this.ledgerID
+func (mn *_ManagedNetwork) _GetLedgerID() *LedgerID {
+	return mn.ledgerID
 }
 
-func (this *_ManagedNetwork) _SetLedgerID(id LedgerID) *_ManagedNetwork {
-	this.ledgerID = &id
-	return this
+func (mn *_ManagedNetwork) _SetLedgerID(id LedgerID) *_ManagedNetwork {
+	mn.ledgerID = &id
+	return mn
 }
 
-func (this *_ManagedNetwork) _Close() error {
-	for _, conn := range this.healthyNodes {
+func (mn *_ManagedNetwork) _Close() error {
+	for _, conn := range mn.healthyNodes {
 		if err := conn._Close(); err != nil {
 			return err
 		}
@@ -243,15 +243,15 @@ func _CreateNetworkFromNodes(nodes []_IManagedNode) (network map[string][]_IMana
 	return network, healthyNodes
 }
 
-func (this *_ManagedNetwork) _SetTransportSecurity(transportSecurity bool) (err error) {
-	if this.transportSecurity != transportSecurity {
-		if err := this._Close(); err != nil {
+func (mn *_ManagedNetwork) _SetTransportSecurity(transportSecurity bool) (err error) {
+	if mn.transportSecurity != transportSecurity {
+		if err := mn._Close(); err != nil {
 			return err
 		}
 
-		newNodes := make([]_IManagedNode, len(this.nodes))
+		newNodes := make([]_IManagedNode, len(mn.nodes))
 
-		copy(newNodes, this.nodes)
+		copy(newNodes, mn.nodes)
 
 		for i, node := range newNodes {
 			if transportSecurity {
@@ -263,12 +263,12 @@ func (this *_ManagedNetwork) _SetTransportSecurity(transportSecurity bool) (err 
 
 		newNetwork, newHealthyNodes := _CreateNetworkFromNodes(newNodes)
 
-		this.nodes = newNodes
-		this.healthyNodes = newHealthyNodes
-		this.network = newNetwork
+		mn.nodes = newNodes
+		mn.healthyNodes = newHealthyNodes
+		mn.network = newNetwork
 	}
 
-	this.transportSecurity = transportSecurity
+	mn.transportSecurity = transportSecurity
 	return nil
 }
 
@@ -284,15 +284,15 @@ func _GetNodesToRemove(network map[string]_IManagedNode, nodes []_IManagedNode) 
 	return nodeIndices
 }
 
-func (this *_ManagedNetwork) _SetVerifyCertificate(verify bool) *_ManagedNetwork {
-	for _, node := range this.nodes {
+func (mn *_ManagedNetwork) _SetVerifyCertificate(verify bool) *_ManagedNetwork {
+	for _, node := range mn.nodes {
 		node._SetVerifyCertificate(verify)
 	}
 
-	this.verifyCertificate = verify
-	return this
+	mn.verifyCertificate = verify
+	return mn
 }
 
-func (this *_ManagedNetwork) _GetVerifyCertificate() bool {
-	return this.verifyCertificate
+func (mn *_ManagedNetwork) _GetVerifyCertificate() bool {
+	return mn.verifyCertificate
 }

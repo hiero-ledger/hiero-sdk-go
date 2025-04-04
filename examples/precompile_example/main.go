@@ -18,21 +18,6 @@ type AbiObject struct {
 	ByteCode string `json:"bytecode"`
 }
 
-func additionalLogic(privateKey hiero.PrivateKey, keyList *hiero.KeyList, address string, client *hiero.Client) {
-	id, err := hiero.TokenIDFromSolidityAddress(address)
-	if err != nil {
-		panic(err)
-	}
-	asd, err := hiero.NewTokenUpdateTransaction().SetTokenID(id).SetAdminKey(keyList).SetSupplyKey(keyList).Sign(privateKey).Execute(client)
-	if err != nil {
-		panic(err)
-	}
-	rec, err := asd.GetReceipt(client)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("asd: %v\n", rec)
-}
 func main() {
 	var client *hiero.Client
 	var err error

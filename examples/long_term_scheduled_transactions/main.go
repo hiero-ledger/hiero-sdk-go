@@ -13,6 +13,7 @@ import (
  * @description Long term scheduled transactions
  */
 
+//nolint:gocyclo
 func main() {
 
 	var client *hiero.Client

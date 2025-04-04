@@ -51,7 +51,7 @@ func main() {
 		panic(err)
 	}
 
-	//Get the new account ID from the receipt
+	// Get the new account ID from the receipt
 	firstAccountId := *receiptFirstAccount.AccountID
 	fmt.Println("firstAccountId: ", firstAccountId)
 
@@ -72,7 +72,7 @@ func main() {
 		panic(err)
 	}
 
-	//Get the new account ID from the receipt
+	// Get the new account ID from the receipt
 	secondAccountId := *receiptSecondAccount.AccountID
 	fmt.Println("secondAccountId: ", secondAccountId)
 
@@ -93,7 +93,7 @@ func main() {
 		panic(err)
 	}
 
-	//Get the new account ID from the receipt
+	// Get the new account ID from the receipt
 	thirdAccountId := *receiptThirdAccount.AccountID
 	fmt.Println("thirdAccountId: ", thirdAccountId)
 
