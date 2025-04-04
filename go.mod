@@ -1,7 +1,6 @@
 module github.com/hiero-ledger/hiero-sdk-go/v2
 
 go 1.21
-
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.4
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
@@ -15,7 +14,7 @@ require (
 	golang.org/x/crypto v0.33.0
 	golang.org/x/text v0.22.0
 	google.golang.org/grpc v1.65.0
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 )
 
 require (
