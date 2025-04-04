@@ -11,6 +11,8 @@ import (
  * @summary HIP-991 hips.hedera.com/hip/hip-991
  * @description Revenue-generating topics
  */
+
+//nolint:gocyclo
 func main() {
 	var client *hiero.Client
 	var err error

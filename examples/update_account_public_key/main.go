@@ -97,6 +97,9 @@ func main() {
 
 	// Make sure the transaction went through
 	_, err = accountUpdateTxResponse.GetReceipt(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error getting the transaction receipt", err))
+	}
 
 	println(":: getAccount and check our current key")
 	info, err := hiero.NewAccountInfoQuery().

@@ -78,7 +78,7 @@ func updateMutableTokenMetadata(client *hiero.Client) {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting token info", err))
 	}
-	fmt.Println("token's metadata after creation: ", info.Metadata)
+	fmt.Println("token's metadata after creation: ", string(info.Metadata))
 
 	// Update the token's metadata
 	tx1, err := hiero.NewTokenUpdateTransaction().
@@ -105,7 +105,7 @@ func updateMutableTokenMetadata(client *hiero.Client) {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting token info", err))
 	}
-	fmt.Println("token's metadata after update: ", info.Metadata)
+	fmt.Println("token's metadata after update: ", string(info.Metadata))
 }
 
 func updateImmutableTokenMetadata(client *hiero.Client) {
@@ -148,7 +148,7 @@ func updateImmutableTokenMetadata(client *hiero.Client) {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting token info", err))
 	}
-	fmt.Println("token's metadata after creation: ", info.Metadata)
+	fmt.Println("token's metadata after creation: ", string(info.Metadata))
 
 	// Update the token's metadata
 	tx, err := hiero.NewTokenUpdateTransaction().
@@ -175,5 +175,5 @@ func updateImmutableTokenMetadata(client *hiero.Client) {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting token info", err))
 	}
-	fmt.Println("token's metadata after update: ", info.Metadata)
+	fmt.Println("token's metadata after update: ", string(info.Metadata))
 }

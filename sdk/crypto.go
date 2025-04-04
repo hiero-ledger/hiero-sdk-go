@@ -767,6 +767,21 @@ func (sk PrivateKey) Sign(message []byte) []byte {
 	return []byte{}
 }
 
+// GetRecoveryId returns the recovery id of the signature
+// for the given message. The recovery id is used to recover the public key.
+// It is only available for ECDSA keys and returns -1 if the key is not ECDSA or if the
+// signature is not valid.
+func (sk PrivateKey) GetRecoveryId(r []byte, s []byte, message []byte) int {
+	if sk.ed25519PrivateKey != nil {
+		return -1
+	}
+	if sk.ecdsaPrivateKey != nil {
+		return sk.ecdsaPrivateKey.getRecoveryId(r, s, message)
+	}
+
+	return -1
+}
+
 func (sk PrivateKey) SupportsDerivation() bool {
 	if sk.ed25519PrivateKey != nil {
 		return sk.ed25519PrivateKey._SupportsDerivation()
@@ -925,6 +940,7 @@ func Keccak256Hash(data []byte) (h Hash) {
 	return h
 }
 
+// Deprecated: Use [PublicKey.VerifySignedMessage] instead.
 func VerifySignature(pubkey, digestHash, signature []byte) bool {
 	pubKey, err := btcec.ParsePubKey(pubkey)
 	if err != nil {
