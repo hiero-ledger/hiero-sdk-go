@@ -171,7 +171,8 @@ func (node *_Node) _GetChannel(logger Logger) (*_Channel, error) {
 		}))
 	}
 
-	metadataOption := grpc.WithUnaryInterceptor(unaryInterceptor(metadata.Pairs("x-user-agent", getUserAgent())))
+	const userAgent = "x-user-agent"
+	metadataOption := grpc.WithUnaryInterceptor(unaryInterceptor(metadata.Pairs(userAgent, getUserAgent())))
 
 	conn, err = grpc.NewClient(node._ManagedNode.address._String(), security, grpc.WithKeepaliveParams(kacp), metadataOption)
 	if err != nil {
@@ -259,18 +260,22 @@ func unaryInterceptor(md metadata.MD) grpc.UnaryClientInterceptor {
 	}
 }
 
-// Extract the user agent and software version. This information is used to gather usage metrics.
+// Extract the user agent and software version.
+// This information is used to gather usage metrics.
 // If the version is not available, the user agent will be set to "hiero-sdk-go/DEV".
 func getUserAgent() string {
+	const identifier = "hiero-sdk-go"
+	version := "DEV"
 	buildInfo, ok := debug.ReadBuildInfo()
+	// If the build info is not available, set the version to "DEV".
 	if !ok {
-		return "hiero-sdk-go/DEV"
+		return fmt.Sprintf("%s/%s", identifier, version)
 	}
 
-	version := "DEV"
 	if buildInfo.Main.Version != "(devel)" && buildInfo.Main.Version != "" {
+		// If the version is not "(devel)", set the version to the build info.
 		version = buildInfo.Main.Version
 	}
 
-	return fmt.Sprintf("hiero-sdk-go/%s", version)
+	return fmt.Sprintf("%s/%s", identifier, version)
 }
