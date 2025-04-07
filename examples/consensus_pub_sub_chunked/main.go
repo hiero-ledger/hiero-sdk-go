@@ -113,11 +113,7 @@ func main() {
 	println("status:", receipt.Status.String())
 
 	// Wait for the message
-	for {
-		if !wait || uint64(time.Since(start).Seconds()) > 60 {
-			break
-		}
-
+	for wait && uint64(time.Since(start).Seconds()) <= 60 {
 		time.Sleep(1 * time.Second)
 	}
 

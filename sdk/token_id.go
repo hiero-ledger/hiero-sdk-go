@@ -46,7 +46,7 @@ func (id TokenID) String() string {
 
 // ToStringWithChecksum returns a string representation of the TokenID formatted as `Shard.Realm.TokenID-Checksum` (for example "0.0.3-abcd")
 func (id TokenID) ToStringWithChecksum(client Client) (string, error) {
-	if client.GetNetworkName() == nil && client.GetLedgerID() == nil {
+	if client.GetLedgerID() == nil {
 		return "", errNetworkNameMissing
 	}
 	var checksum _ParseAddressResult

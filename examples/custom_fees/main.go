@@ -7,6 +7,7 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+//nolint:gocyclo
 func main() {
 	var client *hiero.Client
 	var err error
@@ -205,17 +206,18 @@ func main() {
 	tokenInfo1, err := hiero.NewTokenInfoQuery().
 		SetTokenID(tokenId).
 		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing TokenInfoQuery", err))
+	}
 
-	println("Custom Fees according to TokenInfoQuery:")
-	for _, i := range tokenInfo1.CustomFees {
-		switch t := i.(type) {
-		case hiero.CustomFixedFee:
-			println(t.String())
+	fmt.Println("Custom Fees according to TokenInfoQuery:")
+	for _, fee := range tokenInfo1.CustomFees {
+		if fixedFee, ok := fee.(hiero.CustomFixedFee); ok {
+			fmt.Println(fixedFee.String())
 		}
 	}
 
 	// We must associate the token with Bob and Charlie before they can trade in it.
-
 	tokenAssociate, err := hiero.NewTokenAssociateTransaction().
 		// Account to associate token with
 		SetAccountID(bobId).
@@ -386,10 +388,9 @@ func main() {
 	}
 
 	println("Custom Fees according to TokenInfoQuery:")
-	for _, i := range tokenInfo2.CustomFees {
-		switch t := i.(type) {
-		case hiero.CustomFractionalFee:
-			println(t.String())
+	for _, fee := range tokenInfo2.CustomFees {
+		if fractionalFee, ok := fee.(hiero.CustomFractionalFee); ok {
+			fmt.Println(fractionalFee.String())
 		}
 	}
 
@@ -446,7 +447,7 @@ func main() {
 		println(k.String())
 	}
 
-	//Clean up
+	// Clean up
 
 	tokenDelete, _ := hiero.NewTokenDeleteTransaction().
 		SetTokenID(tokenId).
@@ -463,7 +464,7 @@ func main() {
 		FreezeWith(client)
 
 	accDelete.Sign(charlieKey)
-	resp, err = accDelete.Execute(client)
+	resp, _ = accDelete.Execute(client)
 	_, _ = resp.GetReceipt(client)
 
 	accDelete, _ = hiero.NewAccountDeleteTransaction().

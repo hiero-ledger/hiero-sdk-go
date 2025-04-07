@@ -11,6 +11,8 @@ import (
  * @summary HIP-904 https://hips.hedera.com/hip/hip-904
  * @description Airdrop fungible and non fungible tokens to an account
  */
+
+//nolint:gocyclo
 func main() {
 
 	var client *hiero.Client

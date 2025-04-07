@@ -8,7 +8,10 @@ import (
 	"encoding/asn1"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strings"
+
+	cryptoEcdsa "crypto/ecdsa"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	ecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
@@ -216,8 +219,21 @@ func (pk _ECDSAPublicKey) _ToSignaturePairProtobuf(signature []byte) *services.S
 	}
 }
 
-func (pk _ECDSAPublicKey) _Verify(message []byte, signature []byte) bool {
-	recoveredKey, _, err := ecdsa.RecoverCompact(signature, message)
+func (pk _ECDSAPublicKey) _VerifySignedMessage(message []byte, signature []byte) bool {
+	if len(signature) != 64 {
+		return false
+	}
+	hash := Keccak256Hash(message)
+	r := new(big.Int).SetBytes(signature[:32])
+	s := new(big.Int).SetBytes(signature[32:])
+
+	// Verify the signature
+	return cryptoEcdsa.Verify(pk.PublicKey.ToECDSA(), hash.Bytes(), r, s)
+}
+
+// Deprecated: Deprecated in favor of _VerifySignedMessage
+func (pk _ECDSAPublicKey) _Verify(hash []byte, signature []byte) bool {
+	recoveredKey, _, err := ecdsa.RecoverCompact(signature, hash)
 	if err != nil {
 		return false
 	}
@@ -229,8 +245,11 @@ func (pk _ECDSAPublicKey) _VerifyTransaction(tx *Transaction[TransactionInterfac
 	if tx.signedTransactions._Length() == 0 {
 		return false
 	}
-
-	_, _ = tx._BuildAllTransactions()
+	for _, signedKey := range tx.publicKeys {
+		if bytes.Equal(signedKey.BytesRaw(), pk._BytesRaw()) {
+			return true
+		}
+	}
 
 	for _, value := range tx.signedTransactions.slice {
 		tx := value.(*services.SignedTransaction)
@@ -238,7 +257,7 @@ func (pk _ECDSAPublicKey) _VerifyTransaction(tx *Transaction[TransactionInterfac
 		for _, sigPair := range tx.SigMap.GetSigPair() {
 			if bytes.Equal(sigPair.GetPubKeyPrefix(), pk._BytesRaw()) {
 				found = true
-				if !pk._Verify(tx.BodyBytes, sigPair.GetECDSASecp256K1()) {
+				if !pk._VerifySignedMessage(tx.BodyBytes, sigPair.GetECDSASecp256K1()) {
 					return false
 				}
 			}

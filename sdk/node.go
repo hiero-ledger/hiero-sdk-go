@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -122,12 +123,13 @@ func (node *_Node) _GetChannel(logger Logger) (*_Channel, error) {
 
 	var conn *grpc.ClientConn
 	var err error
-	security := grpc.WithInsecure() //nolint
+	security := grpc.WithTransportCredentials(insecure.NewCredentials())
 	if !node.verifyCertificate {
 		println("skipping certificate check")
 	}
 	if node._ManagedNode.address._IsTransportSecurity() {
 		security = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{
+			MinVersion:         tls.VersionTLS12,
 			InsecureSkipVerify: true, // nolint
 			VerifyPeerCertificate: func(rawCerts [][]byte, verifiedChains [][]*x509.Certificate) error {
 				if node.addressBook == nil {

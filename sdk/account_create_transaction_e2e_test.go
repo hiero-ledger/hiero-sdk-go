@@ -252,6 +252,7 @@ func TestIntegrationAccountCreateTransactionNetwork(t *testing.T) {
 
 	accountID := *receipt.AccountID
 	env.Client.SetAutoValidateChecksums(true)
+	env.Client.SetLedgerID(*NewLedgerIDMainnet())
 
 	accountIDString, err := accountID.ToStringWithChecksum(ClientForMainnet())
 	require.NoError(t, err)

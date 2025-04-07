@@ -118,9 +118,9 @@ func (node *_MirrorNode) _GetConsensusServiceClient() (*mirror.ConsensusServiceC
 	var security grpc.DialOption
 
 	if node._ManagedNode.address._IsTransportSecurity() {
-		security = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})) // nolint
+		security = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12}))
 	} else {
-		security = grpc.WithTransportCredentials(insecure.NewCredentials()) //nolint
+		security = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
 	conn, err := grpc.NewClient(node._ManagedNode.address._String(), security, grpc.WithKeepaliveParams(kacp))
@@ -153,9 +153,9 @@ func (node *_MirrorNode) _GetNetworkServiceClient() (*mirror.NetworkServiceClien
 	var security grpc.DialOption
 
 	if node._ManagedNode.address._IsTransportSecurity() {
-		security = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})) // nolint
+		security = grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS12}))
 	} else {
-		security = grpc.WithTransportCredentials(insecure.NewCredentials()) //nolint
+		security = grpc.WithTransportCredentials(insecure.NewCredentials())
 	}
 
 	conn, err := grpc.NewClient(node._ManagedNode.address._String(), security, grpc.WithKeepaliveParams(kacp))

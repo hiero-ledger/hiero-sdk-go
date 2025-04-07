@@ -36,7 +36,13 @@ func main() {
 		// Set the file ID for address book which is 0.0.102
 		SetFileID(hiero.FileIDForAddressBook())
 
-	println("the network that address book is for:", client.GetNetworkName().String())
+	var network string
+	if client.GetLedgerID() != nil {
+		network = client.GetLedgerID().String()
+	} else {
+		network = "custom"
+	}
+	println("the network that address book is for:", network)
 
 	cost, err := fileQuery.GetCost(client)
 	if err != nil {
@@ -65,7 +71,7 @@ func main() {
 	}
 
 	// Write the contents (string([]byte)) into the string file
-	leng, err := fileString.WriteString(string(contents))
+	_, err = fileString.WriteString(string(contents))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error writing contents to file", err))
 	}
@@ -74,10 +80,6 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error writing contents to file", err))
 	}
-
-	temp := make([]byte, leng)
-
-	_, err = fileString.Read(temp)
 
 	// Close the files
 	err = fileString.Close()

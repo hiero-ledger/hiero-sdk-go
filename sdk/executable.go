@@ -293,13 +293,17 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 		statusError := e.mapStatusError(e, resp)
 
+		var network = "unknown"
+		if client.GetLedgerID() != nil {
+			network = client.GetLedgerID().String()
+		}
 		txLogger.Trace(
 			msg,
 			"requestID", e.getLogID(e),
 			"nodeID", node.accountID.String(),
 			"nodeAddress", node.address._String(),
 			"nodeIsHealthy", strconv.FormatBool(node._IsHealthy()),
-			"network", client.GetLedgerID().String(),
+			"network", network,
 			"status", statusError.Error(),
 			"txID", txID,
 		)

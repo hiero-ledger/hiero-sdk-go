@@ -33,7 +33,7 @@ func main() {
 	client.SetOperator(operatorAccountID, operatorKey)
 
 	// Constructors exist for convenient files
-	//fileID := hiero.FileIDForAddressBook()
+	// fileID := hiero.FileIDForAddressBook()
 	// fileID := hiero.FileIDForFeeSchedule()
 	fileID := hiero.FileIDForExchangeRate()
 
