@@ -172,6 +172,8 @@ func (node *_Node) _GetChannel(logger Logger) (*_Channel, error) {
 	}
 
 	const userAgent = "x-user-agent"
+	// Add the user agent to the outgoing context.
+	// This information is used to gather usage metrics.
 	metadataOption := grpc.WithUnaryInterceptor(unaryInterceptor(metadata.Pairs(userAgent, getUserAgent())))
 
 	conn, err = grpc.NewClient(node._ManagedNode.address._String(), security, grpc.WithKeepaliveParams(kacp), metadataOption)
@@ -246,6 +248,8 @@ func (node *_Node) _GetVerifyCertificate() bool {
 	return node.verifyCertificate
 }
 
+// unaryInterceptor adds the user agent to the outgoing context.
+// This information is used to gather usage metrics.
 func unaryInterceptor(md metadata.MD) grpc.UnaryClientInterceptor {
 	return func(
 		ctx context.Context,
