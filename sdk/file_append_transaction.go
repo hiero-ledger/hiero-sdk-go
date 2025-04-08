@@ -36,7 +36,7 @@ func NewFileAppendTransaction() *FileAppendTransaction {
 }
 
 func _FileAppendTransactionFromProtobuf(tx Transaction[*FileAppendTransaction], pb *services.TransactionBody) FileAppendTransaction {
-	var contents []byte = make([]byte, 0)
+	contents := make([]byte, 0)
 	if pb.GetFileAppend().GetContents() != nil {
 		contents = pb.GetFileAppend().GetContents()
 	}

@@ -132,8 +132,7 @@ func main() {
 	// Converting it from interface to hiero.TransferTransaction() and retrieving the amount of transfers
 	// to check if we have the right one, and that it's not empty
 	var transfers map[hiero.AccountID]hiero.Hbar
-	switch tx := transfer.(type) {
-	case *hiero.TransferTransaction:
+	if tx, ok := transfer.(*hiero.TransferTransaction); ok {
 		transfers = tx.GetHbarTransfers()
 	}
 

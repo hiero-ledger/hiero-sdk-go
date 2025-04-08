@@ -7,6 +7,7 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+//nolint:gocyclo
 func main() {
 	var client *hiero.Client
 	var err error
