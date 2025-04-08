@@ -323,8 +323,6 @@ func (tx AccountUpdateTransaction) build() *services.TransactionBody {
 		},
 	}
 
-	body.MaxAutomaticTokenAssociations = &wrapperspb.Int32Value{Value: tx.maxAutomaticTokenAssociations}
-
 	return &pb
 }
 func (tx AccountUpdateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
@@ -341,9 +339,12 @@ func (tx AccountUpdateTransaction) buildProtoBody() *services.CryptoUpdateTransa
 		ReceiverSigRequiredField: &services.CryptoUpdateTransactionBody_ReceiverSigRequiredWrapper{
 			ReceiverSigRequiredWrapper: &wrapperspb.BoolValue{Value: tx.receiverSignatureRequired},
 		},
-		Memo:                          &wrapperspb.StringValue{Value: tx.memo},
-		DeclineReward:                 &wrapperspb.BoolValue{Value: tx.declineReward},
-		MaxAutomaticTokenAssociations: &wrapperspb.Int32Value{Value: tx.maxAutomaticTokenAssociations},
+		Memo:          &wrapperspb.StringValue{Value: tx.memo},
+		DeclineReward: &wrapperspb.BoolValue{Value: tx.declineReward},
+	}
+
+	if tx.maxAutomaticTokenAssociations != 0 {
+		body.MaxAutomaticTokenAssociations = &wrapperspb.Int32Value{Value: tx.maxAutomaticTokenAssociations}
 	}
 
 	if tx.autoRenewPeriod != nil {
