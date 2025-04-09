@@ -32,7 +32,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UtilService_Prng_FullMethodName = "/proto.UtilService/prng"
+	UtilService_Prng_FullMethodName        = "/proto.UtilService/prng"
+	UtilService_AtomicBatch_FullMethodName = "/proto.UtilService/atomicBatch"
 )
 
 // UtilServiceClient is the client API for UtilService service.
@@ -55,6 +56,13 @@ type UtilServiceClient interface {
 	// The request body MUST be a
 	// [UtilPrngTransactionBody](#proto.UtilPrngTransactionBody)
 	Prng(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error)
+	// *
+	// Execute a batch of transactions atomically.
+	// <p>
+	// All transactions in the batch will be executed in order, and if any
+	// transaction fails, the entire batch will fail.
+	// // TODO: Add more details about the batch transaction
+	AtomicBatch(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error)
 }
 
 type utilServiceClient struct {
@@ -69,6 +77,16 @@ func (c *utilServiceClient) Prng(ctx context.Context, in *Transaction, opts ...g
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TransactionResponse)
 	err := c.cc.Invoke(ctx, UtilService_Prng_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *utilServiceClient) AtomicBatch(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(TransactionResponse)
+	err := c.cc.Invoke(ctx, UtilService_AtomicBatch_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +113,13 @@ type UtilServiceServer interface {
 	// The request body MUST be a
 	// [UtilPrngTransactionBody](#proto.UtilPrngTransactionBody)
 	Prng(context.Context, *Transaction) (*TransactionResponse, error)
+	// *
+	// Execute a batch of transactions atomically.
+	// <p>
+	// All transactions in the batch will be executed in order, and if any
+	// transaction fails, the entire batch will fail.
+	// // TODO: Add more details about the batch transaction
+	AtomicBatch(context.Context, *Transaction) (*TransactionResponse, error)
 	mustEmbedUnimplementedUtilServiceServer()
 }
 
@@ -107,6 +132,9 @@ type UnimplementedUtilServiceServer struct{}
 
 func (UnimplementedUtilServiceServer) Prng(context.Context, *Transaction) (*TransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Prng not implemented")
+}
+func (UnimplementedUtilServiceServer) AtomicBatch(context.Context, *Transaction) (*TransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AtomicBatch not implemented")
 }
 func (UnimplementedUtilServiceServer) mustEmbedUnimplementedUtilServiceServer() {}
 func (UnimplementedUtilServiceServer) testEmbeddedByValue()                     {}
@@ -147,6 +175,24 @@ func _UtilService_Prng_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UtilService_AtomicBatch_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Transaction)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UtilServiceServer).AtomicBatch(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UtilService_AtomicBatch_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UtilServiceServer).AtomicBatch(ctx, req.(*Transaction))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UtilService_ServiceDesc is the grpc.ServiceDesc for UtilService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -157,6 +203,10 @@ var UtilService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "prng",
 			Handler:    _UtilService_Prng_Handler,
+		},
+		{
+			MethodName: "atomicBatch",
+			Handler:    _UtilService_AtomicBatch_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
