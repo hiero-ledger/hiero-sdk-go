@@ -27,7 +27,7 @@ func TestUnitAccountIDChecksumFromString(t *testing.T) {
 	AccountIDFromSolidityAddress(sol)
 	err = id.Validate(client)
 	require.Error(t, err)
-	evmID, err := AccountIDFromEvmAddress(0, 0, "ace082947b949651c703ff0f02bc1541")
+	evmID, err := AccountIDFromEvmAddress(0, 0, "0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
 	require.NoError(t, err)
 	pb := evmID._ToProtobuf()
 	_AccountIDFromProtobuf(pb)
