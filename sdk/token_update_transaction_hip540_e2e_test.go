@@ -450,6 +450,7 @@ func TestIntegrationTokenUpdateTransactionUpdateSupplyKeyFullValidationFails(t *
 	// Update supply key
 	tx, err := NewTokenUpdateTransaction().
 		SetTokenID(tokenID).
+		SetNodeAccountIDs(env.NodeAccountIDs[0:1]).
 		SetSupplyKey(newSupplyKey).
 		SetKeyVerificationMode(FULL_VALIDATION).
 		FreezeWith(env.Client)
@@ -468,6 +469,7 @@ func TestIntegrationTokenUpdateTransactionUpdateSupplyKeyFullValidationFails(t *
 	// Update supply key
 	tx2, err := NewTokenUpdateTransaction().
 		SetTokenID(tokenID).
+		SetNodeAccountIDs(env.NodeAccountIDs[0:1]).
 		SetSupplyKey(newSupplyKey).
 		SetKeyVerificationMode(FULL_VALIDATION).
 		FreezeWith(env.Client)
@@ -518,6 +520,7 @@ func TestIntegrationTokenUpdateTransactionUpdateSupplyKeyWithInvalidKey(t *testi
 	// Update supply key
 	tx, err := NewTokenUpdateTransaction().
 		SetTokenID(tokenID).
+		SetNodeAccountIDs(env.NodeAccountIDs[0:1]).
 		SetSupplyKey(invalidSupplyKey).
 		SetKeyVerificationMode(NO_VALIDATION).
 		FreezeWith(env.Client)
@@ -590,6 +593,7 @@ func updateTokenKeysHelper(t *testing.T, tokenID TokenID, updateKeyType KeyType,
 	privateKey, _ := newKey.(PrivateKey)
 	// Update the key
 	tx := NewTokenUpdateTransaction().
+		SetNodeAccountIDs(client.network._GetNodeAccountIDsForExecute()[0:1]).
 		SetTokenID(tokenID).
 		SetKeyVerificationMode(verificationMode)
 
