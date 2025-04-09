@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -11,10 +12,16 @@ import (
 	"strings"
 )
 
-const StatusIndex = 384
 const ProtoCodeStructName = "ResponseCodeEnum_"
+const sdkStatusTypeName = "Status"
+
+var StatusIndex int
 
 func main() {
+	// CLI flag for status index
+	flag.IntVar(&StatusIndex, "index", 0, "Current Status proto index")
+	flag.Parse()
+
 	// Paths to the input files
 	pbCodesFile := "../../../proto/services/response_code.pb.go"
 	codesFile := "../../../sdk/status.go"
@@ -31,7 +38,7 @@ func main() {
 	updateSwitchCases(codesNode, newSwitchCaseClauses)
 
 	// Write the modified AST back to a new Go file
-	writeToFile("output.go", codesNode)
+	writeToFile("status.go", codesNode)
 }
 
 // Parses a Go source file into an AST
@@ -82,7 +89,7 @@ func extractNewConstants(node *ast.File) ([]*ast.GenDecl, []*ast.CaseClause) {
 				// Create a new constant declaration
 				newValueSpec := &ast.ValueSpec{
 					Names:  []*ast.Ident{ast.NewIdent(cleanName)},
-					Type:   ast.NewIdent("Status"),
+					Type:   ast.NewIdent(sdkStatusTypeName),
 					Values: []ast.Expr{&ast.BasicLit{Kind: token.INT, Value: basicLit.Value}},
 				}
 				newConstGenDecls = append(newConstGenDecls, &ast.GenDecl{
@@ -151,15 +158,20 @@ func updateSwitchCases(node *ast.File, newSwitchCaseClauses []*ast.CaseClause) {
 
 // Writes the modified AST back to a new Go source file
 func writeToFile(filename string, node *ast.File) {
+	// Create the output file
 	outFile, err := os.Create(filename)
 	if err != nil {
 		log.Fatalf("Error creating file %s: %v", filename, err)
 	}
-	defer outFile.Close()
 
 	// Print the modified AST to the file
 	fset := token.NewFileSet()
-	if err := printer.Fprint(outFile, fset, node); err != nil {
+	err = printer.Fprint(outFile, fset, node)
+	if err != nil {
+		// Close the file manually before exiting
+		if closeErr := outFile.Close(); closeErr != nil {
+			log.Printf("Error closing file %s: %v", filename, closeErr)
+		}
 		log.Fatalf("Error writing to file %s: %v", filename, err)
 	}
 }

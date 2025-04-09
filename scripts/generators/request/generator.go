@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"go/ast"
 	"go/parser"
 	"go/printer"
@@ -9,12 +10,19 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
-const StatusIndex = 98
 const ProtoCodeStructName = "HederaFunctionality_"
+const sdkRequestTypeName = "RequestType"
+
+var RequestIndex int
 
 func main() {
+	// CLI flag for status index
+	flag.IntVar(&RequestIndex, "index", 0, "Current Request proto index")
+	flag.Parse()
+
 	// Paths to the input files
 	pbCodesFile := "../../../proto/services/basic_types.pb.go"
 	codesFile := "../../../sdk/request_type.go"
@@ -31,7 +39,7 @@ func main() {
 	updateSwitchCases(codesNode, newSwitchCaseClauses)
 
 	// Write the modified AST back to a new Go file
-	writeToFile("output.go", codesNode)
+	writeToFile("request_type.go", codesNode)
 }
 
 // Parses a Go source file into an AST
@@ -72,7 +80,7 @@ func extractNewConstants(node *ast.File) ([]*ast.GenDecl, []*ast.CaseClause) {
 				}
 
 				intValue, _ := strconv.Atoi(basicLit.Value)
-				if intValue <= StatusIndex {
+				if intValue <= RequestIndex {
 					continue
 				}
 
@@ -81,7 +89,8 @@ func extractNewConstants(node *ast.File) ([]*ast.GenDecl, []*ast.CaseClause) {
 
 				// Create a new constant declaration
 				newValueSpec := &ast.ValueSpec{
-					Names:  []*ast.Ident{ast.NewIdent(cleanName)},
+					Names:  []*ast.Ident{ast.NewIdent(sdkRequestTypeName + cleanName)},
+					Type:   ast.NewIdent(sdkRequestTypeName),
 					Values: []ast.Expr{&ast.BasicLit{Kind: token.INT, Value: basicLit.Value}},
 				}
 				newConstGenDecls = append(newConstGenDecls, &ast.GenDecl{
@@ -91,13 +100,13 @@ func extractNewConstants(node *ast.File) ([]*ast.GenDecl, []*ast.CaseClause) {
 
 				// Create a new switch case clause
 				newCase := &ast.CaseClause{
-					List: []ast.Expr{ast.NewIdent(cleanName)},
+					List: []ast.Expr{ast.NewIdent(sdkRequestTypeName + cleanName)},
 					Body: []ast.Stmt{
 						&ast.ReturnStmt{
 							Results: []ast.Expr{
 								&ast.BasicLit{
 									Kind:  token.STRING,
-									Value: strconv.Quote(cleanName),
+									Value: strconv.Quote(ToUpperSnakeCase(cleanName)),
 								},
 							},
 						},
@@ -110,6 +119,18 @@ func extractNewConstants(node *ast.File) ([]*ast.GenDecl, []*ast.CaseClause) {
 	})
 
 	return newConstGenDecls, newSwitchCaseClauses
+}
+
+// PascalCase to UPPER_SNAKE_CASE conversion
+func ToUpperSnakeCase(s string) string {
+	var result []rune
+	for i, r := range s {
+		if unicode.IsUpper(r) && i > 0 && (i+1 < len(s) && unicode.IsLower(rune(s[i+1]))) {
+			result = append(result, '_')
+		}
+		result = append(result, unicode.ToUpper(r))
+	}
+	return string(result)
 }
 
 // Adds new constant declarations to the existing const block in the AST
@@ -150,15 +171,20 @@ func updateSwitchCases(node *ast.File, newSwitchCaseClauses []*ast.CaseClause) {
 
 // Writes the modified AST back to a new Go source file
 func writeToFile(filename string, node *ast.File) {
+	// Create the output file
 	outFile, err := os.Create(filename)
 	if err != nil {
 		log.Fatalf("Error creating file %s: %v", filename, err)
 	}
-	defer outFile.Close()
 
 	// Print the modified AST to the file
 	fset := token.NewFileSet()
-	if err := printer.Fprint(outFile, fset, node); err != nil {
+	err = printer.Fprint(outFile, fset, node)
+	if err != nil {
+		// Close the file manually before exiting
+		if closeErr := outFile.Close(); closeErr != nil {
+			log.Printf("Error closing file %s: %v", filename, closeErr)
+		}
 		log.Fatalf("Error writing to file %s: %v", filename, err)
 	}
 }
