@@ -61,7 +61,7 @@ This script automates the process of moving and compiling `.proto` files using `
 Run the script with the following command:
 
 ```sh
-go run generate_proto.go -source <dir1,dir2,...> -dest <dir>
+go run scripts/proto/generator.go -source <dir1,dir2,...> -dest <dir>
 ```
 
 ### Arguments
@@ -73,7 +73,8 @@ go run generate_proto.go -source <dir1,dir2,...> -dest <dir>
 ### Example
 
 ```sh
-go run generate_proto.go -source ../services/hapi/hedera-protobufs/services/state,../services/hapi/hedera-protobufs/services/auxiliary -dest ../services/hapi/hedera-protobufs/services
+go run scripts/proto/generator.go -source ../services/hapi/hedera-protobufs/services/state,../services/hapi/hedera-protobufs/services/auxiliary -dest ../services/hapi/hedera-protobufs/services
+
 ```
 
 ### Note
@@ -81,6 +82,35 @@ go run generate_proto.go -source ../services/hapi/hedera-protobufs/services/stat
 -   If proto file definitions are located in the `services` submodule make sure it is initialised.
 -   Keep in mind that the script does not still support protobuf import altering. If errors related to
     the `proto` import paths occur we resolve them manually.
+
+## Request Codes and Status Generation Scripts
+
+Scripts to automate generating the appropriate SDK counterpart implementations for statuses and codes. 
+
+### Usage
+
+Run the script with the following command:
+
+```sh
+go run scripts/status(or request)/generator.go -index=n
+```
+
+### Arguments
+
+-   -index (required): The current index of the SDK statuses or request codes. Generation will be done for the statuses/codes ids `>index`.
+
+### Example
+
+```sh
+go run scripts/status/generator.go -index=64
+
+```
+
+### Note
+
+-   Keep in mind that the generated files will be located in the script directory.
+-   It is advisable to always use the latest `index` as to not introduce braking changes in the generated files.
+-   If further mods are required they should be done manually.
 
 ## Contributing
 
