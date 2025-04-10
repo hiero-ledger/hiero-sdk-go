@@ -98,35 +98,90 @@ func (tx *AccountCreateTransaction) SetKey(key Key) *AccountCreateTransaction {
 	return tx
 }
 
-// SetKeyWithAlias sets ECDSA private key, derives and sets it's EVM address in the background.
+// SetECDSAKeyWithAlias sets ECDSA private key, derives and sets it's EVM address in the background.
 // Essentially does SetKey and SetAlias in one call.
-func (tx *AccountCreateTransaction) SetECDSAKeyWithAlias(ecdsaKey PrivateKey) *AccountCreateTransaction {
+func (tx *AccountCreateTransaction) SetECDSAKeyWithAlias(ecdsaKey Key) *AccountCreateTransaction {
 	tx._RequireNotFrozen()
-	if ecdsaKey.ecdsaPrivateKey == nil {
-		tx.freezeError = _NewErrBadKeyf("Private key is not ECDSA")
-	} else {
-		evmAddress := ecdsaKey.PublicKey().ToEvmAddress()
-		evmAddress = strings.TrimPrefix(evmAddress, "0x")
-		evmAddressBytes, _ := hex.DecodeString(evmAddress)
-		tx.alias = evmAddressBytes
-		tx.key = ecdsaKey
+
+	var evmAddress string
+
+	switch key := ecdsaKey.(type) {
+	case PrivateKey:
+		if key.ecdsaPrivateKey == nil {
+			tx.freezeError = _NewErrBadKeyf("Private key is not ECDSA")
+			return tx
+		}
+		evmAddress = key.PublicKey().ToEvmAddress()
+
+	case PublicKey:
+		if key.ecdsaPublicKey == nil {
+			tx.freezeError = _NewErrBadKeyf("Public key is not ECDSA")
+			return tx
+		}
+		evmAddress = key.ToEvmAddress()
+
+	default:
+		tx.freezeError = _NewErrBadKeyf("Key must be either PrivateKey or PublicKey")
+		return tx
 	}
+
+	// Convert EVM address to bytes
+	evmAddress = strings.TrimPrefix(evmAddress, "0x")
+	evmAddressBytes, err := hex.DecodeString(evmAddress)
+	if err != nil {
+		tx.freezeError = _NewErrBadKeyf("Invalid EVM address format: %v", err)
+		return tx
+	}
+
+	tx.alias = evmAddressBytes
+	tx.key = ecdsaKey
+
 	return tx
 }
 
 // SetKeyWithAlias sets the account key and a separate ECDSA key that the EVM address is derived from.
 // A user must sign the transaction with both keys for this flow to be successful.
-func (tx *AccountCreateTransaction) SetKeyWithAlias(key Key, ecdsaKey PrivateKey) *AccountCreateTransaction {
+func (tx *AccountCreateTransaction) SetKeyWithAlias(key Key, ecdsaKey Key) *AccountCreateTransaction {
 	tx._RequireNotFrozen()
-	if ecdsaKey.ecdsaPrivateKey == nil {
-		tx.freezeError = _NewErrBadKeyf("Private key is not ECDSA")
-	} else {
-		evmAddress := ecdsaKey.PublicKey().ToEvmAddress()
+
+	// Set the primary account key
+	tx.key = key
+
+	// Handle the ECDSA key for alias derivation
+	switch typedKey := ecdsaKey.(type) {
+	case PrivateKey:
+		if typedKey.ecdsaPrivateKey == nil {
+			tx.freezeError = _NewErrBadKeyf("Private key is not ECDSA")
+			return tx
+		}
+		evmAddress := typedKey.PublicKey().ToEvmAddress()
 		evmAddress = strings.TrimPrefix(evmAddress, "0x")
-		evmAddressBytes, _ := hex.DecodeString(evmAddress)
+		evmAddressBytes, err := hex.DecodeString(evmAddress)
+		if err != nil {
+			tx.freezeError = _NewErrBadKeyf("Invalid EVM address format: %v", err)
+			return tx
+		}
 		tx.alias = evmAddressBytes
-		tx.key = key
+
+	case PublicKey:
+		if typedKey.ecdsaPublicKey == nil {
+			tx.freezeError = _NewErrBadKeyf("Public key is not ECDSA")
+			return tx
+		}
+		evmAddress := typedKey.ToEvmAddress()
+		evmAddress = strings.TrimPrefix(evmAddress, "0x")
+		evmAddressBytes, err := hex.DecodeString(evmAddress)
+		if err != nil {
+			tx.freezeError = _NewErrBadKeyf("Invalid EVM address format: %v", err)
+			return tx
+		}
+		tx.alias = evmAddressBytes
+
+	default:
+		tx.freezeError = _NewErrBadKeyf("EVM address key must be either PrivateKey or PublicKey")
+		return tx
 	}
+
 	return tx
 }
 
