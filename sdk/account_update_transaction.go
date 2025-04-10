@@ -22,14 +22,14 @@ type AccountUpdateTransaction struct {
 	proxyAccountID                *AccountID
 	key                           Key
 	autoRenewPeriod               *time.Duration
-	memo                          string
+	memo                          *string
 	receiverSignatureRequired     bool
 	expirationTime                *time.Time
-	maxAutomaticTokenAssociations int32
+	maxAutomaticTokenAssociations *int32
 	aliasKey                      *PublicKey
 	stakedAccountID               *AccountID
 	stakedNodeID                  *int64
-	declineReward                 bool
+	declineReward                 *bool
 }
 
 // NewAccountUpdateTransaction
@@ -86,17 +86,35 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 		stakeNodeAccountID = _AccountIDFromProtobuf(pb.GetCryptoUpdateAccount().GetStakedAccountId())
 	}
 
+	var memo *string
+	if pb.GetCryptoUpdateAccount().GetMemo() != nil {
+		memoVal := pb.GetCryptoUpdateAccount().GetMemo().Value
+		memo = &memoVal
+	}
+
+	var declineReward *bool
+	if pb.GetCryptoUpdateAccount().GetDeclineReward() != nil {
+		declineRewardVal := pb.GetCryptoUpdateAccount().GetDeclineReward().GetValue()
+		declineReward = &declineRewardVal
+	}
+
+	var maxAutoTokenAssociations *int32
+	if pb.GetCryptoUpdateAccount().GetMaxAutomaticTokenAssociations() != nil {
+		maxVal := pb.GetCryptoUpdateAccount().GetMaxAutomaticTokenAssociations().GetValue()
+		maxAutoTokenAssociations = &maxVal
+	}
+
 	accountUpdateTransaction := AccountUpdateTransaction{
 		accountID:                     _AccountIDFromProtobuf(pb.GetCryptoUpdateAccount().GetAccountIDToUpdate()),
 		key:                           key,
 		autoRenewPeriod:               autoRenew,
-		memo:                          pb.GetCryptoUpdateAccount().GetMemo().Value,
+		memo:                          memo,
 		receiverSignatureRequired:     receiverSignatureRequired,
 		expirationTime:                expiration,
-		maxAutomaticTokenAssociations: pb.GetCryptoUpdateAccount().MaxAutomaticTokenAssociations.GetValue(),
+		maxAutomaticTokenAssociations: maxAutoTokenAssociations,
 		stakedAccountID:               stakeNodeAccountID,
 		stakedNodeID:                  stakedNodeID,
-		declineReward:                 pb.GetCryptoUpdateAccount().GetDeclineReward().GetValue(),
+		declineReward:                 declineReward,
 	}
 
 	tx.childTransaction = &accountUpdateTransaction
@@ -176,7 +194,7 @@ func (tx *AccountUpdateTransaction) GetStakedNodeID() int64 {
 
 func (tx *AccountUpdateTransaction) SetDeclineStakingReward(decline bool) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.declineReward = decline
+	tx.declineReward = &decline
 	return tx
 }
 
@@ -193,7 +211,10 @@ func (tx *AccountUpdateTransaction) ClearStakedNodeID() *AccountUpdateTransactio
 }
 
 func (tx *AccountUpdateTransaction) GetDeclineStakingReward() bool {
-	return tx.declineReward
+	if tx.declineReward == nil {
+		return false
+	}
+	return *tx.declineReward
 }
 
 // SetMaxAutomaticTokenAssociations
@@ -201,12 +222,15 @@ func (tx *AccountUpdateTransaction) GetDeclineStakingReward() bool {
 // including implicit and explicit associations.
 func (tx *AccountUpdateTransaction) SetMaxAutomaticTokenAssociations(max int32) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.maxAutomaticTokenAssociations = max
+	tx.maxAutomaticTokenAssociations = &max
 	return tx
 }
 
 func (tx *AccountUpdateTransaction) GetMaxAutomaticTokenAssociations() int32 {
-	return tx.maxAutomaticTokenAssociations
+	if tx.maxAutomaticTokenAssociations == nil {
+		return 0
+	}
+	return *tx.maxAutomaticTokenAssociations
 }
 
 // SetReceiverSignatureRequired
@@ -275,13 +299,17 @@ func (tx *AccountUpdateTransaction) GetExpirationTime() time.Time {
 // SetAccountMemo sets the new memo to be associated with the account (UTF-8 encoding max 100 bytes)
 func (tx *AccountUpdateTransaction) SetAccountMemo(memo string) *AccountUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.memo = memo
+	tx.memo = &memo
 
 	return tx
 }
 
 func (tx *AccountUpdateTransaction) GetAccountMemo() string {
-	return tx.memo
+	if tx.memo == nil {
+		return ""
+	}
+
+	return *tx.memo
 }
 
 // ----------- Overridden functions ----------------
@@ -323,8 +351,6 @@ func (tx AccountUpdateTransaction) build() *services.TransactionBody {
 		},
 	}
 
-	body.MaxAutomaticTokenAssociations = &wrapperspb.Int32Value{Value: tx.maxAutomaticTokenAssociations}
-
 	return &pb
 }
 func (tx AccountUpdateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
@@ -341,9 +367,18 @@ func (tx AccountUpdateTransaction) buildProtoBody() *services.CryptoUpdateTransa
 		ReceiverSigRequiredField: &services.CryptoUpdateTransactionBody_ReceiverSigRequiredWrapper{
 			ReceiverSigRequiredWrapper: &wrapperspb.BoolValue{Value: tx.receiverSignatureRequired},
 		},
-		Memo:                          &wrapperspb.StringValue{Value: tx.memo},
-		DeclineReward:                 &wrapperspb.BoolValue{Value: tx.declineReward},
-		MaxAutomaticTokenAssociations: &wrapperspb.Int32Value{Value: tx.maxAutomaticTokenAssociations},
+	}
+
+	if tx.memo != nil {
+		body.Memo = &wrapperspb.StringValue{Value: *tx.memo}
+	}
+
+	if tx.declineReward != nil {
+		body.DeclineReward = &wrapperspb.BoolValue{Value: *tx.declineReward}
+	}
+
+	if tx.maxAutomaticTokenAssociations != nil {
+		body.MaxAutomaticTokenAssociations = &wrapperspb.Int32Value{Value: *tx.maxAutomaticTokenAssociations}
 	}
 
 	if tx.autoRenewPeriod != nil {
