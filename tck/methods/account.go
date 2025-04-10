@@ -374,3 +374,42 @@ func (a *AccountService) DeleteAllowance(_ context.Context, params param.Account
 	}
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
+
+// TransferCrypto jRPC method for transferCrypto
+func (a *AccountService) TransferCrypto(_ context.Context, params param.TransferCryptoParams) (*response.AccountResponse, error) {
+	transaction := hiero.NewTransferTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.Transfers == nil {
+		return nil, response.NewInternalError("transferParams is required")
+	}
+
+	transferParams := *params.Transfers
+	if len(transferParams) == 0 {
+		return nil, response.NewInternalError("transferParams is required")
+	}
+
+	for _, transferParam := range transferParams {
+		if err := utils.HandleTransferParam(transaction, transferParam); err != nil {
+			return nil, err
+		}
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.AccountResponse{Status: receipt.Status.String()}, nil
+}

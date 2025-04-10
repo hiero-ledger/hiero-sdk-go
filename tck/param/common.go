@@ -19,8 +19,15 @@ type CommonTransactionParams struct {
 
 func (common *CommonTransactionParams) FillOutTransaction(transactionInterface hiero.TransactionInterface, client *hiero.Client) error {
 	if common.TransactionId != nil {
-		txId, _ := hiero.TransactionIdFromString(*common.TransactionId)
-		_, err := hiero.TransactionSetTransactionID(transactionInterface, txId)
+		txId, err := hiero.TransactionIdFromString(*common.TransactionId)
+		if err != nil {
+			accountId, err := hiero.AccountIDFromString(*common.TransactionId)
+			if err != nil {
+				return err
+			}
+			txId = hiero.TransactionIDGenerate(accountId)
+		}
+		_, err = hiero.TransactionSetTransactionID(transactionInterface, txId)
 		if err != nil {
 			return err
 		}

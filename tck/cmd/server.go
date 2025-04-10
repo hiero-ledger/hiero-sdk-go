@@ -43,6 +43,7 @@ func main() {
 		"deleteAccount":          postHandler(HandleError, handler.New(accountService.DeleteAccount)),
 		"approveAllowance":       postHandler(HandleError, handler.New(accountService.ApproveAllowance)),
 		"deleteAllowance":        postHandler(HandleError, handler.New(accountService.DeleteAllowance)),
+		"transferCrypto":         postHandler(HandleError, handler.New(accountService.TransferCrypto)),
 		"createToken":            postHandler(HandleError, handler.New(tokenService.CreateToken)),
 		"updateToken":            postHandler(HandleError, handler.New(tokenService.UpdateToken)),
 		"deleteToken":            postHandler(HandleError, handler.New(tokenService.DeleteToken)),
