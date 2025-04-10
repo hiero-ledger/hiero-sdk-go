@@ -49,6 +49,7 @@ type BaseTransaction struct {
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
 	customFeeLimits    []*CustomFeeLimit
+	batchKey           Key
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -201,6 +202,14 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			for _, customFeeLimit := range body.GetMaxCustomFees() {
 				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
 			}
+		}
+
+		if body.GetBatchKey() != nil {
+			key, err := _KeyFromProtobuf(body.GetBatchKey())
+			if err != nil {
+				return nil, err
+			}
+			baseTx.batchKey = key
 		}
 
 		baseTx.transactionFee = body.GetTransactionFee()
@@ -791,6 +800,10 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		}
 	}
 
+	if tx.batchKey != nil {
+		originalBody.BatchKey = tx.batchKey._ToProtoKey()
+	}
+
 	updatedBody, err := protobuf.Marshal(&originalBody)
 	if err != nil {
 		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
@@ -1042,6 +1055,30 @@ func (tx *Transaction[T]) SetNodeAccountIDs(nodeAccountIDs []AccountID) T {
 	return tx.childTransaction
 }
 
+// SetBatchKey sets the batch key for this transaction.
+func (tx *Transaction[T]) SetBatchKey(batchKey Key) (T, error) {
+	if tx.IsFrozen() {
+		return tx.childTransaction, errTransactionIsFrozen
+	}
+	tx.batchKey = batchKey
+	return tx.childTransaction, nil
+}
+
+// GetBatchKey returns the batch key for this transaction.
+func (tx *Transaction[T]) GetBatchKey() Key {
+	return tx.batchKey
+}
+
+// Batchify method is used to mark a transaction as part of a batch transaction or make it so-called inner transaction.
+// The Transaction will be frozen and signed by the operator of the client.
+func (tx *Transaction[T]) Batchify(batchKey Key, client *Client) (T, error) {
+	if tx.IsFrozen() {
+		return tx.childTransaction, errTransactionIsFrozen
+	}
+	tx.batchKey = batchKey
+	return tx.SignWithOperator(client)
+}
+
 // ------------ Transaction methdos ---------------
 func (tx *Transaction[T]) Sign(privateKey PrivateKey) T {
 	return tx.SignWith(privateKey.PublicKey(), privateKey.Sign)
@@ -1280,6 +1317,18 @@ func (tx *Transaction[T]) FreezeWith(client *Client) (T, error) {
 		} else {
 			return tx.childTransaction, errNoClientOrTransactionIDOrNodeId
 		}
+	}
+
+	// if batch key is set, we need to set the node account id to 0.0.0
+	if tx.batchKey != nil {
+		batchNodeAccountId, err := AccountIDFromString("0.0.0")
+		if err != nil {
+			return tx.childTransaction, err
+		}
+		tx.nodeAccountIDs._SetLocked(false)
+		tx.nodeAccountIDs._Clear()
+		tx.nodeAccountIDs._Push(batchNodeAccountId)
+		tx.nodeAccountIDs._SetLocked(true)
 	}
 
 	if client != nil {

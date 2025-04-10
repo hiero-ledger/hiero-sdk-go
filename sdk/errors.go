@@ -22,6 +22,7 @@ var errNoClientOrTransactionIDOrNodeId = errors.New("`client` must be provided o
 var errClientOperatorSigning = errors.New("`client` must have an `_Operator` to sign with the _Operator")
 var errNoClientProvided = errors.New("`client` must be provided and have an _Operator")
 var errTransactionIsNotFrozen = errors.New("transaction is not frozen")
+var errInnerTransactionShouldBeFrozen = errors.New("inner transaction should be frozen")
 var errFailedToDeserializeBytes = errors.New("failed to deserialize bytes")
 var errNoTransactionInBytes = errors.New("no transaction was found in bytes")
 var errTransactionRequiresSingleNodeAccountID = errors.New("`PrivateKey.SignTransaction()` requires `Transaction` to have a single _Node `AccountID` set")

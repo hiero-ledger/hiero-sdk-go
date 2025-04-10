@@ -99,7 +99,7 @@ jobs:
 
             - name: Start the local node
               if: success() && matrix.test-type == 'e2e'
-              run: npx @hashgraph/hedera-local start -d --network local --balance=100000 --network-tag=0.60.0-alpha.0
+              run: npx @hashgraph/hedera-local start -d --network local --balance=100000 --network-tag=0.61.1
 
             - name: Tests Unit
               if: success() && matrix.test-type == 'unit'
@@ -169,7 +169,7 @@ jobs:
 
             - name: Start the local node
               if: success()
-              run: npx @hashgraph/hedera-local start -d --network local --balance=100000 --network-tag=0.60.0-alpha.0
+              run: npx @hashgraph/hedera-local start -d --network local --balance=100000 --network-tag=0.61.1
 
             - name: Run Examples
               if: success()
