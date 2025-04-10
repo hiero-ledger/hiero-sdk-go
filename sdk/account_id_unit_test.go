@@ -6,9 +6,12 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"encoding/hex"
 
 	"github.com/stretchr/testify/require"
 )
@@ -173,4 +176,31 @@ func TestUnitAccountIDChecksumError(t *testing.T) {
 	require.NoError(t, err)
 	_, err = id.ToStringWithChecksum(client)
 	require.Error(t, err)
+}
+
+func TestUnitAccountIDFromEvmAddressIncorrectSize(t *testing.T) {
+	t.Parallel()
+
+	// Test with an EVM address that's too short
+	_, err := AccountIDFromEvmAddress(0, 0, "abc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Test with an EVM address that's too long
+	_, err = AccountIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Test with a 0x prefix that gets removed but then is too short
+	_, err = AccountIDFromEvmAddress(0, 0, "0xabc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Verify a correct length works
+	correctAddress := "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	id, err := AccountIDFromEvmAddress(0, 0, correctAddress)
+	require.NoError(t, err)
+	require.NotNil(t, id.AliasEvmAddress)
+
+	require.Equal(t, strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e"), hex.EncodeToString(*id.AliasEvmAddress))
 }
