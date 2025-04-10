@@ -71,9 +71,7 @@ func AccountIDFromString(data string) (AccountID, error) {
 // AccountIDFromEvmAddress constructs an AccountID from a string formatted as 0.0.<evm address>
 func AccountIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (AccountID, error) {
 	// Remove 0x prefix if present
-	if strings.HasPrefix(aliasEvmAddress, "0x") {
-		aliasEvmAddress = aliasEvmAddress[2:]
-	}
+	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
 
 	// Check if the address is the correct length (40 hex characters = 20 bytes)
 	if len(aliasEvmAddress) != 40 {
