@@ -70,6 +70,14 @@ func AccountIDFromString(data string) (AccountID, error) {
 
 // AccountIDFromEvmAddress constructs an AccountID from a string formatted as 0.0.<evm address>
 func AccountIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (AccountID, error) {
+	// Remove 0x prefix if present
+	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
+
+	// Check if the address is the correct length (40 hex characters = 20 bytes)
+	if len(aliasEvmAddress) != 40 {
+		return AccountID{}, fmt.Errorf("input EVM address string is not the correct size")
+	}
+
 	temp, err := hex.DecodeString(aliasEvmAddress)
 	if err != nil {
 		return AccountID{}, err
