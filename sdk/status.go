@@ -353,6 +353,15 @@ const (
 	DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST                  Status = 385
 	DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST                    Status = 386
 	MAX_CUSTOM_FEES_IS_NOT_SUPPORTED                               Status = 387
+	BATCH_LIST_EMTPY                                               Status = 388
+	BATCH_LIST_CONTAINS_DUPLICATES                                 Status = 389
+	BATCH_TRANSACTION_IN_BLACKLIST                                 Status = 390
+	INNER_TRANSACTION_FAILED                                       Status = 391
+	MISSING_BATCH_KEY                                              Status = 392
+	BATCH_KEY_SET_ON_NON_INNER_TRANSACTION                         Status = 393
+	INVALID_BATCH_KEY                                              Status = 394
+	SCHEDULE_EXPIRY_NOT_CONFIGURABLE                               Status = 395
+	CREATING_SYSTEM_ENTITIES                                       Status = 396
 )
 
 // String() returns a string representation of the status
@@ -1050,6 +1059,24 @@ func (status Status) String() string { // nolint
 		return "DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST"
 	case MAX_CUSTOM_FEES_IS_NOT_SUPPORTED:
 		return "MAX_CUSTOM_FEES_IS_NOT_SUPPORTED"
+	case BATCH_LIST_EMTPY:
+		return "BATCH_LIST_EMTPY"
+	case BATCH_LIST_CONTAINS_DUPLICATES:
+		return "BATCH_LIST_CONTAINS_DUPLICATES"
+	case BATCH_TRANSACTION_IN_BLACKLIST:
+		return "BATCH_TRANSACTION_IN_BLACKLIST"
+	case INNER_TRANSACTION_FAILED:
+		return "INNER_TRANSACTION_FAILED"
+	case MISSING_BATCH_KEY:
+		return "MISSING_BATCH_KEY"
+	case BATCH_KEY_SET_ON_NON_INNER_TRANSACTION:
+		return "BATCH_KEY_SET_ON_NON_INNER_TRANSACTION"
+	case INVALID_BATCH_KEY:
+		return "INVALID_BATCH_KEY"
+	case SCHEDULE_EXPIRY_NOT_CONFIGURABLE:
+		return "SCHEDULE_EXPIRY_NOT_CONFIGURABLE"
+	case CREATING_SYSTEM_ENTITIES:
+		return "CREATING_SYSTEM_ENTITIES"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))
