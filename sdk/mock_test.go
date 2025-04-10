@@ -13,6 +13,7 @@ import (
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/stretchr/testify/require"
@@ -512,7 +513,6 @@ func NewMockClientAndServer(allNodeResponses [][]interface{}) (*Client, *MockSer
 }
 
 func TestUnitMockAccountInfoQuery(t *testing.T) {
-	t.Skip("Skipping test as it is currently broken with the addition of generating new payment transactions for queries")
 	call := func(request *services.Query) *services.Response {
 		require.NotNil(t, request.Query)
 		accountInfoQuery := request.Query.(*services.Query_CryptoGetInfo).CryptoGetInfo
@@ -708,6 +708,110 @@ func TestUnitMockAccountInfoQueryNoNodeSet(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestUnitMockQueryMetadata(t *testing.T) {
+	t.Parallel()
+
+	expectedUserAgent := "hiero-sdk-go/DEV"
+	transactionID := TransactionIDGenerate(AccountID{Account: 123})
+
+	call := func(ctx context.Context, request *services.Query) *services.Response {
+		md, ok := metadata.FromIncomingContext(ctx)
+		require.True(t, ok, "Failed to get metadata from context")
+
+		userAgentValues := md.Get("x-user-agent")
+		require.NotEmpty(t, userAgentValues, "x-user-agent metadata not found")
+		require.Equal(t, expectedUserAgent, userAgentValues[0], "User agent mismatch")
+
+		return &services.Response{
+			Response: &services.Response_ContractGetInfo{
+				ContractGetInfo: &services.ContractGetInfoResponse{
+					Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_ANSWER_ONLY, Cost: 2},
+					ContractInfo: &services.ContractGetInfoResponse_ContractInfo{
+						ContractID:         &services.ContractID{Contract: &services.ContractID_ContractNum{ContractNum: 3}},
+						AccountID:          &services.AccountID{Account: &services.AccountID_AccountNum{AccountNum: 4}},
+						ContractAccountID:  "",
+						AdminKey:           nil,
+						ExpirationTime:     nil,
+						AutoRenewPeriod:    nil,
+						Storage:            0,
+						Memo:               "yes",
+						Balance:            0,
+						Deleted:            false,
+						TokenRelationships: nil,
+						LedgerId:           nil,
+					},
+				},
+			},
+		}
+	}
+	responses := [][]interface{}{{
+		MockQueryHandlerFunc(call),
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+
+	result, err := NewContractInfoQuery().
+		SetContractID(ContractID{Contract: 3}).
+		SetMaxQueryPayment(NewHbar(1)).
+		SetPaymentTransactionID(transactionID).
+		SetQueryPayment(HbarFromTinybar(25)).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		Execute(client)
+	require.NoError(t, err)
+
+	require.Equal(t, result.ContractID.Contract, uint64(3))
+	require.Equal(t, result.AccountID.Account, uint64(4))
+	require.Equal(t, result.ContractMemo, "yes")
+
+	server.Close()
+}
+
+func TestUnitMockTransactionMetadata(t *testing.T) {
+	t.Parallel()
+
+	newKey, err := PrivateKeyFromStringEd25519("302e020100300506032b657004220420a869f4c6191b9c8c99933e7f6b6611711737e4b1a1a5a4cb5370e719a1f6df98")
+	require.NoError(t, err)
+
+	expectedUserAgent := "hiero-sdk-go/DEV"
+
+	// Define the handler using the context-aware signature
+	handler := func(ctx context.Context, request *services.Transaction) *services.TransactionResponse {
+		md, ok := metadata.FromIncomingContext(ctx)
+		require.True(t, ok, "Failed to get metadata from context")
+
+		userAgentValues := md.Get("x-user-agent")
+		require.NotEmpty(t, userAgentValues, "x-user-agent metadata not found")
+		require.Equal(t, expectedUserAgent, userAgentValues[0], "User agent mismatch")
+
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+
+	responses := [][]interface{}{{
+		MockTransactionHandlerFunc(handler),
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	freeze, err := NewFileUpdateTransaction().
+		SetFileID(FileID{File: 3}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetFileMemo("metadata test memo").
+		SetKeys(newKey).
+		SetContents([]byte{1, 2, 3}).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	_, err = freeze.Sign(newKey).Execute(client)
+	require.NoError(t, err)
+}
+
+// Define new handler types that accept context
+type MockTransactionHandlerFunc func(ctx context.Context, request *services.Transaction) *services.TransactionResponse
+type MockQueryHandlerFunc func(ctx context.Context, request *services.Query) *services.Response
+
 func NewMockHandler(responses []interface{}) func(interface{}, context.Context, func(interface{}) error, grpc.UnaryServerInterceptor) (interface{}, error) {
 	index := 0
 	return func(_srv interface{}, _ctx context.Context, dec func(interface{}) error, _interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -744,6 +848,19 @@ func NewMockHandler(responses []interface{}) func(interface{}, context.Context, 
 				return nil, err
 			}
 			return response(request), nil
+		case MockTransactionHandlerFunc:
+			request := new(services.Transaction)
+			if err := dec(request); err != nil {
+				return nil, err
+			}
+			return response(_ctx, request), nil
+
+		case MockQueryHandlerFunc:
+			request := new(services.Query)
+			if err := dec(request); err != nil {
+				return nil, err
+			}
+			return response(_ctx, request), nil
 		default:
 			return response, nil
 		}
