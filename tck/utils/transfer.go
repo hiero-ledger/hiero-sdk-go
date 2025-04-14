@@ -20,7 +20,7 @@ func HandleTransferParam(transaction *hiero.TransferTransaction, transferParam p
 	case transferParam.Nft != nil:
 		return HandleNftTransfer(transaction, transferParam)
 	default:
-		return response.NewInternalError("invalid transfer parameter: hbar, token, or nft must be provided")
+		return response.NewInternalError("Invalid transfer parameter")
 	}
 }
 
@@ -30,13 +30,13 @@ func HandleHbarTransfer(transaction *hiero.TransferTransaction, transferParam pa
 
 	amount, err := strconv.ParseInt(*hbar.Amount, 10, 64)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	if hbar.AccountId != nil {
 		accountID, err := hiero.AccountIDFromString(*hbar.AccountId)
 		if err != nil {
-			return response.NewInternalError(err.Error())
+			return err
 		}
 
 		if transferParam.Approved != nil && *transferParam.Approved {
@@ -47,7 +47,7 @@ func HandleHbarTransfer(transaction *hiero.TransferTransaction, transferParam pa
 	} else if hbar.EvmAddress != nil {
 		accountId, err := hiero.AccountIDFromEvmAddress(0, 0, *hbar.EvmAddress)
 		if err != nil {
-			return response.NewInternalError(err.Error())
+			return err
 		}
 
 		transaction.AddHbarTransfer(accountId, hiero.HbarFromTinybar(amount))
@@ -62,17 +62,17 @@ func HandleTokenTransfer(transaction *hiero.TransferTransaction, transferParam p
 
 	accountId, err := hiero.AccountIDFromString(*token.AccountId)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	tokenId, err := hiero.TokenIDFromString(*token.TokenId)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	amount, err := strconv.ParseInt(*token.Amount, 10, 64)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	if token.Decimals != nil {
@@ -98,22 +98,22 @@ func HandleNftTransfer(transaction *hiero.TransferTransaction, transferParam par
 
 	senderAccountId, err := hiero.AccountIDFromString(*nft.SenderAccountId)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	receiverAccountId, err := hiero.AccountIDFromString(*nft.ReceiverAccountId)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	serialNumberParsed, err := strconv.ParseInt(*nft.SerialNumber, 10, 64)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	tokenId, err := hiero.TokenIDFromString(*nft.TokenId)
 	if err != nil {
-		return response.NewInternalError(err.Error())
+		return err
 	}
 
 	nftId := hiero.NftID{

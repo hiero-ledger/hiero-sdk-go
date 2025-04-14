@@ -749,7 +749,7 @@ func (t *TokenService) WipeToken(_ context.Context, params param.WipeTokenParams
 		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
 
 		if err != nil {
-			return nil, response.NewInternalError(err.Error())
+			return nil, err
 		}
 
 		transaction.SetTokenID(tokenId)
