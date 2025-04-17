@@ -321,7 +321,7 @@ func (tx TopicCreateTransaction) preFreezeWith(client *Client, self TransactionI
 			selfTopicCreate.SetAutoRenewAccountID(*tx.Transaction.GetTransactionID().AccountID)
 		}
 
-		if selfTopicCreate.GetAutoRenewAccountID()._IsZero() && client != nil && selfTopicCreate.adminKey != nil {
+		if selfTopicCreate.GetAutoRenewAccountID()._IsZero() && client != nil {
 			selfTopicCreate.SetAutoRenewAccountID(client.GetOperatorAccountID())
 		}
 	}
