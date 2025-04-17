@@ -143,76 +143,91 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 	// We introduce a boolean value to distinguish flow for signed tx vs unsigned transactions
 	txIsSigned := true
 
-	for i, transactionFromList := range list.TransactionList {
-		var signedTransaction services.SignedTransaction
-		var body services.TransactionBody
-
-		// If the transaction is not signed/locked:
-		if len(transactionFromList.SignedTransactionBytes) == 0 {
-			txIsSigned = false
-			if err := protobuf.Unmarshal(transactionFromList.BodyBytes, &body); err != nil { // nolint
-				return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
-			}
-		} else { // If the transaction is signed/locked
-			if err := protobuf.Unmarshal(transactionFromList.SignedTransactionBytes, &signedTransaction); err != nil {
-				return nil, errors.Wrap(err, "error deserializing SignedTransactionBytes in TransactionFromBytes")
-			}
+	if len(list.TransactionList) == 0 {
+		// Single transaction case
+		var transaction services.Transaction
+		err = protobuf.Unmarshal(data, &transaction)
+		if err != nil {
+			return nil, errors.Wrap(err, "error deserializing from bytes to transaction")
 		}
 
-		if txIsSigned {
-			baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
-
-			if i == 0 {
-				for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
-					key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
-					if err != nil {
-						return nil, err
-					}
-
-					baseTx.publicKeys = append(baseTx.publicKeys, key)
-					baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
-				}
+		var txBody *services.TransactionBody
+		if len(transaction.SignedTransactionBytes) == 0 {
+			txBody = &services.TransactionBody{}
+			err = protobuf.Unmarshal(transaction.BodyBytes, txBody)
+			if err != nil {
+				return nil, errors.Wrap(err, "error deserializing body bytes")
 			}
 
-			if err := protobuf.Unmarshal(signedTransaction.GetBodyBytes(), &body); err != nil {
-				return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+			signedTx := &services.SignedTransaction{
+				BodyBytes: transaction.BodyBytes,
+				SigMap:    transaction.SigMap,
 			}
+			signedBytes, err := protobuf.Marshal(signedTx)
+			if err != nil {
+				return nil, errors.Wrap(err, "error serializing signed transaction")
+			}
+
+			transaction.SignedTransactionBytes = signedBytes
+			transaction.BodyBytes = nil
+			transaction.SigMap = nil
+		} else {
+			signedTx := &services.SignedTransaction{}
+			err = protobuf.Unmarshal(transaction.SignedTransactionBytes, signedTx)
+			if err != nil {
+				return nil, errors.Wrap(err, "error deserializing signed transaction bytes")
+			}
+
+			txBody = &services.TransactionBody{}
+			err = protobuf.Unmarshal(signedTx.BodyBytes, txBody)
+			if err != nil {
+				return nil, errors.Wrap(err, "error deserializing body bytes from signed transaction")
+			}
+			baseTx.signedTransactions = baseTx.signedTransactions._Push(signedTx)
 		}
 
-		if first == nil {
-			first = &body
-		}
+		transactions._Push(&transaction)
+
+		first = txBody
 		var transactionID TransactionID
 		var nodeAccountID AccountID
 
-		if body.GetTransactionValidDuration() != nil {
-			duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
+		if txBody.GetTransactionValidDuration() != nil {
+			duration := _DurationFromProtobuf(txBody.GetTransactionValidDuration())
 			baseTx.transactionValidDuration = &duration
 		}
 
-		if body.GetTransactionID() != nil {
-			transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
+		if txBody.GetTransactionID() != nil {
+			transactionID = _TransactionIDFromProtobuf(txBody.GetTransactionID())
 		}
 
-		if body.GetNodeAccountID() != nil {
-			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
+		if txBody.GetNodeAccountID() != nil {
+			nodeAccountID = *_AccountIDFromProtobuf(txBody.GetNodeAccountID())
 		}
 
-		if body.GetMaxCustomFees() != nil {
-			for _, customFeeLimit := range body.GetMaxCustomFees() {
+		if txBody.GetMaxCustomFees() != nil {
+			for _, customFeeLimit := range txBody.GetMaxCustomFees() {
 				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
 			}
 		}
 
-		if body.GetBatchKey() != nil {
-			key, err := _KeyFromProtobuf(body.GetBatchKey())
+		if txBody.GetBatchKey() != nil {
+			key, err := _KeyFromProtobuf(txBody.GetBatchKey())
 			if err != nil {
 				return nil, err
 			}
 			baseTx.batchKey = key
 		}
 
-		baseTx.transactionFee = body.GetTransactionFee()
+		if txBody.GetBatchKey() != nil {
+			key, err := _KeyFromProtobuf(txBody.GetBatchKey())
+			if err != nil {
+				return nil, err
+			}
+			baseTx.batchKey = key
+		}
+
+		baseTx.transactionFee = txBody.GetTransactionFee()
 
 		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
 		if transactionID.AccountID.Account != 0 {
@@ -222,10 +237,103 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
 		}
 
-		if i == 0 {
-			baseTx.memo = body.Memo
-			if body.TransactionFee != 0 {
-				baseTx.transactionFee = body.TransactionFee
+		baseTx.memo = txBody.Memo
+		if txBody.TransactionFee != 0 {
+			baseTx.transactionFee = txBody.TransactionFee
+		}
+	} else {
+		for i, transactionFromList := range list.TransactionList {
+			var signedTransaction services.SignedTransaction
+			var body services.TransactionBody
+
+			// If the transaction is not signed/locked:
+			if len(transactionFromList.SignedTransactionBytes) == 0 {
+				txIsSigned = false
+				if err := protobuf.Unmarshal(transactionFromList.BodyBytes, &body); err != nil { // nolint
+					return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+				}
+			} else { // If the transaction is signed/locked
+				if err := protobuf.Unmarshal(transactionFromList.SignedTransactionBytes, &signedTransaction); err != nil {
+					return nil, errors.Wrap(err, "error deserializing SignedTransactionBytes in TransactionFromBytes")
+				}
+			}
+
+			if txIsSigned {
+				baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
+
+				if i == 0 {
+					for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
+						key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
+						if err != nil {
+							return nil, err
+						}
+
+						baseTx.publicKeys = append(baseTx.publicKeys, key)
+						baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
+					}
+				}
+
+				if err := protobuf.Unmarshal(signedTransaction.GetBodyBytes(), &body); err != nil {
+					return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+				}
+			}
+
+			if first == nil {
+				first = &body
+			}
+			var transactionID TransactionID
+			var nodeAccountID AccountID
+
+			if body.GetTransactionValidDuration() != nil {
+				duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
+				baseTx.transactionValidDuration = &duration
+			}
+
+			if body.GetTransactionID() != nil {
+				transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
+			}
+
+			if body.GetNodeAccountID() != nil {
+				nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
+			}
+
+			if body.GetMaxCustomFees() != nil {
+				for _, customFeeLimit := range body.GetMaxCustomFees() {
+					baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+				}
+			}
+
+			if body.GetBatchKey() != nil {
+				key, err := _KeyFromProtobuf(body.GetBatchKey())
+				if err != nil {
+					return nil, err
+				}
+				baseTx.batchKey = key
+			}
+
+			if body.GetBatchKey() != nil {
+				key, err := _KeyFromProtobuf(body.GetBatchKey())
+				if err != nil {
+					return nil, err
+				}
+				baseTx.batchKey = key
+			}
+
+			baseTx.transactionFee = body.GetTransactionFee()
+
+			// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
+			if transactionID.AccountID.Account != 0 {
+				baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
+			}
+			if !nodeAccountID._IsZero() {
+				baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
+			}
+
+			if i == 0 {
+				baseTx.memo = body.Memo
+				if body.TransactionFee != 0 {
+					baseTx.transactionFee = body.TransactionFee
+				}
 			}
 		}
 	}
@@ -349,6 +457,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _TokenCancelAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenCancelAirdropTransaction](baseTx), first)
 	case *services.TransactionBody_TokenClaimAirdrop:
 		childTx = _TokenClaimAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenClaimAirdropTransaction](baseTx), first)
+	case *services.TransactionBody_AtomicBatch:
+		childTx = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
 	default:
 		return nil, errFailedToDeserializeBytes
 	}
