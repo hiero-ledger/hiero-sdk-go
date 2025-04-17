@@ -153,7 +153,7 @@ func (transaction *EthereumFlow) Execute(client *Client) (TransactionResponse, e
 	}
 
 	if transaction.callDataFileID != nil { //nolint
-		if len(transaction.ethereumData._GetData()) != 0 {
+		if len(transaction.ethereumData.GetData()) != 0 {
 			return TransactionResponse{}, errors.New("call data file ID provided, but ethereum data already contains call data")
 		}
 
@@ -170,7 +170,7 @@ func (transaction *EthereumFlow) Execute(client *Client) (TransactionResponse, e
 			return TransactionResponse{}, err
 		}
 
-		transaction.ethereumData._SetData([]byte{})
+		transaction.ethereumData.SetData([]byte{})
 
 		ethereumTransaction.
 			SetEthereumData(dataBytes).
@@ -180,12 +180,12 @@ func (transaction *EthereumFlow) Execute(client *Client) (TransactionResponse, e
 	resp, err := ethereumTransaction.
 		Execute(client)
 	if err != nil {
-		return TransactionResponse{}, err
+		return resp, err
 	}
 
 	_, err = resp.GetReceipt(client)
 	if err != nil {
-		return TransactionResponse{}, err
+		return resp, err
 	}
 
 	return resp, nil
