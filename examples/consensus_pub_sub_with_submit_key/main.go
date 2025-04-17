@@ -117,6 +117,6 @@ func main() {
 		}
 
 		// Wait a bit for it to propagate
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }

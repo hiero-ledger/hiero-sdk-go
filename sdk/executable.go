@@ -250,7 +250,7 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 		var resp interface{}
 
-		ctx := context.TODO()
+		ctx := context.Background()
 		var cancel context.CancelFunc
 
 		if e.GetGrpcDeadline() != nil {

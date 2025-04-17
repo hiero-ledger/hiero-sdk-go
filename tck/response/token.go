@@ -19,3 +19,9 @@ type TokenBurnResponse struct {
 	NewTotalSupply *string `json:"newTotalSupply,omitempty"`
 	Status         *string `json:"status,omitempty"`
 }
+
+type TokenWipeResponse struct {
+	TokenId        *string `json:"tokenId,omitempty"`
+	NewTotalSupply *string `json:"newTotalSupply,omitempty"`
+	Status         *string `json:"status,omitempty"`
+}
