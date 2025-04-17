@@ -1066,12 +1066,13 @@ func (tx *Transaction[T]) SetNodeAccountIDs(nodeAccountIDs []AccountID) T {
 }
 
 // SetBatchKey sets the batch key for this transaction.
-func (tx *Transaction[T]) SetBatchKey(batchKey Key) (T, error) {
+func (tx *Transaction[T]) SetBatchKey(batchKey Key) T {
 	if tx.IsFrozen() {
-		return tx.childTransaction, errTransactionIsFrozen
+		tx.freezeError = errTransactionIsFrozen
+		return tx.childTransaction
 	}
 	tx.batchKey = batchKey
-	return tx.childTransaction, nil
+	return tx.childTransaction
 }
 
 // GetBatchKey returns the batch key for this transaction.
@@ -1081,7 +1082,7 @@ func (tx *Transaction[T]) GetBatchKey() Key {
 
 // Batchify method is used to mark a transaction as part of a batch transaction or make it so-called inner transaction.
 // The Transaction will be frozen and signed by the operator of the client.
-func (tx *Transaction[T]) Batchify(batchKey Key, client *Client) (T, error) {
+func (tx *Transaction[T]) Batchify(client *Client, batchKey Key) (T, error) {
 	if tx.IsFrozen() {
 		return tx.childTransaction, errTransactionIsFrozen
 	}
@@ -1228,6 +1229,16 @@ func (tx *Transaction[T]) mapResponse(_ interface{}, nodeID AccountID, protoRequ
 
 func (tx *Transaction[T]) isTransaction() bool {
 	return true
+}
+
+func (tx *Transaction[T]) isBatchedAndNotBatchTransaction() bool {
+	if tx.batchKey == nil {
+		return false
+	}
+
+	// Get the concrete type name
+	typeName := reflect.TypeOf(tx.childTransaction).String()
+	return typeName != "*hiero.BatchTransaction"
 }
 
 func (tx *Transaction[T]) getTransactionIDAndMessage() (string, string) {

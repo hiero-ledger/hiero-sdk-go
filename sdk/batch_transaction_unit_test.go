@@ -25,7 +25,7 @@ func spawnTestTransactionAccountCreate() *AccountCreateTransaction {
 	accountID3, _ := AccountIDFromString("0.0.3")
 	transactionID := TransactionIDGenerate(accountID2)
 
-	tx, err := NewAccountCreateTransaction().
+	tx := NewAccountCreateTransaction().
 		SetNodeAccountIDs([]AccountID{accountID1, accountID2}).
 		SetTransactionID(transactionID).
 		SetKeyWithoutAlias(privateKeyED25519).
@@ -37,9 +37,6 @@ func spawnTestTransactionAccountCreate() *AccountCreateTransaction {
 		SetMaxAutomaticTokenAssociations(100).
 		SetMaxTransactionFee(NewHbar(100000)).
 		SetBatchKey(privateKeyECDSA)
-	if err != nil {
-		panic(err)
-	}
 
 	tx2, err := tx.Freeze()
 	if err != nil {
@@ -396,7 +393,7 @@ func TestUnitBatchTransactionValidateMultipleConditions(t *testing.T) {
 	assert.Equal(t, errBatchKeyNotSet, tx3.freezeError)
 
 	// Test blacklisted transaction with batch key
-	blacklistedTx, err := NewFreezeTransaction().
+	blacklistedTx := NewFreezeTransaction().
 		SetStartTime(time.Now()).
 		SetFreezeType(FreezeTypeFreezeOnly).
 		SetNodeAccountIDs([]AccountID{accountID1, accountID2}).
@@ -443,11 +440,10 @@ func TestUnitBatchTransactionAcceptValidTransaction(t *testing.T) {
 	accountID2, _ := AccountIDFromString("0.0.5006")
 	transactionID := TransactionIDGenerate(accountID2)
 
-	validTx, err := NewAccountCreateTransaction().
+	validTx := NewAccountCreateTransaction().
 		SetNodeAccountIDs([]AccountID{accountID1, accountID2}).
 		SetTransactionID(transactionID).
 		SetBatchKey(privateKeyECDSA)
-	require.NoError(t, err)
 
 	validTx2, err := validTx.Freeze()
 	require.NoError(t, err)

@@ -32,6 +32,7 @@ var errParameterNull = errors.New("the parameter can't be null")
 var errNetworkNameMissing = errors.New("can't derive checksum for ID without knowing which _Network the ID is for")
 var errChecksumMissing = errors.New("no checksum provided")
 var errLockedSlice = errors.New("slice is locked")
+var errBatchedAndNotBatchTransaction = errors.New("cannot execute batchified transaction outside of BatchTransaction")
 var errNodeIsUnhealthy = errors.New("node is unhealthy")
 
 // Batch transaction specific errors

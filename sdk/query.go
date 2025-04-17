@@ -236,6 +236,10 @@ func (q *Query) execute(client *Client, e QueryInterface) (*services.Response, e
 	return resp.(*services.Response), nil
 }
 
+func (q *Query) isBatchedAndNotBatchTransaction() bool {
+	return false
+}
+
 func (q *Query) shouldRetry(e Executable, response interface{}) _ExecutionState {
 	queryResp := e.(QueryInterface).getQueryResponse(response.(*services.Response))
 

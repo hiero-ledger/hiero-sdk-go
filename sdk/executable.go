@@ -50,6 +50,7 @@ type Executable interface {
 	getLogger(Logger) Logger
 	getTransactionIDAndMessage() (string, string)
 	getLogID(Executable) string // This returns transaction creation timestamp + transaction name
+	isBatchedAndNotBatchTransaction() bool
 }
 
 type executable struct {
@@ -207,6 +208,9 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		}
 
 		protoRequest = e.makeRequest()
+		if e.isBatchedAndNotBatchTransaction() {
+			return TransactionResponse{}, errBatchedAndNotBatchTransaction
+		}
 		if len(e.GetNodeAccountIDs()) == 0 {
 			node = client.network._GetNode()
 		} else {
