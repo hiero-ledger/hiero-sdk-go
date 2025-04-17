@@ -201,7 +201,7 @@ func TestUnitBatchTransactionRejectFreezeTransaction(t *testing.T) {
 
 	tx2 := tx.AddInnerTransaction(freezeTx2)
 	assert.NotNil(t, tx2.freezeError)
-	assert.Contains(t, tx2.freezeError.Error(), "transaction type is not allowed in a batch transaction")
+	assert.Equal(t, errTransactionTypeNotAllowed, tx2.freezeError)
 }
 
 func TestUnitBatchTransactionRejectBatchTransaction(t *testing.T) {
@@ -220,7 +220,7 @@ func TestUnitBatchTransactionRejectBatchTransaction(t *testing.T) {
 
 	tx2 := tx.AddInnerTransaction(innerBatchTx2)
 	assert.NotNil(t, tx2.freezeError)
-	assert.Contains(t, tx2.freezeError.Error(), "transaction type is not allowed in a batch transaction")
+	assert.Equal(t, errTransactionTypeNotAllowed, tx2.freezeError)
 }
 
 func TestUnitBatchTransactionRejectBlacklistedTransactionInList(t *testing.T) {
@@ -243,6 +243,7 @@ func TestUnitBatchTransactionRejectBlacklistedTransactionInList(t *testing.T) {
 
 	tx.SetInnerTransactions([]TransactionInterface{validTx, freezeTx2})
 	assert.NotNil(t, tx.freezeError)
+	assert.Equal(t, errTransactionTypeNotAllowed, tx.freezeError)
 }
 
 func TestUnitBatchTransactionRejectNullTransaction(t *testing.T) {
@@ -250,6 +251,7 @@ func TestUnitBatchTransactionRejectNullTransaction(t *testing.T) {
 
 	tx := NewBatchTransaction().AddInnerTransaction(nil)
 	assert.NotNil(t, tx.freezeError)
+	assert.Equal(t, errInnerTransactionNil, tx.freezeError)
 }
 
 func TestUnitBatchTransactionRejectUnfrozenTransaction(t *testing.T) {
@@ -266,7 +268,7 @@ func TestUnitBatchTransactionRejectUnfrozenTransaction(t *testing.T) {
 
 	tx2 := tx.AddInnerTransaction(unfrozenTx)
 	assert.NotNil(t, tx2.freezeError)
-	assert.Contains(t, tx2.freezeError.Error(), "inner transaction should be frozen")
+	assert.Equal(t, errInnerTransactionShouldBeFrozen, tx2.freezeError)
 }
 
 func TestUnitBatchTransactionRejectTransactionAfterFreeze(t *testing.T) {
@@ -284,7 +286,7 @@ func TestUnitBatchTransactionRejectTransactionAfterFreeze(t *testing.T) {
 	tx3 := tx2.AddInnerTransaction(spawnTestTransactionAccountCreate())
 
 	assert.NotNil(t, tx3.freezeError)
-	assert.Contains(t, tx3.freezeError.Error(), "transaction is immutable")
+	assert.Equal(t, errTransactionIsFrozen, tx3.freezeError)
 }
 
 func TestUnitBatchTransactionRejectTransactionListAfterFreeze(t *testing.T) {
@@ -346,7 +348,7 @@ func TestUnitBatchTransactionRejectTransactionWithoutBatchKey(t *testing.T) {
 
 	tx2 := tx.AddInnerTransaction(txWithoutBatchKey2)
 	assert.NotNil(t, tx2.freezeError)
-	assert.Contains(t, tx2.freezeError.Error(), "batch key needs to be set")
+	assert.Equal(t, errBatchKeyNotSet, tx2.freezeError)
 }
 
 func TestUnitBatchTransactionValidateAllTransactionsInList(t *testing.T) {
@@ -366,6 +368,7 @@ func TestUnitBatchTransactionValidateAllTransactionsInList(t *testing.T) {
 
 	tx.SetInnerTransactions([]TransactionInterface{validTx, txWithoutBatchKey2})
 	assert.NotNil(t, tx.freezeError)
+	assert.Equal(t, errBatchKeyNotSet, tx.freezeError)
 }
 
 func TestUnitBatchTransactionValidateMultipleConditions(t *testing.T) {
@@ -383,14 +386,14 @@ func TestUnitBatchTransactionValidateMultipleConditions(t *testing.T) {
 
 	tx2 := tx.AddInnerTransaction(unfrozenTxWithoutBatchKey)
 	assert.NotNil(t, tx2.freezeError)
-	assert.Contains(t, tx2.freezeError.Error(), "inner transaction should be frozen")
+	assert.Equal(t, errInnerTransactionShouldBeFrozen, tx2.freezeError)
 
 	// Test frozen transaction with no batch key
 	frozenTxWithoutBatchKey, err := unfrozenTxWithoutBatchKey.Freeze()
 	require.NoError(t, err)
 	tx3 := tx.AddInnerTransaction(frozenTxWithoutBatchKey)
 	assert.NotNil(t, tx3.freezeError)
-	assert.Contains(t, tx3.freezeError.Error(), "batch key needs to be set")
+	assert.Equal(t, errBatchKeyNotSet, tx3.freezeError)
 
 	// Test blacklisted transaction with batch key
 	blacklistedTx, err := NewFreezeTransaction().
@@ -405,7 +408,31 @@ func TestUnitBatchTransactionValidateMultipleConditions(t *testing.T) {
 	require.NoError(t, err)
 	tx4 := tx.AddInnerTransaction(blacklistedTx2)
 	assert.NotNil(t, tx4.freezeError)
-	assert.Contains(t, tx4.freezeError.Error(), "transaction type is not allowed in a batch transaction")
+	assert.Equal(t, errTransactionTypeNotAllowed, tx4.freezeError)
+}
+
+func TestUnitBatchTransactionValidateTransactionStateInOrder(t *testing.T) {
+	t.Parallel()
+
+	tx := NewBatchTransaction()
+	accountID1, _ := AccountIDFromString("0.0.5005")
+	accountID2, _ := AccountIDFromString("0.0.5006")
+	transactionID := TransactionIDGenerate(accountID2)
+
+	transaction := NewAccountCreateTransaction().
+		SetNodeAccountIDs([]AccountID{accountID1, accountID2}).
+		SetTransactionID(transactionID)
+
+	// First check should be for frozen state
+	tx2 := tx.AddInnerTransaction(transaction)
+	assert.NotNil(t, tx2.freezeError)
+	assert.Equal(t, errInnerTransactionShouldBeFrozen, tx2.freezeError)
+
+	// After freezing, next check should be for batch key
+	frozenTx, _ := transaction.Freeze()
+	tx3 := tx.AddInnerTransaction(frozenTx)
+	assert.NotNil(t, tx3.freezeError)
+	assert.Equal(t, errBatchKeyNotSet, tx3.freezeError)
 }
 
 func TestUnitBatchTransactionAcceptValidTransaction(t *testing.T) {
@@ -430,28 +457,4 @@ func TestUnitBatchTransactionAcceptValidTransaction(t *testing.T) {
 	assert.NotNil(t, tx2.GetInnerTransactions())
 	assert.Len(t, tx2.GetInnerTransactions(), 1)
 	assert.Contains(t, tx2.GetInnerTransactions(), validTx2)
-}
-
-func TestUnitBatchTransactionValidateTransactionStateInOrder(t *testing.T) {
-	t.Parallel()
-
-	tx := NewBatchTransaction()
-	accountID1, _ := AccountIDFromString("0.0.5005")
-	accountID2, _ := AccountIDFromString("0.0.5006")
-	transactionID := TransactionIDGenerate(accountID2)
-
-	transaction := NewAccountCreateTransaction().
-		SetNodeAccountIDs([]AccountID{accountID1, accountID2}).
-		SetTransactionID(transactionID)
-
-	// First check should be for frozen state
-	tx2 := tx.AddInnerTransaction(transaction)
-	assert.NotNil(t, tx2.freezeError)
-	assert.Contains(t, tx2.freezeError.Error(), "inner transaction should be frozen")
-
-	// After freezing, next check should be for batch key
-	frozenTx, _ := transaction.Freeze()
-	tx3 := tx.AddInnerTransaction(frozenTx)
-	assert.NotNil(t, tx3.freezeError)
-	assert.Contains(t, tx3.freezeError.Error(), "batch key needs to be set")
 }

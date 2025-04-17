@@ -34,6 +34,11 @@ var errChecksumMissing = errors.New("no checksum provided")
 var errLockedSlice = errors.New("slice is locked")
 var errNodeIsUnhealthy = errors.New("node is unhealthy")
 
+// Batch transaction specific errors
+var errInnerTransactionNil = errors.New("inner transaction cannot be nil")
+var errTransactionTypeNotAllowed = errors.New("transaction type is not allowed in a batch transaction")
+var errBatchKeyNotSet = errors.New("batch key needs to be set")
+
 type ErrInvalidNodeAccountIDSet struct {
 	NodeAccountID AccountID
 }

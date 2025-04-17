@@ -189,57 +189,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		transactions._Push(&transaction)
 
 		first = body
-		var transactionID TransactionID
-		var nodeAccountID AccountID
-
-		if body.GetTransactionValidDuration() != nil {
-			duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
-			baseTx.transactionValidDuration = &duration
-		}
-
-		if body.GetTransactionID() != nil {
-			transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
-		}
-
-		if body.GetNodeAccountID() != nil {
-			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
-		}
-
-		if body.GetMaxCustomFees() != nil {
-			for _, customFeeLimit := range body.GetMaxCustomFees() {
-				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
-			}
-		}
-
-		if body.GetBatchKey() != nil {
-			key, err := _KeyFromProtobuf(body.GetBatchKey())
-			if err != nil {
-				return nil, err
-			}
-			baseTx.batchKey = key
-		}
-
-		if body.GetBatchKey() != nil {
-			key, err := _KeyFromProtobuf(body.GetBatchKey())
-			if err != nil {
-				return nil, err
-			}
-			baseTx.batchKey = key
-		}
-
-		baseTx.transactionFee = body.GetTransactionFee()
-
-		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
-		if transactionID.AccountID.Account != 0 {
-			baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
-		}
-		if !nodeAccountID._IsZero() {
-			baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
-		}
-
-		baseTx.memo = body.Memo
-		if body.TransactionFee != 0 {
-			baseTx.transactionFee = body.TransactionFee
+		if err := setTransactionFields(body, &baseTx); err != nil {
+			return nil, err
 		}
 	} else {
 		for i, transactionFromList := range list.TransactionList {
@@ -281,59 +232,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			if first == nil {
 				first = &body
 			}
-			var transactionID TransactionID
-			var nodeAccountID AccountID
-
-			if body.GetTransactionValidDuration() != nil {
-				duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
-				baseTx.transactionValidDuration = &duration
-			}
-
-			if body.GetTransactionID() != nil {
-				transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
-			}
-
-			if body.GetNodeAccountID() != nil {
-				nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
-			}
-
-			if body.GetMaxCustomFees() != nil {
-				for _, customFeeLimit := range body.GetMaxCustomFees() {
-					baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
-				}
-			}
-
-			if body.GetBatchKey() != nil {
-				key, err := _KeyFromProtobuf(body.GetBatchKey())
-				if err != nil {
-					return nil, err
-				}
-				baseTx.batchKey = key
-			}
-
-			if body.GetBatchKey() != nil {
-				key, err := _KeyFromProtobuf(body.GetBatchKey())
-				if err != nil {
-					return nil, err
-				}
-				baseTx.batchKey = key
-			}
-
-			baseTx.transactionFee = body.GetTransactionFee()
-
-			// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
-			if transactionID.AccountID.Account != 0 {
-				baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
-			}
-			if !nodeAccountID._IsZero() {
-				baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
-			}
-
-			if i == 0 {
-				baseTx.memo = body.Memo
-				if body.TransactionFee != 0 {
-					baseTx.transactionFee = body.TransactionFee
-				}
+			if err := setTransactionFields(&body, &baseTx); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -1712,4 +1612,60 @@ func castFromBaseToConcreteTransaction[T TransactionInterface](baseTx Transactio
 		concreteTx.childTransaction = baseTx.childTransaction.(T)
 	}
 	return concreteTx
+}
+
+func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[TransactionInterface]) error {
+	var transactionID TransactionID
+	var nodeAccountID AccountID
+
+	if body.GetTransactionValidDuration() != nil {
+		duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
+		baseTx.transactionValidDuration = &duration
+	}
+
+	if body.GetTransactionID() != nil {
+		transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
+	}
+
+	if body.GetNodeAccountID() != nil {
+		nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
+	}
+
+	if body.GetMaxCustomFees() != nil {
+		for _, customFeeLimit := range body.GetMaxCustomFees() {
+			baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+		}
+	}
+
+	if body.GetBatchKey() != nil {
+		key, err := _KeyFromProtobuf(body.GetBatchKey())
+		if err != nil {
+			return err
+		}
+		baseTx.batchKey = key
+	}
+
+	if body.GetBatchKey() != nil {
+		key, err := _KeyFromProtobuf(body.GetBatchKey())
+		if err != nil {
+			return err
+		}
+		baseTx.batchKey = key
+	}
+
+	baseTx.transactionFee = body.GetTransactionFee()
+
+	// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
+	if transactionID.AccountID.Account != 0 {
+		baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
+	}
+	if !nodeAccountID._IsZero() {
+		baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
+	}
+
+	baseTx.memo = body.Memo
+	if body.TransactionFee != 0 {
+		baseTx.transactionFee = body.TransactionFee
+	}
+	return nil
 }

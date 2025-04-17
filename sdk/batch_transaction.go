@@ -28,7 +28,7 @@ import (
 //
 // Example usage:
 //
-//	batchKey := PrivateKeyGenerateED25519()
+//	batchKey := PrivateKeyGenerateECDSA()
 //
 //	// Create and prepare inner transaction
 //	transaction := NewTransferTransaction().
@@ -89,14 +89,14 @@ func _BatchTransactionFromProtobuf(tx Transaction[*BatchTransaction], pb *servic
 func (tx *BatchTransaction) validateInnerTransaction(innerTransaction TransactionInterface) error {
 	// Check for nil transaction
 	if innerTransaction == nil {
-		return errors.New("inner transaction cannot be nil")
+		return errInnerTransactionNil
 	}
 
 	// Validate transaction type is not blacklisted
 	txType := reflect.TypeOf(innerTransaction)
 	for _, blacklistedType := range blacklistedTransactions {
 		if txType == blacklistedType {
-			return errors.New("transaction type is not allowed in a batch transaction")
+			return errTransactionTypeNotAllowed
 		}
 	}
 
@@ -106,7 +106,7 @@ func (tx *BatchTransaction) validateInnerTransaction(innerTransaction Transactio
 	}
 
 	if innerBaseTransaction.GetBatchKey() == nil {
-		return errors.New("batch key needs to be set")
+		return errBatchKeyNotSet
 	}
 
 	return nil
