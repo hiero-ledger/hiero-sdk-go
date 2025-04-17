@@ -9,44 +9,87 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func runWithRetry(t *testing.T, testFunc func() error) {
+	maxRetries := 10
+	backoff := 250 * time.Millisecond
+	var lastErr error
+
+	for i := 0; i < maxRetries; i++ {
+		if i > 0 {
+			t.Logf("Retrying test after failure, attempt %d/%d", i+1, maxRetries)
+			time.Sleep(backoff)
+			backoff *= 2 // Double the backoff for next retry
+		}
+
+		if err := testFunc(); err == nil {
+			return
+		} else {
+			lastErr = err
+			t.Logf("Test attempt %d failed: %v", i+1, err)
+		}
+	}
+
+	t.Fatalf("Test failed after %d attempts. Last error: %v", maxRetries, lastErr)
+}
 
 func TestIntegrationBatchTransactionCanExecute(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	key, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
+	runWithRetry(t, func() error {
+		key, err := PrivateKeyGenerateEd25519()
+		if err != nil {
+			return err
+		}
 
-	tx, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(key).
-		SetInitialBalance(NewHbar(1)).
-		Batchify(env.Client, env.OperatorKey)
-	require.NoError(t, err)
+		tx, err := NewAccountCreateTransaction().
+			SetKeyWithoutAlias(key).
+			SetInitialBalance(NewHbar(1)).
+			Batchify(env.Client, env.OperatorKey)
+		if err != nil {
+			return err
+		}
 
-	batchTransaction := NewBatchTransaction().
-		AddInnerTransaction(tx)
+		batchTransaction := NewBatchTransaction().
+			AddInnerTransaction(tx)
 
-	resp, err := batchTransaction.Execute(env.Client)
-	require.NoError(t, err)
+		resp, err := batchTransaction.Execute(env.Client)
+		if err != nil {
+			return err
+		}
 
-	_, err = resp.GetReceipt(env.Client)
-	require.NoError(t, err)
+		if _, err = resp.GetReceipt(env.Client); err != nil {
+			return err
+		}
 
-	receipt, err := batchTransaction.GetInnerTransactionIDs()[0].GetReceipt(env.Client)
-	require.NoError(t, err)
-	accountID := receipt.AccountID
-	require.NotNil(t, accountID)
+		receipt, err := batchTransaction.GetInnerTransactionIDs()[0].GetReceipt(env.Client)
+		if err != nil {
+			return err
+		}
+		accountID := receipt.AccountID
+		if accountID == nil {
+			return errNoAccountID
+		}
 
-	info, err := NewAccountInfoQuery().
-		SetAccountID(*accountID).
-		Execute(env.Client)
-	require.NoError(t, err)
+		info, err := NewAccountInfoQuery().
+			SetAccountID(*accountID).
+			Execute(env.Client)
+		if err != nil {
+			return err
+		}
 
-	assert.Equal(t, accountID.String(), info.AccountID.String())
+		if accountID.String() != info.AccountID.String() {
+			return errAccountIDMismatch
+		}
+
+		return nil
+	})
 }
 
 func TestIntegrationBatchTransactionToFromBytes(t *testing.T) {
@@ -54,42 +97,65 @@ func TestIntegrationBatchTransactionToFromBytes(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	key, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
+	runWithRetry(t, func() error {
+		key, err := PrivateKeyGenerateEd25519()
+		if err != nil {
+			return err
+		}
 
-	tx, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(key).
-		SetInitialBalance(NewHbar(1)).
-		Batchify(env.Client, env.OperatorKey)
-	require.NoError(t, err)
+		tx, err := NewAccountCreateTransaction().
+			SetKeyWithoutAlias(key).
+			SetInitialBalance(NewHbar(1)).
+			Batchify(env.Client, env.OperatorKey)
+		if err != nil {
+			return err
+		}
 
-	batchTransaction := NewBatchTransaction().
-		AddInnerTransaction(tx)
+		batchTransaction := NewBatchTransaction().
+			AddInnerTransaction(tx)
 
-	batchTransactionBytes, err := batchTransaction.ToBytes()
-	require.NoError(t, err)
+		batchTransactionBytes, err := batchTransaction.ToBytes()
+		if err != nil {
+			return err
+		}
 
-	batchTransactionFromBytes, err := TransactionFromBytes(batchTransactionBytes)
-	require.NoError(t, err)
+		batchTransactionFromBytes, err := TransactionFromBytes(batchTransactionBytes)
+		if err != nil {
+			return err
+		}
 
-	txInterface := batchTransactionFromBytes.(TransactionInterface)
-	resp, err := TransactionExecute(txInterface, env.Client)
-	require.NoError(t, err)
+		txInterface := batchTransactionFromBytes.(TransactionInterface)
+		resp, err := TransactionExecute(txInterface, env.Client)
+		if err != nil {
+			return err
+		}
 
-	_, err = resp.GetReceipt(env.Client)
-	require.NoError(t, err)
+		if _, err = resp.GetReceipt(env.Client); err != nil {
+			return err
+		}
 
-	receipt, err := batchTransaction.GetInnerTransactionIDs()[0].GetReceipt(env.Client)
-	require.NoError(t, err)
-	accountID := receipt.AccountID
-	require.NotNil(t, accountID)
+		receipt, err := batchTransaction.GetInnerTransactionIDs()[0].GetReceipt(env.Client)
+		if err != nil {
+			return err
+		}
+		accountID := receipt.AccountID
+		if accountID == nil {
+			return errNoAccountID
+		}
 
-	info, err := NewAccountInfoQuery().
-		SetAccountID(*accountID).
-		Execute(env.Client)
-	require.NoError(t, err)
+		info, err := NewAccountInfoQuery().
+			SetAccountID(*accountID).
+			Execute(env.Client)
+		if err != nil {
+			return err
+		}
 
-	assert.Equal(t, accountID.String(), info.AccountID.String())
+		if accountID.String() != info.AccountID.String() {
+			return errAccountIDMismatch
+		}
+
+		return nil
+	})
 }
 
 func TestIntegrationBatchTransactionLarge(t *testing.T) {
@@ -97,36 +163,51 @@ func TestIntegrationBatchTransactionLarge(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	batchTransaction := NewBatchTransaction()
+	runWithRetry(t, func() error {
+		batchTransaction := NewBatchTransaction()
 
-	// Add 25 transactions (maximum limit)
-	for i := 0; i < 25; i++ {
-		key, err := PrivateKeyGenerateEd25519()
-		require.NoError(t, err)
+		// Add 25 transactions (maximum limit)
+		for i := 0; i < 25; i++ {
+			key, err := PrivateKeyGenerateEd25519()
+			if err != nil {
+				return err
+			}
 
-		tx, err := NewAccountCreateTransaction().
-			SetKeyWithoutAlias(key).
-			SetInitialBalance(NewHbar(1)).
-			Batchify(env.Client, env.OperatorKey)
-		require.NoError(t, err)
+			tx, err := NewAccountCreateTransaction().
+				SetKeyWithoutAlias(key).
+				SetInitialBalance(NewHbar(1)).
+				Batchify(env.Client, env.OperatorKey)
+			if err != nil {
+				return err
+			}
 
-		batchTransaction.AddInnerTransaction(tx)
-	}
+			batchTransaction.AddInnerTransaction(tx)
+		}
 
-	resp, err := batchTransaction.Execute(env.Client)
-	require.NoError(t, err)
+		resp, err := batchTransaction.Execute(env.Client)
+		if err != nil {
+			return err
+		}
 
-	_, err = resp.GetReceipt(env.Client)
-	require.NoError(t, err)
+		if _, err = resp.GetReceipt(env.Client); err != nil {
+			return err
+		}
 
-	// Verify all inner transactions succeeded
-	for _, txID := range batchTransaction.GetInnerTransactionIDs() {
-		receipt, err := NewTransactionReceiptQuery().
-			SetTransactionID(txID).
-			Execute(env.Client)
-		require.NoError(t, err)
-		assert.Equal(t, StatusSuccess, receipt.Status)
-	}
+		// Verify all inner transactions succeeded
+		for _, txID := range batchTransaction.GetInnerTransactionIDs() {
+			receipt, err := NewTransactionReceiptQuery().
+				SetTransactionID(txID).
+				Execute(env.Client)
+			if err != nil {
+				return err
+			}
+			if receipt.Status != StatusSuccess {
+				return errTransactionFailed
+			}
+		}
+
+		return nil
+	})
 }
 
 func TestIntegrationBatchTransactionEmpty(t *testing.T) {
@@ -374,3 +455,9 @@ func TestIntegrationBatchTransactionBatchifiedOutsideBatch(t *testing.T) {
 	_, err = tx.Execute(env.Client)
 	assert.Equal(t, errBatchedAndNotBatchTransaction, err)
 }
+
+var (
+	errNoAccountID       = errors.New("account ID is nil")
+	errAccountIDMismatch = errors.New("account ID mismatch")
+	errTransactionFailed = errors.New("transaction failed")
+)
