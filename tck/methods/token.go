@@ -740,3 +740,71 @@ func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams
 		Status:         &status,
 	}, nil
 }
+
+// jRPC method for wipeToken
+func (t *TokenService) WipeToken(_ context.Context, params param.WipeTokenParams) (*response.TokenWipeResponse, error) {
+	transaction := hiero.NewTokenWipeTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenId != nil {
+		tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetTokenID(tokenId)
+	}
+
+	// Set account ID
+	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
+		return nil, err
+	}
+
+	if params.Amount != nil {
+		amount, err := strconv.ParseUint(*params.Amount, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetAmount(amount)
+	}
+
+	if params.SerialNumbers != nil {
+		var allSerialNumbers []int64
+
+		for _, serialNumber := range *params.SerialNumbers {
+			serial, err := strconv.ParseInt(serialNumber, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse serial number: %w", err)
+			}
+			allSerialNumbers = append(allSerialNumbers, serial)
+		}
+		transaction.SetSerialNumbers(allSerialNumbers)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	// Construct the response
+	status := receipt.Status.String()
+	newTotalSupply := strconv.FormatUint(receipt.TotalSupply, 10)
+
+	return &response.TokenWipeResponse{
+		TokenId:        params.TokenId,
+		NewTotalSupply: &newTotalSupply,
+		Status:         &status,
+	}, nil
+}

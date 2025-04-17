@@ -58,6 +58,7 @@ func main() {
 		"revokeTokenKyc":         postHandler(HandleError, handler.New(tokenService.RevokeTokenKyc)),
 		"mintToken":              postHandler(HandleError, handler.New(tokenService.MintToken)),
 		"burnToken":              postHandler(HandleError, handler.New(tokenService.BurnToken)),
+		"wipeToken":              postHandler(HandleError, handler.New(tokenService.WipeToken)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
