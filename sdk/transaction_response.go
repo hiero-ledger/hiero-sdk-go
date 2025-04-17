@@ -2,6 +2,7 @@ package hiero
 
 import (
 	"encoding/hex"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 )
@@ -35,15 +36,34 @@ func (response TransactionResponse) MarshalJSON() ([]byte, error) {
 }
 
 // retryTransaction is a helper function to retry a transaction that was throttled
-func retryTransaction(client *Client, transaction TransactionInterface) (TransactionReceipt, error) {
-	resp, err := TransactionExecute(transaction, client)
-	if err != nil {
-		return TransactionReceipt{}, err
+func retryTransaction(client *Client, transaction TransactionInterface) (TransactionReceipt, error) { // nolint
+	maxRetries := 5
+	backoff := 250 * time.Millisecond
+
+	var receipt TransactionReceipt
+	var err error
+
+	for i := 0; i < maxRetries; i++ {
+		if i > 0 {
+			time.Sleep(backoff)
+			backoff *= 2 // Double the backoff for next retry
+		}
+
+		resp, err := TransactionExecute(transaction, client)
+		if err != nil {
+			continue
+		}
+
+		receipt, err = NewTransactionReceiptQuery().
+			SetTransactionID(resp.TransactionID).
+			SetNodeAccountIDs([]AccountID{resp.NodeID}).
+			Execute(client)
+
+		if err == nil && receipt.Status != StatusThrottledAtConsensus {
+			return receipt, nil
+		}
 	}
-	receipt, err := NewTransactionReceiptQuery().
-		SetTransactionID(resp.TransactionID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		Execute(client)
+
 	return receipt, err
 }
 
@@ -55,7 +75,7 @@ func (response TransactionResponse) GetReceipt(client *Client) (TransactionRecei
 		SetIncludeChildren(response.IncludeChildReceipts).
 		Execute(client)
 
-	for receipt.Status == StatusThrottledAtConsensus {
+	if receipt.Status == StatusThrottledAtConsensus {
 		receipt, err = retryTransaction(client, response.Transaction)
 	}
 
@@ -73,7 +93,7 @@ func (response TransactionResponse) GetRecord(client *Client) (TransactionRecord
 		SetNodeAccountIDs([]AccountID{response.NodeID}).
 		Execute(client)
 
-	for receipt.Status == StatusThrottledAtConsensus {
+	if receipt.Status == StatusThrottledAtConsensus {
 		receipt, err = retryTransaction(client, response.Transaction)
 	}
 
