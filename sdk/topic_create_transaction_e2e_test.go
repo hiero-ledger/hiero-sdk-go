@@ -51,11 +51,7 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 	assert.Equal(t, topicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
 	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
-	// TODO
-	// Temporarily disabled due to issues with consensus node version 0.60.
-	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
-	// are on version 0.60.
-	// assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
+	assert.Equal(t, env.Client.GetOperatorAccountID().String(), info.AutoRenewAccountID.String())
 
 	resp, err = NewTopicDeleteTransaction().
 		SetTopicID(topicID).
@@ -68,10 +64,6 @@ func TestIntegrationTopicCreateTransactionCanExecute(t *testing.T) {
 }
 
 func TestIntegrationTopicCreateTransactionSetsAutorenewAccountFromTransactionID(t *testing.T) {
-	// Temporarily disabled due to issues with consensus node version 0.60.
-	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
-	// are on version 0.60.
-	t.Skip()
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -107,10 +99,6 @@ func TestIntegrationTopicCreateTransactionSetsAutorenewAccountFromTransactionID(
 }
 
 func TestIntegrationTopicCreateTransactionSetsAutorenewAccount(t *testing.T) {
-	// Temporarily disabled due to issues with consensus node version 0.60.
-	// This will be reintroduced once all networks (previewnet, testnet, mainnet)
-	// are on version 0.60.
-	t.Skip()
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
