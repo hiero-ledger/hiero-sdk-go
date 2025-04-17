@@ -83,7 +83,7 @@ tasks:
     start-all-tests:
         desc: "Start Docker Compose services"
         silent: true
-        deps: [build-tck-go-server]
+        deps: [start-local-node, build-tck-go-server]
         vars:
             NETWORK: '{{.NETWORK | default "local"}}'
             OPERATOR_ACCOUNT_ID: "{{.OPERATOR_ACCOUNT_ID}}"
