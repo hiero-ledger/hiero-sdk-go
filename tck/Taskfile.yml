@@ -38,15 +38,15 @@ tasks:
             - echo "Starting local Hedera network..."
             - hedera start
 
-    pull-tck-client-server:
-        desc: "Pull the Docker image for tck-client"
+    pull-hiero-tck-client:
+        desc: "Pull the Docker image for hiero-tck-client"
         cmds:
-            - echo "Pulling Docker image for tck-client..."
-            - docker pull ivaylogarnev/tck-client
+            - echo "Pulling Docker image for hiero-tck-client..."
+            - docker pull ivaylogarnev/hiero-tck-client
 
     build-tck-go-server:
-        desc: "Build the Docker image for tck-go-server & pulling tck-client image"
-        deps: [pull-tck-client-server]
+        desc: "Build the Docker image for tck-go-server & pulling hiero-tck-client image"
+        deps: [pull-hiero-tck-client]
         silent: true
         dir: ../
         cmds:

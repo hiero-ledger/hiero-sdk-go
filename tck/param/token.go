@@ -97,3 +97,11 @@ type BurnTokenParams struct {
 	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
+
+type WipeTokenParams struct {
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	AccountId               *string                  `json:"accountId,omitempty"`
+	Amount                  *string                  `json:"amount,omitempty"`
+	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
