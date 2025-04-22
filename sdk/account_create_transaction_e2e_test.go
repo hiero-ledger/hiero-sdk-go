@@ -785,6 +785,9 @@ func TestIntegrationAccountCreateWithECDSAKeyAndAlias(t *testing.T) {
 	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
 
 	// Test with ECDSA public key
+	ecdsaPrivateKey, err = PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	expectedEvmAddress = ecdsaPrivateKey.PublicKey().ToEvmAddress()
 	ecdsaPublicKey := ecdsaPrivateKey.PublicKey()
 	resp, err = NewAccountCreateTransaction().
 		SetECDSAKeyWithAlias(ecdsaPublicKey).
@@ -816,10 +819,13 @@ func TestIntegrationAccountCreateWithKeyAndAlias(t *testing.T) {
 	expectedEvmAddress := ecdsaKey.PublicKey().ToEvmAddress()
 
 	// Test with private keys
-	resp, err := NewAccountCreateTransaction().
+	frozenTxn, err := NewAccountCreateTransaction().
 		SetKeyWithAlias(edKey, ecdsaKey).
 		SetInitialBalance(NewHbar(2)).
-		Execute(env.Client)
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err := frozenTxn.Sign(ecdsaKey).Sign(edKey).Execute(env.Client)
 	require.NoError(t, err)
 
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
@@ -833,10 +839,18 @@ func TestIntegrationAccountCreateWithKeyAndAlias(t *testing.T) {
 	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
 
 	// Test with public key for alias
-	resp, err = NewAccountCreateTransaction().
+	edKey, err = PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ecdsaKey, err = PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	expectedEvmAddress = ecdsaKey.PublicKey().ToEvmAddress()
+	frozenTxn, err = NewAccountCreateTransaction().
 		SetKeyWithAlias(edKey, ecdsaKey.PublicKey()).
 		SetInitialBalance(NewHbar(2)).
-		Execute(env.Client)
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err = frozenTxn.Sign(ecdsaKey).Execute(env.Client)
 	require.NoError(t, err)
 
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
