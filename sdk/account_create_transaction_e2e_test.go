@@ -757,3 +757,95 @@ func isLongZero(address []byte) bool {
 	}
 	return true
 }
+
+func TestIntegrationAccountCreateWithECDSAKeyAndAlias(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	// Test with ECDSA private key
+	ecdsaPrivateKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	expectedEvmAddress := ecdsaPrivateKey.PublicKey().ToEvmAddress()
+
+	resp, err := NewAccountCreateTransaction().
+		SetECDSAKeyWithAlias(ecdsaPrivateKey).
+		SetInitialBalance(NewHbar(2)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountID1 := *receipt.AccountID
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID1).
+		Execute(env.Client)
+	require.NoError(t, err)
+	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
+
+	// Test with ECDSA public key
+	ecdsaPublicKey := ecdsaPrivateKey.PublicKey()
+	resp, err = NewAccountCreateTransaction().
+		SetECDSAKeyWithAlias(ecdsaPublicKey).
+		SetInitialBalance(NewHbar(2)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountID2 := *receipt.AccountID
+
+	info, err = NewAccountInfoQuery().
+		SetAccountID(accountID2).
+		Execute(env.Client)
+	require.NoError(t, err)
+	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
+}
+
+func TestIntegrationAccountCreateWithKeyAndAlias(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	// Generate keys
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	expectedEvmAddress := ecdsaKey.PublicKey().ToEvmAddress()
+
+	// Test with private keys
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithAlias(edKey, ecdsaKey).
+		SetInitialBalance(NewHbar(2)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountID1 := *receipt.AccountID
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID1).
+		Execute(env.Client)
+	require.NoError(t, err)
+	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
+
+	// Test with public key for alias
+	resp, err = NewAccountCreateTransaction().
+		SetKeyWithAlias(edKey, ecdsaKey.PublicKey()).
+		SetInitialBalance(NewHbar(2)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	accountID2 := *receipt.AccountID
+
+	info, err = NewAccountInfoQuery().
+		SetAccountID(accountID2).
+		Execute(env.Client)
+	require.NoError(t, err)
+	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
+}
