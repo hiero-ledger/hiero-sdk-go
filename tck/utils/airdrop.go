@@ -10,7 +10,7 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
-// Handles a single transfer parameter and adds it to the transaction
+// Handles a single airdrop transfer parameter and adds it to the transaction
 func HandleAirdropParam(transaction *hiero.TokenAirdropTransaction, transferParam param.TransferParams) error {
 	switch {
 	case transferParam.Token != nil:
@@ -22,7 +22,7 @@ func HandleAirdropParam(transaction *hiero.TokenAirdropTransaction, transferPara
 	}
 }
 
-// Handles a Token transfer parameter
+// Handles a AirdropToken transfer parameter
 func HandleAirdropTokenTransfer(transaction *hiero.TokenAirdropTransaction, transferParam param.TransferParams) error {
 	token := transferParam.Token
 
@@ -58,7 +58,7 @@ func HandleAirdropTokenTransfer(transaction *hiero.TokenAirdropTransaction, tran
 	return nil
 }
 
-// Handles an NFT transfer parameter
+// Handles an Airdrop Nft transfer parameter
 func HandleAirdropNftTransfer(transaction *hiero.TokenAirdropTransaction, transferParam param.TransferParams) error {
 	nft := transferParam.Nft
 
