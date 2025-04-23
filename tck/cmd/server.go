@@ -59,6 +59,7 @@ func main() {
 		"mintToken":              postHandler(HandleError, handler.New(tokenService.MintToken)),
 		"burnToken":              postHandler(HandleError, handler.New(tokenService.BurnToken)),
 		"wipeToken":              postHandler(HandleError, handler.New(tokenService.WipeToken)),
+		"airdropToken":           postHandler(HandleError, handler.New(tokenService.AirdropToken)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 

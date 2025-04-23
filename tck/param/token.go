@@ -105,3 +105,8 @@ type WipeTokenParams struct {
 	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
+
+type AirdropParams struct {
+	TokenTransfers          *[]TransferParams        `json:"tokenTransfers,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
