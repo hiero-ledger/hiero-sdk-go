@@ -374,6 +374,28 @@ func TestUnitAccountCreateTransactionFromToBytes(t *testing.T) {
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountCreateTransaction).buildProtoBody())
 }
 
+type invalidKey struct{}
+
+func (k invalidKey) _ToProtoKey() *services.Key {
+	return nil
+}
+
+func (k invalidKey) String() string {
+	return "invalidKey"
+}
+
+func TestUnitAccountCreateSetECDSAKeyWithAliasInvalidKey(t *testing.T) {
+	t.Parallel()
+
+	// Test with invalid key
+	ecdsaPrivateKey := invalidKey{}
+	tx := NewAccountCreateTransaction()
+	tx.SetECDSAKeyWithAlias(ecdsaPrivateKey)
+	require.Error(t, tx.freezeError)
+	tx.SetKeyWithAlias(ecdsaPrivateKey, ecdsaPrivateKey)
+	require.Error(t, tx.freezeError)
+}
+
 func TestUnitAccountCreateSetECDSAKeyWithAlias(t *testing.T) {
 	t.Parallel()
 
