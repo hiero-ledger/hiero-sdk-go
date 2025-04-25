@@ -808,3 +808,38 @@ func (t *TokenService) WipeToken(_ context.Context, params param.WipeTokenParams
 		Status:         &status,
 	}, nil
 }
+
+// AirdropToken jRPC method for airdropToken
+func (t *TokenService) AirdropToken(_ context.Context, params param.AirdropParams) (*response.TokenResponse, error) {
+	transaction := hiero.NewTokenAirdropTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenTransfers == nil {
+		return nil, response.NewInternalError("transferParams is required")
+	}
+
+	transferParams := *params.TokenTransfers
+
+	for _, transferParam := range transferParams {
+		if err := utils.HandleAirdropParam(transaction, transferParam); err != nil {
+			return nil, err
+		}
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
