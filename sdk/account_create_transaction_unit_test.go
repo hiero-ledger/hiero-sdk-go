@@ -7,6 +7,7 @@ package hiero
 
 import (
 	"encoding/hex"
+	"strings"
 	"testing"
 	"time"
 
@@ -371,4 +372,116 @@ func TestUnitAccountCreateTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(AccountCreateTransaction).buildProtoBody())
+}
+
+type invalidKey struct{}
+
+func (k invalidKey) _ToProtoKey() *services.Key {
+	return nil
+}
+
+func (k invalidKey) String() string {
+	return "invalidKey"
+}
+
+func TestUnitAccountCreateSetECDSAKeyWithAliasInvalidKey(t *testing.T) {
+	t.Parallel()
+
+	// Test with invalid key
+	ecdsaPrivateKey := invalidKey{}
+	tx := NewAccountCreateTransaction()
+	tx.SetECDSAKeyWithAlias(ecdsaPrivateKey)
+	require.Error(t, tx.freezeError)
+	tx.SetKeyWithAlias(ecdsaPrivateKey, ecdsaPrivateKey)
+	require.Error(t, tx.freezeError)
+}
+
+func TestUnitAccountCreateSetECDSAKeyWithAlias(t *testing.T) {
+	t.Parallel()
+
+	// Test with ECDSA private key
+	ecdsaPrivateKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	expectedEvmAddress := ecdsaPrivateKey.PublicKey().ToEvmAddress()
+
+	tx := NewAccountCreateTransaction()
+	tx.SetECDSAKeyWithAlias(ecdsaPrivateKey)
+	require.NoError(t, tx.freezeError)
+	key, err := tx.GetKey()
+	require.NoError(t, err)
+	require.Equal(t, ecdsaPrivateKey, key)
+
+	// Verify the alias is set correctly
+	evmAddressBytes, err := hex.DecodeString(strings.TrimPrefix(expectedEvmAddress, "0x"))
+	require.NoError(t, err)
+	require.Equal(t, evmAddressBytes, tx.GetAlias())
+
+	// Test with ECDSA public key
+	ecdsaPublicKey := ecdsaPrivateKey.PublicKey()
+	tx = NewAccountCreateTransaction()
+	tx.SetECDSAKeyWithAlias(ecdsaPublicKey)
+	require.NoError(t, tx.freezeError)
+	key, err = tx.GetKey()
+	require.NoError(t, err)
+	require.Equal(t, ecdsaPublicKey, key)
+	require.Equal(t, evmAddressBytes, tx.GetAlias())
+
+	// Test with non-ECDSA private key
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	tx = NewAccountCreateTransaction()
+	tx.SetECDSAKeyWithAlias(edKey)
+	require.Error(t, tx.freezeError)
+	require.Contains(t, tx.freezeError.Error(), "Private key is not ECDSA")
+
+	// Test with non-ECDSA public key
+	edPublicKey := edKey.PublicKey()
+	tx = NewAccountCreateTransaction()
+	tx.SetECDSAKeyWithAlias(edPublicKey)
+	require.Error(t, tx.freezeError)
+	require.Contains(t, tx.freezeError.Error(), "Public key is not ECDSA")
+}
+
+func TestUnitAccountCreateSetKeyWithAlias(t *testing.T) {
+	t.Parallel()
+
+	// Generate test keys
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	expectedEvmAddress := ecdsaKey.PublicKey().ToEvmAddress()
+
+	// Test with private keys
+	tx := NewAccountCreateTransaction()
+	tx.SetKeyWithAlias(edKey, ecdsaKey)
+	require.NoError(t, tx.freezeError)
+	key, err := tx.GetKey()
+	require.NoError(t, err)
+	require.Equal(t, edKey, key)
+
+	// Verify the alias is set correctly
+	evmAddressBytes, err := hex.DecodeString(strings.TrimPrefix(expectedEvmAddress, "0x"))
+	require.NoError(t, err)
+	require.Equal(t, evmAddressBytes, tx.GetAlias())
+
+	// Test with public key for alias
+	tx = NewAccountCreateTransaction()
+	tx.SetKeyWithAlias(edKey, ecdsaKey.PublicKey())
+	require.NoError(t, tx.freezeError)
+	key, err = tx.GetKey()
+	require.NoError(t, err)
+	require.Equal(t, edKey, key)
+
+	// Test with non-ECDSA private key for alias
+	tx = NewAccountCreateTransaction()
+	tx.SetKeyWithAlias(edKey, edKey)
+	require.Error(t, tx.freezeError)
+	require.Contains(t, tx.freezeError.Error(), "Private key is not ECDSA")
+
+	// Test with non-ECDSA public key for alias
+	tx = NewAccountCreateTransaction()
+	tx.SetKeyWithAlias(edKey, edKey.PublicKey())
+	require.Error(t, tx.freezeError)
+	require.Contains(t, tx.freezeError.Error(), "Public key is not ECDSA")
 }
