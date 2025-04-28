@@ -221,13 +221,11 @@ func (tx BatchTransaction) buildProtoBody() *services.AtomicBatchTransactionBody
 	body := &services.AtomicBatchTransactionBody{}
 	for _, innerTransaction := range tx.innerTransactions {
 		request := innerTransaction.makeRequest()
-		switch request := request.(type) {
-		case *services.Transaction:
-			body.Transactions = append(body.Transactions, request.GetSignedTransactionBytes())
-		default:
-			// do nothing
+		transaction, ok := request.(*services.Transaction)
+		if !ok {
 			return nil
 		}
+		body.Transactions = append(body.Transactions, transaction.GetSignedTransactionBytes())
 	}
 
 	return body
