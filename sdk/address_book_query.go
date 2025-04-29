@@ -104,7 +104,12 @@ func (q *AddressBookQuery) Execute(client *Client) (NodeAddressBook, error) {
 
 	messages := make([]*services.NodeAddress, 0)
 
-	channel, err := client.mirrorNetwork._GetNextMirrorNode()._GetNetworkServiceClient()
+	mirrorNode, err := client.mirrorNetwork._GetNextMirrorNode()
+	if err != nil {
+		return NodeAddressBook{}, err
+	}
+
+	channel, err := mirrorNode._GetNetworkServiceClient()
 	if err != nil {
 		return NodeAddressBook{}, err
 	}
