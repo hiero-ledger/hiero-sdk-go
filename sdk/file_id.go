@@ -34,39 +34,30 @@ func FileIDForExchangeRate() FileID {
 }
 
 // GetAddressBookFileIDFor returns the public node address book FileID for the given realm and shard.
-func GetAddressBookFileIDFor(realm int64, shard int64) (FileID, error) {
-	if realm < 0 || shard < 0 {
-		return FileID{}, errors.New("realm and shard must be non-negative")
-	}
+func GetAddressBookFileIDFor(realm uint64, shard uint64) FileID {
 	return FileID{
-		Shard: uint64(shard),
-		Realm: uint64(realm),
+		Shard: shard,
+		Realm: realm,
 		File:  102,
-	}, nil
+	}
 }
 
 // GetFeeScheduleFileIDFor returns the fee schedule FileID for the given realm and shard.
-func GetFeeScheduleFileIDFor(realm int64, shard int64) (FileID, error) {
-	if realm < 0 || shard < 0 {
-		return FileID{}, errors.New("realm and shard must be non-negative")
-	}
+func GetFeeScheduleFileIDFor(realm uint64, shard uint64) FileID {
 	return FileID{
-		Shard: uint64(shard),
-		Realm: uint64(realm),
+		Shard: shard,
+		Realm: realm,
 		File:  111,
-	}, nil
+	}
 }
 
 // GetExchangeRatesFileIDFor returns the exchange rates FileID for the given realm and shard.
-func GetExchangeRatesFileIDFor(realm int64, shard int64) (FileID, error) {
-	if realm < 0 || shard < 0 {
-		return FileID{}, errors.New("realm and shard must be non-negative")
-	}
+func GetExchangeRatesFileIDFor(realm uint64, shard uint64) FileID {
 	return FileID{
-		Shard: uint64(shard),
-		Realm: uint64(realm),
+		Shard: shard,
+		Realm: realm,
 		File:  112,
-	}, nil
+	}
 }
 
 // FileIDFromString returns a FileID parsed from the given string.

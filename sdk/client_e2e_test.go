@@ -155,21 +155,6 @@ func TestClientForMirrorNetworkWithRealmAndShard(t *testing.T) {
 	// require.NoError(t, err)
 	// require.NotNil(t, client)
 
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, -1, 0)
-	require.Error(t, err)
-	require.Nil(t, client)
-	assert.Contains(t, err.Error(), "realm and shard must be non-negative")
-
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 0, -1)
-	require.Error(t, err)
-	require.Nil(t, client)
-	assert.Contains(t, err.Error(), "realm and shard must be non-negative")
-
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, -1, -1)
-	require.Error(t, err)
-	require.Nil(t, client)
-	assert.Contains(t, err.Error(), "realm and shard must be non-negative")
-
 	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{}, 0, 0)
 	require.Nil(t, client)
 	assert.Contains(t, err.Error(), "failed to query address book: no healthy nodes")
