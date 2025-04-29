@@ -22,6 +22,7 @@ var errNoClientOrTransactionIDOrNodeId = errors.New("`client` must be provided o
 var errClientOperatorSigning = errors.New("`client` must have an `_Operator` to sign with the _Operator")
 var errNoClientProvided = errors.New("`client` must be provided and have an _Operator")
 var errTransactionIsNotFrozen = errors.New("transaction is not frozen")
+var errInnerTransactionShouldBeFrozen = errors.New("inner transaction should be frozen")
 var errFailedToDeserializeBytes = errors.New("failed to deserialize bytes")
 var errNoTransactionInBytes = errors.New("no transaction was found in bytes")
 var errTransactionRequiresSingleNodeAccountID = errors.New("`PrivateKey.SignTransaction()` requires `Transaction` to have a single _Node `AccountID` set")
@@ -31,7 +32,13 @@ var errParameterNull = errors.New("the parameter can't be null")
 var errNetworkNameMissing = errors.New("can't derive checksum for ID without knowing which _Network the ID is for")
 var errChecksumMissing = errors.New("no checksum provided")
 var errLockedSlice = errors.New("slice is locked")
+var errBatchedAndNotBatchTransaction = errors.New("cannot execute batchified transaction outside of BatchTransaction")
 var errNodeIsUnhealthy = errors.New("node is unhealthy")
+
+// Batch transaction specific errors
+var errInnerTransactionNil = errors.New("inner transaction cannot be nil")
+var errTransactionTypeNotAllowed = errors.New("transaction type is not allowed in a batch transaction")
+var errBatchKeyNotSet = errors.New("batch key needs to be set")
 
 type ErrInvalidNodeAccountIDSet struct {
 	NodeAccountID AccountID
