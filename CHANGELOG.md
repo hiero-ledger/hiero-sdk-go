@@ -1,3 +1,19 @@
+## v2.61.0
+
+### Added
+- New APIs for handling of non-zero shard and realms for static files [#1363](https://github.com/hiero-ledger/hiero-sdk-go/pull/1363)
+  - FileId.getAddressBookFileIdFor(uint64 realm, uint64 shard)
+  - FileId.getFeeScheduleFileIdFor(uint64 realm, uint64 shard)
+  - FileId.getExchangeRatesFileIdFor(uint64 realm, uint64 shard)
+  - Client.forMirrorNetwork(List<string>, uint64 realm, uint64 shard)
+- Support for HIP-551 Batch Transaction https://hips.hedera.com/hip/hip-551
+  It defines a mechanism to execute batch transactions such that a series of transactions (HAPI calls) depending on each other can be rolled into one transaction that passes the ACID test (atomicity, consistency, isolation, and durability). [#1347](https://github.com/hiero-ledger/hiero-sdk-go/pull/1347)
+    - New BatchTransaction struct that has a list of innerTransactions and innerTransactionIds.
+    - New `batchKey` field in Transaction class that must sign the BatchTransaction
+    - New `batchify` method that sets the batch key and marks a transaction as part of a batch transaction (inner transaction). The transaction is signed by the client of the operator and frozen.
+- Extend `SetKeyWithAlias` funcs to support `PublicKey` [#1348](https://github.com/hiero-ledger/hiero-sdk-go/pull/1348)
+- Support for deserializing transaction bytes, representing single transaction proto body. [#1347](https://github.com/hiero-ledger/hiero-sdk-go/pull/1347)
+
 ## v2.60.0
 
 ### Added
