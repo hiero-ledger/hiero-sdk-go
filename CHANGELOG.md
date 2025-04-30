@@ -12,6 +12,7 @@
     - New `batchKey` field in Transaction class that must sign the BatchTransaction
     - New `batchify` method that sets the batch key and marks a transaction as part of a batch transaction (inner transaction). The transaction is signed by the client of the operator and frozen.
 - Extend `SetKeyWithAlias` funcs to support `PublicKey` [#1348](https://github.com/hiero-ledger/hiero-sdk-go/pull/1348)
+- Support for deserializing transaction bytes, representing single transaction proto body. [#1347](https://github.com/hiero-ledger/hiero-sdk-go/pull/1347)
 
 ## v2.60.0
 
