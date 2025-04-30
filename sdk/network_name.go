@@ -30,13 +30,13 @@ func (networkName NetworkName) String() string { //nolint
 // Deprecated
 func NetworkNameFromString(s string) NetworkName { //nolint
 	switch s {
-	case "mainnet":
+	case "mainnet": //nolint
 		return NetworkNameMainnet
-	case "testnet":
+	case "testnet": //nolint
 		return NetworkNameTestnet
-	case "previewnet":
+	case "previewnet": //nolint
 		return NetworkNamePreviewnet
-	case "other":
+	case "other": //nolint
 		return NetworkNameOther
 	}
 
