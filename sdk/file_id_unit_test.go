@@ -61,3 +61,48 @@ func TestUnitFileIDChecksumError(t *testing.T) {
 	_, err = id.ToStringWithChecksum(*client)
 	require.Error(t, err)
 }
+
+func TestUnitGetAddressBookFileIDFor(t *testing.T) {
+	t.Parallel()
+
+	fileID := GetAddressBookFileIDFor(0, 0)
+	assert.Equal(t, uint64(0), fileID.Shard)
+	assert.Equal(t, uint64(0), fileID.Realm)
+	assert.Equal(t, uint64(102), fileID.File)
+	assert.Equal(t, FileIDForAddressBook(), fileID)
+
+	fileID = GetAddressBookFileIDFor(5, 3)
+	assert.Equal(t, uint64(3), fileID.Shard)
+	assert.Equal(t, uint64(5), fileID.Realm)
+	assert.Equal(t, uint64(102), fileID.File)
+}
+
+func TestUnitGetFeeScheduleFileIDFor(t *testing.T) {
+	t.Parallel()
+
+	fileID := GetFeeScheduleFileIDFor(0, 0)
+	assert.Equal(t, uint64(0), fileID.Shard)
+	assert.Equal(t, uint64(0), fileID.Realm)
+	assert.Equal(t, uint64(111), fileID.File)
+	assert.Equal(t, FileIDForFeeSchedule(), fileID)
+
+	fileID = GetFeeScheduleFileIDFor(5, 3)
+	assert.Equal(t, uint64(3), fileID.Shard)
+	assert.Equal(t, uint64(5), fileID.Realm)
+	assert.Equal(t, uint64(111), fileID.File)
+}
+
+func TestUnitGetExchangeRatesFileIDFor(t *testing.T) {
+	t.Parallel()
+
+	fileID := GetExchangeRatesFileIDFor(0, 0)
+	assert.Equal(t, uint64(0), fileID.Shard)
+	assert.Equal(t, uint64(0), fileID.Realm)
+	assert.Equal(t, uint64(112), fileID.File)
+	assert.Equal(t, FileIDForExchangeRate(), fileID)
+
+	fileID = GetExchangeRatesFileIDFor(5, 3)
+	assert.Equal(t, uint64(3), fileID.Shard)
+	assert.Equal(t, uint64(5), fileID.Realm)
+	assert.Equal(t, uint64(112), fileID.File)
+}

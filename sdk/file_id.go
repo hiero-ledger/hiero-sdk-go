@@ -33,6 +33,33 @@ func FileIDForExchangeRate() FileID {
 	return FileID{File: 112}
 }
 
+// GetAddressBookFileIDFor returns the public node address book FileID for the given realm and shard.
+func GetAddressBookFileIDFor(realm uint64, shard uint64) FileID {
+	return FileID{
+		Shard: shard,
+		Realm: realm,
+		File:  102,
+	}
+}
+
+// GetFeeScheduleFileIDFor returns the fee schedule FileID for the given realm and shard.
+func GetFeeScheduleFileIDFor(realm uint64, shard uint64) FileID {
+	return FileID{
+		Shard: shard,
+		Realm: realm,
+		File:  111,
+	}
+}
+
+// GetExchangeRatesFileIDFor returns the exchange rates FileID for the given realm and shard.
+func GetExchangeRatesFileIDFor(realm uint64, shard uint64) FileID {
+	return FileID{
+		Shard: shard,
+		Realm: realm,
+		File:  112,
+	}
+}
+
 // FileIDFromString returns a FileID parsed from the given string.
 // A malformatted string will cause this to return an error instead.
 func FileIDFromString(data string) (FileID, error) {
