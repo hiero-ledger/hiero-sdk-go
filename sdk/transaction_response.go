@@ -61,6 +61,7 @@ func (response *TransactionResponse) retryTransaction(client *Client) (Transacti
 			Execute(client)
 
 		if err == nil && receipt.Status != StatusThrottledAtConsensus {
+			// Set the transaction ID if the transaction was successful
 			response.TransactionID = resp.TransactionID
 			return receipt, nil
 		}
