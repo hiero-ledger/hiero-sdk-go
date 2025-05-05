@@ -1,53 +1,39 @@
 version: "2"
 linters:
-  default: none
-  enable:
-    - bodyclose
-    - dogsled
-    - errcheck
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - gosec
-    - govet
-    - ineffassign
-    - misspell
-    - nakedret
-    - staticcheck
-    - unconvert
-    - unparam
-    - unused
-    - whitespace
-  settings:
-    gosec:
-      excludes:
-        - G115
-    staticcheck:
-    # false negative rule "QF1008: could remove embedded field"
-      checks:
-        - "-QF1008"
-  exclusions:
-    rules:
-      - path: "examples/"
-        text: "misspelling"
-    generated: lax
-    presets:
-      - comments
-      - common-false-positives
-      - legacy
-      - std-error-handling
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  enable:
-    - gofmt
-    - goimports
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
+    default: none
+    enable:
+        - bodyclose
+        - dogsled
+        - errcheck
+        - gochecknoinits
+        - goconst
+        - gocritic
+        - gocyclo
+        - gosec
+        - govet
+        - ineffassign
+        - nakedret
+        - staticcheck
+        - unconvert
+        - unparam
+        - unused
+    settings:
+        gosec:
+            excludes:
+                - G115
+        staticcheck:
+            checks:
+                - "all"
+                - "-ST1003" # Poorly chosen identifier.
+                - "-QF1008" # Omit embedded fields from selector expression.
+    exclusions:
+        generated: lax
+        presets:
+            - comments
+            - common-false-positives
+            - legacy
+            - std-error-handling
+        paths:
+            - third_party$
+            - builtin$
+            - examples$
