@@ -23,7 +23,14 @@ linters:
     gosec:
       excludes:
         - G115
+    staticcheck:
+    # false negative rule "QF1008: could remove embedded field"
+      checks:
+        - "-QF1008"
   exclusions:
+    rules:
+      - path: "examples/"
+        text: "misspelling"
     generated: lax
     presets:
       - comments

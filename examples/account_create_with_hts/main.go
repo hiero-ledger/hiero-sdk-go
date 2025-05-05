@@ -8,7 +8,6 @@ import (
 )
 
 func main() {
-
 	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
@@ -270,5 +269,4 @@ func main() {
 	} else {
 		fmt.Println("Creating account with HTS using public key alias failed")
 	}
-
 }

@@ -111,5 +111,4 @@ func main() {
 	fmt.Println(info.AccountID.String() == newAccountId.String())
 	// Verify the account does have a Hiero public key /complete Hiero account/
 	fmt.Println(info.Key.String() == publicKey.String())
-
 }
