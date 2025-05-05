@@ -36,7 +36,7 @@ func (response TransactionResponse) MarshalJSON() ([]byte, error) {
 }
 
 // retryTransaction is a helper function to retry a transaction that was throttled
-func (response TransactionResponse) retryTransaction(client *Client) (TransactionReceipt, error) { // nolint
+func (response *TransactionResponse) retryTransaction(client *Client) (TransactionReceipt, error) { // nolint
 	maxRetries := 5
 	backoff := 250 * time.Millisecond
 
@@ -61,6 +61,7 @@ func (response TransactionResponse) retryTransaction(client *Client) (Transactio
 			Execute(client)
 
 		if err == nil && receipt.Status != StatusThrottledAtConsensus {
+			response.TransactionID = resp.TransactionID
 			return receipt, nil
 		}
 	}
@@ -69,7 +70,7 @@ func (response TransactionResponse) retryTransaction(client *Client) (Transactio
 }
 
 // GetReceipt retrieves the receipt for the transaction
-func (response TransactionResponse) GetReceipt(client *Client) (TransactionReceipt, error) {
+func (response *TransactionResponse) GetReceipt(client *Client) (TransactionReceipt, error) {
 	receipt, err := NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
 		SetNodeAccountIDs([]AccountID{response.NodeID}).
@@ -88,7 +89,7 @@ func (response TransactionResponse) GetReceipt(client *Client) (TransactionRecei
 }
 
 // GetRecord retrieves the record for the transaction
-func (response TransactionResponse) GetRecord(client *Client) (TransactionRecord, error) {
+func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecord, error) {
 	receipt, err := NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
 		SetNodeAccountIDs([]AccountID{response.NodeID}).
