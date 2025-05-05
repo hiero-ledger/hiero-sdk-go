@@ -1,23 +1,50 @@
+## v2.61.0
+
+### Added
+- New APIs for handling of non-zero shard and realms for static files [#1363](https://github.com/hiero-ledger/hiero-sdk-go/pull/1363)
+  - FileId.getAddressBookFileIdFor(uint64 realm, uint64 shard)
+  - FileId.getFeeScheduleFileIdFor(uint64 realm, uint64 shard)
+  - FileId.getExchangeRatesFileIdFor(uint64 realm, uint64 shard)
+  - Client.forMirrorNetwork(List<string>, uint64 realm, uint64 shard)
+- Support for HIP-551 Batch Transaction https://hips.hedera.com/hip/hip-551
+  It defines a mechanism to execute batch transactions such that a series of transactions (HAPI calls) depending on each other can be rolled into one transaction that passes the ACID test (atomicity, consistency, isolation, and durability). [#1347](https://github.com/hiero-ledger/hiero-sdk-go/pull/1347)
+    - New BatchTransaction struct that has a list of innerTransactions and innerTransactionIds.
+    - New `batchKey` field in Transaction class that must sign the BatchTransaction
+    - New `batchify` method that sets the batch key and marks a transaction as part of a batch transaction (inner transaction). The transaction is signed by the client of the operator and frozen.
+- Extend `SetKeyWithAlias` funcs to support `PublicKey` [#1348](https://github.com/hiero-ledger/hiero-sdk-go/pull/1348)
+- Support for deserializing transaction bytes, representing single transaction proto body. [#1347](https://github.com/hiero-ledger/hiero-sdk-go/pull/1347)
+
+## v2.60.0
+
+### Added
+- Support for HIP-1021: Improve Assignment of Auto-Renew Account ID for Topics (https://hips.hedera.com/hip/hip-1021). The autoRenewAccountId will automatically be set to the payer_account_id of the transaction
+  if an Admin Key is not provided during topic creation [#1355](https://github.com/hiero-ledger/hiero-sdk-go/pull/1355)
+- Added a User-Agent header to outgoing gRPC requests via a unary interceptor. The header value includes the SDK identifier (hiero-sdk-go) and the version obtained from build information (defaulting to DEV if unavailable). This aids in tracking SDK usage metrics [#1315](https://github.com/hiero-ledger/hiero-sdk-go/pull/1315)
+
+### Fixed
+-  Fixed `INVALID_NODE_ACCOUNT` error when setting nodes for paid queries.
+The issue was that we generated payment transactions for all the nodes in the q.nodeAccountIds list and not the current node we are pointing to. This caused problems because q.nodeAccountIDs._Advance() is called when we get the cost for the query and this moves the pointer to the next node in the list.
+
 ## v2.59.0
 
 ### Added
-- `EIP-2930` transaction type compatibility. A new struct `EthereumEIP2930Transaction` is added for RLP encoding `EIP-2930` transactions. [#1325](https://github.com/hiero-ledger/hiero-sdk-js/pull/1325)
-- Specifying min TLS version for gRPC communication. [#1308](https://github.com/hiero-ledger/hiero-sdk-js/pull/1308)
-- PublicKey `VerifySignedMessage` method in place of `Verify`. [#1314](https://github.com/hiero-ledger/hiero-sdk-js/pull/1314)
+- `EIP-2930` transaction type compatibility. A new struct `EthereumEIP2930Transaction` is added for RLP encoding `EIP-2930` transactions. [#1325](https://github.com/hiero-ledger/hiero-sdk-go/pull/1325)
+- Specifying min TLS version for gRPC communication. [#1308](https://github.com/hiero-ledger/hiero-sdk-go/pull/1308)
+- PublicKey `VerifySignedMessage` method in place of `Verify`. [#1314](https://github.com/hiero-ledger/hiero-sdk-go/pull/1314)
 - `PrivateKey.GetRecoveryId` method. This method retrieves the recovery ID (also known as the 'v' value) associated with ECDSA signatures,
-facilitating signature verification processes. [#1324](https://github.com/hiero-ledger/hiero-sdk-js/pull/1324)
+facilitating signature verification processes. [#1324](https://github.com/hiero-ledger/hiero-sdk-go/pull/1324)
 
 ### Changed
 - Modification of the `PrivateKey.Sign` method output. The `Sign` method for ECDSA private keys has been updated to return only the r and s components of the signature,
-reducing the output from 65 bytes to 64 bytes.This change aligns the SDK's behavior with standard ECDSA signature formats, which typically include only the r and s values. [#1324](https://github.com/hiero-ledger/hiero-sdk-js/pull/1324)
+reducing the output from 65 bytes to 64 bytes.This change aligns the SDK's behavior with standard ECDSA signature formats, which typically include only the r and s values. [#1324](https://github.com/hiero-ledger/hiero-sdk-go/pull/1324)
 
 ### Deprecated
 - PublicKey `Verify` since it's not keytype agnostic and has different behavior for ed25519 and ecdsa keys. #1314
-- `VerifySignature` is no longer maintained, since it requires the full 65 byte signature and pre-hashing using Keccak256Hash. `PublicKey.VerifySignedMessage` is preferred. [#1324](https://github.com/hiero-ledger/hiero-sdk-js/pull/1324)
+- `VerifySignature` is no longer maintained, since it requires the full 65 byte signature and pre-hashing using Keccak256Hash. `PublicKey.VerifySignedMessage` is preferred. [#1324](https://github.com/hiero-ledger/hiero-sdk-go/pull/1324)
 
 ### Fixed
 - The PublicKey `VerifyTransaction` method was building the proto transaction body, which overrides the signatures and causes `INVALID_SIGNATURE` error. 
-The build logic is now removed and a new check if the pubkey is in the transaction was added. [#1314](https://github.com/hiero-ledger/hiero-sdk-js/pull/1314)
+The build logic is now removed and a new check if the pubkey is in the transaction was added. [#1314](https://github.com/hiero-ledger/hiero-sdk-go/pull/1314)
 
 ## v2.58.0
 

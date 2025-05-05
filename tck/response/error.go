@@ -32,3 +32,11 @@ func NewHederaReceiptError(err hiero.ErrHederaReceiptStatus) error {
 func NewHederaPrecheckError(err hiero.ErrHederaPreCheckStatus) error {
 	return HederaError.WithData(&ErrorData{Status: err.Status.String(), Message: err.Error()})
 }
+
+// NewInternalError creates a properly formatted internal error with the given message
+func NewInternalError(message string) error {
+	return InternalError.WithData(&ErrorData{
+		Status:  "ERROR",
+		Message: message,
+	})
+}

@@ -9,6 +9,7 @@ package services
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -19,6 +20,64 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// *
+// The stage of a CRS construction.
+type CRSStage int32
+
+const (
+	// *
+	// The network is gathering contributions to the CRS from all nodes.
+	CRSStage_GATHERING_CONTRIBUTIONS CRSStage = 0
+	// *
+	// The network is waiting for some grace period to allow the verification future
+	// to be completed after the last node has contributed to the CRS.
+	CRSStage_WAITING_FOR_ADOPTING_FINAL_CRS CRSStage = 1
+	// *
+	// The network has completed the CRS construction and is set in the CrsState.
+	CRSStage_COMPLETED CRSStage = 2
+)
+
+// Enum value maps for CRSStage.
+var (
+	CRSStage_name = map[int32]string{
+		0: "GATHERING_CONTRIBUTIONS",
+		1: "WAITING_FOR_ADOPTING_FINAL_CRS",
+		2: "COMPLETED",
+	}
+	CRSStage_value = map[string]int32{
+		"GATHERING_CONTRIBUTIONS":        0,
+		"WAITING_FOR_ADOPTING_FINAL_CRS": 1,
+		"COMPLETED":                      2,
+	}
+)
+
+func (x CRSStage) Enum() *CRSStage {
+	p := new(CRSStage)
+	*p = x
+	return p
+}
+
+func (x CRSStage) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (CRSStage) Descriptor() protoreflect.EnumDescriptor {
+	return file_hints_types_proto_enumTypes[0].Descriptor()
+}
+
+func (CRSStage) Type() protoreflect.EnumType {
+	return &file_hints_types_proto_enumTypes[0]
+}
+
+func (x CRSStage) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use CRSStage.Descriptor instead.
+func (CRSStage) EnumDescriptor() ([]byte, []int) {
+	return file_hints_types_proto_rawDescGZIP(), []int{0}
+}
 
 // *
 // The id of a party in a hinTS scheme with a certain
@@ -624,6 +683,89 @@ func (*HintsConstruction_PreprocessingStartTime) isHintsConstruction_Preprocessi
 
 func (*HintsConstruction_HintsScheme) isHintsConstruction_PreprocessingState() {}
 
+// *
+// The state of a CRS construction.
+type CRSState struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// *
+	// The bytes of the CRS. Based on the CRSStage, this may be the initial CRS
+	// or the final CRS.
+	Crs []byte `protobuf:"bytes,1,opt,name=crs,proto3" json:"crs,omitempty"`
+	// *
+	// The stage of the CRS construction.
+	Stage CRSStage `protobuf:"varint,2,opt,name=stage,proto3,enum=com.hedera.hapi.node.state.hints.CRSStage" json:"stage,omitempty"`
+	// *
+	// The id of the next node that should contribute to the CRS. This is used
+	// to ensure that all nodes contribute to the CRS in a round-robin fashion.
+	// If this is null, then all nodes in the network have contributed to the CRS.
+	NextContributingNodeId *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=next_contributing_node_id,json=nextContributingNodeId,proto3" json:"next_contributing_node_id,omitempty"`
+	// *
+	// The time at which the network should stop waiting for the node's contributions
+	// and move on to the next node in the round-robin fashion.
+	ContributionEndTime *Timestamp `protobuf:"bytes,4,opt,name=contribution_end_time,json=contributionEndTime,proto3" json:"contribution_end_time,omitempty"`
+}
+
+func (x *CRSState) Reset() {
+	*x = CRSState{}
+	mi := &file_hints_types_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CRSState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CRSState) ProtoMessage() {}
+
+func (x *CRSState) ProtoReflect() protoreflect.Message {
+	mi := &file_hints_types_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CRSState.ProtoReflect.Descriptor instead.
+func (*CRSState) Descriptor() ([]byte, []int) {
+	return file_hints_types_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CRSState) GetCrs() []byte {
+	if x != nil {
+		return x.Crs
+	}
+	return nil
+}
+
+func (x *CRSState) GetStage() CRSStage {
+	if x != nil {
+		return x.Stage
+	}
+	return CRSStage_GATHERING_CONTRIBUTIONS
+}
+
+func (x *CRSState) GetNextContributingNodeId() *wrapperspb.UInt64Value {
+	if x != nil {
+		return x.NextContributingNodeId
+	}
+	return nil
+}
+
+func (x *CRSState) GetContributionEndTime() *Timestamp {
+	if x != nil {
+		return x.ContributionEndTime
+	}
+	return nil
+}
+
 var File_hints_types_proto protoreflect.FileDescriptor
 
 var file_hints_types_proto_rawDesc = []byte{
@@ -631,6 +773,8 @@ var file_hints_types_proto_rawDesc = []byte{
 	0x6f, 0x74, 0x6f, 0x12, 0x20, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x64, 0x65, 0x72, 0x61, 0x2e,
 	0x68, 0x61, 0x70, 0x69, 0x2e, 0x6e, 0x6f, 0x64, 0x65, 0x2e, 0x73, 0x74, 0x61, 0x74, 0x65, 0x2e,
 	0x68, 0x69, 0x6e, 0x74, 0x73, 0x1a, 0x0f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x77, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x73,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x4a, 0x0a, 0x0c, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x50,
 	0x61, 0x72, 0x74, 0x79, 0x49, 0x64, 0x12, 0x19, 0x0a, 0x08, 0x70, 0x61, 0x72, 0x74, 0x79, 0x5f,
 	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x07, 0x70, 0x61, 0x72, 0x74, 0x79, 0x49,
@@ -710,10 +854,31 @@ var file_hints_types_proto_rawDesc = []byte{
 	0x73, 0x2e, 0x48, 0x69, 0x6e, 0x74, 0x73, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x65, 0x48, 0x00, 0x52,
 	0x0b, 0x68, 0x69, 0x6e, 0x74, 0x73, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x65, 0x42, 0x15, 0x0a, 0x13,
 	0x70, 0x72, 0x65, 0x70, 0x72, 0x6f, 0x63, 0x65, 0x73, 0x73, 0x69, 0x6e, 0x67, 0x5f, 0x73, 0x74,
-	0x61, 0x74, 0x65, 0x42, 0x26, 0x0a, 0x22, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x64, 0x65, 0x72,
-	0x61, 0x68, 0x61, 0x73, 0x68, 0x67, 0x72, 0x61, 0x70, 0x68, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x6a, 0x61, 0x76, 0x61, 0x50, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f,
-	0x74, 0x6f, 0x33,
+	0x61, 0x74, 0x65, 0x22, 0xfd, 0x01, 0x0a, 0x08, 0x43, 0x52, 0x53, 0x53, 0x74, 0x61, 0x74, 0x65,
+	0x12, 0x10, 0x0a, 0x03, 0x63, 0x72, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x03, 0x63,
+	0x72, 0x73, 0x12, 0x40, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x0e, 0x32, 0x2a, 0x2e, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x64, 0x65, 0x72, 0x61, 0x2e, 0x68,
+	0x61, 0x70, 0x69, 0x2e, 0x6e, 0x6f, 0x64, 0x65, 0x2e, 0x73, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x68,
+	0x69, 0x6e, 0x74, 0x73, 0x2e, 0x43, 0x52, 0x53, 0x53, 0x74, 0x61, 0x67, 0x65, 0x52, 0x05, 0x73,
+	0x74, 0x61, 0x67, 0x65, 0x12, 0x57, 0x0a, 0x19, 0x6e, 0x65, 0x78, 0x74, 0x5f, 0x63, 0x6f, 0x6e,
+	0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x69, 0x6e, 0x67, 0x5f, 0x6e, 0x6f, 0x64, 0x65, 0x5f, 0x69,
+	0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x55, 0x49, 0x6e, 0x74, 0x36, 0x34,
+	0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x16, 0x6e, 0x65, 0x78, 0x74, 0x43, 0x6f, 0x6e, 0x74, 0x72,
+	0x69, 0x62, 0x75, 0x74, 0x69, 0x6e, 0x67, 0x4e, 0x6f, 0x64, 0x65, 0x49, 0x64, 0x12, 0x44, 0x0a,
+	0x15, 0x63, 0x6f, 0x6e, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x5f, 0x65, 0x6e,
+	0x64, 0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x10, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x13,
+	0x63, 0x6f, 0x6e, 0x74, 0x72, 0x69, 0x62, 0x75, 0x74, 0x69, 0x6f, 0x6e, 0x45, 0x6e, 0x64, 0x54,
+	0x69, 0x6d, 0x65, 0x2a, 0x5a, 0x0a, 0x08, 0x43, 0x52, 0x53, 0x53, 0x74, 0x61, 0x67, 0x65, 0x12,
+	0x1b, 0x0a, 0x17, 0x47, 0x41, 0x54, 0x48, 0x45, 0x52, 0x49, 0x4e, 0x47, 0x5f, 0x43, 0x4f, 0x4e,
+	0x54, 0x52, 0x49, 0x42, 0x55, 0x54, 0x49, 0x4f, 0x4e, 0x53, 0x10, 0x00, 0x12, 0x22, 0x0a, 0x1e,
+	0x57, 0x41, 0x49, 0x54, 0x49, 0x4e, 0x47, 0x5f, 0x46, 0x4f, 0x52, 0x5f, 0x41, 0x44, 0x4f, 0x50,
+	0x54, 0x49, 0x4e, 0x47, 0x5f, 0x46, 0x49, 0x4e, 0x41, 0x4c, 0x5f, 0x43, 0x52, 0x53, 0x10, 0x01,
+	0x12, 0x0d, 0x0a, 0x09, 0x43, 0x4f, 0x4d, 0x50, 0x4c, 0x45, 0x54, 0x45, 0x44, 0x10, 0x02, 0x42,
+	0x26, 0x0a, 0x22, 0x63, 0x6f, 0x6d, 0x2e, 0x68, 0x65, 0x64, 0x65, 0x72, 0x61, 0x68, 0x61, 0x73,
+	0x68, 0x67, 0x72, 0x61, 0x70, 0x68, 0x2e, 0x61, 0x70, 0x69, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x2e, 0x6a, 0x61, 0x76, 0x61, 0x50, 0x01, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -728,31 +893,38 @@ func file_hints_types_proto_rawDescGZIP() []byte {
 	return file_hints_types_proto_rawDescData
 }
 
-var file_hints_types_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_hints_types_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_hints_types_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_hints_types_proto_goTypes = []any{
-	(*HintsPartyId)(nil),        // 0: com.hedera.hapi.node.state.hints.HintsPartyId
-	(*HintsKeySet)(nil),         // 1: com.hedera.hapi.node.state.hints.HintsKeySet
-	(*PreprocessedKeys)(nil),    // 2: com.hedera.hapi.node.state.hints.PreprocessedKeys
-	(*PreprocessingVoteId)(nil), // 3: com.hedera.hapi.node.state.hints.PreprocessingVoteId
-	(*PreprocessingVote)(nil),   // 4: com.hedera.hapi.node.state.hints.PreprocessingVote
-	(*NodePartyId)(nil),         // 5: com.hedera.hapi.node.state.hints.NodePartyId
-	(*HintsScheme)(nil),         // 6: com.hedera.hapi.node.state.hints.HintsScheme
-	(*HintsConstruction)(nil),   // 7: com.hedera.hapi.node.state.hints.HintsConstruction
-	(*Timestamp)(nil),           // 8: proto.Timestamp
+	(CRSStage)(0),                  // 0: com.hedera.hapi.node.state.hints.CRSStage
+	(*HintsPartyId)(nil),           // 1: com.hedera.hapi.node.state.hints.HintsPartyId
+	(*HintsKeySet)(nil),            // 2: com.hedera.hapi.node.state.hints.HintsKeySet
+	(*PreprocessedKeys)(nil),       // 3: com.hedera.hapi.node.state.hints.PreprocessedKeys
+	(*PreprocessingVoteId)(nil),    // 4: com.hedera.hapi.node.state.hints.PreprocessingVoteId
+	(*PreprocessingVote)(nil),      // 5: com.hedera.hapi.node.state.hints.PreprocessingVote
+	(*NodePartyId)(nil),            // 6: com.hedera.hapi.node.state.hints.NodePartyId
+	(*HintsScheme)(nil),            // 7: com.hedera.hapi.node.state.hints.HintsScheme
+	(*HintsConstruction)(nil),      // 8: com.hedera.hapi.node.state.hints.HintsConstruction
+	(*CRSState)(nil),               // 9: com.hedera.hapi.node.state.hints.CRSState
+	(*Timestamp)(nil),              // 10: proto.Timestamp
+	(*wrapperspb.UInt64Value)(nil), // 11: google.protobuf.UInt64Value
 }
 var file_hints_types_proto_depIdxs = []int32{
-	8, // 0: com.hedera.hapi.node.state.hints.HintsKeySet.adoption_time:type_name -> proto.Timestamp
-	2, // 1: com.hedera.hapi.node.state.hints.PreprocessingVote.preprocessed_keys:type_name -> com.hedera.hapi.node.state.hints.PreprocessedKeys
-	2, // 2: com.hedera.hapi.node.state.hints.HintsScheme.preprocessed_keys:type_name -> com.hedera.hapi.node.state.hints.PreprocessedKeys
-	5, // 3: com.hedera.hapi.node.state.hints.HintsScheme.node_party_ids:type_name -> com.hedera.hapi.node.state.hints.NodePartyId
-	8, // 4: com.hedera.hapi.node.state.hints.HintsConstruction.grace_period_end_time:type_name -> proto.Timestamp
-	8, // 5: com.hedera.hapi.node.state.hints.HintsConstruction.preprocessing_start_time:type_name -> proto.Timestamp
-	6, // 6: com.hedera.hapi.node.state.hints.HintsConstruction.hints_scheme:type_name -> com.hedera.hapi.node.state.hints.HintsScheme
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	10, // 0: com.hedera.hapi.node.state.hints.HintsKeySet.adoption_time:type_name -> proto.Timestamp
+	3,  // 1: com.hedera.hapi.node.state.hints.PreprocessingVote.preprocessed_keys:type_name -> com.hedera.hapi.node.state.hints.PreprocessedKeys
+	3,  // 2: com.hedera.hapi.node.state.hints.HintsScheme.preprocessed_keys:type_name -> com.hedera.hapi.node.state.hints.PreprocessedKeys
+	6,  // 3: com.hedera.hapi.node.state.hints.HintsScheme.node_party_ids:type_name -> com.hedera.hapi.node.state.hints.NodePartyId
+	10, // 4: com.hedera.hapi.node.state.hints.HintsConstruction.grace_period_end_time:type_name -> proto.Timestamp
+	10, // 5: com.hedera.hapi.node.state.hints.HintsConstruction.preprocessing_start_time:type_name -> proto.Timestamp
+	7,  // 6: com.hedera.hapi.node.state.hints.HintsConstruction.hints_scheme:type_name -> com.hedera.hapi.node.state.hints.HintsScheme
+	0,  // 7: com.hedera.hapi.node.state.hints.CRSState.stage:type_name -> com.hedera.hapi.node.state.hints.CRSStage
+	11, // 8: com.hedera.hapi.node.state.hints.CRSState.next_contributing_node_id:type_name -> google.protobuf.UInt64Value
+	10, // 9: com.hedera.hapi.node.state.hints.CRSState.contribution_end_time:type_name -> proto.Timestamp
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_hints_types_proto_init() }
@@ -775,13 +947,14 @@ func file_hints_types_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_hints_types_proto_rawDesc,
-			NumEnums:      0,
-			NumMessages:   8,
+			NumEnums:      1,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_hints_types_proto_goTypes,
 		DependencyIndexes: file_hints_types_proto_depIdxs,
+		EnumInfos:         file_hints_types_proto_enumTypes,
 		MessageInfos:      file_hints_types_proto_msgTypes,
 	}.Build()
 	File_hints_types_proto = out.File

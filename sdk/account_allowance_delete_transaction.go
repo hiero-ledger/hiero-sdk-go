@@ -183,8 +183,8 @@ func (tx AccountAllowanceDeleteTransaction) getMethod(channel *_Channel) _Method
 	}
 }
 
-func (this AccountAllowanceDeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return this.buildScheduled()
+func (tx AccountAllowanceDeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
+	return tx.buildScheduled()
 }
 
 func (tx AccountAllowanceDeleteTransaction) getBaseTransaction() *Transaction[TransactionInterface] {

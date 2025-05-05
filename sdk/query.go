@@ -101,10 +101,6 @@ func (q *Query) getCost(client *Client, e QueryInterface) (Hbar, error) {
 
 	q.pb = e.buildQuery()
 
-	if q.isPaymentRequired && len(q.paymentTransactions) > 0 {
-		q.paymentTransactionIDs._Advance()
-	}
-
 	q.pbHeader.ResponseType = services.ResponseType_COST_ANSWER
 	q.paymentTransactionIDs._Advance()
 	resp, err := _Execute(client, e)
@@ -236,6 +232,10 @@ func (q *Query) execute(client *Client, e QueryInterface) (*services.Response, e
 	return resp.(*services.Response), nil
 }
 
+func (q *Query) isBatchedAndNotBatchTransaction() bool {
+	return false
+}
+
 func (q *Query) shouldRetry(e Executable, response interface{}) _ExecutionState {
 	queryResp := e.(QueryInterface).getQueryResponse(response.(*services.Response))
 
@@ -261,19 +261,19 @@ func (q *Query) shouldRetry(e Executable, response interface{}) _ExecutionState 
 func (q *Query) generatePayments(client *Client, cost Hbar) (*services.Transaction, error) {
 	var tx *services.Transaction
 	var err error
-	for _, nodeID := range q.nodeAccountIDs.slice {
-		txnID := TransactionIDGenerate(client.operator.accountID)
-		tx, err = _QueryMakePaymentTransaction(
-			txnID,
-			nodeID.(AccountID),
-			client.operator,
-			cost,
-		)
-		if err != nil {
-			return nil, err
-		}
-		q.paymentTransactions = append(q.paymentTransactions, tx)
+	nodeID := q.nodeAccountIDs._GetCurrent()
+	txnID := TransactionIDGenerate(client.operator.accountID)
+	tx, err = _QueryMakePaymentTransaction(
+		txnID,
+		nodeID.(AccountID),
+		client.operator,
+		cost,
+	)
+	if err != nil {
+		return nil, err
 	}
+	q.paymentTransactions = append(q.paymentTransactions, tx)
+
 	return tx, nil
 }
 

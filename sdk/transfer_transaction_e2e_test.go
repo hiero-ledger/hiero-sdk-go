@@ -239,7 +239,7 @@ func TestIntegrationTransferTransactionCanTransferSignature(t *testing.T) {
 	accountID := *receipt.AccountID
 
 	transferTx, err := NewTransferTransaction().
-		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetNodeAccountIDs(env.NodeAccountIDs[0:1]).
 		AddHbarTransfer(accountID, NewHbar(-1)).
 		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1)).
 		FreezeWith(env.Client)

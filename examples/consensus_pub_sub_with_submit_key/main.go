@@ -35,7 +35,7 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	//generate new submit key
+	// generate new submit key
 	submitKey, err := hiero.GeneratePrivateKey()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
@@ -86,7 +86,7 @@ func main() {
 	}
 
 	for i := 0; i < 3; i++ {
-		message := "random message " + strconv.Itoa(rand.Int())
+		message := "random message " + strconv.Itoa(rand.Int()) //nolint:gosec
 
 		println("Publishing message:", message)
 
@@ -117,6 +117,6 @@ func main() {
 		}
 
 		// Wait a bit for it to propagate
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 	}
 }

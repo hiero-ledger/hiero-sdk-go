@@ -65,10 +65,15 @@ var previewnetMirror = []string{"previewnet.mirrornode.hedera.com:443"}
 
 // ClientForMirrorNetwork constructs a client given a set of mirror network nodes.
 func ClientForMirrorNetwork(mirrorNetwork []string) (*Client, error) {
+	return ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork, 0, 0)
+}
+
+// ClientForMirrorNetworkWithRealmAndShard constructs a client given a set of mirror network nodes and the realm/shard of the address book.
+func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, realm uint64, shard uint64) (*Client, error) {
 	net := _NewNetwork()
 	client := _NewClient(net, mirrorNetwork, nil, true)
 	addressbook, err := NewAddressBookQuery().
-		SetFileID(FileIDForAddressBook()).
+		SetFileID(GetAddressBookFileIDFor(realm, shard)).
 		Execute(client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query address book: %v", err)

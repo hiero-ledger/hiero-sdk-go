@@ -15,11 +15,11 @@ const (
 func (networkName NetworkName) String() string { //nolint
 	switch networkName {
 	case NetworkNameMainnet:
-		return "mainnet"
+		return "mainnet" //nolint
 	case NetworkNameTestnet:
-		return "testnet"
+		return "testnet" //nolint
 	case NetworkNamePreviewnet:
-		return "previewnet"
+		return "previewnet" //nolint
 	case NetworkNameOther:
 		return "other"
 	}
@@ -30,13 +30,13 @@ func (networkName NetworkName) String() string { //nolint
 // Deprecated
 func NetworkNameFromString(s string) NetworkName { //nolint
 	switch s {
-	case "mainnet":
+	case "mainnet": //nolint
 		return NetworkNameMainnet
-	case "testnet":
+	case "testnet": //nolint
 		return NetworkNameTestnet
-	case "previewnet":
+	case "previewnet": //nolint
 		return NetworkNamePreviewnet
-	case "other":
+	case "other": //nolint
 		return NetworkNameOther
 	}
 

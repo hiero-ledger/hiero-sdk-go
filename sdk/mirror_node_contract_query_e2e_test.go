@@ -44,7 +44,7 @@ func TestMirrorNodeContractQueryCanSimulateTransaction(t *testing.T) {
 	contractID := receipt.ContractID
 
 	// Wait for mirror node to import data
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractID(*contractID).
@@ -133,7 +133,7 @@ func TestMirrorNodeContractQueryFailWhenGasLimitIsLow(t *testing.T) {
 	contractID := receipt.ContractID
 
 	// Wait for mirror node to import data
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	_, err = NewMirrorNodeContractEstimateGasQuery().
 		SetContractID(*contractID).
@@ -176,7 +176,7 @@ func TestMirrorNodeContractQueryFailWhenSenderIsNotSet(t *testing.T) {
 	contractID := receipt.ContractID
 
 	// Wait for mirror node to import data
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	param, err := NewContractFunctionParameters().AddAddress(ADDRESS)
 
 	_, err = NewMirrorNodeContractEstimateGasQuery().
@@ -224,7 +224,7 @@ func TestMirrorNodeContractQueryCanSimulateWithSenderSet(t *testing.T) {
 	receiverEvmAddress := receiverId.ToSolidityAddress()
 
 	// Wait for mirror node to import data
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	param, err := NewContractFunctionParameters().AddAddress(receiverEvmAddress)
 
 	owner, err := NewMirrorNodeContractCallQuery().

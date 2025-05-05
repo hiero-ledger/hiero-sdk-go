@@ -43,6 +43,7 @@ func main() {
 		"deleteAccount":          postHandler(HandleError, handler.New(accountService.DeleteAccount)),
 		"approveAllowance":       postHandler(HandleError, handler.New(accountService.ApproveAllowance)),
 		"deleteAllowance":        postHandler(HandleError, handler.New(accountService.DeleteAllowance)),
+		"transferCrypto":         postHandler(HandleError, handler.New(accountService.TransferCrypto)),
 		"createToken":            postHandler(HandleError, handler.New(tokenService.CreateToken)),
 		"updateToken":            postHandler(HandleError, handler.New(tokenService.UpdateToken)),
 		"deleteToken":            postHandler(HandleError, handler.New(tokenService.DeleteToken)),
@@ -57,6 +58,8 @@ func main() {
 		"revokeTokenKyc":         postHandler(HandleError, handler.New(tokenService.RevokeTokenKyc)),
 		"mintToken":              postHandler(HandleError, handler.New(tokenService.MintToken)),
 		"burnToken":              postHandler(HandleError, handler.New(tokenService.BurnToken)),
+		"wipeToken":              postHandler(HandleError, handler.New(tokenService.WipeToken)),
+		"airdropToken":           postHandler(HandleError, handler.New(tokenService.AirdropToken)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 

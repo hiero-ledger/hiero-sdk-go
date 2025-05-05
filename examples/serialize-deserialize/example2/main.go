@@ -37,14 +37,26 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	resp, err := hiero.NewAccountCreateTransaction().SetKeyWithoutAlias(newKey).Execute(client)
+	if err != nil {
+		panic(err)
+	}
+
 	receipt, err := resp.GetReceipt(client)
+	if err != nil {
+		panic(err)
+	}
+
 	newAccountId := *receipt.AccountID
 
 	// Prepare and sign the tx and send it to be signed by another actor
 	fmt.Println("Creating a transfer transaction, signing it with operator and serializing it to bytes...")
 	bytes, err := hiero.NewTransferTransaction().AddHbarTransfer(operatorAccountID, hiero.NewHbar(1)).AddHbarTransfer(newAccountId, hiero.NewHbar(-1)).
 		Sign(operatorKey).ToBytes()
+	if err != nil {
+		panic(err)
+	}
 
 	FromBytes, err := hiero.TransactionFromBytes(bytes)
 	if err != nil {

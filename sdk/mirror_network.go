@@ -4,6 +4,8 @@ package hiero
 
 import (
 	"math/rand"
+
+	"github.com/pkg/errors"
 )
 
 type _MirrorNetwork struct {
@@ -42,10 +44,14 @@ func (network *_MirrorNetwork) _SetTransportSecurity(transportSecurity bool) *_M
 	return network
 }
 
-func (network *_MirrorNetwork) _GetNextMirrorNode() *_MirrorNode {
-	node := network._ManagedNetwork.healthyNodes[rand.Intn(len(network.healthyNodes))] // nolint
-	if node, ok := node.(*_MirrorNode); ok {
-		return node
+func (network *_MirrorNetwork) _GetNextMirrorNode() (*_MirrorNode, error) {
+	if len(network.healthyNodes) == 0 {
+		return nil, errors.New("no healthy nodes")
 	}
-	return &_MirrorNode{}
+
+	node := network.healthyNodes[rand.Intn(len(network.healthyNodes))] // nolint
+	if node, ok := node.(*_MirrorNode); ok {
+		return node, nil
+	}
+	return &_MirrorNode{}, nil
 }

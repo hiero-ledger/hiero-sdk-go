@@ -49,6 +49,7 @@ type BaseTransaction struct {
 	publicKeys         []PublicKey
 	transactionSigners []TransactionSigner
 	customFeeLimits    []*CustomFeeLimit
+	batchKey           Key
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -142,81 +143,97 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 	// We introduce a boolean value to distinguish flow for signed tx vs unsigned transactions
 	txIsSigned := true
 
-	for i, transactionFromList := range list.TransactionList {
-		var signedTransaction services.SignedTransaction
-		var body services.TransactionBody
-
-		// If the transaction is not signed/locked:
-		if len(transactionFromList.SignedTransactionBytes) == 0 {
-			txIsSigned = false
-			if err := protobuf.Unmarshal(transactionFromList.BodyBytes, &body); err != nil { // nolint
-				return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
-			}
-		} else { // If the transaction is signed/locked
-			if err := protobuf.Unmarshal(transactionFromList.SignedTransactionBytes, &signedTransaction); err != nil {
-				return nil, errors.Wrap(err, "error deserializing SignedTransactionBytes in TransactionFromBytes")
-			}
+	if len(list.TransactionList) == 0 {
+		// Single transaction case
+		var transaction services.Transaction
+		err = protobuf.Unmarshal(data, &transaction)
+		if err != nil {
+			return nil, errors.Wrap(err, "error deserializing from bytes to transaction")
 		}
 
-		if txIsSigned {
-			baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
+		var body *services.TransactionBody
+		if len(transaction.SignedTransactionBytes) == 0 {
+			body = &services.TransactionBody{}
+			err = protobuf.Unmarshal(transaction.BodyBytes, body) // nolint
+			if err != nil {
+				return nil, errors.Wrap(err, "error deserializing body bytes")
+			}
 
-			if i == 0 {
-				for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
-					key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
-					if err != nil {
-						return nil, err
-					}
+			signedTx := &services.SignedTransaction{
+				BodyBytes: transaction.BodyBytes, // nolint
+				SigMap:    transaction.SigMap,    // nolint
+			}
+			signedBytes, err := protobuf.Marshal(signedTx)
+			if err != nil {
+				return nil, errors.Wrap(err, "error serializing signed transaction")
+			}
 
-					baseTx.publicKeys = append(baseTx.publicKeys, key)
-					baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
+			transaction.SignedTransactionBytes = signedBytes
+			transaction.BodyBytes = nil // nolint
+			transaction.SigMap = nil    // nolint
+		} else {
+			signedTx := &services.SignedTransaction{}
+			err = protobuf.Unmarshal(transaction.SignedTransactionBytes, signedTx)
+			if err != nil {
+				return nil, errors.Wrap(err, "error deserializing signed transaction bytes")
+			}
+
+			body = &services.TransactionBody{}
+			err = protobuf.Unmarshal(signedTx.BodyBytes, body)
+			if err != nil {
+				return nil, errors.Wrap(err, "error deserializing body bytes from signed transaction")
+			}
+			baseTx.signedTransactions = baseTx.signedTransactions._Push(signedTx)
+		}
+
+		transactions._Push(&transaction)
+
+		first = body
+		if err := setTransactionFields(body, &baseTx); err != nil {
+			return nil, err
+		}
+	} else {
+		for i, transactionFromList := range list.TransactionList {
+			var signedTransaction services.SignedTransaction
+			var body services.TransactionBody
+
+			// If the transaction is not signed/locked:
+			if len(transactionFromList.SignedTransactionBytes) == 0 {
+				txIsSigned = false
+				if err := protobuf.Unmarshal(transactionFromList.BodyBytes, &body); err != nil { // nolint
+					return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+				}
+			} else { // If the transaction is signed/locked
+				if err := protobuf.Unmarshal(transactionFromList.SignedTransactionBytes, &signedTransaction); err != nil {
+					return nil, errors.Wrap(err, "error deserializing SignedTransactionBytes in TransactionFromBytes")
 				}
 			}
 
-			if err := protobuf.Unmarshal(signedTransaction.GetBodyBytes(), &body); err != nil {
-				return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+			if txIsSigned {
+				baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
+
+				if i == 0 {
+					for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
+						key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
+						if err != nil {
+							return nil, err
+						}
+
+						baseTx.publicKeys = append(baseTx.publicKeys, key)
+						baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
+					}
+				}
+
+				if err := protobuf.Unmarshal(signedTransaction.GetBodyBytes(), &body); err != nil {
+					return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+				}
 			}
-		}
 
-		if first == nil {
-			first = &body
-		}
-		var transactionID TransactionID
-		var nodeAccountID AccountID
-
-		if body.GetTransactionValidDuration() != nil {
-			duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
-			baseTx.transactionValidDuration = &duration
-		}
-
-		if body.GetTransactionID() != nil {
-			transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
-		}
-
-		if body.GetNodeAccountID() != nil {
-			nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
-		}
-
-		if body.GetMaxCustomFees() != nil {
-			for _, customFeeLimit := range body.GetMaxCustomFees() {
-				baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+			if first == nil {
+				first = &body
 			}
-		}
-
-		baseTx.transactionFee = body.GetTransactionFee()
-
-		// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
-		if transactionID.AccountID.Account != 0 {
-			baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
-		}
-		if !nodeAccountID._IsZero() {
-			baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
-		}
-
-		if i == 0 {
-			baseTx.memo = body.Memo
-			if body.TransactionFee != 0 {
-				baseTx.transactionFee = body.TransactionFee
+			if err := setTransactionFields(&body, &baseTx); err != nil {
+				return nil, err
 			}
 		}
 	}
@@ -340,6 +357,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _TokenCancelAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenCancelAirdropTransaction](baseTx), first)
 	case *services.TransactionBody_TokenClaimAirdrop:
 		childTx = _TokenClaimAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenClaimAirdropTransaction](baseTx), first)
+	case *services.TransactionBody_AtomicBatch:
+		childTx = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
 	default:
 		return nil, errFailedToDeserializeBytes
 	}
@@ -791,6 +810,10 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		}
 	}
 
+	if tx.batchKey != nil {
+		originalBody.BatchKey = tx.batchKey._ToProtoKey()
+	}
+
 	updatedBody, err := protobuf.Marshal(&originalBody)
 	if err != nil {
 		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
@@ -1042,6 +1065,31 @@ func (tx *Transaction[T]) SetNodeAccountIDs(nodeAccountIDs []AccountID) T {
 	return tx.childTransaction
 }
 
+// SetBatchKey sets the batch key for this transaction.
+func (tx *Transaction[T]) SetBatchKey(batchKey Key) T {
+	if tx.IsFrozen() {
+		tx.freezeError = errTransactionIsFrozen
+		return tx.childTransaction
+	}
+	tx.batchKey = batchKey
+	return tx.childTransaction
+}
+
+// GetBatchKey returns the batch key for this transaction.
+func (tx *Transaction[T]) GetBatchKey() Key {
+	return tx.batchKey
+}
+
+// Batchify method is used to mark a transaction as part of a batch transaction or make it so-called inner transaction.
+// The Transaction will be frozen and signed by the operator of the client.
+func (tx *Transaction[T]) Batchify(client *Client, batchKey Key) (T, error) {
+	if tx.IsFrozen() {
+		return tx.childTransaction, errTransactionIsFrozen
+	}
+	tx.batchKey = batchKey
+	return tx.SignWithOperator(client)
+}
+
 // ------------ Transaction methdos ---------------
 func (tx *Transaction[T]) Sign(privateKey PrivateKey) T {
 	return tx.SignWith(privateKey.PublicKey(), privateKey.Sign)
@@ -1183,6 +1231,16 @@ func (tx *Transaction[T]) isTransaction() bool {
 	return true
 }
 
+func (tx *Transaction[T]) isBatchedAndNotBatchTransaction() bool {
+	if tx.batchKey == nil {
+		return false
+	}
+
+	// Get the concrete type name
+	typeName := reflect.TypeOf(tx.childTransaction).String()
+	return typeName != "*hiero.BatchTransaction"
+}
+
 func (tx *Transaction[T]) getTransactionIDAndMessage() (string, string) {
 	return tx.GetTransactionID().String(), "transaction status received"
 }
@@ -1280,6 +1338,18 @@ func (tx *Transaction[T]) FreezeWith(client *Client) (T, error) {
 		} else {
 			return tx.childTransaction, errNoClientOrTransactionIDOrNodeId
 		}
+	}
+
+	// if batch key is set, we need to set the node account id to 0.0.0
+	if tx.batchKey != nil {
+		batchNodeAccountId, err := AccountIDFromString("0.0.0")
+		if err != nil {
+			return tx.childTransaction, err
+		}
+		tx.nodeAccountIDs._SetLocked(false)
+		tx.nodeAccountIDs._Clear()
+		tx.nodeAccountIDs._Push(batchNodeAccountId)
+		tx.nodeAccountIDs._SetLocked(true)
 	}
 
 	if client != nil {
@@ -1553,4 +1623,60 @@ func castFromBaseToConcreteTransaction[T TransactionInterface](baseTx Transactio
 		concreteTx.childTransaction = baseTx.childTransaction.(T)
 	}
 	return concreteTx
+}
+
+func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[TransactionInterface]) error {
+	var transactionID TransactionID
+	var nodeAccountID AccountID
+
+	if body.GetTransactionValidDuration() != nil {
+		duration := _DurationFromProtobuf(body.GetTransactionValidDuration())
+		baseTx.transactionValidDuration = &duration
+	}
+
+	if body.GetTransactionID() != nil {
+		transactionID = _TransactionIDFromProtobuf(body.GetTransactionID())
+	}
+
+	if body.GetNodeAccountID() != nil {
+		nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
+	}
+
+	if body.GetMaxCustomFees() != nil {
+		for _, customFeeLimit := range body.GetMaxCustomFees() {
+			baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+		}
+	}
+
+	if body.GetBatchKey() != nil {
+		key, err := _KeyFromProtobuf(body.GetBatchKey())
+		if err != nil {
+			return err
+		}
+		baseTx.batchKey = key
+	}
+
+	if body.GetBatchKey() != nil {
+		key, err := _KeyFromProtobuf(body.GetBatchKey())
+		if err != nil {
+			return err
+		}
+		baseTx.batchKey = key
+	}
+
+	baseTx.transactionFee = body.GetTransactionFee()
+
+	// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
+	if transactionID.AccountID.Account != 0 {
+		baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
+	}
+	if !nodeAccountID._IsZero() {
+		baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
+	}
+
+	baseTx.memo = body.Memo
+	if body.TransactionFee != 0 {
+		baseTx.transactionFee = body.TransactionFee
+	}
+	return nil
 }

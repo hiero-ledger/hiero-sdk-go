@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Load the Proto configuration from the provided JSON file.
-	config, err := loadProtoConfig("../proto/proto.json")
+	config, err := loadProtoConfig("../../../proto/proto.json")
 	if err != nil {
 		fmt.Println("Error loading proto config:", err)
 		return
@@ -126,7 +126,7 @@ func createProtoFileFilter(protoFiles []string) map[string]struct{} {
 //nolint:dogsled
 func getProjectRootPath() string {
 	_, filename, _, _ := runtime.Caller(0)
-	return path.Join(filename, "../..")
+	return path.Join(filename, "../../../..")
 }
 
 // buildProtos builds the Proto files using the provided filter.

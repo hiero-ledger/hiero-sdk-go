@@ -67,6 +67,7 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 		env.Client = ClientForTestnet()
 	} else if os.Getenv("CONFIG_FILE") != "" {
 		env.Client, err = ClientFromConfigFile(os.Getenv("CONFIG_FILE"))
+		env.Client.SetLedgerID(*NewLedgerIDMainnet())
 	} else {
 		err = fmt.Errorf("Failed to construct client from environment variables")
 	}
@@ -84,6 +85,9 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 		require.NoError(t, err)
 
 		env.Client.SetOperator(env.OperatorID, env.OperatorKey)
+	} else { // when using config file, the operator is set in the config file
+		env.OperatorID = env.Client.operator.accountID
+		env.OperatorKey = *env.Client.operator.privateKey
 	}
 
 	assert.NotNil(t, env.Client.GetOperatorAccountID())
@@ -96,13 +100,16 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 	env.Client.SetNodeMaxReadmitPeriod(1 * time.Hour)
 	env.Client.SetMaxAttempts(15)
 	env.Client.SetDefaultMaxQueryPayment(NewHbar(50))
-	logger := NewLogger("Hiero sdk", LoggerLevelError)
+	logLevel := os.Getenv("LOG_LEVEL")
+	if logLevel == "" {
+		logLevel = "ERROR"
+	}
+	logger := NewLogger("Hiero sdk", LogLevel(logLevel))
 	env.Client.SetLogger(logger)
 
 	env.OriginalOperatorID = env.Client.GetOperatorAccountID()
 	env.OriginalOperatorKey = env.Client.GetOperatorPublicKey()
 
-	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 	env.NodeAccountIDs = env.Client.network._GetNodeAccountIDsForExecute()
 	return env
 }
