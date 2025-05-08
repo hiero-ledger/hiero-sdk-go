@@ -132,7 +132,6 @@ func main() {
 	client.Close()
 
 	fmt.Println("Example Complete!")
-
 }
 
 // DecodeABIHexString decodes a hex-encoded ABI (Application Binary Interface) string into a UTF-8 string.
