@@ -15,7 +15,6 @@ import (
 
 //nolint:gocyclo
 func main() {
-
 	var client *hiero.Client
 	var err error
 

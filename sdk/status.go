@@ -353,7 +353,7 @@ const (
 	DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST                  Status = 385
 	DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST                    Status = 386
 	MAX_CUSTOM_FEES_IS_NOT_SUPPORTED                               Status = 387
-	BATCH_LIST_EMTPY                                               Status = 388
+	BATCH_LIST_EMPTY                                               Status = 388
 	BATCH_LIST_CONTAINS_DUPLICATES                                 Status = 389
 	BATCH_TRANSACTION_IN_BLACKLIST                                 Status = 390
 	INNER_TRANSACTION_FAILED                                       Status = 391
@@ -1059,8 +1059,8 @@ func (status Status) String() string { // nolint
 		return "DUPLICATE_ACCOUNT_ID_IN_MAX_CUSTOM_FEE_LIST"
 	case MAX_CUSTOM_FEES_IS_NOT_SUPPORTED:
 		return "MAX_CUSTOM_FEES_IS_NOT_SUPPORTED"
-	case BATCH_LIST_EMTPY:
-		return "BATCH_LIST_EMTPY"
+	case BATCH_LIST_EMPTY:
+		return "BATCH_LIST_EMPTY"
 	case BATCH_LIST_CONTAINS_DUPLICATES:
 		return "BATCH_LIST_CONTAINS_DUPLICATES"
 	case BATCH_TRANSACTION_IN_BLACKLIST:

@@ -56,3 +56,47 @@ func TestIntegrationEthereumFlowCanCreateLargeContract(t *testing.T) {
 
 	assert.Equal(t, record.CallResult.SignerNonce, int64(1))
 }
+
+func TestIntegrationEthereumFlowGetGetNodeIdFromResponseOnError(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	ecdsaPrivateKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+	aliasAccountId := ecdsaPrivateKey.ToAccountID(0, 0)
+
+	// Create a shallow account for the ECDSA key
+	resp, err := NewTransferTransaction().
+		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
+		AddHbarTransfer(*aliasAccountId, NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	chainId, err := hex.DecodeString("012a")
+	maxPriorityGas, err := hex.DecodeString("00")
+	nonce, err := hex.DecodeString("00")
+	maxGas, err := hex.DecodeString("00")
+	gasLimitBytes, err := hex.DecodeString("00")
+	contractBytes, err := hex.DecodeString("00")
+	value, err := hex.DecodeString("00")
+	callDataBytes, err := hex.DecodeString(LARGE_SMART_CONTRACT_BYTECODE)
+	require.NoError(t, err)
+
+	messageBytes, err := getCallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes, ecdsaPrivateKey)
+	require.NoError(t, err)
+
+	tx := NewEthereumFlow().
+		SetEthereumDataBytes(messageBytes).
+		SetMaxGasAllowance(HbarFrom(10, HbarUnits.Hbar))
+	require.NotNil(t, tx.GetEthereumData())
+	require.NotNil(t, tx.GetEthereumData().GetData())
+
+	response, err := tx.Execute(env.Client)
+	require.Error(t, err)
+	require.NotNil(t, response)
+	require.NotNil(t, response.NodeID)
+}
