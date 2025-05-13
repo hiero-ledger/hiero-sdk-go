@@ -1,3 +1,12 @@
+## v2.62.0
+
+### Added
+- New APIs `GetData` and `SetData` in `EthereumTransactionData`. Used to modify the call data in ethereum [#1336](https://github.com/hiero-ledger/hiero-sdk-go/pull/1336)
+- Response struct, containing the `NodeID` is returned by `EthereumFlow.Execute` even if the transaction fails [#1336](https://github.com/hiero-ledger/hiero-sdk-go/pull/1336)
+
+### Fixed
+- Fixed an issue where the receipt children were not included when the transaction throttled, when `SetIncludeChildren` is set to true [#1368](https://github.com/hiero-ledger/hiero-sdk-go/pull/1368)
+
 ## v2.61.0
 
 ### Added
