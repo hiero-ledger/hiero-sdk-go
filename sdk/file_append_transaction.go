@@ -134,7 +134,6 @@ func (tx *FileAppendTransaction) FreezeWith(client *Client) (*FileAppendTransact
 			MaxChunks: tx.maxChunks,
 		}
 	}
-
 	nextTransactionID := tx.transactionIDs._GetCurrent().(TransactionID)
 
 	tx.transactionIDs = _NewLockableSlice()
