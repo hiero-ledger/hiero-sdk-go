@@ -206,8 +206,7 @@ func TestUnitFileAppendTransactionBigContentsMock(t *testing.T) {
 		Response: &services.Response_TransactionGetReceipt{
 			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
 				Header: &services.ResponseHeader{
-					NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
-					ResponseType:                services.ResponseType_ANSWER_ONLY,
+					ResponseType: services.ResponseType_ANSWER_ONLY,
 				},
 				Receipt: &services.TransactionReceipt{
 					Status: services.ResponseCodeEnum_SUCCESS,
@@ -262,7 +261,7 @@ func TestUnitFileAppendTransactionBigContentsMock(t *testing.T) {
 		}
 	}
 	responses := [][]interface{}{{
-		call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call,
+		call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call,
 	}}
 
 	client, server := NewMockClientAndServer(responses)
@@ -276,6 +275,42 @@ func TestUnitFileAppendTransactionBigContentsMock(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, bigContents2, contents)
+}
+
+func TestUnitFileAppendTransactionValidatesReceipt(t *testing.T) {
+	t.Parallel()
+
+	receipt := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_ACCOUNT_DELETED,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	responses := [][]interface{}{{
+		call, receipt,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	_, err := NewFileAppendTransaction().
+		SetFileID(FileID{File: 3}).
+		SetContents([]byte(bigContents2)).
+		Execute(client)
+	require.ErrorContains(t, err, "exceptional receipt status: ACCOUNT_DELETED")
 }
 
 func TestUnitFileAppendTransactionCoverage(t *testing.T) {

@@ -150,10 +150,8 @@ func (tx *FileAppendTransaction) FreezeWith(client *Client) (*FileAppendTransact
 				end = len(tx.contents)
 			}
 
+			// Important: if the toProtobuf -> fromProtobuf is not done, the transaction id will be wrong
 			tx.transactionIDs._Push(_TransactionIDFromProtobuf(nextTransactionID._ToProtobuf()))
-			if err != nil {
-				panic(err)
-			}
 			b.FileAppend.Contents = tx.contents[start:end]
 
 			body.TransactionID = nextTransactionID._ToProtobuf()
@@ -256,7 +254,7 @@ func (tx *FileAppendTransaction) ExecuteAll(
 
 		list[i] = resp.(TransactionResponse)
 
-		_, err = list[i].SetValidateStatus(false).GetReceipt(client)
+		_, err = list[i].SetValidateStatus(true).GetReceipt(client)
 		if err != nil {
 			return list, err
 		}
