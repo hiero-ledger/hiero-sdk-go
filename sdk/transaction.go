@@ -1151,14 +1151,10 @@ func (tx *Transaction[T]) SignWith(publicKey PublicKey, signer TransactionSigner
 // AddSignatureForMultiNodeMultiChunk adds a signature to the transaction for a specific transaction id and node id.
 // This is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
 func (tx *Transaction[T]) AddSignatureForMultiNodeMultiChunk(publicKey PublicKey, signature []byte, transactionID TransactionID, nodeID AccountID) T {
-	// TODO: check if this pub key already signed the transaction for this tx id and node id
 	if tx.signedTransactions._Length() == 0 {
 		return tx.childTransaction
 	}
 
-	tx.transactions = _NewLockableSlice()
-	tx.publicKeys = append(tx.publicKeys, publicKey)
-	tx.transactionSigners = append(tx.transactionSigners, nil)
 	tx.transactionIDs.locked = true
 
 	for index := 0; index < tx.signedTransactions._Length(); index++ {
@@ -1179,12 +1175,26 @@ func (tx *Transaction[T]) AddSignatureForMultiNodeMultiChunk(publicKey PublicKey
 		bodyNodeID := _AccountIDFromProtobuf(body.NodeAccountID)
 		// check if the transaction id and node id match the input
 		if bodyTxID.String() == transactionID.String() && bodyNodeID.String() == nodeID.String() {
+			// check if the signature is already in the signature map
+			var found bool
+			for _, sig := range temp.SigMap.SigPair {
+				if reflect.DeepEqual(sig.PubKeyPrefix, publicKey.BytesRaw()) {
+					found = true
+					continue
+				}
+			}
+			if found {
+				continue
+			}
 			// add the signature to the signature map for the correct transaction id and node id
 			temp.SigMap.SigPair = append(
 				temp.SigMap.SigPair,
 				publicKey._ToSignaturePairProtobuf(signature),
 			)
 			// set the signed transaction at index to the updated signed transaction
+			tx.transactions = _NewLockableSlice()
+			tx.publicKeys = append(tx.publicKeys, publicKey)
+			tx.transactionSigners = append(tx.transactionSigners, nil)
 			tx.signedTransactions._Set(index, temp)
 		}
 	}
