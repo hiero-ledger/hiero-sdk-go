@@ -63,8 +63,8 @@ func (ethereumTxData *EthereumTransactionData) ToBytes() ([]byte, error) {
 	return nil, errors.New("transaction data is empty")
 }
 
-// _GetData retrieves the CallData from the transaction.
-func (ethereumTxData *EthereumTransactionData) _GetData() []byte {
+// GetData retrieves the CallData from the transaction.
+func (ethereumTxData *EthereumTransactionData) GetData() []byte {
 	if ethereumTxData.eip1559 != nil {
 		return ethereumTxData.eip1559.CallData
 	}
@@ -74,8 +74,8 @@ func (ethereumTxData *EthereumTransactionData) _GetData() []byte {
 	return ethereumTxData.legacy.CallData
 }
 
-// _SetData sets the CallData for the transaction.
-func (ethereumTxData *EthereumTransactionData) _SetData(data []byte) *EthereumTransactionData {
+// SetData sets the CallData for the transaction.
+func (ethereumTxData *EthereumTransactionData) SetData(data []byte) *EthereumTransactionData {
 	if ethereumTxData.eip1559 != nil {
 		ethereumTxData.eip1559.CallData = data
 		return ethereumTxData

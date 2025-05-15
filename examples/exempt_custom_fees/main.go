@@ -215,5 +215,4 @@ func main() {
 	}
 
 	client.Close()
-
 }

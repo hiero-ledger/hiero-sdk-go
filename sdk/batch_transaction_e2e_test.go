@@ -217,7 +217,7 @@ func TestIntegrationBatchTransactionEmpty(t *testing.T) {
 
 	batchTransaction := NewBatchTransaction()
 	_, err := batchTransaction.Execute(env.Client)
-	assert.ErrorContains(t, err, "exceptional precheck status BATCH_LIST_EMTPY")
+	assert.ErrorContains(t, err, "exceptional precheck status BATCH_LIST_EMPTY")
 }
 
 func TestIntegrationBatchTransactionBlacklisted(t *testing.T) {

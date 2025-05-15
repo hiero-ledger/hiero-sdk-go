@@ -14,7 +14,6 @@ import (
 
 //nolint:gocyclo
 func main() {
-
 	var client *hiero.Client
 	var err error
 
@@ -408,5 +407,4 @@ func main() {
 	client.Close()
 
 	fmt.Println("Example Complete!")
-
 }
