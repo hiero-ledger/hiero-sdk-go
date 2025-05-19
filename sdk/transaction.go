@@ -1050,30 +1050,34 @@ func (tx *Transaction[T]) GetTransactionID() TransactionID {
 	return TransactionID{}
 }
 
-type SignableBody struct {
+type SignableNodeTransactionBodyBytes struct {
 	NodeID        AccountID
 	Body          []byte
 	TransactionID TransactionID
 }
 
-// GetSignableBodyBytes returns a list of SignableBody objects for each signed transaction in the transaction list.
+// GetSignableNodeBodyBytesList returns a list of SignableNodeTransactionBodyBytes objects for each signed transaction in the transaction list.
 // The NodeID represents the node that this transaction is signed for.
 // The TransactionID is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
-func (tx *Transaction[T]) GetSignableBodyBytes() ([]SignableBody, error) {
-	signableBodyList := make([]SignableBody, len(tx.signedTransactions.slice))
+func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransactionBodyBytes, error) {
+	signableNodeTransactionBodyBytesList := make([]SignableNodeTransactionBodyBytes, len(tx.signedTransactions.slice))
 
 	for i, signedTransaction := range tx.signedTransactions.slice {
-		signableBody := signedTransaction.(*services.SignedTransaction)
+		signableNodeTransactionBodyBytes := signedTransaction.(*services.SignedTransaction)
 		body := services.TransactionBody{}
-		err := protobuf.Unmarshal(signableBody.GetBodyBytes(), &body)
+		err := protobuf.Unmarshal(signableNodeTransactionBodyBytes.GetBodyBytes(), &body)
 		if err != nil {
 			return nil, err
 		}
 		nodeID := _AccountIDFromProtobuf(body.NodeAccountID)
 		transactionID := _TransactionIDFromProtobuf(body.TransactionID)
-		signableBodyList[i] = SignableBody{NodeID: *nodeID, TransactionID: transactionID, Body: signableBody.GetBodyBytes()}
+		signableNodeTransactionBodyBytesList[i] = SignableNodeTransactionBodyBytes{
+			NodeID:        *nodeID,
+			TransactionID: transactionID,
+			Body:          signableNodeTransactionBodyBytes.GetBodyBytes(),
+		}
 	}
-	return signableBodyList, nil
+	return signableNodeTransactionBodyBytesList, nil
 }
 
 // SetTransactionID sets the TransactionID for this transaction.

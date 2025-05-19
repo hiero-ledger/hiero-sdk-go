@@ -95,7 +95,7 @@ func TestIntegrationFileAppendTransactionSignForMultipleNodes(t *testing.T) {
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
-	signableBodyList, err := tx1.GetSignableBodyBytes()
+	signableBodyList, err := tx1.GetSignableNodeBodyBytesList()
 	require.NoError(t, err)
 	for _, signableBody := range signableBodyList {
 		signature := newKey.Sign(signableBody.Body)
