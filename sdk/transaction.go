@@ -1080,9 +1080,32 @@ func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransact
 	return signableNodeTransactionBodyBytesList, nil
 }
 
+func deepCopyTransactionID(src TransactionID) TransactionID {
+	var copy TransactionID
+
+	if src.AccountID != nil {
+		accountCopy := *src.AccountID
+		copy.AccountID = &accountCopy
+	}
+	if src.ValidStart != nil {
+		timeCopy := *src.ValidStart
+		copy.ValidStart = &timeCopy
+	}
+	if src.Nonce != nil {
+		nonceCopy := *src.Nonce
+		copy.Nonce = &nonceCopy
+	}
+
+	copy.scheduled = src.scheduled // non-pointer value, just copy
+
+	return copy
+}
+
 // SetTransactionID sets the TransactionID for this transaction.
 func (tx *Transaction[T]) SetTransactionID(transactionID TransactionID) T {
-	tx.transactionIDs._Clear()._Push(transactionID)._SetLocked(true)
+	deepCopied := deepCopyTransactionID(transactionID)
+
+	tx.transactionIDs._Clear()._Push(deepCopied)._SetLocked(true)
 	return tx.childTransaction
 }
 

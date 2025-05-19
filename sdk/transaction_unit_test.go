@@ -775,6 +775,173 @@ func TestUnitTransactionAttributesSerialization(t *testing.T) {
 	}
 }
 
+func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	fileID := FileID{File: 3}
+	nodeAccountID1 := AccountID{Account: 3}
+	nodeAccountID2 := AccountID{Account: 4}
+	nodeAccountIDs := []AccountID{nodeAccountID1, nodeAccountID2}
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	// Mock signature bytes
+	mockSignature := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	// Test Case 1: Single Node, Single Chunk
+	t.Run("Single Node Single Chunk", func(t *testing.T) {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs([]AccountID{nodeAccountID1}).
+			SetTransactionID(testTransactionID)
+
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.Len(t, signs, 1)
+		require.Contains(t, signs, nodeAccountID1)
+
+		// Verify the signature bytes
+		for key := range signs[nodeAccountID1] {
+			require.Equal(t, mockSignature, signs[nodeAccountID1][key])
+		}
+	})
+
+	// Test Case 2: Multiple Nodes, Single Chunk
+	t.Run("Multiple Nodes Single Chunk", func(t *testing.T) {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs(nodeAccountIDs).
+			SetTransactionID(testTransactionID)
+
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		// Add signatures for both nodes
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.Len(t, signs, 2)
+		require.Contains(t, signs, nodeAccountID1)
+		require.Contains(t, signs, nodeAccountID2)
+
+		// Verify signatures for both nodes
+		for _, nodeID := range nodeAccountIDs {
+			for key := range signs[nodeID] {
+				require.Equal(t, mockSignature, signs[nodeID][key])
+			}
+		}
+	})
+
+	// Test Case 3: Multiple Nodes, Multiple Chunks
+	t.Run("Multiple Nodes Multiple Chunks", func(t *testing.T) {
+		content := make([]byte, 3000)
+		for i := range content {
+			content[i] = byte(i % 256)
+		}
+
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents(content).
+			SetNodeAccountIDs(nodeAccountIDs).
+			SetTransactionID(testTransactionID)
+
+		transaction.SetMaxChunks(2)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		// Add signatures for both nodes
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.Len(t, signs, 2)
+		require.Contains(t, signs, nodeAccountID1)
+		require.Contains(t, signs, nodeAccountID2)
+
+		// Verify each node has the correct signature
+		for _, nodeID := range nodeAccountIDs {
+			nodeSigs := signs[nodeID]
+			require.Len(t, nodeSigs, 1)
+			for key := range nodeSigs {
+				require.NotNil(t, key)
+				require.Equal(t, key.String(), privateKey.PublicKey().String())
+				require.Equal(t, mockSignature, nodeSigs[key])
+			}
+		}
+	})
+
+	// Test Case 4: Invalid Node ID
+	t.Run("Invalid Node ID", func(t *testing.T) {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs(nodeAccountIDs).
+			SetTransactionID(testTransactionID)
+
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		invalidNodeID := AccountID{Account: 999}
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, invalidNodeID)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.NotContains(t, signs, invalidNodeID)
+	})
+
+	// Test Case 5: Invalid Transaction ID
+	t.Run("Invalid Transaction ID", func(t *testing.T) {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs(nodeAccountIDs).
+			SetTransactionID(testTransactionID)
+
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		invalidTxID := TransactionID{
+			AccountID:  &AccountID{Account: 999},
+			ValidStart: &time.Time{},
+		}
+
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, invalidTxID, nodeAccountID1)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.NotContains(t, signs[nodeAccountID1], privateKey.PublicKey())
+	})
+}
+
 func signSwitchCaseaSetup(t *testing.T) (PrivateKey, *Client, AccountID) {
 	newKey, err := GeneratePrivateKey()
 	require.NoError(t, err)
