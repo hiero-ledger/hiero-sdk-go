@@ -1064,17 +1064,22 @@ func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransact
 		return nil, errTransactionIsNotFrozen
 	}
 
+	// the result list
 	signableNodeTransactionBodyBytesList := make([]SignableNodeTransactionBodyBytes, len(tx.signedTransactions.slice))
 
+	// iterate over the signed transactions
 	for i, signedTransaction := range tx.signedTransactions.slice {
 		signableNodeTransactionBodyBytes := signedTransaction.(*services.SignedTransaction)
 		body := services.TransactionBody{}
+		// unmarshal the body
 		err := protobuf.Unmarshal(signableNodeTransactionBodyBytes.GetBodyBytes(), &body)
 		if err != nil {
 			return nil, err
 		}
+		// get the node id and transaction id from the body
 		nodeID := _AccountIDFromProtobuf(body.NodeAccountID)
 		transactionID := _TransactionIDFromProtobuf(body.TransactionID)
+		// add the signable node transaction body bytes to the list
 		signableNodeTransactionBodyBytesList[i] = SignableNodeTransactionBodyBytes{
 			NodeID:        *nodeID,
 			TransactionID: transactionID,
@@ -1084,6 +1089,8 @@ func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransact
 	return signableNodeTransactionBodyBytesList, nil
 }
 
+// Util method used to deep copy a TransactionID in order to avoid mutating the original
+// since freeze in file append transaction mutates the transaction id while creating the chunked transactions
 func deepCopyTransactionID(src TransactionID) TransactionID {
 	var copy TransactionID
 
@@ -1100,7 +1107,7 @@ func deepCopyTransactionID(src TransactionID) TransactionID {
 		copy.Nonce = &nonceCopy
 	}
 
-	copy.scheduled = src.scheduled // non-pointer value, just copy
+	copy.scheduled = src.scheduled
 
 	return copy
 }
