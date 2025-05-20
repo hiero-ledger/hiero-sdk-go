@@ -46,16 +46,10 @@ func main() {
 	}
 
 	// Create accounts
-	senderAccountTx := hiero.NewAccountCreateTransaction().
+	senderAccountResponse, err := hiero.NewAccountCreateTransaction().
 		SetKeyWithoutAlias(senderKey.PublicKey()).
-		SetInitialBalance(hiero.NewHbar(10))
-
-	senderAccountTx, err = senderAccountTx.FreezeWith(client)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to freeze sender account creation transaction: %v", err))
-	}
-
-	senderAccountResponse, err := senderAccountTx.Execute(client)
+		SetInitialBalance(hiero.NewHbar(10)).
+		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to execute sender account creation transaction: %v", err))
 	}
@@ -66,16 +60,10 @@ func main() {
 	}
 	senderId := *senderAccountReceipt.AccountID
 
-	receiverAccountTx := hiero.NewAccountCreateTransaction().
+	receiverAccountResponse, err := hiero.NewAccountCreateTransaction().
 		SetKeyWithoutAlias(receiverKey).
-		SetInitialBalance(hiero.NewHbar(1))
-
-	receiverAccountTx, err = receiverAccountTx.FreezeWith(client)
-	if err != nil {
-		panic(fmt.Sprintf("Failed to freeze receiver account creation transaction: %v", err))
-	}
-
-	receiverAccountResponse, err := receiverAccountTx.Execute(client)
+		SetInitialBalance(hiero.NewHbar(1)).
+		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to execute receiver account creation transaction: %v", err))
 	}
@@ -162,9 +150,7 @@ func multiNodeFileTransactionExample(client *hiero.Client, senderId hiero.Accoun
 		return fmt.Errorf("failed to freeze file create transaction: %w", err)
 	}
 
-	fileCreateTx.Sign(senderKey)
-
-	fileCreateResponse, err := fileCreateTx.Execute(client)
+	fileCreateResponse, err := fileCreateTx.Sign(senderKey).Execute(client)
 	if err != nil {
 		return fmt.Errorf("failed to execute file create transaction: %w", err)
 	}
