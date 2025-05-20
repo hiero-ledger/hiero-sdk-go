@@ -1060,6 +1060,10 @@ type SignableNodeTransactionBodyBytes struct {
 // The NodeID represents the node that this transaction is signed for.
 // The TransactionID is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
 func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransactionBodyBytes, error) {
+	if !tx.IsFrozen() {
+		return nil, errTransactionIsNotFrozen
+	}
+
 	signableNodeTransactionBodyBytesList := make([]SignableNodeTransactionBodyBytes, len(tx.signedTransactions.slice))
 
 	for i, signedTransaction := range tx.signedTransactions.slice {

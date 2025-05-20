@@ -940,6 +940,250 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 		require.NoError(t, err)
 		require.NotContains(t, signs[nodeAccountID1], privateKey.PublicKey())
 	})
+
+	// Test Case 6: Adding Same Signature Twice
+	t.Run("Adding Same Signature Twice", func(t *testing.T) {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs([]AccountID{nodeAccountID1}).
+			SetTransactionID(testTransactionID)
+
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		// Add signature first time
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+
+		// Add same signature second time
+		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.Len(t, signs, 1)
+		require.Contains(t, signs, nodeAccountID1)
+
+		// Verify there's only one signature
+		nodeSigs := signs[nodeAccountID1]
+		require.Len(t, nodeSigs, 1)
+		for key := range nodeSigs {
+			require.Equal(t, mockSignature, nodeSigs[key])
+		}
+	})
+}
+
+func TestUnitAddSignatureForMultiNodeMultiChunkWithEmptySignedTransactions(t *testing.T) {
+	t.Parallel()
+
+	// Create a new transaction
+	tx := NewFileAppendTransaction()
+
+	// Generate a test key
+	key, err := GeneratePrivateKey()
+	require.NoError(t, err)
+
+	// Create mock signature
+	mockSignature := []byte{0, 1, 2, 3, 4}
+
+	// Create test node and transaction IDs
+	nodeID := AccountID{Account: 3}
+	testTxID := TransactionID{
+		AccountID:  &AccountID{Account: 5},
+		ValidStart: &time.Time{},
+	}
+
+	// Add signature when signedTransactions is empty
+	tx.AddSignatureForMultiNodeMultiChunk(key.PublicKey(), mockSignature, testTxID, nodeID)
+
+	// Verify no signatures were added
+	signs, err := tx.GetSignatures()
+	require.NoError(t, err)
+	require.Empty(t, signs)
+}
+
+func TestUnitGetSignableNodeBodyBytesListUnfrozen(t *testing.T) {
+	t.Parallel()
+
+	// Test unfrozen transaction
+	tx := NewTransferTransaction()
+	list, err := tx.GetSignableNodeBodyBytesList()
+	require.Error(t, err)
+	require.Equal(t, errTransactionIsNotFrozen, err)
+	require.Empty(t, list)
+}
+
+func TestUnitGetSignableNodeBodyBytesListBasic(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	nodeID := AccountID{Account: 3}
+	tx := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		SetTransactionID(testTransactionID).
+		AddHbarTransfer(AccountID{Account: 2}, NewHbar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1))
+
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	list, err := frozen.GetSignableNodeBodyBytesList()
+	require.NoError(t, err)
+	require.NotEmpty(t, list)
+	require.Len(t, list, 1) // Should have one entry for our single node
+
+	// Verify the basic contents of the list
+	require.Equal(t, nodeID, list[0].NodeID)
+	require.Equal(t, testTransactionID, list[0].TransactionID)
+	require.NotEmpty(t, list[0].Body)
+}
+
+func TestUnitGetSignableNodeBodyBytesListContents(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	nodeID := AccountID{Account: 3}
+	tx := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		SetTransactionID(testTransactionID).
+		AddHbarTransfer(AccountID{Account: 2}, NewHbar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1))
+
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	list, err := frozen.GetSignableNodeBodyBytesList()
+	require.NoError(t, err)
+
+	// Verify the body bytes can be unmarshalled into a valid transaction body
+	var body services.TransactionBody
+	err = protobuf.Unmarshal(list[0].Body, &body)
+	require.NoError(t, err)
+	require.NotNil(t, body.GetCryptoTransfer())
+	require.Equal(t, nodeID.String(), _AccountIDFromProtobuf(body.NodeAccountID).String())
+	require.Equal(t, testTransactionID.String(), _TransactionIDFromProtobuf(body.TransactionID).String())
+}
+
+func TestUnitGetSignableNodeBodyBytesListMultipleNodeIDs(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	nodeID1 := AccountID{Account: 3}
+	nodeID2 := AccountID{Account: 4}
+	nodeIDs := []AccountID{nodeID1, nodeID2}
+
+	tx := NewTransferTransaction().
+		SetNodeAccountIDs(nodeIDs).
+		SetTransactionID(testTransactionID).
+		AddHbarTransfer(AccountID{Account: 2}, NewHbar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1))
+
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	list, err := frozen.GetSignableNodeBodyBytesList()
+	require.NoError(t, err)
+	require.Len(t, list, 2) // Should have two entries, one per node
+
+	// Verify each node's entry
+	for i, nodeID := range nodeIDs {
+		require.Equal(t, nodeID, list[i].NodeID)
+		require.Equal(t, testTransactionID, list[i].TransactionID)
+		require.NotEmpty(t, list[i].Body)
+
+		// Verify body contents
+		var body services.TransactionBody
+		err = protobuf.Unmarshal(list[i].Body, &body)
+		require.NoError(t, err)
+		require.NotNil(t, body.GetCryptoTransfer())
+		require.Equal(t, nodeID.String(), _AccountIDFromProtobuf(body.NodeAccountID).String())
+	}
+}
+
+func TestUnitGetSignableNodeBodyBytesListFileAppendMultipleChunks(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	nodeID1 := AccountID{Account: 3}
+	nodeID2 := AccountID{Account: 4}
+	nodeIDs := []AccountID{nodeID1, nodeID2}
+
+	// Create content larger than chunk size to force multiple chunks
+	content := make([]byte, 4096)
+	for i := range content {
+		content[i] = byte(i % 256)
+	}
+
+	tx := NewFileAppendTransaction().
+		SetNodeAccountIDs(nodeIDs).
+		SetTransactionID(testTransactionID).
+		SetFileID(FileID{File: 5}).
+		SetContents(content)
+
+	// Set small chunk size to force multiple chunks
+	tx.SetMaxChunkSize(2048)
+
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	list, err := frozen.GetSignableNodeBodyBytesList()
+	require.NoError(t, err)
+	require.Len(t, list, 4) // Should have 4 entries: 2 nodes * 2 chunks
+
+	// Map to track transaction IDs per node
+	txIDsByNode := make(map[string]map[string]bool)
+	for _, nodeID := range nodeIDs {
+		txIDsByNode[nodeID.String()] = make(map[string]bool)
+	}
+
+	// Verify each entry
+	for i := 0; i < len(list); i++ {
+		require.Contains(t, nodeIDs, list[i].NodeID)
+		require.NotEmpty(t, list[i].TransactionID)
+		require.NotEmpty(t, list[i].Body)
+
+		nodeIDStr := list[i].NodeID.String()
+		txIDStr := list[i].TransactionID.String()
+
+		// Each transaction ID should appear exactly once per node
+		require.False(t, txIDsByNode[nodeIDStr][txIDStr], "Duplicate transaction ID found for the same node")
+		txIDsByNode[nodeIDStr][txIDStr] = true
+
+		// Verify body contents
+		var body services.TransactionBody
+		err = protobuf.Unmarshal(list[i].Body, &body)
+		require.NoError(t, err)
+		require.NotNil(t, body.GetFileAppend())
+		require.Equal(t, list[i].NodeID.String(), _AccountIDFromProtobuf(body.NodeAccountID).String())
+	}
+
+	// Verify each node has the same number of unique transaction IDs
+	for _, nodeID := range nodeIDs {
+		require.Len(t, txIDsByNode[nodeID.String()], 2, "Each node should have exactly 2 unique transaction IDs")
+	}
+
+	// Verify that all nodes have the same set of transaction IDs
+	firstNodeTxIDs := txIDsByNode[nodeID1.String()]
+	for _, nodeID := range nodeIDs[1:] {
+		nodeTxIDs := txIDsByNode[nodeID.String()]
+		for txID := range firstNodeTxIDs {
+			require.True(t, nodeTxIDs[txID], "All nodes should have the same set of transaction IDs")
+		}
+	}
 }
 
 func signSwitchCaseaSetup(t *testing.T) (PrivateKey, *Client, AccountID) {
