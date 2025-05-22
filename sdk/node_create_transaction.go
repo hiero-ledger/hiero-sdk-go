@@ -205,10 +205,12 @@ func (tx *NodeCreateTransaction) SetDeclineReward(declineReward bool) *NodeCreat
 	return tx
 }
 
+// GetGrpcProxyEndpoint Gets the gRPC proxy endpoint.
 func (tx *NodeCreateTransaction) GetGrpcProxyEndpoint() Endpoint {
 	return *tx.grpcProxyEndpoint
 }
 
+// SetGrpcProxyEndpoint Sets the gRPC proxy endpoint.
 func (tx *NodeCreateTransaction) SetGrpcProxyEndpoint(grpcProxyEndpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.grpcProxyEndpoint = &grpcProxyEndpoint

@@ -64,6 +64,8 @@ func TestIntegrationCanExecuteNodeCreateTransaction(t *testing.T) {
 		SetServiceEndpoints([]Endpoint{endpoint, endpoint1}).
 		SetGossipCaCertificate(validGossipCert).
 		SetAdminKey(adminKey).
+		SetGrpcProxyEndpoint(endpoint).
+		SetDeclineReward(true).
 		FreezeWith(client)
 
 	require.NoError(t, err)

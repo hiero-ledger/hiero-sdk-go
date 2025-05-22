@@ -44,6 +44,9 @@ func main() {
 	serviceEndpoint := hiero.Endpoint{}
 	serviceEndpoint.SetAddress(ipv4).SetPort(50211)
 
+	grpcProxyEndpoint := hiero.Endpoint{}
+	grpcProxyEndpoint.SetAddress(ipv4).SetPort(50212)
+
 	adminKey, _ := hiero.PrivateKeyGenerateEd25519()
 
 	nodeCreateTransaction := hiero.NewNodeCreateTransaction().
@@ -52,20 +55,27 @@ func main() {
 		SetGossipCaCertificate([]byte("gossipCaCertificate")).
 		SetServiceEndpoints([]hiero.Endpoint{serviceEndpoint}).
 		SetGossipEndpoints([]hiero.Endpoint{gossipEndpoint}).
-		SetAdminKey(adminKey.PublicKey())
+		SetAdminKey(adminKey.PublicKey()).
+		SetGrpcProxyEndpoint(grpcProxyEndpoint)
 
 	resp, err := nodeCreateTransaction.Execute(client)
 	fmt.Println(err)
 	_, err = resp.SetValidateStatus(true).GetReceipt(client)
 	fmt.Println(err)
 
+	grpcProxyEndpointUpdated := hiero.Endpoint{}
+	grpcProxyEndpointUpdated.SetAddress(ipv4).SetPort(50215)
+
 	nodeUpdateTransaction := hiero.NewNodeUpdateTransaction().
 		SetNodeID(123).
 		SetDescription(newDescription).
 		SetGossipCaCertificate([]byte("gossipCaCertificate")).
 		SetServiceEndpoints([]hiero.Endpoint{serviceEndpoint}).
-		SetGossipEndpoints([]hiero.Endpoint{gossipEndpoint}).
-		SetAdminKey(adminKey.PublicKey())
+		SetGossipEndpoints([]hiero.Endpoint{grpcProxyEndpointUpdated}).
+		SetAdminKey(adminKey.PublicKey()).
+		SetGrpcProxyEndpoint(grpcProxyEndpoint).
+		SetDeclineReward(true)
+
 	resp, err = nodeUpdateTransaction.Execute(client)
 	fmt.Println(err)
 
