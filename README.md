@@ -73,7 +73,7 @@ go run scripts/proto/generator.go -source <dir1,dir2,...> -dest <dir>
 ### Example
 
 ```sh
-go run scripts/proto/generator.go -source ../services/hapi/hedera-protobufs/services/state,../services/hapi/hedera-protobufs/services/auxiliary -dest ../services/hapi/hedera-protobufs/services
+go run scripts/generators/proto/generator.go -source services/hapi/hedera-protobuf-java-api/src/main/proto/services/state,services/hapi/hedera-protobuf-java-api/src/main/proto/services/auxiliary,services/hapi/hedera-protobuf-java-api/src/main/proto/platform/event -dest services/hapi/hedera-protobuf-java-api/src/main/proto/services
 
 ```
 

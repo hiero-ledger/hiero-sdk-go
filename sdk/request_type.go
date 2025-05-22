@@ -181,7 +181,15 @@ const (
 	// Submit node public TSS encryption key
 	RequestTypeTssEncryptionKey RequestType = 99
 	// Submit signature of state root hash
-	RequestTypeStateSignatureTransaction RequestType = 100
+	RequestTypeStateSignatureTransaction  RequestType = 100
+	RequestTypeHintsKeyPublication        RequestType = 101
+	RequestTypeHintsPreprocessingVote     RequestType = 102
+	RequestTypeHintsPartialSignature      RequestType = 103
+	RequestTypeHistoryAssemblySignature   RequestType = 104
+	RequestTypeHistoryProofKeyPublication RequestType = 105
+	RequestTypeHistoryProofVote           RequestType = 106
+	RequestTypeCrsPublication             RequestType = 107
+	RequestTypeAtomicBatch                RequestType = 108
 )
 
 // String() returns a string representation of the status
@@ -361,6 +369,22 @@ func (requestType RequestType) String() string { // nolint
 		return "TSS_ENCRYPTION_KEY"
 	case RequestTypeStateSignatureTransaction:
 		return "STATE_SIGNATURE_TRANSACTION"
+	case RequestTypeHintsKeyPublication:
+		return "HINTS_KEY_PUBLICATION"
+	case RequestTypeHintsPreprocessingVote:
+		return "HINTS_PREPROCESSING_VOTE"
+	case RequestTypeHintsPartialSignature:
+		return "HINTS_PARTIAL_SIGNATURE"
+	case RequestTypeHistoryAssemblySignature:
+		return "HISTORY_ASSEMBLY_SIGNATURE"
+	case RequestTypeHistoryProofKeyPublication:
+		return "HISTORY_PROOF_KEY_PUBLICATION"
+	case RequestTypeHistoryProofVote:
+		return "HISTORY_PROOF_VOTE"
+	case RequestTypeCrsPublication:
+		return "CRS_PUBLICATION"
+	case RequestTypeAtomicBatch:
+		return "ATOMIC_BATCH"
 	}
 
 	panic(fmt.Sprintf("unreachable: RequestType.String() switch statement is non-exhaustive. RequestType: %v", uint32(requestType)))

@@ -362,6 +362,9 @@ const (
 	INVALID_BATCH_KEY                                              Status = 394
 	SCHEDULE_EXPIRY_NOT_CONFIGURABLE                               Status = 395
 	CREATING_SYSTEM_ENTITIES                                       Status = 396
+	THROTTLE_GROUP_LCM_OVERFLOW                                    Status = 397
+	AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN                  Status = 398
+	GRPC_WEB_PROXY_NOT_SUPPORTED                                   Status = 399
 )
 
 // String() returns a string representation of the status
@@ -1077,6 +1080,12 @@ func (status Status) String() string { // nolint
 		return "SCHEDULE_EXPIRY_NOT_CONFIGURABLE"
 	case CREATING_SYSTEM_ENTITIES:
 		return "CREATING_SYSTEM_ENTITIES"
+	case THROTTLE_GROUP_LCM_OVERFLOW:
+		return "THROTTLE_GROUP_LCM_OVERFLOW"
+	case AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN:
+		return "AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN"
+	case GRPC_WEB_PROXY_NOT_SUPPORTED:
+		return "GRPC_WEB_PROXY_NOT_SUPPORTED"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))
