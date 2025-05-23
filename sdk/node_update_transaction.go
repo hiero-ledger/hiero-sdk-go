@@ -30,16 +30,16 @@ import (
  */
 type NodeUpdateTransaction struct {
 	*Transaction[*NodeUpdateTransaction]
-	nodeID              uint64
-	accountID           *AccountID
-	description         string
-	gossipEndpoints     []Endpoint
-	serviceEndpoints    []Endpoint
-	gossipCaCertificate []byte
-	grpcCertificateHash []byte
-	adminKey            Key
-	declineReward       *bool
-	grpcProxyEndpoint   *Endpoint
+	nodeID               uint64
+	accountID            *AccountID
+	description          string
+	gossipEndpoints      []Endpoint
+	serviceEndpoints     []Endpoint
+	gossipCaCertificate  []byte
+	grpcCertificateHash  []byte
+	adminKey             Key
+	declineReward        *bool
+	grpcWebProxyEndpoint *Endpoint
 }
 
 func NewNodeUpdateTransaction() *NodeUpdateTransaction {
@@ -66,8 +66,8 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 	}
 
 	var grpcProxyEndpoint *Endpoint
-	if pb.GetNodeUpdate().GetGrpcProxyEndpoint() != nil {
-		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeUpdate().GetGrpcProxyEndpoint())
+	if pb.GetNodeUpdate().GetGrpcWebProxyEndpoint() != nil {
+		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeUpdate().GetGrpcWebProxyEndpoint())
 		grpcProxyEndpoint = &grpcProxyEndpointValue
 	}
 
@@ -93,16 +93,16 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 	}
 
 	nodeUpdateTransaction := NodeUpdateTransaction{
-		nodeID:              pb.GetNodeUpdate().GetNodeId(),
-		accountID:           accountID,
-		description:         description,
-		gossipEndpoints:     gossipEndpoints,
-		serviceEndpoints:    serviceEndpoints,
-		gossipCaCertificate: certificate,
-		grpcCertificateHash: certificateHash,
-		adminKey:            adminKey,
-		grpcProxyEndpoint:   grpcProxyEndpoint,
-		declineReward:       declineReward,
+		nodeID:               pb.GetNodeUpdate().GetNodeId(),
+		accountID:            accountID,
+		description:          description,
+		gossipEndpoints:      gossipEndpoints,
+		serviceEndpoints:     serviceEndpoints,
+		gossipCaCertificate:  certificate,
+		grpcCertificateHash:  certificateHash,
+		adminKey:             adminKey,
+		grpcWebProxyEndpoint: grpcProxyEndpoint,
+		declineReward:        declineReward,
 	}
 
 	tx.childTransaction = &nodeUpdateTransaction
@@ -246,16 +246,16 @@ func (tx *NodeUpdateTransaction) SetDeclineReward(declineReward bool) *NodeUpdat
 	return tx
 }
 
-// GetGrpcProxyEndpoint Gets the gRPC proxy endpoint.
-func (tx *NodeUpdateTransaction) GetGrpcProxyEndpoint() *Endpoint {
-	return tx.grpcProxyEndpoint
+// GetGrpcWebProxyEndpoint Gets the gRPC proxy endpoint.
+func (tx *NodeUpdateTransaction) GetGrpcWebProxyEndpoint() *Endpoint {
+	return tx.grpcWebProxyEndpoint
 }
 
-// SetGrpcProxyEndpoint Sets the gRPC proxy endpoint.
+// SetGrpcWebProxyEndpoint Sets the gRPC proxy endpoint.
 // if not set - no change will be made
-func (tx *NodeUpdateTransaction) SetGrpcProxyEndpoint(grpcProxyEndpoint Endpoint) *NodeUpdateTransaction {
+func (tx *NodeUpdateTransaction) SetGrpcWebProxyEndpoint(grpcWebProxyEndpoint Endpoint) *NodeUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.grpcProxyEndpoint = &grpcProxyEndpoint
+	tx.grpcWebProxyEndpoint = &grpcWebProxyEndpoint
 	return tx
 }
 
@@ -319,8 +319,8 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 		body.ServiceEndpoint = append(body.ServiceEndpoint, endpoint._ToProtobuf())
 	}
 
-	if tx.grpcProxyEndpoint != nil {
-		body.GrpcProxyEndpoint = tx.grpcProxyEndpoint._ToProtobuf()
+	if tx.grpcWebProxyEndpoint != nil {
+		body.GrpcProxyEndpoint = tx.grpcWebProxyEndpoint._ToProtobuf()
 	}
 
 	if tx.gossipCaCertificate != nil {

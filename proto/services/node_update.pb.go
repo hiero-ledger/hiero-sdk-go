@@ -255,7 +255,7 @@ func (x *NodeUpdateTransactionBody) GetDeclineReward() *wrapperspb.BoolValue {
 	return nil
 }
 
-func (x *NodeUpdateTransactionBody) GetGrpcProxyEndpoint() *ServiceEndpoint {
+func (x *NodeUpdateTransactionBody) GetGrpcWebProxyEndpoint() *ServiceEndpoint {
 	if x != nil {
 		return x.GrpcProxyEndpoint
 	}

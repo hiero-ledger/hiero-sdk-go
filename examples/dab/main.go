@@ -45,7 +45,7 @@ func main() {
 	serviceEndpoint.SetAddress(ipv4).SetPort(50211)
 
 	grpcProxyEndpoint := hiero.Endpoint{}
-	grpcProxyEndpoint.SetAddress(ipv4).SetPort(50212)
+	grpcProxyEndpoint.SetDomainName("testWeb.com").SetPort(1234)
 
 	adminKey, _ := hiero.PrivateKeyGenerateEd25519()
 
@@ -56,7 +56,7 @@ func main() {
 		SetServiceEndpoints([]hiero.Endpoint{serviceEndpoint}).
 		SetGossipEndpoints([]hiero.Endpoint{gossipEndpoint}).
 		SetAdminKey(adminKey.PublicKey()).
-		SetGrpcProxyEndpoint(grpcProxyEndpoint)
+		SetGrpcWebProxyEndpoint(grpcProxyEndpoint)
 
 	resp, err := nodeCreateTransaction.Execute(client)
 	fmt.Println(err)
@@ -64,7 +64,7 @@ func main() {
 	fmt.Println(err)
 
 	grpcProxyEndpointUpdated := hiero.Endpoint{}
-	grpcProxyEndpointUpdated.SetAddress(ipv4).SetPort(50215)
+	grpcProxyEndpointUpdated.SetDomainName("testWebUpdated.com").SetPort(123456)
 
 	nodeUpdateTransaction := hiero.NewNodeUpdateTransaction().
 		SetNodeID(123).
@@ -73,7 +73,7 @@ func main() {
 		SetServiceEndpoints([]hiero.Endpoint{serviceEndpoint}).
 		SetGossipEndpoints([]hiero.Endpoint{grpcProxyEndpointUpdated}).
 		SetAdminKey(adminKey.PublicKey()).
-		SetGrpcProxyEndpoint(grpcProxyEndpoint).
+		SetGrpcWebProxyEndpoint(grpcProxyEndpoint).
 		SetDeclineReward(true)
 
 	resp, err = nodeUpdateTransaction.Execute(client)

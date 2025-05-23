@@ -32,15 +32,15 @@ import (
  */
 type NodeCreateTransaction struct {
 	*Transaction[*NodeCreateTransaction]
-	accountID           *AccountID
-	description         string
-	gossipEndpoints     []Endpoint
-	serviceEndpoints    []Endpoint
-	gossipCaCertificate []byte
-	grpcCertificateHash []byte
-	adminKey            Key
-	declineReward       bool
-	grpcProxyEndpoint   *Endpoint
+	accountID            *AccountID
+	description          string
+	gossipEndpoints      []Endpoint
+	serviceEndpoints     []Endpoint
+	gossipCaCertificate  []byte
+	grpcCertificateHash  []byte
+	adminKey             Key
+	declineReward        *bool
+	grpcWebProxyEndpoint *Endpoint
 }
 
 func NewNodeCreateTransaction() *NodeCreateTransaction {
@@ -67,21 +67,23 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 	}
 
 	var grpcProxyEndpoint *Endpoint
-	if pb.GetNodeCreate().GetGrpcProxyEndpoint() != nil {
-		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeCreate().GetGrpcProxyEndpoint())
+	if pb.GetNodeCreate().GetGrpcWebProxyEndpoint() != nil {
+		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeCreate().GetGrpcWebProxyEndpoint())
 		grpcProxyEndpoint = &grpcProxyEndpointValue
 	}
 
+	declineReward := pb.GetNodeCreate().GetDeclineReward()
+
 	nodeCreateTransaction := NodeCreateTransaction{
-		accountID:           accountID,
-		description:         pb.GetNodeCreate().GetDescription(),
-		gossipEndpoints:     gossipEndpoints,
-		serviceEndpoints:    serviceEndpoints,
-		gossipCaCertificate: pb.GetNodeCreate().GetGossipCaCertificate(),
-		grpcCertificateHash: pb.GetNodeCreate().GetGrpcCertificateHash(),
-		adminKey:            adminKey,
-		declineReward:       pb.GetNodeCreate().GetDeclineReward(),
-		grpcProxyEndpoint:   grpcProxyEndpoint,
+		accountID:            accountID,
+		description:          pb.GetNodeCreate().GetDescription(),
+		gossipEndpoints:      gossipEndpoints,
+		serviceEndpoints:     serviceEndpoints,
+		gossipCaCertificate:  pb.GetNodeCreate().GetGossipCaCertificate(),
+		grpcCertificateHash:  pb.GetNodeCreate().GetGrpcCertificateHash(),
+		adminKey:             adminKey,
+		declineReward:        &declineReward,
+		grpcWebProxyEndpoint: grpcProxyEndpoint,
 	}
 
 	tx.childTransaction = &nodeCreateTransaction
@@ -195,25 +197,25 @@ func (tx *NodeCreateTransaction) SetAdminKey(adminKey Key) *NodeCreateTransactio
 
 // GetDeclineReward Gets whether this node declines rewards.
 func (tx *NodeCreateTransaction) GetDeclineReward() bool {
-	return tx.declineReward
+	return *tx.declineReward
 }
 
 // SetDeclineReward Sets whether this node declines rewards, true to decline rewards, false to accept.
 func (tx *NodeCreateTransaction) SetDeclineReward(declineReward bool) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.declineReward = declineReward
+	tx.declineReward = &declineReward
 	return tx
 }
 
-// GetGrpcProxyEndpoint Gets the gRPC proxy endpoint.
-func (tx *NodeCreateTransaction) GetGrpcProxyEndpoint() Endpoint {
-	return *tx.grpcProxyEndpoint
+// GetGrpcWebProxyEndpoint Gets the gRPC proxy endpoint.
+func (tx *NodeCreateTransaction) GetGrpcWebProxyEndpoint() Endpoint {
+	return *tx.grpcWebProxyEndpoint
 }
 
-// SetGrpcProxyEndpoint Sets the gRPC proxy endpoint.
-func (tx *NodeCreateTransaction) SetGrpcProxyEndpoint(grpcProxyEndpoint Endpoint) *NodeCreateTransaction {
+// SetGrpcWebProxyEndpoint Sets the gRPC proxy endpoint.
+func (tx *NodeCreateTransaction) SetGrpcWebProxyEndpoint(grpcWebProxyEndpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.grpcProxyEndpoint = &grpcProxyEndpoint
+	tx.grpcWebProxyEndpoint = &grpcWebProxyEndpoint
 	return tx
 }
 
@@ -261,8 +263,7 @@ func (tx NodeCreateTransaction) buildScheduled() (*services.SchedulableTransacti
 
 func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransactionBody {
 	body := &services.NodeCreateTransactionBody{
-		Description:   tx.description,
-		DeclineReward: tx.declineReward,
+		Description: tx.description,
 	}
 
 	if tx.accountID != nil {
@@ -277,8 +278,8 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 		body.ServiceEndpoint = append(body.ServiceEndpoint, endpoint._ToProtobuf())
 	}
 
-	if tx.grpcProxyEndpoint != nil {
-		body.GrpcProxyEndpoint = tx.grpcProxyEndpoint._ToProtobuf()
+	if tx.grpcWebProxyEndpoint != nil {
+		body.GrpcProxyEndpoint = tx.grpcWebProxyEndpoint._ToProtobuf()
 	}
 
 	if tx.gossipCaCertificate != nil {
@@ -291,6 +292,10 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 
 	if tx.adminKey != nil {
 		body.AdminKey = tx.adminKey._ToProtoKey()
+	}
+
+	if tx.declineReward != nil {
+		body.DeclineReward = *tx.declineReward
 	}
 
 	return body

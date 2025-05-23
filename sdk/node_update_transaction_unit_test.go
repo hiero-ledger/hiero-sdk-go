@@ -393,11 +393,11 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 	transaction, err := NewNodeUpdateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
-		SetGrpcProxyEndpoint(proxyEndpoint).
+		SetGrpcWebProxyEndpoint(proxyEndpoint).
 		Freeze()
 	require.NoError(t, err)
 
-	gotEndpoint := transaction.GetGrpcProxyEndpoint()
+	gotEndpoint := transaction.GetGrpcWebProxyEndpoint()
 	require.NotNil(t, gotEndpoint)
 	assert.Equal(t, proxyEndpoint.address, gotEndpoint.address)
 
@@ -412,7 +412,7 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 		Freeze()
 	require.NoError(t, err)
 
-	gotEndpoint2 := transaction2.GetGrpcProxyEndpoint()
+	gotEndpoint2 := transaction2.GetGrpcWebProxyEndpoint()
 	assert.Nil(t, gotEndpoint2)
 
 	proto2 := transaction2.build().GetNodeUpdate()

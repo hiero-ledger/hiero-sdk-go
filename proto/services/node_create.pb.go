@@ -232,7 +232,7 @@ func (x *NodeCreateTransactionBody) GetDeclineReward() bool {
 	return false
 }
 
-func (x *NodeCreateTransactionBody) GetGrpcProxyEndpoint() *ServiceEndpoint {
+func (x *NodeCreateTransactionBody) GetGrpcWebProxyEndpoint() *ServiceEndpoint {
 	if x != nil {
 		return x.GrpcProxyEndpoint
 	}
