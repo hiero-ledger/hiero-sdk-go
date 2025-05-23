@@ -473,6 +473,7 @@ func TestIntegrationTokenAirdropTransactionWithNoBalanceNFT(t *testing.T) {
 }
 
 func TestIntegrationTokenAirdropTransactionWithInvalidBody(t *testing.T) {
+	t.Skip("The test has to be disabled so it doesn't fail calls to local-node")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
