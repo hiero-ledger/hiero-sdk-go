@@ -30,14 +30,16 @@ import (
  */
 type NodeUpdateTransaction struct {
 	*Transaction[*NodeUpdateTransaction]
-	nodeID              uint64
-	accountID           *AccountID
-	description         string
-	gossipEndpoints     []Endpoint
-	serviceEndpoints    []Endpoint
-	gossipCaCertificate []byte
-	grpcCertificateHash []byte
-	adminKey            Key
+	nodeID               uint64
+	accountID            *AccountID
+	description          string
+	gossipEndpoints      []Endpoint
+	serviceEndpoints     []Endpoint
+	gossipCaCertificate  []byte
+	grpcCertificateHash  []byte
+	adminKey             Key
+	declineReward        *bool
+	grpcWebProxyEndpoint *Endpoint
 }
 
 func NewNodeUpdateTransaction() *NodeUpdateTransaction {
@@ -63,6 +65,12 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 		serviceEndpoints = append(serviceEndpoints, EndpointFromProtobuf(endpoint))
 	}
 
+	var grpcProxyEndpoint *Endpoint
+	if pb.GetNodeUpdate().GetGrpcWebProxyEndpoint() != nil {
+		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeUpdate().GetGrpcWebProxyEndpoint())
+		grpcProxyEndpoint = &grpcProxyEndpointValue
+	}
+
 	var certificate []byte
 	if pb.GetNodeUpdate().GetGossipCaCertificate() != nil {
 		certificate = pb.GetNodeUpdate().GetGossipCaCertificate().Value
@@ -78,15 +86,23 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 		certificateHash = pb.GetNodeUpdate().GetGrpcCertificateHash().Value
 	}
 
+	var declineReward *bool
+	if pb.GetNodeUpdate().GetDeclineReward() != nil {
+		declineRewardValue := pb.GetNodeUpdate().GetDeclineReward().Value
+		declineReward = &declineRewardValue
+	}
+
 	nodeUpdateTransaction := NodeUpdateTransaction{
-		nodeID:              pb.GetNodeUpdate().GetNodeId(),
-		accountID:           accountID,
-		description:         description,
-		gossipEndpoints:     gossipEndpoints,
-		serviceEndpoints:    serviceEndpoints,
-		gossipCaCertificate: certificate,
-		grpcCertificateHash: certificateHash,
-		adminKey:            adminKey,
+		nodeID:               pb.GetNodeUpdate().GetNodeId(),
+		accountID:            accountID,
+		description:          description,
+		gossipEndpoints:      gossipEndpoints,
+		serviceEndpoints:     serviceEndpoints,
+		gossipCaCertificate:  certificate,
+		grpcCertificateHash:  certificateHash,
+		adminKey:             adminKey,
+		grpcWebProxyEndpoint: grpcProxyEndpoint,
+		declineReward:        declineReward,
 	}
 
 	tx.childTransaction = &nodeUpdateTransaction
@@ -217,6 +233,32 @@ func (tx *NodeUpdateTransaction) SetAdminKey(adminKey Key) *NodeUpdateTransactio
 	return tx
 }
 
+// GetDeclineReward Gets whether this node declines rewards.
+func (tx *NodeUpdateTransaction) GetDeclineReward() *bool {
+	return tx.declineReward
+}
+
+// SetDeclineReward Sets whether this node declines rewards, true to decline rewards, false to accept.
+// if not set - no change will be made
+func (tx *NodeUpdateTransaction) SetDeclineReward(declineReward bool) *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.declineReward = &declineReward
+	return tx
+}
+
+// GetGrpcWebProxyEndpoint Gets the gRPC proxy endpoint.
+func (tx *NodeUpdateTransaction) GetGrpcWebProxyEndpoint() *Endpoint {
+	return tx.grpcWebProxyEndpoint
+}
+
+// SetGrpcWebProxyEndpoint Sets the gRPC proxy endpoint.
+// if not set - no change will be made
+func (tx *NodeUpdateTransaction) SetGrpcWebProxyEndpoint(grpcWebProxyEndpoint Endpoint) *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.grpcWebProxyEndpoint = &grpcWebProxyEndpoint
+	return tx
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx NodeUpdateTransaction) getName() string {
@@ -277,6 +319,10 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 		body.ServiceEndpoint = append(body.ServiceEndpoint, endpoint._ToProtobuf())
 	}
 
+	if tx.grpcWebProxyEndpoint != nil {
+		body.GrpcProxyEndpoint = tx.grpcWebProxyEndpoint._ToProtobuf()
+	}
+
 	if tx.gossipCaCertificate != nil {
 		body.GossipCaCertificate = wrapperspb.Bytes(tx.gossipCaCertificate)
 	}
@@ -287,6 +333,10 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 
 	if tx.adminKey != nil {
 		body.AdminKey = tx.adminKey._ToProtoKey()
+	}
+
+	if tx.declineReward != nil {
+		body.DeclineReward = wrapperspb.Bool(*tx.declineReward)
 	}
 
 	return body

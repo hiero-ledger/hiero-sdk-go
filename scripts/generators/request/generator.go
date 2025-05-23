@@ -24,8 +24,8 @@ func main() {
 	flag.Parse()
 
 	// Paths to the input files
-	pbCodesFile := "../../../proto/services/basic_types.pb.go"
-	codesFile := "../../../sdk/request_type.go"
+	pbCodesFile := "proto/services/basic_types.pb.go"
+	codesFile := "sdk/request_type.go"
 
 	// Parse the protobuf-generated Go file and extract new constants and case clauses
 	pbCodesNode := parseFile(pbCodesFile)

@@ -47,7 +47,7 @@ func main() {
 	}
 
 	// Load the Proto configuration from the provided JSON file.
-	config, err := loadProtoConfig("../../../proto/proto.json")
+	config, err := loadProtoConfig("proto/proto.json")
 	if err != nil {
 		fmt.Println("Error loading proto config:", err)
 		return

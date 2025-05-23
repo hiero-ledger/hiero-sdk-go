@@ -349,3 +349,67 @@ func TestUnitNodeCreateTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeCreateTransaction).buildProtoBody())
 }
+
+func TestUnitNodeCreateTransactionDeclineReward(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	transaction, err := NewNodeCreateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetDeclineReward(true).
+		Freeze()
+	require.NoError(t, err)
+
+	assert.True(t, transaction.GetDeclineReward())
+
+	proto := transaction.build().GetNodeCreate()
+	assert.True(t, proto.DeclineReward)
+
+	transaction2, err := NewNodeCreateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetDeclineReward(false).
+		Freeze()
+	require.NoError(t, err)
+
+	assert.False(t, transaction2.GetDeclineReward())
+	proto2 := transaction2.build().GetNodeCreate()
+	assert.False(t, proto2.DeclineReward)
+}
+
+func TestUnitNodeCreateTransactionGrpcProxyEndpoint(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	proxyEndpoint := Endpoint{
+		address: []byte{1, 2, 3, 4},
+	}
+
+	transaction, err := NewNodeCreateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetGrpcWebProxyEndpoint(proxyEndpoint).
+		Freeze()
+	require.NoError(t, err)
+
+	gotEndpoint := transaction.GetGrpcWebProxyEndpoint()
+	assert.Equal(t, proxyEndpoint.address, gotEndpoint.address)
+
+	proto := transaction.build().GetNodeCreate()
+	assert.NotNil(t, proto.GrpcProxyEndpoint)
+	assert.Equal(t, proxyEndpoint._ToProtobuf().String(), proto.GrpcProxyEndpoint.String())
+
+	transaction2, err := NewNodeCreateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+	require.NoError(t, err)
+
+	proto2 := transaction2.build().GetNodeCreate()
+	assert.Nil(t, proto2.GrpcProxyEndpoint)
+}

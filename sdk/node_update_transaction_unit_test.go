@@ -326,3 +326,95 @@ func TestUnitNodeUpdateTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeUpdateTransaction).buildProtoBody())
 }
+
+func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	// Test setting to true
+	transaction, err := NewNodeUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetDeclineReward(true).
+		Freeze()
+	require.NoError(t, err)
+
+	declineReward := transaction.GetDeclineReward()
+	require.NotNil(t, declineReward)
+	assert.True(t, *declineReward)
+
+	proto := transaction.build().GetNodeUpdate()
+	require.NotNil(t, proto.DeclineReward)
+	assert.True(t, proto.DeclineReward.Value)
+
+	// Test setting to false
+	transaction2, err := NewNodeUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetDeclineReward(false).
+		Freeze()
+	require.NoError(t, err)
+
+	declineReward2 := transaction2.GetDeclineReward()
+	require.NotNil(t, declineReward2)
+	assert.False(t, *declineReward2)
+
+	proto2 := transaction2.build().GetNodeUpdate()
+	require.NotNil(t, proto2.DeclineReward)
+	assert.False(t, proto2.DeclineReward.Value)
+
+	// Test not setting the field
+	transaction3, err := NewNodeUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+	require.NoError(t, err)
+
+	declineReward3 := transaction3.GetDeclineReward()
+	assert.Nil(t, declineReward3)
+
+	proto3 := transaction3.build().GetNodeUpdate()
+	assert.Nil(t, proto3.DeclineReward)
+}
+
+func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	proxyEndpoint := Endpoint{
+		address: []byte{1, 2, 3, 4},
+	}
+
+	// Test setting an endpoint
+	transaction, err := NewNodeUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetGrpcWebProxyEndpoint(proxyEndpoint).
+		Freeze()
+	require.NoError(t, err)
+
+	gotEndpoint := transaction.GetGrpcWebProxyEndpoint()
+	require.NotNil(t, gotEndpoint)
+	assert.Equal(t, proxyEndpoint.address, gotEndpoint.address)
+
+	proto := transaction.build().GetNodeUpdate()
+	require.NotNil(t, proto.GrpcProxyEndpoint)
+	assert.Equal(t, proxyEndpoint._ToProtobuf().String(), proto.GrpcProxyEndpoint.String())
+
+	// Test not setting the endpoint
+	transaction2, err := NewNodeUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+	require.NoError(t, err)
+
+	gotEndpoint2 := transaction2.GetGrpcWebProxyEndpoint()
+	assert.Nil(t, gotEndpoint2)
+
+	proto2 := transaction2.build().GetNodeUpdate()
+	assert.Nil(t, proto2.GrpcProxyEndpoint)
+}
