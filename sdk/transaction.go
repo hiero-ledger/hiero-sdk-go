@@ -1186,9 +1186,9 @@ func (tx *Transaction[T]) SignWith(publicKey PublicKey, signer TransactionSigner
 	return tx.childTransaction
 }
 
-// AddSignatureForMultiNodeMultiChunk adds a signature to the transaction for a specific transaction id and node id.
+// AddSignatureV2 adds a signature to the transaction for a specific transaction id and node id.
 // This is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
-func (tx *Transaction[T]) AddSignatureForMultiNodeMultiChunk(publicKey PublicKey, signature []byte, transactionID TransactionID, nodeID AccountID) T {
+func (tx *Transaction[T]) AddSignatureV2(publicKey PublicKey, signature []byte, transactionID TransactionID, nodeID AccountID) T {
 	if tx.signedTransactions._Length() == 0 {
 		return tx.childTransaction
 	}

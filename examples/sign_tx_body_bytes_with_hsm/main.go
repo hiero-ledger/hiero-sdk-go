@@ -116,7 +116,7 @@ func singleNodeTransactionExample(client *hiero.Client, senderId, receiverId hie
 	// Sign with HSM for each entry
 	for _, signable := range signableList {
 		signature := hsmSign(senderKey, signable.Body)
-		transferTx.AddSignatureForMultiNodeMultiChunk(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
+		transferTx.AddSignatureV2(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
 	}
 
 	// Step 3 - Execute transaction and get receipt
@@ -186,7 +186,7 @@ func multiNodeFileTransactionExample(client *hiero.Client, senderId hiero.Accoun
 	// Sign with HSM for each entry
 	for _, signable := range multiNodeSignableList {
 		signature := hsmSign(senderKey, signable.Body)
-		fileAppendTx.AddSignatureForMultiNodeMultiChunk(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
+		fileAppendTx.AddSignatureV2(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
 	}
 
 	// Step 4 - Execute transaction and verify results

@@ -775,7 +775,7 @@ func TestUnitTransactionAttributesSerialization(t *testing.T) {
 	}
 }
 
-func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
+func TestUnitAddSignatureV2(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
@@ -807,7 +807,7 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 		frozen, err := transaction.FreezeWith(client)
 		require.NoError(t, err)
 
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -835,8 +835,8 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add signatures for both nodes
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -872,8 +872,8 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add signatures for both nodes
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -908,7 +908,7 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 		require.NoError(t, err)
 
 		invalidNodeID := AccountID{Account: 999}
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, invalidNodeID)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, invalidNodeID)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -934,7 +934,7 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 			ValidStart: &time.Time{},
 		}
 
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, invalidTxID, nodeAccountID1)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, invalidTxID, nodeAccountID1)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -956,10 +956,10 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add signature first time
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
 
 		// Add same signature second time
-		frozen.AddSignatureForMultiNodeMultiChunk(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -975,7 +975,7 @@ func TestUnitAddSignatureForMultiNodeMultiChunk(t *testing.T) {
 	})
 }
 
-func TestUnitAddSignatureForMultiNodeMultiChunkWithEmptySignedTransactions(t *testing.T) {
+func TestUnitAddSignatureV2WithEmptySignedTransactions(t *testing.T) {
 	t.Parallel()
 
 	// Create a new transaction
@@ -996,7 +996,7 @@ func TestUnitAddSignatureForMultiNodeMultiChunkWithEmptySignedTransactions(t *te
 	}
 
 	// Add signature when signedTransactions is empty
-	tx.AddSignatureForMultiNodeMultiChunk(key.PublicKey(), mockSignature, testTxID, nodeID)
+	tx.AddSignatureV2(key.PublicKey(), mockSignature, testTxID, nodeID)
 
 	// Verify no signatures were added
 	signs, err := tx.GetSignatures()

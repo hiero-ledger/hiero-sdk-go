@@ -99,7 +99,7 @@ func TestIntegrationFileAppendTransactionSignForMultipleNodes(t *testing.T) {
 	require.NoError(t, err)
 	for _, signableBody := range signableBodyList {
 		signature := newKey.Sign(signableBody.Body)
-		tx1.AddSignatureForMultiNodeMultiChunk(newKey.PublicKey(), signature, signableBody.TransactionID, signableBody.NodeID)
+		tx1.AddSignatureV2(newKey.PublicKey(), signature, signableBody.TransactionID, signableBody.NodeID)
 	}
 
 	resp, err = tx1.Execute(env.Client)
