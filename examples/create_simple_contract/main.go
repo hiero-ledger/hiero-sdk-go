@@ -100,7 +100,7 @@ func main() {
 	// Instantiate the contract instance
 	contractTransactionResponse, err := hiero.NewContractCreateTransaction().
 		// Failing to set this to a sufficient amount will result in "INSUFFICIENT_GAS" status
-		SetGas(100000).
+		SetGas(300_000).
 		// The file ID we got from the record of the file created previously
 		SetBytecodeFileID(byteCodeFileID).
 		// Setting an admin key allows you to delete the contract in the future

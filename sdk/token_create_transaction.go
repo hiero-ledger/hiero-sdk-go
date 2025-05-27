@@ -647,11 +647,11 @@ func (tx TokenCreateTransaction) getMethod(channel *_Channel) _Method {
 
 func (tx TokenCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
 	if selfTokenCreate, ok := self.(*TokenCreateTransaction); ok {
-		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && tx.Transaction.transactionIDs != nil && !tx.Transaction.transactionIDs._IsEmpty() {
+		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && tx.Transaction.transactionIDs != nil && !tx.Transaction.transactionIDs._IsEmpty() && selfTokenCreate.GetAutoRenewPeriod() != 0 {
 			selfTokenCreate.SetAutoRenewAccount(*tx.Transaction.GetTransactionID().AccountID)
 		}
 
-		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && client != nil {
+		if selfTokenCreate.GetAutoRenewAccount()._IsZero() && client != nil && selfTokenCreate.GetAutoRenewPeriod() != 0 {
 			selfTokenCreate.SetAutoRenewAccount(client.GetOperatorAccountID())
 		}
 	}
