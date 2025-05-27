@@ -1,3 +1,25 @@
+## v2.63.0
+
+### Changed
+- Auto-setting `autoRenewAccount` for `TokenCreateTransaction` only if autorenew period is specified. [#1386](https://github.com/hiero-ledger/hiero-sdk-go/pull/1384)
+
+### Fixed
+- Now we validate `FileAppendTransaction`'s receipts for all chunks. This improves UX and removes false-positives. [#1379](https://github.com/hiero-ledger/hiero-sdk-go/pull/1379)
+
+### Added
+- HIP-1064: Daily Rewards For Active Nodes https://hips.hedera.com/hip/hip-1064 [#1383](https://github.com/hiero-ledger/hiero-sdk-go/pull/1383)
+- HIP-1046: gRPC-Web proxy endpoints to the Address Book https://hips.hedera.com/hip/hip-1046 [#1383](https://github.com/hiero-ledger/hiero-sdk-go/pull/1383) 
+New APIs for `NodeCreate` and `NodeUpdate`:
+    - Endpoint GetGrpcWebProxyEndpoint()
+    - SetGrpcWebProxyEndpoint(Endpoint)
+    - bool GetDeclineReward()
+    - SetDeclineReward(bool)
+
+- Offline multi-node signing support [#1378](https://github.com/hiero-ledger/hiero-sdk-go/pull/1378)    
+New APIs for `Transaction.go`
+  - `GetSignableBodyBytes` : returns a list of SignableBody objects for each signed transaction in the transaction list.
+  - `AddSignatureV2` : adds signature for multi-node and multi-chunk transactions.
+
 ## v2.62.0
 
 ### Added
