@@ -116,7 +116,10 @@ func singleNodeTransactionExample(client *hiero.Client, senderId, receiverId hie
 	// Sign with HSM for each entry
 	for _, signable := range signableList {
 		signature := hsmSign(senderKey, signable.Body)
-		transferTx.AddSignatureV2(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
+		transferTx, err = transferTx.AddSignatureV2(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
+		if err != nil {
+			return fmt.Errorf("failed to add signature: %w", err)
+		}
 	}
 
 	// Step 3 - Execute transaction and get receipt
@@ -186,7 +189,10 @@ func multiNodeFileTransactionExample(client *hiero.Client, senderId hiero.Accoun
 	// Sign with HSM for each entry
 	for _, signable := range multiNodeSignableList {
 		signature := hsmSign(senderKey, signable.Body)
-		fileAppendTx.AddSignatureV2(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
+		fileAppendTx, err = fileAppendTx.AddSignatureV2(senderKey.PublicKey(), signature, signable.TransactionID, signable.NodeID)
+		if err != nil {
+			return fmt.Errorf("failed to add signature: %w", err)
+		}
 	}
 
 	// Step 4 - Execute transaction and verify results

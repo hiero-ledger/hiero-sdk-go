@@ -807,7 +807,8 @@ func TestUnitAddSignatureV2(t *testing.T) {
 		frozen, err := transaction.FreezeWith(client)
 		require.NoError(t, err)
 
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -835,8 +836,10 @@ func TestUnitAddSignatureV2(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add signatures for both nodes
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		require.NoError(t, err)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -872,8 +875,10 @@ func TestUnitAddSignatureV2(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add signatures for both nodes
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		require.NoError(t, err)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -893,8 +898,8 @@ func TestUnitAddSignatureV2(t *testing.T) {
 		}
 	})
 
-	// Test Case 4: Invalid Node ID
-	t.Run("Invalid Node ID", func(t *testing.T) {
+	// Test Case 4: Wrong Node ID
+	t.Run("Wrong Node ID", func(t *testing.T) {
 		transaction := NewFileAppendTransaction().
 			SetFileID(fileID).
 			SetContents([]byte("test content")).
@@ -908,15 +913,16 @@ func TestUnitAddSignatureV2(t *testing.T) {
 		require.NoError(t, err)
 
 		invalidNodeID := AccountID{Account: 999}
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, invalidNodeID)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, invalidNodeID)
+		require.NoError(t, err)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
 		require.NotContains(t, signs, invalidNodeID)
 	})
 
-	// Test Case 5: Invalid Transaction ID
-	t.Run("Invalid Transaction ID", func(t *testing.T) {
+	// Test Case 5: Wrong Transaction ID
+	t.Run("Wrong Transaction ID", func(t *testing.T) {
 		transaction := NewFileAppendTransaction().
 			SetFileID(fileID).
 			SetContents([]byte("test content")).
@@ -934,7 +940,8 @@ func TestUnitAddSignatureV2(t *testing.T) {
 			ValidStart: &time.Time{},
 		}
 
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, invalidTxID, nodeAccountID1)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, invalidTxID, nodeAccountID1)
+		require.NoError(t, err)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
@@ -956,10 +963,12 @@ func TestUnitAddSignatureV2(t *testing.T) {
 		require.NoError(t, err)
 
 		// Add signature first time
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
 
 		// Add same signature second time
-		frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
 
 		signs, err := frozen.GetSignatures()
 		require.NoError(t, err)
