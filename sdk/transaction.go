@@ -1192,7 +1192,7 @@ func (tx *Transaction[T]) AddSignatureV2(publicKey PublicKey, signature []byte, 
 			// check if the signature is already in the signature map
 			var found bool
 			for _, sig := range temp.SigMap.SigPair {
-				if reflect.DeepEqual(sig.PubKeyPrefix, publicKey.BytesRaw()) {
+				if bytes.Equal(sig.PubKeyPrefix, publicKey.BytesRaw()) {
 					found = true
 					continue
 				}
