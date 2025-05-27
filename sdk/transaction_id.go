@@ -66,6 +66,29 @@ func (id TransactionID) GetRecord(client *Client) (TransactionRecord, error) {
 		Execute(client)
 }
 
+// Util method used to deep copy a TransactionID in order to avoid mutating the original
+// since freeze in file append transaction mutates the transaction id while creating the chunked transactions
+func (id TransactionID) deepCopy() TransactionID {
+	var copy TransactionID
+
+	if id.AccountID != nil {
+		accountCopy := *id.AccountID
+		copy.AccountID = &accountCopy
+	}
+	if id.ValidStart != nil {
+		timeCopy := *id.ValidStart
+		copy.ValidStart = &timeCopy
+	}
+	if id.Nonce != nil {
+		nonceCopy := *id.Nonce
+		copy.Nonce = &nonceCopy
+	}
+
+	copy.scheduled = id.scheduled
+
+	return copy
+}
+
 // String returns a string representation of the TransactionID in `AccountID@ValidStartSeconds.ValidStartNanos?scheduled_bool/nonce` format
 func (id TransactionID) String() string {
 	var pb *services.Timestamp

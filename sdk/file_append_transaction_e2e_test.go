@@ -62,6 +62,62 @@ func TestIntegrationFileAppendTransactionCanExecute(t *testing.T) {
 
 }
 
+func TestIntegrationFileAppendTransactionSignForMultipleNodes(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	tx, err := NewFileCreateTransaction().
+		SetKeys(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetContents([]byte("Hello")).
+		SetTransactionMemo("go sdk e2e tests").
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err := tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	tx1, err := NewFileAppendTransaction().
+		SetFileID(fileID).
+		SetContents([]byte(LARGE_SMART_CONTRACT_BYTECODE)).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	signableBodyList, err := tx1.GetSignableNodeBodyBytesList()
+	require.NoError(t, err)
+	for _, signableBody := range signableBodyList {
+		signature := newKey.Sign(signableBody.Body)
+		tx1, err = tx1.AddSignatureV2(newKey.PublicKey(), signature, signableBody.TransactionID, signableBody.NodeID)
+		require.NoError(t, err)
+	}
+
+	resp, err = tx1.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	contents, err := NewFileContentsQuery().
+		SetFileID(fileID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.Equal(t, len(LARGE_SMART_CONTRACT_BYTECODE+"Hello"), len(contents))
+}
+
 func TestIntegrationFileAppendTransactionNoFileID(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)

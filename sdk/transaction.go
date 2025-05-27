@@ -1050,9 +1050,50 @@ func (tx *Transaction[T]) GetTransactionID() TransactionID {
 	return TransactionID{}
 }
 
+type SignableNodeTransactionBodyBytes struct {
+	NodeID        AccountID
+	Body          []byte
+	TransactionID TransactionID
+}
+
+// GetSignableNodeBodyBytesList returns a list of SignableNodeTransactionBodyBytes objects for each signed transaction in the transaction list.
+// The NodeID represents the node that this transaction is signed for.
+// The TransactionID is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
+func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransactionBodyBytes, error) {
+	if !tx.IsFrozen() {
+		return nil, errTransactionIsNotFrozen
+	}
+
+	// the result list
+	signableNodeTransactionBodyBytesList := make([]SignableNodeTransactionBodyBytes, len(tx.signedTransactions.slice))
+
+	// iterate over the signed transactions
+	for i, signedTransaction := range tx.signedTransactions.slice {
+		signableNodeTransactionBodyBytes := signedTransaction.(*services.SignedTransaction)
+		body := services.TransactionBody{}
+		// unmarshal the body
+		err := protobuf.Unmarshal(signableNodeTransactionBodyBytes.GetBodyBytes(), &body)
+		if err != nil {
+			return nil, err
+		}
+		// get the node id and transaction id from the body
+		nodeID := _AccountIDFromProtobuf(body.NodeAccountID)
+		transactionID := _TransactionIDFromProtobuf(body.TransactionID)
+		// add the signable node transaction body bytes to the list
+		signableNodeTransactionBodyBytesList[i] = SignableNodeTransactionBodyBytes{
+			NodeID:        *nodeID,
+			TransactionID: transactionID,
+			Body:          signableNodeTransactionBodyBytes.GetBodyBytes(),
+		}
+	}
+	return signableNodeTransactionBodyBytesList, nil
+}
+
 // SetTransactionID sets the TransactionID for this transaction.
 func (tx *Transaction[T]) SetTransactionID(transactionID TransactionID) T {
-	tx.transactionIDs._Clear()._Push(transactionID)._SetLocked(true)
+	deepCopied := transactionID.deepCopy()
+
+	tx.transactionIDs._Clear()._Push(deepCopied)._SetLocked(true)
 	return tx.childTransaction
 }
 
@@ -1121,6 +1162,60 @@ func (tx *Transaction[T]) SignWith(publicKey PublicKey, signer TransactionSigner
 
 	return tx.childTransaction
 }
+
+// AddSignatureV2 adds a signature to the transaction for a specific transaction id and node id.
+// This is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
+func (tx *Transaction[T]) AddSignatureV2(publicKey PublicKey, signature []byte, transactionID TransactionID, nodeID AccountID) (T, error) {
+	if tx.signedTransactions._Length() == 0 {
+		return tx.childTransaction, nil
+	}
+
+	tx.transactionIDs.locked = true
+
+	for index := 0; index < tx.signedTransactions._Length(); index++ {
+		// get the signed transaction at index
+		temp, ok := tx.signedTransactions._Get(index).(*services.SignedTransaction)
+		if !ok {
+			return tx.childTransaction, errors.New("signed transaction is not a protobuf SignedTransaction")
+		}
+		// unmarshal the body
+		var body services.TransactionBody
+		err := protobuf.Unmarshal(temp.BodyBytes, &body)
+		if err != nil {
+			return tx.childTransaction, err
+		}
+		// get the transaction id and node id from the body
+		bodyTxID := _TransactionIDFromProtobuf(body.TransactionID)
+		bodyNodeID := _AccountIDFromProtobuf(body.NodeAccountID)
+		// check if the transaction id and node id match the input
+		if bodyTxID.String() == transactionID.String() && bodyNodeID.String() == nodeID.String() {
+			// check if the signature is already in the signature map
+			var found bool
+			for _, sig := range temp.SigMap.SigPair {
+				if bytes.Equal(sig.PubKeyPrefix, publicKey.BytesRaw()) {
+					found = true
+					continue
+				}
+			}
+			if found {
+				continue
+			}
+			// add the signature to the signature map for the correct transaction id and node id
+			temp.SigMap.SigPair = append(
+				temp.SigMap.SigPair,
+				publicKey._ToSignaturePairProtobuf(signature),
+			)
+			// set the signed transaction at index to the updated signed transaction
+			tx.transactions = _NewLockableSlice()
+			tx.publicKeys = append(tx.publicKeys, publicKey)
+			tx.transactionSigners = append(tx.transactionSigners, nil)
+			tx.signedTransactions._Set(index, temp)
+		}
+	}
+
+	return tx.childTransaction, nil
+}
+
 func (tx *Transaction[T]) AddSignature(publicKey PublicKey, signature []byte) T {
 	tx._RequireOneNodeAccountID()
 

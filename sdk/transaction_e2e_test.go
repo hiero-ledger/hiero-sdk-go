@@ -286,3 +286,43 @@ func TestIntegrationTransactionFailsWhenSigningWithoutFreezing(t *testing.T) {
 	require.ErrorContains(t, err, "transaction is not frozen")
 
 }
+
+func TestIntegrationTransactionAddSignatureV2(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err := NewAccountDeleteTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetAccountID(*receipt.AccountID).
+		SetTransferAccountID(env.Client.GetOperatorAccountID()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	signableBodyList, err := tx.GetSignableNodeBodyBytesList()
+	require.NoError(t, err)
+	for _, signableBody := range signableBodyList {
+		signature := newKey.Sign(signableBody.Body)
+		tx, err = tx.AddSignatureV2(newKey.PublicKey(), signature, signableBody.TransactionID, signableBody.NodeID)
+		require.NoError(t, err)
+	}
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+}
