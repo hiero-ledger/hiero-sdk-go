@@ -22,7 +22,7 @@ func TestIntegrationContractCreateFlowCanExecute(t *testing.T) {
 	resp, err := NewContractCreateFlow().
 		SetBytecode(testContractByteCode).
 		SetAdminKey(env.OperatorKey).
-		SetGas(200000).
+		SetGas(300_000).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
 		SetContractMemo("[e2e::ContractCreateFlow]").
 		Execute(env.Client)

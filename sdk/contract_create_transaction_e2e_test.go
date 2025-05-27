@@ -39,7 +39,7 @@ func TestIntegrationContractCreateTransactionCanExecute(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("hiero-sdk-go::TestContractCreateTransaction_Execute").
@@ -97,7 +97,7 @@ func TestIntegrationContractCreateTransactionNoAdminKey(t *testing.T) {
 
 	resp, err = NewContractCreateTransaction().
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetBytecodeFileID(fileID).
 		Execute(env.Client)
 	require.NoError(t, err)

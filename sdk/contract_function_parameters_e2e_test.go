@@ -248,12 +248,13 @@ func intType(t *testing.T, env IntegrationTestEnv, intType string, value string)
 	require.Equal(t, valueBigIntCopy.String(), resultBigInt.String())
 }
 
-func deployContract(env IntegrationTestEnv) (*ContractID, error) {
+func deployContract(env IntegrationTestEnv, t *testing.T) (*ContractID, error) {
 	var result *ContractID
 	var err error
 
 	deployedOnce.Do(func() {
 		result, err = performDeploy(env)
+		require.NoError(t, err)
 		if err == nil {
 			contractID = *result
 		}
@@ -286,14 +287,14 @@ func performDeploy(env IntegrationTestEnv) (*ContractID, error) {
 	}
 	contractCreate, err := NewContractCreateTransaction().
 		SetBytecodeFileID(*receipt.FileID).
-		SetGas(500000).Execute(env.Client)
+		SetGas(1_900_000).Execute(env.Client)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	contractCreate.SetValidateStatus(true)
 	contractReceipt, err := contractCreate.GetReceipt(env.Client)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 	return contractReceipt.ContractID, nil
 }
@@ -302,7 +303,7 @@ func TestUint8Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint8(0)
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractID(contractID).SetFunction("returnUint8", NewContractFunctionParameters().AddUint8(value)).Execute(env.Client)
@@ -316,7 +317,7 @@ func TestUint8Min(t *testing.T) {
 func TestUint8Max(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint8(255)
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractID(contractID).SetFunction("returnUint8", NewContractFunctionParameters().AddUint8(value)).Execute(env.Client)
@@ -331,7 +332,7 @@ func TestUint16Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint16(0)
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractID(contractID).SetFunction("returnUint16", NewContractFunctionParameters().AddUint16(value)).Execute(env.Client)
@@ -345,7 +346,7 @@ func TestUint16Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint16(65535)
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractID(contractID).SetFunction("returnUint16", NewContractFunctionParameters().AddUint16(value)).Execute(env.Client)
@@ -360,7 +361,7 @@ func TestUint24Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint32(0)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint24", NewContractFunctionParameters().AddUint24(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -372,7 +373,7 @@ func TestUint24Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint32(16777215)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint24", NewContractFunctionParameters().AddUint24(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -384,7 +385,7 @@ func TestUint32Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint32(0)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint32", NewContractFunctionParameters().AddUint32(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -395,7 +396,7 @@ func TestUint32Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint32(4294967295)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint32", NewContractFunctionParameters().AddUint32(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -407,7 +408,7 @@ func TestUint40Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(0)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint40", NewContractFunctionParameters().AddUint40(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -419,7 +420,7 @@ func TestUint40Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(109951162777)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint40", NewContractFunctionParameters().AddUint40(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -432,7 +433,7 @@ func TestUint48Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(0)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint48", NewContractFunctionParameters().AddUint48(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -444,7 +445,7 @@ func TestUint48Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(281474976710655)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint48", NewContractFunctionParameters().AddUint48(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -457,7 +458,7 @@ func TestUint56Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(0)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint56", NewContractFunctionParameters().AddUint56(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -469,7 +470,7 @@ func TestUint56Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(72057594037927935)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint56", NewContractFunctionParameters().AddUint56(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -482,7 +483,7 @@ func TestUint64Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(0)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint64", NewContractFunctionParameters().AddUint64(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -494,7 +495,7 @@ func TestUint64Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint64(9223372036854775807)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnUint64", NewContractFunctionParameters().AddUint64(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -507,7 +508,7 @@ func TestUint72Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint72", "0")
 
 }
@@ -515,7 +516,7 @@ func TestUint72Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint72", "4722366482869645213695")
 
 }
@@ -524,7 +525,7 @@ func TestUint80Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint80", "0")
 
 }
@@ -532,7 +533,7 @@ func TestUint80Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint80", "1208925819614629174706175")
 
 }
@@ -540,7 +541,7 @@ func TestUint88Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint88", "0")
 
 }
@@ -548,7 +549,7 @@ func TestUint88Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint88", "309485009821345068724781055")
 
 }
@@ -556,7 +557,7 @@ func TestUint96Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint96", "0")
 
 }
@@ -564,7 +565,7 @@ func TestUint96Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint96", "79228162514264337593543950335")
 
 }
@@ -572,7 +573,7 @@ func TestUint104Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint104", "0")
 
 }
@@ -580,7 +581,7 @@ func TestUint104Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint104", "20282409603651670423947251286015")
 
 }
@@ -589,7 +590,7 @@ func TestUint112Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint112", "0")
 
 }
@@ -597,7 +598,7 @@ func TestUint112Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint112", "5192296858534827628530496329220095")
 
 }
@@ -605,7 +606,7 @@ func TestUint120Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint120", "0")
 
 }
@@ -613,7 +614,7 @@ func TestUint120Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint120", "1329227995784915872903807060280344575")
 
 }
@@ -621,7 +622,7 @@ func TestUint128Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint128", "0")
 
 }
@@ -629,7 +630,7 @@ func TestUint128Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint128", "340282366920938463463374607431768211455")
 
 }
@@ -637,7 +638,7 @@ func TestUint136Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint136", "0")
 
 }
@@ -645,7 +646,7 @@ func TestUint136Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint136", "87112285931760246646623899502532662132735")
 
 }
@@ -653,7 +654,7 @@ func TestUint144Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint144", "0")
 
 }
@@ -661,7 +662,7 @@ func TestUint144Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint144", "22300745198530623141535718272648361505980415")
 
 }
@@ -669,7 +670,7 @@ func TestUint152Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint152", "0")
 
 }
@@ -677,7 +678,7 @@ func TestUint152Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint152", "5708990770823839524233143877797980545530986495")
 
 }
@@ -685,7 +686,7 @@ func TestUint160Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint160", "0")
 
 }
@@ -693,7 +694,7 @@ func TestUint160Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint160", "1461501637330902918203684832716283019655932542975")
 
 }
@@ -701,7 +702,7 @@ func TestUint168Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint168", "0")
 
 }
@@ -709,7 +710,7 @@ func TestUint168Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint168", "374144419156711147060143317175368453031918731001855")
 
 }
@@ -717,7 +718,7 @@ func TestUint176Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint176", "0")
 
 }
@@ -725,7 +726,7 @@ func TestUint176Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint176", "95780971304118053647396689196894323976171195136475135")
 
 }
@@ -733,7 +734,7 @@ func TestUint184Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint184", "0")
 
 }
@@ -741,7 +742,7 @@ func TestUint184Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint184", "24519928653854221733733552434404946937899825954937634815")
 
 }
@@ -749,7 +750,7 @@ func TestUint192Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint192", "0")
 
 }
@@ -757,7 +758,7 @@ func TestUint192Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint192", "6277101735386680763835789423207666416102355444464034512895")
 
 }
@@ -765,7 +766,7 @@ func TestUint200Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint200", "0")
 
 }
@@ -773,7 +774,7 @@ func TestUint200Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint200", "1606938044258990275541962092341162602522202993782792835301375")
 
 }
@@ -781,7 +782,7 @@ func TestUint208Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint208", "0")
 
 }
@@ -789,7 +790,7 @@ func TestUint208Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint208", "411376139330301510538742295639337626245683966408394965837152255")
 
 }
@@ -797,7 +798,7 @@ func TestUint216Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint216", "0")
 
 }
@@ -805,7 +806,7 @@ func TestUint216Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint216", "105312291668557186697918027683670432318895095400549111254310977535")
 
 }
@@ -813,7 +814,7 @@ func TestUint224Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint224", "0")
 
 }
@@ -821,7 +822,7 @@ func TestUint224Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint224", "26959946667150639794667015087019630673637144422540572481103610249215")
 
 }
@@ -829,7 +830,7 @@ func TestUint232Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint232", "0")
 
 }
@@ -837,7 +838,7 @@ func TestUint232Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint232", "6901746346790563787434755862277025452451108972170386555162524223799295")
 
 }
@@ -845,7 +846,7 @@ func TestUint240Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint240", "0")
 
 }
@@ -853,7 +854,7 @@ func TestUint240Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint240", "1766847064778384329583297500742918515827483896875618958121606201292619775")
 
 }
@@ -861,7 +862,7 @@ func TestUint248Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint248", "0")
 
 }
@@ -869,7 +870,7 @@ func TestUint248Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint248", "452312848583266388373324160190187140051835877600158453279131187530910662655")
 
 }
@@ -877,7 +878,7 @@ func TestUint256Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint256", "0")
 
 }
@@ -885,7 +886,7 @@ func TestUint256Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "uint256", "115792089237316195423570985008687907853269984665640564039457584007913129639935")
 
 }
@@ -894,7 +895,7 @@ func TestInt8Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int8(-128)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt8", NewContractFunctionParameters().AddInt8(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -906,7 +907,7 @@ func TestInt8Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int8(127)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt8", NewContractFunctionParameters().AddInt8(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -919,7 +920,7 @@ func TestInt16Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int16(-32768)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt16", NewContractFunctionParameters().AddInt16(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -931,7 +932,7 @@ func TestInt16Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int16(32767)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt16", NewContractFunctionParameters().AddInt16(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -944,7 +945,7 @@ func TestInt24Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int32(-8388608)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt24", NewContractFunctionParameters().AddInt24(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -956,7 +957,7 @@ func TestInt24Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int32(8388607)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt24", NewContractFunctionParameters().AddInt24(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -968,7 +969,7 @@ func TestInt32Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int32(-2147483648)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt32", NewContractFunctionParameters().AddInt32(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -980,7 +981,7 @@ func TestInt32Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int32(2147483647)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt32", NewContractFunctionParameters().AddInt32(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -993,7 +994,7 @@ func TestInt40Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(-549755813888)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt40", NewContractFunctionParameters().AddInt40(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1005,7 +1006,7 @@ func TestInt40Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(549755813887)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt40", NewContractFunctionParameters().AddInt40(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1018,7 +1019,7 @@ func TestInt48Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(-140737488355328)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt48", NewContractFunctionParameters().AddInt48(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1030,7 +1031,7 @@ func TestInt48Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(140737488355327)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt48", NewContractFunctionParameters().AddInt48(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1043,7 +1044,7 @@ func TestInt56Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(-36028797018963968)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt56", NewContractFunctionParameters().AddInt56(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1055,7 +1056,7 @@ func TestInt56Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(36028797018963967)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt56", NewContractFunctionParameters().AddInt56(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1068,7 +1069,7 @@ func TestInt64Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(-9223372036854775808)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt64", NewContractFunctionParameters().AddInt64(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1080,7 +1081,7 @@ func TestInt64Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(9223372036854775807)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt64", NewContractFunctionParameters().AddInt64(value)).SetMaxQueryPayment(NewHbar(20)).Execute(env.Client)
@@ -1093,7 +1094,7 @@ func TestInt72Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int72", "-2361183241434822606848")
 
 }
@@ -1102,7 +1103,7 @@ func TestInt72Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int72", "2361183241434822606847")
 
 }
@@ -1111,7 +1112,7 @@ func TestInt80Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int80", "-604462909807314587353088")
 
 }
@@ -1120,7 +1121,7 @@ func TestInt80Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int80", "604462909807314587353087")
 
 }
@@ -1129,7 +1130,7 @@ func TestInt88Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int88", "-154742504910672534362390528")
 
 }
@@ -1138,7 +1139,7 @@ func TestInt88Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int88", "154742504910672534362390527")
 
 }
@@ -1147,7 +1148,7 @@ func TestInt96Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int96", "-39614081257132168796771975168")
 
 }
@@ -1156,7 +1157,7 @@ func TestInt96Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int96", "39614081257132168796771975167")
 
 }
@@ -1165,7 +1166,7 @@ func TestInt104Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int104", "-10141204801825835211973625643008")
 
 }
@@ -1174,7 +1175,7 @@ func TestInt104Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int104", "10141204801825835211973625643007")
 
 }
@@ -1183,7 +1184,7 @@ func TestInt112Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int112", "-2596148429267413814265248164610048")
 
 }
@@ -1192,7 +1193,7 @@ func TestInt112Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int112", "2596148429267413814265248164610047")
 
 }
@@ -1201,7 +1202,7 @@ func TestInt120Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int120", "-664613997892457936451903530140172288")
 
 }
@@ -1210,7 +1211,7 @@ func TestInt120Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int120", "664613997892457936451903530140172287")
 
 }
@@ -1219,7 +1220,7 @@ func TestInt128Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int128", "-170141183460469231731687303715884105728")
 
 }
@@ -1228,7 +1229,7 @@ func TestInt128Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int128", "170141183460469231731687303715884105727")
 
 }
@@ -1237,7 +1238,7 @@ func TestInt136Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int136", "-43556142965880123323311949751266331066368")
 
 }
@@ -1246,7 +1247,7 @@ func TestInt136Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int136", "43556142965880123323311949751266331066367")
 
 }
@@ -1255,7 +1256,7 @@ func TestInt144Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int144", "-11150372599265311570767859136324180752990208")
 
 }
@@ -1264,7 +1265,7 @@ func TestInt144Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int144", "11150372599265311570767859136324180752990207")
 
 }
@@ -1273,7 +1274,7 @@ func TestInt152Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int152", "-2854495385411919762116571938898990272765493248")
 
 }
@@ -1282,7 +1283,7 @@ func TestInt152Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int152", "2854495385411919762116571938898990272765493247")
 
 }
@@ -1291,7 +1292,7 @@ func TestInt160Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int160", "-730750818665451459101842416358141509827966271488")
 
 }
@@ -1300,7 +1301,7 @@ func TestInt160Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int160", "730750818665451459101842416358141509827966271487")
 
 }
@@ -1309,7 +1310,7 @@ func TestInt168Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int168", "-187072209578355573530071658587684226515959365500928")
 
 }
@@ -1318,7 +1319,7 @@ func TestInt168Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int168", "187072209578355573530071658587684226515959365500927")
 
 }
@@ -1327,7 +1328,7 @@ func TestInt176Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int176", "-47890485652059026823698344598447161988085597568237568")
 
 }
@@ -1336,7 +1337,7 @@ func TestInt176Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int176", "47890485652059026823698344598447161988085597568237567")
 
 }
@@ -1345,7 +1346,7 @@ func TestInt184Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int184", "-12259964326927110866866776217202473468949912977468817408")
 
 }
@@ -1354,7 +1355,7 @@ func TestInt184Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int184", "12259964326927110866866776217202473468949912977468817407")
 
 }
@@ -1363,7 +1364,7 @@ func TestInt192Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int192", "-3138550867693340381917894711603833208051177722232017256448")
 
 }
@@ -1372,7 +1373,7 @@ func TestInt192Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int192", "3138550867693340381917894711603833208051177722232017256447")
 
 }
@@ -1381,7 +1382,7 @@ func TestInt200Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int200", "-803469022129495137770981046170581301261101496891396417650688")
 
 }
@@ -1390,7 +1391,7 @@ func TestInt200Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int200", "803469022129495137770981046170581301261101496891396417650687")
 
 }
@@ -1399,7 +1400,7 @@ func TestInt208Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int208", "-205688069665150755269371147819668813122841983204197482918576128")
 
 }
@@ -1408,7 +1409,7 @@ func TestInt208Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int208", "205688069665150755269371147819668813122841983204197482918576127")
 
 }
@@ -1417,7 +1418,7 @@ func TestInt216Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int216", "-52656145834278593348959013841835216159447547700274555627155488768")
 
 }
@@ -1426,7 +1427,7 @@ func TestInt216Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int216", "52656145834278593348959013841835216159447547700274555627155488767")
 
 }
@@ -1435,7 +1436,7 @@ func TestInt224Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int224", "-13479973333575319897333507543509815336818572211270286240551805124608")
 
 }
@@ -1444,7 +1445,7 @@ func TestInt224Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int224", "13479973333575319897333507543509815336818572211270286240551805124607")
 
 }
@@ -1453,7 +1454,7 @@ func TestInt232Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int232", "-3450873173395281893717377931138512726225554486085193277581262111899648")
 
 }
@@ -1462,7 +1463,7 @@ func TestInt232Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int232", "3450873173395281893717377931138512726225554486085193277581262111899647")
 
 }
@@ -1471,7 +1472,7 @@ func TestInt240Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int240", "-883423532389192164791648750371459257913741948437809479060803100646309888")
 
 }
@@ -1480,7 +1481,7 @@ func TestInt240Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int240", "883423532389192164791648750371459257913741948437809479060803100646309887")
 
 }
@@ -1489,7 +1490,7 @@ func TestInt248Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int248", "-226156424291633194186662080095093570025917938800079226639565593765455331328")
 
 }
@@ -1498,7 +1499,7 @@ func TestInt248Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int248", "226156424291633194186662080095093570025917938800079226639565593765455331327")
 
 }
@@ -1507,7 +1508,7 @@ func TestInt256Min(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int256", "-57896044618658097711785492504343953926634992332820282019728792003956564819968")
 
 }
@@ -1516,7 +1517,7 @@ func TestInt256Max(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	intType(t, env, "int256", "57896044618658097711785492504343953926634992332820282019728792003956564819967")
 
 }
@@ -1525,7 +1526,7 @@ func TestMultipleInt8(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int8(-128)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnInt8Multiple", NewContractFunctionParameters().AddInt8(value)).Execute(env.Client)
@@ -1538,7 +1539,7 @@ func TestMultipleInt40(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := int64(549755813885)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnMultipleInt40", NewContractFunctionParameters().AddInt40(value)).Execute(env.Client)
@@ -1551,7 +1552,7 @@ func TestMultipleInt256(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value, ok := new(big.Int).SetString("-123", 10)
 	require.True(t, ok)
 	valueTwos := To256BitBytes(value)
@@ -1570,7 +1571,7 @@ func TestMultipleTypes(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := uint32(4294967295)
 	contractCal, err := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
 		SetContractID(contractID).SetFunction("returnMultipleTypeParams", NewContractFunctionParameters().AddUint32(value)).Execute(env.Client)
@@ -1585,7 +1586,7 @@ func TestBigInt256(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value, ok := new(big.Int).SetString("-123", 10)
 	require.True(t, ok)
 
@@ -1600,7 +1601,7 @@ func TestBigUint256(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value, ok := new(big.Int).SetString("123", 10)
 	require.True(t, ok)
 
@@ -1615,7 +1616,7 @@ func TestMultiplBigInt256(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value, ok := new(big.Int).SetString("-123", 10)
 	require.True(t, ok)
 
@@ -1630,7 +1631,7 @@ func TestMultiplBigInt256(t *testing.T) {
 func TestString(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
-	deployContract(env)
+	deployContract(env, t)
 	value := "Test"
 
 	contractCal := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
@@ -1645,7 +1646,7 @@ func TestString(t *testing.T) {
 func TestStringArray(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
-	deployContract(env)
+	deployContract(env, t)
 	value := []string{"Test1", "Test2"}
 
 	contractCal := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
@@ -1662,7 +1663,7 @@ func TestAddress(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := "1234567890123456789012345678901234567890"
 	params, err := NewContractFunctionParameters().AddAddress(value)
 	require.NoError(t, err)
@@ -1682,7 +1683,7 @@ func TestAddressArray(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := []string{"1234567890123456789012345678901234567890", "1234567890123456789012345678901234567891"}
 	params, err := NewContractFunctionParameters().AddAddressArray(value)
 	require.NoError(t, err)
@@ -1702,7 +1703,7 @@ func TestBoolean(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := true
 
 	contractCal := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
@@ -1717,7 +1718,7 @@ func TestBytes(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := []byte("Test")
 
 	contractCal := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
@@ -1732,7 +1733,7 @@ func TestBytesArray(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := [][]byte{[]byte("Test1"), []byte("Test2")}
 
 	contractCal := NewContractCallQuery().SetGas(gas).SetQueryPayment(NewHbar(1)).
@@ -1749,7 +1750,7 @@ func TestBytes32(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 	value := [32]byte{}
 	copy(value[:], []byte("Test"))
 
@@ -1765,7 +1766,7 @@ func TestBytes32Array(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	deployContract(env)
+	deployContract(env, t)
 
 	value := [][]byte{
 		[]byte("Test1"),
@@ -1803,7 +1804,7 @@ func TestContractNonces(t *testing.T) {
 	require.Equal(t, StatusSuccess, receipt.Status)
 	contractCreate, err := NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetBytecodeFileID(*receipt.FileID).
 		SetContractMemo("[e2e::ContractADeploysContractBInConstructor]").
 		Execute(env.Client)

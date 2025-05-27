@@ -34,7 +34,7 @@ func TestMirrorNodeContractQueryCanSimulateTransaction(t *testing.T) {
 
 	response, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey).
-		SetGas(200000).
+		SetGas(400_000).
 		SetBytecodeFileID(*fileID).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -123,7 +123,7 @@ func TestMirrorNodeContractQueryFailWhenGasLimitIsLow(t *testing.T) {
 
 	response, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey).
-		SetGas(200000).
+		SetGas(400_000).
 		SetBytecodeFileID(*fileID).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -166,7 +166,7 @@ func TestMirrorNodeContractQueryFailWhenSenderIsNotSet(t *testing.T) {
 
 	response, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey).
-		SetGas(200000).
+		SetGas(400_000).
 		SetBytecodeFileID(*fileID).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -207,7 +207,7 @@ func TestMirrorNodeContractQueryCanSimulateWithSenderSet(t *testing.T) {
 
 	response, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey).
-		SetGas(200000).
+		SetGas(400_000).
 		SetBytecodeFileID(*fileID).
 		Execute(env.Client)
 	require.NoError(t, err)

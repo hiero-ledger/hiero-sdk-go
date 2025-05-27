@@ -36,7 +36,7 @@ func TestIntegrationContractCallQueryCanExecute(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").
@@ -131,7 +131,7 @@ func TestIntegrationContractCallQueryGetCost(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").
@@ -204,7 +204,7 @@ func TestIntegrationContractCallQuerySetMaxPaymentBig(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").
@@ -277,7 +277,7 @@ func TestIntegrationContractCallQuerySetSmallMaxPayment(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").
@@ -353,7 +353,7 @@ func TestIntegrationContractCallQueryInsufficientFee(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").
@@ -447,7 +447,7 @@ func TestIntegrationContractCallQueryNoGas(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").
@@ -518,7 +518,7 @@ func TestIntegrationContractCallQueryNoFunction(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.OperatorKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("Hello from hiero.")).
 		SetBytecodeFileID(fileID).
 		SetContractMemo("[e2e::ContractCreateTransaction]").

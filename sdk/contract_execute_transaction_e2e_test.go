@@ -38,7 +38,7 @@ func TestIntegrationContractExecuteTransactionCanExecute(t *testing.T) {
 
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
 		SetBytecodeFileID(fileID).
@@ -55,7 +55,7 @@ func TestIntegrationContractExecuteTransactionCanExecute(t *testing.T) {
 	resp, err = NewContractExecuteTransaction().
 		SetContractID(contractID).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(200000).
+		SetGas(contractDeployGas).
 		SetFunction("setMessage", NewContractFunctionParameters().AddString("new message")).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -126,7 +126,7 @@ func TestIntegrationContractExecuteTransactionNoGas(t *testing.T) {
 
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetNodeAccountIDs(node_ids).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
 		SetBytecodeFileID(fileID).
@@ -196,7 +196,7 @@ func TestIntegrationContractExecuteTransactionNoFunction(t *testing.T) {
 
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
 		SetBytecodeFileID(fileID).
@@ -212,7 +212,7 @@ func TestIntegrationContractExecuteTransactionNoFunction(t *testing.T) {
 
 	resp, err = NewContractExecuteTransaction().
 		SetContractID(contractID).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		Execute(env.Client)
 	require.NoError(t, err)
@@ -290,7 +290,7 @@ func DisabledTestIntegrationContractExecuteTransactionID(t *testing.T) { // noli
 	resp, err = NewContractExecuteTransaction().
 		SetContractID(contractID).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(100000).
+		SetGas(contractDeployGas).
 		SetFunction("setMessage", NewContractFunctionParameters().AddString("new message")).
 		Execute(env.Client)
 	require.NoError(t, err)

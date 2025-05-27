@@ -38,6 +38,7 @@ func runWithRetry(t *testing.T, testFunc func() error) {
 }
 
 func TestIntegrationBatchTransactionCanExecute(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -93,6 +94,7 @@ func TestIntegrationBatchTransactionCanExecute(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionToFromBytes(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -159,6 +161,7 @@ func TestIntegrationBatchTransactionToFromBytes(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionLarge(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -211,6 +214,7 @@ func TestIntegrationBatchTransactionLarge(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionEmpty(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -221,6 +225,7 @@ func TestIntegrationBatchTransactionEmpty(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionBlacklisted(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -254,6 +259,7 @@ func TestIntegrationBatchTransactionBlacklisted(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionInvalidBatchKey(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -281,6 +287,7 @@ func TestIntegrationBatchTransactionInvalidBatchKey(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionDifferentBatchKeys(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -379,6 +386,7 @@ func TestIntegrationBatchTransactionDifferentBatchKeys(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionPartialFailure(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -439,6 +447,7 @@ func TestIntegrationBatchTransactionPartialFailure(t *testing.T) {
 }
 
 func TestIntegrationBatchTransactionBatchifiedOutsideBatch(t *testing.T) {
+	t.Skip("Disabled in version .62 of services")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)

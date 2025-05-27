@@ -20,6 +20,7 @@ var mockPrivateKey string = "302e020100300506032b6570042204203b054fade7a2b0869c6
 
 var accountIDForTransactionID = AccountID{Account: 3}
 var validStartForTransacionID = time.Unix(124124, 151515)
+var contractDeployGas uint64 = 300_000
 
 var testTransactionID TransactionID = TransactionID{
 	AccountID:  &accountIDForTransactionID,
@@ -59,8 +60,8 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 		env.Client = ClientForPreviewnet()
 	} else if os.Getenv("HEDERA_NETWORK") == "localhost" {
 		network := make(map[string]AccountID)
-		network["127.0.0.1:50213"] = AccountID{Account: 3}
-		mirror := []string{"127.0.0.1:5600"}
+		network["localhost:50211"] = AccountID{Account: 3}
+		mirror := []string{"localhost:5600"}
 		env.Client = ClientForNetwork(network)
 		env.Client.SetMirrorNetwork(mirror)
 	} else if os.Getenv("HEDERA_NETWORK") == "testnet" {
