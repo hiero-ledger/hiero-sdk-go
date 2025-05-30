@@ -98,6 +98,8 @@ func AccountIDFromEvmPublicAddress(s string) (AccountID, error) {
 
 // AccountIDFromSolidityAddress constructs an AccountID from a string
 // representation of a _Solidity address
+// "000000000000000000000000000000000000138D" -> 0.0.59 ?
+// "302a300506032b6570032100114e6abc371b82da" -> 0.0.302a300506032b6570032100114e6abc371b82da ?
 // Deprecated
 func AccountIDFromSolidityAddress(s string) (AccountID, error) {
 	evmAddress, err := hex.DecodeString(s)
