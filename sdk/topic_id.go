@@ -139,22 +139,14 @@ func TopicIDFromBytes(data []byte) (TopicID, error) {
 
 // TopicIDFromSolidityAddress constructs an TopicID from a string
 // representation of a _Solidity address
+// Deprecated
 func TopicIDFromSolidityAddress(s string) (TopicID, error) {
-	shard, realm, topic, err := _IdFromSolidityAddress(s)
-	if err != nil {
-		return TopicID{}, err
-	}
-
-	return TopicID{
-		Shard:    shard,
-		Realm:    realm,
-		Topic:    topic,
-		checksum: nil,
-	}, nil
+	return TopicID{}, nil
 }
 
 // ToSolidityAddress returns the string representation of the TopicID as a
 // _Solidity address.
+// Deprecated
 func (id TopicID) ToSolidityAddress() string {
-	return _IdToSolidityAddress(id.Shard, id.Realm, id.Topic)
+	return "0x"
 }

@@ -3,7 +3,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"strconv"
@@ -164,27 +163,6 @@ func _IdFromString(s string) (shard int, realm int, num int, checksum *string, e
 	}
 
 	return shard, realm, num, checksum, nil
-}
-
-func _IdFromSolidityAddress(s string) (uint64, uint64, uint64, error) {
-	bytes, err := hex.DecodeString(s)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	if len(bytes) != 20 {
-		return 0, 0, 0, fmt.Errorf("_Solidity address must be 20 bytes")
-	}
-
-	return uint64(binary.BigEndian.Uint32(bytes[0:4])), binary.BigEndian.Uint64(bytes[4:12]), binary.BigEndian.Uint64(bytes[12:20]), nil
-}
-
-func _IdToSolidityAddress(shard uint64, realm uint64, num uint64) string {
-	bytes := make([]byte, 20)
-	binary.BigEndian.PutUint32(bytes[0:4], uint32(shard))
-	binary.BigEndian.PutUint64(bytes[4:12], realm)
-	binary.BigEndian.PutUint64(bytes[12:20], num)
-	return hex.EncodeToString(bytes)
 }
 
 func _Has0xPrefix(str string) bool {

@@ -98,17 +98,20 @@ func AccountIDFromEvmPublicAddress(s string) (AccountID, error) {
 
 // AccountIDFromSolidityAddress constructs an AccountID from a string
 // representation of a _Solidity address
+// "000000000000000000000000000000000000138D" -> 0.0.59 ?
+// "302a300506032b6570032100114e6abc371b82da" -> 0.0.302a300506032b6570032100114e6abc371b82da ?
+// Deprecated
 func AccountIDFromSolidityAddress(s string) (AccountID, error) {
-	shard, realm, account, err := _IdFromSolidityAddress(s)
+	evmAddress, err := hex.DecodeString(s)
 	if err != nil {
 		return AccountID{}, err
 	}
-
 	return AccountID{
-		Shard:    shard,
-		Realm:    realm,
-		Account:  account,
-		checksum: nil,
+		Shard:           0,
+		Realm:           0,
+		Account:         0,
+		checksum:        nil,
+		AliasEvmAddress: &evmAddress,
 	}, nil
 }
 
@@ -192,7 +195,10 @@ func (id AccountID) GetChecksum() *string {
 // ToSolidityAddress returns the string representation of the AccountID as a
 // _Solidity address.
 func (id AccountID) ToSolidityAddress() string {
-	return _IdToSolidityAddress(id.Shard, id.Realm, id.Account)
+	if id.AliasEvmAddress != nil {
+		return hex.EncodeToString(*id.AliasEvmAddress)
+	}
+	return "0x"
 }
 
 func (id AccountID) _ToProtobuf() *services.AccountID {
