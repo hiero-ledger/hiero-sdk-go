@@ -107,15 +107,16 @@ func ContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (Co
 // Does not populate ContractID.EvmAddress
 // Deprecated
 func ContractIDFromSolidityAddress(s string) (ContractID, error) {
-	shard, realm, contract, err := _IdFromSolidityAddress(s)
+	evmAddress, err := hex.DecodeString(s)
 	if err != nil {
 		return ContractID{}, err
 	}
 
 	return ContractID{
-		Shard:    shard,
-		Realm:    realm,
-		Contract: contract,
+		Shard:      0,
+		Realm:      0,
+		Contract:   0,
+		EvmAddress: evmAddress,
 	}, nil
 }
 
@@ -150,7 +151,10 @@ func (id ContractID) ToStringWithChecksum(client Client) (string, error) {
 
 // ToSolidityAddress returns the string representation of the ContractID as a _Solidity address.
 func (id ContractID) ToSolidityAddress() string {
-	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
+	if id.EvmAddress != nil {
+		return hex.EncodeToString(id.EvmAddress)
+	}
+	return "0x"
 }
 
 // PopulateContract gets the actual `Contract` field of the `ContractId` from the Mirror Node.

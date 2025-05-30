@@ -113,17 +113,9 @@ func (id *FileID) Validate(client *Client) error {
 }
 
 // FileIDFromSolidityAddress returns a FileID parsed from the given solidity address.
+// Deprecated
 func FileIDFromSolidityAddress(s string) (FileID, error) {
-	shard, realm, file, err := _IdFromSolidityAddress(s)
-	if err != nil {
-		return FileID{}, err
-	}
-
-	return FileID{
-		Shard: shard,
-		Realm: realm,
-		File:  file,
-	}, nil
+	return FileID{}, nil
 }
 
 func (id FileID) _IsZero() bool {
@@ -152,8 +144,9 @@ func (id FileID) ToStringWithChecksum(client Client) (string, error) {
 }
 
 // ToSolidityAddress returns the string representation of a FileID in the format used by Solidity.
+// Deprecated
 func (id FileID) ToSolidityAddress() string {
-	return _IdToSolidityAddress(id.Shard, id.Realm, id.File)
+	return "0x"
 }
 
 func (id FileID) _ToProtobuf() *services.FileID {
