@@ -843,3 +843,55 @@ func (t *TokenService) AirdropToken(_ context.Context, params param.AirdropParam
 
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
+
+// CancelAirdrop jRPC method for cancelAirdrop
+func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCancelTokenParams) (*response.TokenResponse, error) {
+	if params.SenderAccountId == nil || params.ReceiverAccountId == nil || params.TokenId == nil {
+		return nil, response.NewInternalError("senderAccountId, receiverAccountId, and tokenId are required")
+	}
+
+	transaction := hiero.NewTokenCancelAirdropTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	pendingAirdropId := hiero.PendingAirdropId{}
+
+	senderId, err := hiero.AccountIDFromString(*params.SenderAccountId)
+	if err != nil {
+		return nil, err
+	}
+	pendingAirdropId.SetSender(senderId)
+
+	receiverId, err := hiero.AccountIDFromString(*params.ReceiverAccountId)
+	if err != nil {
+		return nil, err
+	}
+	pendingAirdropId.SetReceiver(receiverId)
+
+	tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+	if err != nil {
+		return nil, err
+	}
+	pendingAirdropId.SetTokenID(tokenId)
+
+	transaction.AddPendingAirdropId(pendingAirdropId)
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}
