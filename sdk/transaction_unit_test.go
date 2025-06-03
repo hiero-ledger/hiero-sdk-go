@@ -1195,6 +1195,242 @@ func TestUnitGetSignableNodeBodyBytesListFileAppendMultipleChunks(t *testing.T) 
 	}
 }
 
+func TestUnitGetTransactionSizeComparison(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	tx := NewAccountCreateTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		SetKey(privateKeyECDSA.PublicKey())
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	bodySize, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+	transactionSize, err := frozen.GetTransactionSize()
+	require.NoError(t, err)
+	require.Greater(t, transactionSize, bodySize)
+
+	tx = NewAccountCreateTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		SetTransactionID(testTransactionID).
+		SetKey(privateKeyECDSA.PublicKey())
+	frozen, err = tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	bodySizeMultiNode, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+	transactionSizeMultiNode, err := frozen.GetTransactionSize()
+	require.NoError(t, err)
+	require.Greater(t, transactionSizeMultiNode, bodySizeMultiNode)
+	require.Equal(t, transactionSize, transactionSizeMultiNode)
+	require.Equal(t, bodySizeMultiNode, bodySize)
+}
+
+func TestUnitGetTransactionSizeChunkedTransaction(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	content := make([]byte, 5000)
+	for i := range content {
+		content[i] = byte(i % 256)
+	}
+
+	tx := NewFileAppendTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		SetFileID(FileID{File: 5}).
+		SetContents(content).
+		SetMaxChunkSize(1024)
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	bodySize, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+	transactionSize, err := frozen.GetTransactionSize()
+	require.NoError(t, err)
+	require.Greater(t, transactionSize, bodySize)
+
+	bodySizeList, err := frozen.GetTransactionBodySizeAllChunks()
+	require.NoError(t, err)
+	require.Len(t, bodySizeList, 5)
+
+	require.Equal(t, bodySizeList[1], bodySizeList[0])
+	require.Equal(t, bodySizeList[2], bodySizeList[0])
+	require.Equal(t, bodySizeList[3], bodySizeList[0])
+	require.Greater(t, bodySizeList[0], bodySizeList[4])
+}
+
+func TestUnitGetTransactionSizeUnfrozen(t *testing.T) {
+	t.Parallel()
+
+	tx := NewAccountCreateTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		SetKey(privateKeyECDSA.PublicKey())
+
+	_, err := tx.GetTransactionSize()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transaction is not froze")
+
+	_, err = tx.GetTransactionBodySize()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transaction is not froze")
+
+	_, err = tx.GetTransactionBodySizeAllChunks()
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "transaction is not froze")
+}
+
+func TestUnitGetTransactionSizeWithSignatures(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	tx := NewAccountCreateTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		SetKey(privateKeyECDSA.PublicKey())
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	sizeBeforeSigning, err := frozen.GetTransactionSize()
+	require.NoError(t, err)
+
+	privateKeyECDSA.SignTransaction(frozen)
+	sizeAfterSigning, err := frozen.GetTransactionSize()
+	require.NoError(t, err)
+
+	require.Greater(t, sizeAfterSigning, sizeBeforeSigning)
+	bodySizeBeforeSigning, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+	bodySizeAfterSigning, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+	require.Equal(t, bodySizeBeforeSigning, bodySizeAfterSigning)
+}
+
+func TestUnitGetTransactionSizeLargeMemo(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	largeMemo := make([]byte, 100)
+	for i := range largeMemo {
+		largeMemo[i] = 'a'
+	}
+
+	tx := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		AddHbarTransfer(AccountID{Account: 2}, NewHbar(1)).
+		SetTransactionMemo(string(largeMemo))
+
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	smallMemoTx := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		AddHbarTransfer(AccountID{Account: 2}, NewHbar(1)).
+		SetTransactionMemo("small memo")
+
+	frozenSmall, err := smallMemoTx.FreezeWith(client)
+	require.NoError(t, err)
+
+	largeMemoSize, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+	smallMemoSize, err := frozenSmall.GetTransactionBodySize()
+	require.NoError(t, err)
+
+	require.Greater(t, largeMemoSize, smallMemoSize)
+}
+
+func TestUnitGetTransactionBodySizeAllChunksNonChunked(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	tx := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		AddHbarTransfer(AccountID{Account: 2}, NewHbar(1))
+
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	singleBodySize, err := frozen.GetTransactionBodySize()
+	require.NoError(t, err)
+
+	allBodySizes, err := frozen.GetTransactionBodySizeAllChunks()
+	require.NoError(t, err)
+
+	// For non-chunked transaction, should return array with single size
+	require.Len(t, allBodySizes, 1)
+	require.Equal(t, singleBodySize, allBodySizes[0])
+}
+
+func TestUnitGetTransactionBodySizeAllChunksTopicMessage(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	message := make([]byte, 2500)
+	for i := range message {
+		message[i] = byte(i % 256)
+	}
+
+	tx := NewTopicMessageSubmitTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		SetTopicID(TopicID{Topic: 5}).
+		SetMessage(message)
+	frozen, err := tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	allBodySizes, err := frozen.GetTransactionBodySizeAllChunks()
+	require.NoError(t, err)
+
+	require.Len(t, allBodySizes, 3)
+	require.Equal(t, allBodySizes[0], allBodySizes[1])
+	require.Greater(t, allBodySizes[0], allBodySizes[2])
+
+	// Verify each chunk size is non-zero
+	for _, size := range allBodySizes {
+		require.Greater(t, size, int(0))
+	}
+
+	smallMessage := []byte("small message")
+	txSmall := NewTopicMessageSubmitTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		SetTopicID(TopicID{Topic: 5}).
+		SetMessage(smallMessage)
+
+	frozenSmall, err := txSmall.FreezeWith(client)
+	require.NoError(t, err)
+
+	allBodySizesSmall, err := frozenSmall.GetTransactionBodySizeAllChunks()
+	require.NoError(t, err)
+
+	require.Len(t, allBodySizesSmall, 1)
+	require.Greater(t, allBodySizesSmall[0], int(0))
+}
+
 func signSwitchCaseaSetup(t *testing.T) (PrivateKey, *Client, AccountID) {
 	newKey, err := GeneratePrivateKey()
 	require.NoError(t, err)
