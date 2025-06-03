@@ -332,28 +332,8 @@ func (sk _ECDSAPrivateKey) _SignTransaction(tx *Transaction[TransactionInterface
 		return []byte{}, errors.New("public key is nil")
 	}
 
-	wrappedPublicKey := PublicKey{
+	tx.AddSignature(PublicKey{
 		ecdsaPublicKey: publicKey,
-	}
-
-	if tx._KeyAlreadySigned(wrappedPublicKey) {
-		return []byte{}, nil
-	}
-
-	tx.transactions = _NewLockableSlice()
-	tx.publicKeys = append(tx.publicKeys, wrappedPublicKey)
-	tx.transactionSigners = append(tx.transactionSigners, nil)
-	tx.transactionIDs.locked = true
-
-	for index := 0; index < tx.signedTransactions._Length(); index++ {
-		temp := tx.signedTransactions._Get(index).(*services.SignedTransaction)
-
-		temp.SigMap.SigPair = append(
-			temp.SigMap.SigPair,
-			publicKey._ToSignaturePairProtobuf(signature),
-		)
-		tx.signedTransactions._Set(index, temp)
-	}
-
+	}, signature)
 	return signature, nil
 }
