@@ -114,8 +114,18 @@ func (id *FileID) Validate(client *Client) error {
 
 // FileIDFromSolidityAddress returns a FileID parsed from the given solidity address.
 // Deprecated
+// TODO: do file ids support evm addresses at all?
 func FileIDFromSolidityAddress(s string) (FileID, error) {
-	return FileID{}, nil
+	shard, realm, file, err := _IdFromSolidityAddress(s)
+	if err != nil {
+		return FileID{}, err
+	}
+
+	return FileID{
+		Shard: shard,
+		Realm: realm,
+		File:  file,
+	}, nil
 }
 
 func (id FileID) _IsZero() bool {
@@ -146,7 +156,7 @@ func (id FileID) ToStringWithChecksum(client Client) (string, error) {
 // ToSolidityAddress returns the string representation of a FileID in the format used by Solidity.
 // Deprecated
 func (id FileID) ToSolidityAddress() string {
-	return "0x"
+	return _IdToSolidityAddress(id.Shard, id.Realm, id.File)
 }
 
 func (id FileID) _ToProtobuf() *services.FileID {

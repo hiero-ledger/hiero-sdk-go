@@ -98,16 +98,15 @@ func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress 
 // Does not populate DelegatableContractID.EvmAddress
 // Deprecated
 func DelegatableContractIDFromSolidityAddress(s string) (DelegatableContractID, error) {
-	evmAddress, err := hex.DecodeString(s)
+	shard, realm, contract, err := _IdFromSolidityAddress(s)
 	if err != nil {
 		return DelegatableContractID{}, err
 	}
 
 	return DelegatableContractID{
-		Shard:      0,
-		Realm:      0,
-		Contract:   0,
-		EvmAddress: evmAddress,
+		Shard:    shard,
+		Realm:    realm,
+		Contract: contract,
 	}, nil
 }
 
@@ -142,10 +141,15 @@ func (id DelegatableContractID) ToStringWithChecksum(client Client) (string, err
 
 // ToSolidityAddress returns the string representation of the DelegatableContractID as a _Solidity address.
 func (id DelegatableContractID) ToSolidityAddress() string {
+	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
+}
+
+func (id DelegatableContractID) ToEvmAddress() string {
 	if id.EvmAddress != nil {
 		return hex.EncodeToString(id.EvmAddress)
+	} else {
+		return fmt.Sprintf("%x", id.Contract)
 	}
-	return "0x"
 }
 
 func (id DelegatableContractID) _ToProtobuf() *services.ContractID {

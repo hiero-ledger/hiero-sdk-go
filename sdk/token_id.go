@@ -146,6 +146,8 @@ func (id *TokenID) Validate(client *Client) error {
 
 // TokenIDFromSolidityAddress constructs a TokenID from a string
 // representation of a _Solidity address
+// Deprecated
+// TODO: do token ids support evm addresses at all?
 func TokenIDFromSolidityAddress(s string) (TokenID, error) {
 	return TokenID{}, nil
 }
@@ -154,7 +156,7 @@ func TokenIDFromSolidityAddress(s string) (TokenID, error) {
 // _Solidity address.
 // Deprecated
 func (id TokenID) ToSolidityAddress() string {
-	return "0x"
+	return _IdToSolidityAddress(id.Shard, id.Realm, id.Token)
 }
 
 func (id TokenID) _IsZero() bool {
