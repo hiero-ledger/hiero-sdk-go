@@ -34,6 +34,8 @@ type Client struct {
 	operator *_Operator
 
 	network                         _Network
+	shard                           uint64
+	realm                           uint64
 	mirrorNetwork                   *_MirrorNetwork
 	autoValidateChecksums           bool
 	defaultRegenerateTransactionIDs bool
@@ -71,7 +73,7 @@ func ClientForMirrorNetwork(mirrorNetwork []string) (*Client, error) {
 // ClientForMirrorNetworkWithRealmAndShard constructs a client given a set of mirror network nodes and the realm/shard of the address book.
 func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, realm uint64, shard uint64) (*Client, error) {
 	net := _NewNetwork()
-	client := _NewClient(net, mirrorNetwork, nil, true)
+	client := _NewClient(net, mirrorNetwork, nil, true, realm, shard)
 	addressbook, err := NewAddressBookQuery().
 		SetFileID(GetAddressBookFileIDFor(realm, shard)).
 		Execute(client)
@@ -85,7 +87,15 @@ func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, realm uint6
 // ClientForNetwork constructs a client given a set of nodes.
 func ClientForNetwork(network map[string]AccountID) *Client {
 	net := _NewNetwork()
-	client := _NewClient(net, []string{}, nil, true)
+	client := _NewClient(net, []string{}, nil, true, 0, 0)
+	_ = client.SetNetwork(network)
+	return client
+}
+
+// ClientForNetwork constructs a client given a set of nodes.
+func ClientForNetworkShardRealm(network map[string]AccountID, shard uint64, realm uint64) *Client {
+	net := _NewNetwork()
+	client := _NewClient(net, []string{}, nil, true, shard, realm)
 	_ = client.SetNetwork(network)
 	return client
 }
@@ -95,7 +105,11 @@ func ClientForNetwork(network map[string]AccountID) *Client {
 // Most users will want to set an _Operator account with .SetOperator so
 // transactions can be automatically given TransactionIDs and signed.
 func ClientForMainnet() *Client {
-	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true)
+	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, 0, 0)
+}
+
+func ClientForMainnetShardRealm(shard uint64, realm uint64) *Client {
+	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, shard, realm)
 }
 
 // ClientForTestnet returns a preconfigured client for use with the standard
@@ -103,7 +117,11 @@ func ClientForMainnet() *Client {
 // Most users will want to set an _Operator account with .SetOperator so
 // transactions can be automatically given TransactionIDs and signed.
 func ClientForTestnet() *Client {
-	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true)
+	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, 0, 0)
+}
+
+func ClientForTestnetShardRealm(shard uint64, realm uint64) *Client {
+	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, shard, realm)
 }
 
 // ClientForPreviewnet returns a preconfigured client for use with the standard
@@ -111,12 +129,16 @@ func ClientForTestnet() *Client {
 // Most users will want to set an _Operator account with .SetOperator so
 // transactions can be automatically given TransactionIDs and signed.
 func ClientForPreviewnet() *Client {
-	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true)
+	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, 0, 0)
+}
+
+func ClientForPreviewnetShardRealm(shard uint64, realm uint64) *Client {
+	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, shard, realm)
 }
 
 // newClient takes in a map of _Node addresses to their respective IDS (_Network)
 // and returns a Client instance which can be used to
-func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, shouldScheduleNetworkUpdate bool) *Client {
+func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, shouldScheduleNetworkUpdate bool, shard uint64, realm uint64) *Client {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := NewLogger("hiero-sdk-go", LogLevel(os.Getenv("HEDERA_SDK_GO_LOG_LEVEL")))
 	var defaultLogger Logger = logger
@@ -134,6 +156,8 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
 		logger:                          defaultLogger,
+		shard:                           shard,
+		realm:                           realm,
 	}
 
 	client.SetMirrorNetwork(mirrorNetwork)
@@ -153,7 +177,7 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 
 func (client *Client) _UpdateAddressBook() {
 	addressbook, err := NewAddressBookQuery().
-		SetFileID(FileIDForAddressBook()).
+		SetFileID(GetAddressBookFileIDFor(client.shard, client.realm)).
 		Execute(client)
 	if err == nil && len(addressbook.NodeAddresses) > 0 {
 		client.SetNetworkFromAddressBook(addressbook)
@@ -192,18 +216,22 @@ func (client *Client) GetNetworkUpdatePeriod() time.Duration {
 
 // ClientForName set up the client for the selected network.
 func ClientForName(name string) (*Client, error) {
+	return ClientForNameShardRealm(name, 0, 0)
+}
+
+func ClientForNameShardRealm(name string, shard uint64, realm uint64) (*Client, error) {
 	switch name {
 	case string(NetworkNameTestnet):
-		return ClientForTestnet(), nil
+		return ClientForTestnetShardRealm(shard, realm), nil
 	case string(NetworkNamePreviewnet):
-		return ClientForPreviewnet(), nil
+		return ClientForPreviewnetShardRealm(shard, realm), nil
 	case string(NetworkNameMainnet):
-		return ClientForMainnet(), nil
+		return ClientForMainnetShardRealm(shard, realm), nil
 	case "local", "localhost":
 		network := make(map[string]AccountID)
 		network["127.0.0.1:50213"] = AccountID{Account: 3}
 		mirror := []string{"127.0.0.1:5600"}
-		client := ClientForNetwork(network)
+		client := ClientForNetworkShardRealm(network, shard, realm)
 		client.SetMirrorNetwork(mirror)
 		return client, nil
 	default:
@@ -219,6 +247,8 @@ type _ConfigOperator struct {
 // TODO: Implement complete spec: https://gitlab.com/launchbadge/hedera/sdk/python/-/issues/45
 type _ClientConfig struct {
 	Network       interface{}      `json:"network"`
+	Shard         uint64           `json:"shard"`
+	Realm         uint64           `json:"realm"`
 	MirrorNetwork interface{}      `json:"mirrorNetwork"`
 	Operator      *_ConfigOperator `json:"operator"`
 }
@@ -293,20 +323,20 @@ func clientFromConfig(jsonBytes []byte, shouldScheduleNetworkUpdate bool) (*Clie
 				return client, errors.New("mirrorNetwork is expected to be either string or an array of strings")
 			}
 		}
-		client = _NewClient(network, arr, nil, shouldScheduleNetworkUpdate)
+		client = _NewClient(network, arr, nil, shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 	case string:
 		if len(mirror) > 0 {
 			switch mirror {
 			case string(NetworkNameMainnet):
-				client = _NewClient(network, mainnetMirror, NewLedgerIDMainnet(), shouldScheduleNetworkUpdate)
+				client = _NewClient(network, mainnetMirror, NewLedgerIDMainnet(), shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 			case string(NetworkNameTestnet):
-				client = _NewClient(network, testnetMirror, NewLedgerIDTestnet(), shouldScheduleNetworkUpdate)
+				client = _NewClient(network, testnetMirror, NewLedgerIDTestnet(), shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 			case string(NetworkNamePreviewnet):
-				client = _NewClient(network, previewnetMirror, NewLedgerIDPreviewnet(), shouldScheduleNetworkUpdate)
+				client = _NewClient(network, previewnetMirror, NewLedgerIDPreviewnet(), shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 			}
 		}
 	case nil:
-		client = _NewClient(network, []string{}, nil, true)
+		client = _NewClient(network, []string{}, nil, true, clientConfig.Shard, clientConfig.Realm)
 	default:
 		return client, errors.New("mirrorNetwork is expected to be a string, an array of strings or nil")
 	}
