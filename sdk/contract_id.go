@@ -158,7 +158,7 @@ func (id ContractID) ToEvmAddress() string {
 	if id.EvmAddress != nil {
 		return hex.EncodeToString(id.EvmAddress)
 	} else {
-		return fmt.Sprintf("%x", id.Contract)
+		return _IdToSolidityAddress(0, 0, id.Contract)
 	}
 }
 

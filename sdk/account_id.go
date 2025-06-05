@@ -202,7 +202,7 @@ func (id AccountID) ToEvmAddress() string {
 	if id.AliasEvmAddress != nil {
 		return hex.EncodeToString(*id.AliasEvmAddress)
 	} else { // if we don't have the alias set
-		return fmt.Sprintf("%x", id.Account)
+		return _IdToSolidityAddress(0, 0, id.Account)
 	}
 }
 
