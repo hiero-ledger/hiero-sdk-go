@@ -96,7 +96,7 @@ func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress 
 
 // DelegatableContractIDFromSolidityAddress constructs a DelegatableContractID from a string representation of a _Solidity address
 // Does not populate DelegatableContractID.EvmAddress
-// Deprecated
+// Deprecated: use DelegatableContractIDFromEvmAddress instead
 func DelegatableContractIDFromSolidityAddress(s string) (DelegatableContractID, error) {
 	shard, realm, contract, err := _IdFromSolidityAddress(s)
 	if err != nil {
