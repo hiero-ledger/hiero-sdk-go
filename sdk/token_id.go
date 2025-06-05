@@ -146,6 +146,7 @@ func (id *TokenID) Validate(client *Client) error {
 
 // TokenIDFromSolidityAddress constructs a TokenID from a string
 // representation of a _Solidity address
+// Deprecated: use TokenIDFromEvmAddress instead
 func TokenIDFromSolidityAddress(s string) (TokenID, error) {
 	shard, realm, token, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -160,10 +161,23 @@ func TokenIDFromSolidityAddress(s string) (TokenID, error) {
 	}, nil
 }
 
+func TokenIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (TokenID, error) {
+	_, _, token, err := _IdFromSolidityAddress(evmAddress)
+	if err != nil {
+		return TokenID{}, err
+	}
+	return TokenID{Shard: shard, Realm: realm, Token: token}, nil
+}
+
 // ToSolidityAddress returns the string representation of the TokenID as a
 // _Solidity address.
+// Deprecated: use ToEvmAddress instead
 func (id TokenID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Token)
+}
+
+func (id TokenID) ToEvmAddress() string {
+	return _IdToSolidityAddress(0, 0, id.Token)
 }
 
 func (id TokenID) _IsZero() bool {
