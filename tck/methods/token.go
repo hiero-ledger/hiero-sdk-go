@@ -852,27 +852,51 @@ func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCanc
 
 	transaction := hiero.NewTokenCancelAirdropTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	pendingAirdropId := hiero.PendingAirdropId{}
-
-	senderId, err := hiero.AccountIDFromString(*params.SenderAccountId)
+	tokenID, err := hiero.TokenIDFromString(*params.TokenId)
 	if err != nil {
 		return nil, err
 	}
-	pendingAirdropId.SetSender(senderId)
 
-	receiverId, err := hiero.AccountIDFromString(*params.ReceiverAccountId)
+	senderID, err := hiero.AccountIDFromString(*params.SenderAccountId)
 	if err != nil {
 		return nil, err
 	}
-	pendingAirdropId.SetReceiver(receiverId)
 
-	tokenId, err := hiero.TokenIDFromString(*params.TokenId)
+	receiverID, err := hiero.AccountIDFromString(*params.ReceiverAccountId)
 	if err != nil {
 		return nil, err
 	}
-	pendingAirdropId.SetTokenID(tokenId)
 
-	transaction.AddPendingAirdropId(pendingAirdropId)
+	// NFT token claiming
+	if params.SerialNumbers != nil && len(*params.SerialNumbers) > 0 {
+		for _, serialNumber := range *params.SerialNumbers {
+			fmt.Println("serialNumber", serialNumber)
+			serial, err := strconv.ParseInt(serialNumber, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse serial number: %w", err)
+			}
+
+			nftID := hiero.NftID{
+				TokenID:      tokenID,
+				SerialNumber: serial,
+			}
+
+			pendingAirdropID := &hiero.PendingAirdropId{}
+			pendingAirdropID.SetSender(senderID)
+			pendingAirdropID.SetReceiver(receiverID)
+			pendingAirdropID.SetNftID(nftID)
+
+			transaction.AddPendingAirdropId(*pendingAirdropID)
+		}
+	} else {
+		// Fungible token claiming
+		pendingAirdropID := &hiero.PendingAirdropId{}
+		pendingAirdropID.SetSender(senderID)
+		pendingAirdropID.SetReceiver(receiverID)
+		pendingAirdropID.SetTokenID(tokenID)
+
+		transaction.AddPendingAirdropId(*pendingAirdropID)
+	}
 
 	if params.CommonTransactionParams != nil {
 		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
