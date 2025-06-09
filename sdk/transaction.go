@@ -1089,6 +1089,63 @@ func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransact
 	return signableNodeTransactionBodyBytesList, nil
 }
 
+// GetTransactionSize returns the total size of the transaction in bytes.
+func (tx *Transaction[T]) GetTransactionSize() (int, error) {
+	if !tx.IsFrozen() {
+		return 0, errTransactionIsNotFrozen
+	}
+
+	transaction, err := tx._BuildTransaction(0)
+	if err != nil {
+		return 0, err
+	}
+
+	txBytes, err := protobuf.Marshal(transaction)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(txBytes), nil
+}
+
+// GetTransactionBodySize returns the total size of the transactions body, without the signatures
+func (tx *Transaction[T]) GetTransactionBodySize() (int, error) {
+	if !tx.IsFrozen() {
+		return 0, errTransactionIsNotFrozen
+	}
+
+	transaction := tx.signedTransactions._Get(0).(*services.SignedTransaction)
+	txBytes, err := protobuf.Marshal(transaction)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(txBytes), nil
+}
+
+// GetBodySizeAllChunks returns the total size of the transaction, for all chunks.
+func (tx *Transaction[T]) GetTransactionBodySizeAllChunks() ([]int, error) {
+	if !tx.IsFrozen() {
+		return nil, errTransactionIsNotFrozen
+	}
+
+	chunks := tx.transactionIDs._Length()
+	nodes := tx.nodeAccountIDs._Length()
+	bodySizeList := make([]int, chunks)
+	var index int
+	for i := 0; i < chunks; i += nodes {
+		transaction := tx.signedTransactions._Get(i).(*services.SignedTransaction)
+		txBytes, err := protobuf.Marshal(transaction)
+		if err != nil {
+			return nil, err
+		}
+		bodySizeList[index] = len(txBytes)
+		index++
+	}
+
+	return bodySizeList, nil
+}
+
 // SetTransactionID sets the TransactionID for this transaction.
 func (tx *Transaction[T]) SetTransactionID(transactionID TransactionID) T {
 	deepCopied := transactionID.deepCopy()

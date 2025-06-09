@@ -844,6 +844,78 @@ func (t *TokenService) AirdropToken(_ context.Context, params param.AirdropParam
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
+// ClaimToken jRPC method for claimToken
+func (t *TokenService) ClaimToken(_ context.Context, params param.ClaimTokenParams) (*response.TokenResponse, error) {
+	transaction := hiero.NewTokenClaimAirdropTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TokenId == nil || params.SenderAccountId == nil || params.ReceiverAccountId == nil {
+		return nil, response.NewInternalError("tokenId, senderAccountId, and receiverAccountId are required")
+	}
+
+	tokenID, err := hiero.TokenIDFromString(*params.TokenId)
+	if err != nil {
+		return nil, err
+	}
+
+	senderID, err := hiero.AccountIDFromString(*params.SenderAccountId)
+	if err != nil {
+		return nil, err
+	}
+
+	receiverID, err := hiero.AccountIDFromString(*params.ReceiverAccountId)
+	if err != nil {
+		return nil, err
+	}
+
+	// NFT token claiming
+	if params.SerialNumbers != nil && len(*params.SerialNumbers) > 0 {
+		for _, serialNumber := range *params.SerialNumbers {
+			serial, err := strconv.ParseInt(serialNumber, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse serial number: %w", err)
+			}
+
+			nftID := hiero.NftID{
+				TokenID:      tokenID,
+				SerialNumber: serial,
+			}
+
+			pendingAirdropID := &hiero.PendingAirdropId{}
+			pendingAirdropID.SetSender(senderID)
+			pendingAirdropID.SetReceiver(receiverID)
+			pendingAirdropID.SetNftID(nftID)
+
+			transaction.AddPendingAirdropId(*pendingAirdropID)
+		}
+	} else {
+		// Fungible token claiming
+		pendingAirdropID := &hiero.PendingAirdropId{}
+		pendingAirdropID.SetSender(senderID)
+		pendingAirdropID.SetReceiver(receiverID)
+		pendingAirdropID.SetTokenID(tokenID)
+
+		transaction.AddPendingAirdropId(*pendingAirdropID)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{Status: receipt.Status.String()}, nil
+}
+
 // CancelAirdrop jRPC method for cancelAirdrop
 func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCancelTokenParams) (*response.TokenResponse, error) {
 	if params.SenderAccountId == nil || params.ReceiverAccountId == nil || params.TokenId == nil {

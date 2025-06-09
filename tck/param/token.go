@@ -118,3 +118,11 @@ type AirdropCancelTokenParams struct {
 	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
+
+type ClaimTokenParams struct {
+	SenderAccountId         *string                  `json:"senderAccountId,omitempty"`
+	ReceiverAccountId       *string                  `json:"receiverAccountId,omitempty"`
+	TokenId                 *string                  `json:"tokenId,omitempty"`
+	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
