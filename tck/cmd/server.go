@@ -61,6 +61,7 @@ func main() {
 		"wipeToken":              postHandler(HandleError, handler.New(tokenService.WipeToken)),
 		"claimToken":             postHandler(HandleError, handler.New(tokenService.ClaimToken)),
 		"airdropToken":           postHandler(HandleError, handler.New(tokenService.AirdropToken)),
+		"cancelAirdrop":          postHandler(HandleError, handler.New(tokenService.CancelAirdrop)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
