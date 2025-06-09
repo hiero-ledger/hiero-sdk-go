@@ -204,3 +204,62 @@ func TestUnitAccountIDFromEvmAddressIncorrectSize(t *testing.T) {
 
 	require.Equal(t, strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e"), hex.EncodeToString(*id.AliasEvmAddress))
 }
+
+func TestUnitAccountIDFromEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	bytes, err := hex.DecodeString(evmAddress)
+	require.NoError(t, err)
+	id, err := AccountIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(0), id.Account)
+	require.Equal(t, bytes, *id.AliasEvmAddress)
+
+	id, err = AccountIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(0), id.Account)
+	require.Equal(t, bytes, *id.AliasEvmAddress)
+
+	evmAddress = "00000000000000000000000000000000000004d2"
+	bytes, err = hex.DecodeString(evmAddress)
+	require.NoError(t, err)
+	id, err = AccountIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(0), id.Account)
+	require.Equal(t, bytes, *id.AliasEvmAddress)
+
+	id, err = AccountIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(0), id.Account)
+	require.Equal(t, bytes, *id.AliasEvmAddress)
+}
+
+func TestUnitAccountIDToEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	id, err := AccountIDFromString("0.0.123")
+	require.NoError(t, err)
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	id, err = AccountIDFromString("1.1.123")
+	require.NoError(t, err)
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	id, err = AccountIDFromString("1.1.00000000000000000000000000000000000004d2")
+	require.NoError(t, err)
+	require.Equal(t, "00000000000000000000000000000000000004d2", id.ToEvmAddress())
+
+	id, err = AccountIDFromString("1.1.742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	expected := strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	require.NoError(t, err)
+	require.Equal(t, expected, id.ToEvmAddress())
+}
