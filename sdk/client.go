@@ -82,13 +82,24 @@ type Sphere struct {
 
 // ClientForMirrorNetwork constructs a client given a set of mirror network nodes.
 func ClientForMirrorNetwork(mirrorNetwork []string) (*Client, error) {
-	return ClientForMirrorNetworWithConfiguration(ClientConfigurationForMirrorNetwork{
+	return ClientForMirrorNetworkWithConfiguration(ClientConfigurationForMirrorNetwork{
 		MirrorNetwork: mirrorNetwork,
 	})
 }
 
 // ClientForMirrorNetworkWithRealmAndShard constructs a client given a set of mirror network nodes and the realm/shard of the address book.
-func ClientForMirrorNetworWithConfiguration(config ClientConfigurationForMirrorNetwork) (*Client, error) {
+// Deprecated: Use ClientForMirrorNetworkWithConfiguration instead.
+func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, shard uint64, realm uint64) (*Client, error) {
+	return ClientForMirrorNetworkWithConfiguration(ClientConfigurationForMirrorNetwork{
+		Sphere: Sphere{
+			Shard: shard,
+			Realm: realm,
+		},
+	})
+}
+
+// ClientForMirrorNetworkWithConfiguration constructs a client given a set of mirror network nodes and the realm/shard of the address book.
+func ClientForMirrorNetworkWithConfiguration(config ClientConfigurationForMirrorNetwork) (*Client, error) {
 	net := _NewNetwork()
 	client := _NewClient(net, config.MirrorNetwork, nil, true, config.Shard, config.Realm)
 	addressbook, err := NewAddressBookQuery().
@@ -109,7 +120,7 @@ func ClientForNetwork(network map[string]AccountID) *Client {
 	return client
 }
 
-// ClientForNetwork constructs a client given a set of nodes.
+// ClientForNetworkWithConfiguration
 func ClientForNetworkWithConfiguration(config ClientConfigurationForNetwork) *Client {
 	net := _NewNetwork()
 	client := _NewClient(net, []string{}, nil, true, config.Shard, config.Realm)
@@ -125,6 +136,7 @@ func ClientForMainnet() *Client {
 	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, 0, 0)
 }
 
+// ClientForMainnetWithSphere
 func ClientForMainnetWithSphere(config Sphere) *Client {
 	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, config.Shard, config.Realm)
 }
@@ -137,6 +149,7 @@ func ClientForTestnet() *Client {
 	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, 0, 0)
 }
 
+// ClientForTestnetWithSphere
 func ClientForTestnetWithSphere(config Sphere) *Client {
 	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, config.Shard, config.Realm)
 }
@@ -149,6 +162,7 @@ func ClientForPreviewnet() *Client {
 	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, 0, 0)
 }
 
+// ClientForPreviewnetWithSphere
 func ClientForPreviewnetWithSphere(config Sphere) *Client {
 	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, config.Shard, config.Realm)
 }
@@ -236,6 +250,7 @@ func ClientForName(name string) (*Client, error) {
 	return ClientForNameWithSphere(name, Sphere{})
 }
 
+// ClientForNameWithSphere
 func ClientForNameWithSphere(name string, config Sphere) (*Client, error) {
 	switch name {
 	case string(NetworkNameTestnet):
