@@ -869,7 +869,6 @@ func (pk PublicKey) _ToSignaturePairProtobuf(signature []byte) *services.Signatu
 // SignTransaction signes the transaction and adds the signature to the transaction
 func (sk PrivateKey) SignTransaction(tx TransactionInterface) ([]byte, error) {
 	baseTx := tx.getBaseTransaction()
-	// TODO: call tx.addSignature
 
 	if sk.ecdsaPrivateKey != nil {
 		b, err := sk.ecdsaPrivateKey._SignTransaction(baseTx)
