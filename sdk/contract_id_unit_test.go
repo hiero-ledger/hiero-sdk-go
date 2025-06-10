@@ -8,6 +8,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
@@ -159,4 +160,77 @@ func TestUnitContractIDChecksumError(t *testing.T) {
 	id.EvmAddress = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
 	_, err = id.ToStringWithChecksum(*client)
 	require.ErrorContains(t, err, "EvmAddress doesn't support checksums")
+}
+
+func TestUnitContractIDFromEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a normal EVM address
+	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	bytes, err := hex.DecodeString(evmAddress)
+	require.NoError(t, err)
+	id, err := ContractIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(0), id.Contract)
+	require.Equal(t, bytes, id.EvmAddress)
+
+	// Test with a different shard and realm
+	id, err = ContractIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(0), id.Contract)
+	require.Equal(t, bytes, id.EvmAddress)
+
+	// Test with a long zero address
+	evmAddress = "00000000000000000000000000000000000004d2"
+	bytes, err = hex.DecodeString(evmAddress)
+	require.NoError(t, err)
+	id, err = ContractIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(1234), id.Contract)
+	require.Nil(t, id.EvmAddress)
+
+	// Test with a different shard and realm
+	id, err = ContractIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(1234), id.Contract)
+	require.Nil(t, id.EvmAddress)
+}
+
+func TestUnitContractIDToEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a normal contract ID
+	id := ContractID{Shard: 0, Realm: 0, Contract: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	// Test with a different shard and realm
+	id = ContractID{Shard: 1, Realm: 1, Contract: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	// Test with a long zero address
+	longZeroAddress := "00000000000000000000000000000000000004d2"
+	bytes, err := hex.DecodeString(longZeroAddress)
+	id = ContractID{Shard: 1, Realm: 1, EvmAddress: bytes}
+	require.NoError(t, err)
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
+
+	// Test with a normal EVM address
+	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	bytes, err = hex.DecodeString(evmAddress)
+	id = ContractID{Shard: 0, Realm: 0, EvmAddress: bytes}
+	expected := strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	require.NoError(t, err)
+	require.Equal(t, expected, id.ToEvmAddress())
+
+	// Test with different shard and realm
+	id = ContractID{Shard: 1, Realm: 1, EvmAddress: bytes}
+	require.Equal(t, expected, id.ToEvmAddress())
 }

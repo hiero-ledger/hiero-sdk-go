@@ -5,6 +5,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/pkg/errors"
@@ -80,11 +81,33 @@ func (id *DelegatableContractID) ValidateChecksum(client *Client) error {
 }
 
 // DelegatableContractIDFromEvmAddress constructs a DelegatableContractID from a string representation of a _Solidity address
-func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (DelegatableContractID, error) {
-	temp, err := hex.DecodeString(evmAddress)
+func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (DelegatableContractID, error) {
+	// Remove 0x prefix if present
+	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
+
+	// Check if the address is the correct length (40 hex characters = 20 bytes)
+	if len(aliasEvmAddress) != 40 {
+		return DelegatableContractID{}, fmt.Errorf("input EVM address string is not the correct size")
+	}
+	temp, err := hex.DecodeString(aliasEvmAddress)
 	if err != nil {
 		return DelegatableContractID{}, err
 	}
+
+	if isLongZeroAddress(temp) {
+		_, _, contract, err := _IdFromSolidityAddress(aliasEvmAddress)
+		if err != nil {
+			return DelegatableContractID{}, err
+		}
+
+		return DelegatableContractID{
+			Shard:    shard,
+			Realm:    realm,
+			Contract: contract,
+			checksum: nil,
+		}, nil
+	}
+
 	return DelegatableContractID{
 		Shard:      shard,
 		Realm:      realm,

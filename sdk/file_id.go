@@ -127,6 +127,7 @@ func FileIDFromSolidityAddress(s string) (FileID, error) {
 	}, nil
 }
 
+// FileIDFromEvmAddress
 func FileIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (FileID, error) {
 	_, _, file, err := _IdFromSolidityAddress(evmAddress)
 	if err != nil {
@@ -166,6 +167,7 @@ func (id FileID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.File)
 }
 
+// ToEvmAddress
 func (id FileID) ToEvmAddress() string {
 	return _IdToSolidityAddress(0, 0, id.File)
 }

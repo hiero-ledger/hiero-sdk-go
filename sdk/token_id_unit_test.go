@@ -103,3 +103,34 @@ func TestUnitTokenIDChecksumError(t *testing.T) {
 	_, err = id.ToStringWithChecksum(*client)
 	require.Error(t, err)
 }
+
+func TestUnitTokenIDFromEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a long zero address representing token 1234
+	evmAddress := "00000000000000000000000000000000000004d2"
+	id, err := TokenIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(1234), id.Token)
+
+	// Test with a different shard and realm
+	id, err = TokenIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(1234), id.Token)
+}
+
+func TestUnitTokenIDToEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a normal token ID
+	id := TokenID{Shard: 0, Realm: 0, Token: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	// Test with a different shard and realm
+	id = TokenID{Shard: 1, Realm: 1, Token: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+}
