@@ -112,7 +112,7 @@ func (tx TokenPauseTransaction) buildProtoBody() *services.TokenPauseTransaction
 
 func (tx TokenPauseTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
-		transaction: channel._GetToken().DeleteToken,
+		transaction: channel._GetToken().PauseToken,
 	}
 }
 

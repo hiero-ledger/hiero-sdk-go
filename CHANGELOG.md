@@ -1,3 +1,14 @@
+## v2.64.0
+
+### Added
+- Transaction size APIs [#1392](https://github.com/hiero-ledger/hiero-sdk-go/pull/1392)
+  - `GetTransactionSize`
+  - `GetTransactionBodySize`
+  - `GetTransactionBodySizeAllChunks`
+
+### Fixed
+- Pause/UnpauseTransaction's protobuf methods [#1393](https://github.com/hiero-ledger/hiero-sdk-go/pull/1393)
+
 ## v2.63.0
 
 ### Changed
