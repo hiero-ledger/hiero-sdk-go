@@ -29,7 +29,7 @@ func TestUnitContractIDChecksumFromString(t *testing.T) {
 	ContractIDFromSolidityAddress(sol)
 	err = id.Validate(client)
 	require.Error(t, err)
-	evmID, err := ContractIDFromEvmAddress(0, 0, "ace082947b949651c703ff0f02bc1541")
+	evmID, err := ContractIDFromEvmAddress(0, 0, "0x5B38Da6a701c568545dCfcB03FcB875f56beddC4")
 	require.NoError(t, err)
 	pb := evmID._ToProtobuf()
 	_ContractIDFromProtobuf(pb)
