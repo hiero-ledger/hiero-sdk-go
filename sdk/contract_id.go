@@ -102,20 +102,6 @@ func ContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string
 		return ContractID{}, err
 	}
 
-	if isLongZeroAddress(temp) {
-		_, _, contract, err := _IdFromSolidityAddress(aliasEvmAddress)
-		if err != nil {
-			return ContractID{}, err
-		}
-
-		return ContractID{
-			Shard:    shard,
-			Realm:    realm,
-			Contract: contract,
-			checksum: nil,
-		}, nil
-	}
-
 	return ContractID{
 		Shard:      shard,
 		Realm:      realm,

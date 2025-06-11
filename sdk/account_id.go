@@ -83,20 +83,6 @@ func AccountIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string)
 		return AccountID{}, err
 	}
 
-	if isLongZeroAddress(temp) {
-		_, _, account, err := _IdFromSolidityAddress(aliasEvmAddress)
-		if err != nil {
-			return AccountID{}, err
-		}
-
-		return AccountID{
-			Shard:    shard,
-			Realm:    realm,
-			Account:  account,
-			checksum: nil,
-		}, nil
-	}
-
 	return AccountID{
 		Shard:           shard,
 		Realm:           realm,

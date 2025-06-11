@@ -13,15 +13,6 @@ import (
 	protobuf "google.golang.org/protobuf/proto"
 )
 
-func isLongZeroAddress(address []byte) bool {
-	for i := 0; i < 12; i++ {
-		if address[i] != 0 {
-			return false
-		}
-	}
-	return true
-}
-
 func _AccountIDFromString(s string) (shard int, realm int, num int, checksum *string, alias *PublicKey, evmAddress *[]byte, err error) {
 	if _Has0xPrefix(s) {
 		s = _Without0x(s)

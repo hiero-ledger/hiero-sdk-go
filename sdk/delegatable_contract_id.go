@@ -94,20 +94,6 @@ func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAdd
 		return DelegatableContractID{}, err
 	}
 
-	if isLongZeroAddress(temp) {
-		_, _, contract, err := _IdFromSolidityAddress(aliasEvmAddress)
-		if err != nil {
-			return DelegatableContractID{}, err
-		}
-
-		return DelegatableContractID{
-			Shard:    shard,
-			Realm:    realm,
-			Contract: contract,
-			checksum: nil,
-		}, nil
-	}
-
 	return DelegatableContractID{
 		Shard:      shard,
 		Realm:      realm,
