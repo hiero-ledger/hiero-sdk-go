@@ -1,6 +1,8 @@
 ![](https://img.shields.io/github/v/tag/hiero-ledger/hiero-sdk-go)
 ![](https://img.shields.io/github/go-mod/go-version/hiero-ledger/hiero-sdk-go)
 [![](https://godoc.org/github.com/hiero-ledger/hiero-sdk-go/v2?status.svg)](http://godoc.org/github.com/hiero-project/hiero-sdk-go/v2)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hiero-ledger/hiero-sdk-go/badge)](https://api.scorecard.dev/projects/github.com/hiero-ledger/hiero-sdk-go)
+[![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/10697/badge)](https://bestpractices.coreinfrastructure.org/projects/10697)
 
 # Hiero Go SDK
 
@@ -117,6 +119,14 @@ go run scripts/status/generator.go -index=64
 Whether you’re fixing bugs, enhancing features, or improving documentation, your contributions are important — let’s build something great together!
 
 Please read our [contributing guide](https://github.com/hiero-ledger/.github/blob/main/CONTRIBUTING.md) to see how you can get involved.
+
+## Help/Community
+
+- Join our [community discussions](https://discord.lfdecentralizedtrust.org/) on discord.
+
+## About Users and Maintainers
+
+- Users and Maintainers guidelies are located in **[Hiero-Ledger's roles and groups guidelines](https://github.com/hiero-ledger/governance/blob/main/roles-and-groups.md#maintainers).**
 
 ## Code of Conduct
 
