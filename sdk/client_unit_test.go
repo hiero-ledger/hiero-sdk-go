@@ -26,6 +26,8 @@ func TestUnitClientFromConfig(t *testing.T) {
 	assert.NotNil(t, client)
 	assert.True(t, len(client.network.network) > 0)
 	assert.Nil(t, client.operator)
+	assert.Equal(t, uint64(3), client.GetShard())
+	assert.Equal(t, uint64(5), client.GetRealm())
 }
 
 func TestUnitClientFromConfigWithOperator(t *testing.T) {
