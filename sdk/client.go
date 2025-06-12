@@ -65,45 +65,18 @@ var mainnetMirror = []string{"mainnet-public.mirrornode.hedera.com:443"}
 var testnetMirror = []string{"testnet.mirrornode.hedera.com:443"}
 var previewnetMirror = []string{"previewnet.mirrornode.hedera.com:443"}
 
-type ClientConfigurationForMirrorNetwork struct {
-	Sphere
-	MirrorNetwork []string
-}
-
-type ClientConfigurationForNetwork struct {
-	Sphere
-	Network map[string]AccountID
-}
-
-type Sphere struct {
-	Shard uint64
-	Realm uint64
-}
-
 // ClientForMirrorNetwork constructs a client given a set of mirror network nodes.
 func ClientForMirrorNetwork(mirrorNetwork []string) (*Client, error) {
-	return ClientForMirrorNetworkWithConfiguration(ClientConfigurationForMirrorNetwork{
-		MirrorNetwork: mirrorNetwork,
-	})
+	return ClientForMirrorNetworkWithShardAndRealm(mirrorNetwork, 0, 0)
 }
 
 // ClientForMirrorNetworkWithRealmAndShard constructs a client given a set of mirror network nodes and the realm/shard of the address book.
-// Deprecated: Use ClientForMirrorNetworkWithConfiguration instead.
-func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, shard uint64, realm uint64) (*Client, error) {
-	return ClientForMirrorNetworkWithConfiguration(ClientConfigurationForMirrorNetwork{
-		Sphere: Sphere{
-			Shard: shard,
-			Realm: realm,
-		},
-	})
-}
-
-// ClientForMirrorNetworkWithConfiguration constructs a client given a set of mirror network nodes and the realm/shard of the address book.
-func ClientForMirrorNetworkWithConfiguration(config ClientConfigurationForMirrorNetwork) (*Client, error) {
+// Deprecated: Use ClientForMirrorNetworkWithShardAndRealm instead.
+func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, realm uint64, shard uint64) (*Client, error) {
 	net := _NewNetwork()
-	client := _NewClient(net, config.MirrorNetwork, nil, true, config.Shard, config.Realm)
+	client := _NewClient(net, mirrorNetwork, nil, true, realm, shard)
 	addressbook, err := NewAddressBookQuery().
-		SetFileID(GetAddressBookFileIDFor(config.Shard, config.Realm)).
+		SetFileID(GetAddressBookFileIDFor(realm, shard)).
 		Execute(client)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query address book: %v", err)
@@ -112,19 +85,31 @@ func ClientForMirrorNetworkWithConfiguration(config ClientConfigurationForMirror
 	return client, nil
 }
 
-// ClientForNetwork constructs a client given a set of nodes.
-func ClientForNetwork(network map[string]AccountID) *Client {
+// ClientForMirrorNetworkWithShardAndRealm constructs a client given a set of mirror network nodes and the shard/realm of the address book.
+func ClientForMirrorNetworkWithShardAndRealm(mirrorNetwork []string, shard uint64, realm uint64) (*Client, error) {
 	net := _NewNetwork()
-	client := _NewClient(net, []string{}, nil, true, 0, 0)
-	_ = client.SetNetwork(network)
-	return client
+	client := _NewClient(net, mirrorNetwork, nil, true, shard, realm)
+	addressbook, err := NewAddressBookQuery().
+		SetFileID(GetAddressBookFileIDFor(shard, realm)).
+		Execute(client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query address book: %v", err)
+	}
+	client.SetNetworkFromAddressBook(addressbook)
+	return client, nil
+
 }
 
-// ClientForNetworkWithConfiguration
-func ClientForNetworkWithConfiguration(config ClientConfigurationForNetwork) *Client {
+// ClientForNetwork constructs a client given a set of nodes.
+func ClientForNetwork(network map[string]AccountID) *Client {
+	return ClientForNetworkWithShardAndRealm(network, 0, 0)
+}
+
+// ClientForNetworkWithShardAndRealm constructs a client given a set of nodes and a shard/realm.
+func ClientForNetworkWithShardAndRealm(network map[string]AccountID, shard uint64, realm uint64) *Client {
 	net := _NewNetwork()
-	client := _NewClient(net, []string{}, nil, true, config.Shard, config.Realm)
-	_ = client.SetNetwork(config.Network)
+	client := _NewClient(net, []string{}, nil, true, shard, realm)
+	_ = client.SetNetwork(network)
 	return client
 }
 
@@ -133,12 +118,11 @@ func ClientForNetworkWithConfiguration(config ClientConfigurationForNetwork) *Cl
 // Most users will want to set an _Operator account with .SetOperator so
 // transactions can be automatically given TransactionIDs and signed.
 func ClientForMainnet() *Client {
-	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, 0, 0)
+	return ClientForMainnetWithShardAndRealm(0, 0)
 }
 
-// ClientForMainnetWithSphere
-func ClientForMainnetWithSphere(config Sphere) *Client {
-	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, config.Shard, config.Realm)
+func ClientForMainnetWithShardAndRealm(shard uint64, realm uint64) *Client {
+	return _NewClient(*_NetworkForMainnet(mainnetNodes._ToMap()), mainnetMirror, NewLedgerIDMainnet(), true, shard, realm)
 }
 
 // ClientForTestnet returns a preconfigured client for use with the standard
@@ -146,12 +130,11 @@ func ClientForMainnetWithSphere(config Sphere) *Client {
 // Most users will want to set an _Operator account with .SetOperator so
 // transactions can be automatically given TransactionIDs and signed.
 func ClientForTestnet() *Client {
-	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, 0, 0)
+	return ClientForTestnetWithShardAndRealm(0, 0)
 }
 
-// ClientForTestnetWithSphere
-func ClientForTestnetWithSphere(config Sphere) *Client {
-	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, config.Shard, config.Realm)
+func ClientForTestnetWithShardAndRealm(shard uint64, realm uint64) *Client {
+	return _NewClient(*_NetworkForTestnet(testnetNodes._ToMap()), testnetMirror, NewLedgerIDTestnet(), true, shard, realm)
 }
 
 // ClientForPreviewnet returns a preconfigured client for use with the standard
@@ -159,12 +142,11 @@ func ClientForTestnetWithSphere(config Sphere) *Client {
 // Most users will want to set an _Operator account with .SetOperator so
 // transactions can be automatically given TransactionIDs and signed.
 func ClientForPreviewnet() *Client {
-	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, 0, 0)
+	return ClientForPreviewnetWithShardAndRealm(0, 0)
 }
 
-// ClientForPreviewnetWithSphere
-func ClientForPreviewnetWithSphere(config Sphere) *Client {
-	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, config.Shard, config.Realm)
+func ClientForPreviewnetWithShardAndRealm(shard uint64, realm uint64) *Client {
+	return _NewClient(*_NetworkForPreviewnet(previewnetNodes._ToMap()), previewnetMirror, NewLedgerIDPreviewnet(), true, shard, realm)
 }
 
 // newClient takes in a map of _Node addresses to their respective IDS (_Network)
@@ -247,26 +229,22 @@ func (client *Client) GetNetworkUpdatePeriod() time.Duration {
 
 // ClientForName set up the client for the selected network.
 func ClientForName(name string) (*Client, error) {
-	return ClientForNameWithSphere(name, Sphere{})
+	return ClientForNameWithShardAndRealm(name, 0, 0)
 }
 
-// ClientForNameWithSphere
-func ClientForNameWithSphere(name string, config Sphere) (*Client, error) {
+func ClientForNameWithShardAndRealm(name string, shard uint64, realm uint64) (*Client, error) {
 	switch name {
 	case string(NetworkNameTestnet):
-		return ClientForTestnetWithSphere(config), nil
+		return ClientForTestnetWithShardAndRealm(shard, realm), nil
 	case string(NetworkNamePreviewnet):
-		return ClientForPreviewnetWithSphere(config), nil
+		return ClientForPreviewnetWithShardAndRealm(shard, realm), nil
 	case string(NetworkNameMainnet):
-		return ClientForMainnetWithSphere(config), nil
+		return ClientForMainnetWithShardAndRealm(shard, realm), nil
 	case "local", "localhost":
 		network := make(map[string]AccountID)
 		network["127.0.0.1:50213"] = AccountID{Account: 3}
 		mirror := []string{"127.0.0.1:5600"}
-		client := ClientForNetworkWithConfiguration(ClientConfigurationForNetwork{
-			Sphere:  config,
-			Network: network,
-		})
+		client := ClientForNetworkWithShardAndRealm(network, shard, realm)
 		client.SetMirrorNetwork(mirror)
 		return client, nil
 	default:
@@ -447,6 +425,16 @@ func (client *Client) SetNetwork(network map[string]AccountID) error {
 // GetNetwork returns the current set of nodes in this Client.
 func (client *Client) GetNetwork() map[string]AccountID {
 	return client.network._GetNetwork()
+}
+
+// GetShard returns the shard for the Client.
+func (client *Client) GetShard() uint64 {
+	return client.shard
+}
+
+// GetRealm returns the realm for the Client.
+func (client *Client) GetRealm() uint64 {
+	return client.realm
 }
 
 // SetMaxNodeReadmitTime The maximum amount of time to wait before attempting to

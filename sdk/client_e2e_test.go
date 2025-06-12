@@ -142,20 +142,20 @@ func TestClientInitWithMirrorNetwork(t *testing.T) {
 	assert.NotEmpty(t, client.GetNetwork())
 }
 
-func TestClientForMirrorNetworkWithRealmAndShard(t *testing.T) {
+func TestClientIntegrationForMirrorNetworkWithShardAndRealm(t *testing.T) {
 	t.Parallel()
 
 	mirrorNetworkString := "testnet.mirrornode.hedera.com:443"
-	client, err := ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 0, 0)
+	client, err := ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 0, 0)
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
 	// TODO enable when we have non-zero realm and shard env
-	// client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 5, 3)
+	// client, err = ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 5, 3)
 	// require.NoError(t, err)
 	// require.NotNil(t, client)
 
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{}, 0, 0)
+	client, err = ClientForMirrorNetworkWithShardAndRealm([]string{}, 0, 0)
 	require.Nil(t, client)
 	assert.Contains(t, err.Error(), "failed to query address book: no healthy nodes")
 }

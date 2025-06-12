@@ -321,3 +321,82 @@ func TestUnitClientClientFromConfigWithoutScheduleNetworkUpdate(t *testing.T) {
 	assert.True(t, len(client.network.network) > 0)
 	assert.Equal(t, time.Duration(0), client.GetNetworkUpdatePeriod())
 }
+
+func TestClientForNameWithShardAndRealm(t *testing.T) {
+	t.Parallel()
+
+	// Test mainnet
+	client, err := ClientForNameWithShardAndRealm("mainnet", 3, 4)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(3), client.GetShard())
+	assert.Equal(t, uint64(4), client.GetRealm())
+
+	// Test testnet
+	client, err = ClientForNameWithShardAndRealm("testnet", 1, 2)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(1), client.GetShard())
+	assert.Equal(t, uint64(2), client.GetRealm())
+
+	// Test previewnet
+	client, err = ClientForNameWithShardAndRealm("previewnet", 5, 6)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(5), client.GetShard())
+	assert.Equal(t, uint64(6), client.GetRealm())
+
+	// Test local network
+	client, err = ClientForNameWithShardAndRealm("local", 7, 8)
+	assert.NoError(t, err)
+	assert.Equal(t, uint64(7), client.GetShard())
+	assert.Equal(t, uint64(8), client.GetRealm())
+
+	// Test invalid network
+	client, err = ClientForNameWithShardAndRealm("invalid", 1, 1)
+	assert.Error(t, err)
+	assert.Equal(t, "\"invalid\" is not recognized as a valid Hiero _Network", err.Error())
+}
+
+func TestClientForNetworkWithShardAndRealm(t *testing.T) {
+	t.Parallel()
+
+	network := map[string]AccountID{
+		"node1.testnet.com:50211": {Account: 3},
+		"node2.testnet.com:50211": {Account: 4},
+	}
+
+	// Test non-zero shard and realm
+	client := ClientForNetworkWithShardAndRealm(network, 5, 6)
+	assert.Equal(t, uint64(5), client.GetShard())
+	assert.Equal(t, uint64(6), client.GetRealm())
+	clientNetwork := client.GetNetwork()
+	assert.Equal(t, len(network), len(clientNetwork))
+	assert.Equal(t, network["node1.testnet.com:50211"], clientNetwork["node1.testnet.com:50211"])
+	assert.Equal(t, network["node2.testnet.com:50211"], clientNetwork["node2.testnet.com:50211"])
+
+	// Test zero shard and realm
+	client = ClientForNetworkWithShardAndRealm(network, 0, 0)
+	assert.Equal(t, uint64(0), client.GetShard())
+	assert.Equal(t, uint64(0), client.GetRealm())
+	clientNetwork = client.GetNetwork()
+	assert.Equal(t, len(network), len(clientNetwork))
+	assert.Equal(t, network["node1.testnet.com:50211"], clientNetwork["node1.testnet.com:50211"])
+	assert.Equal(t, network["node2.testnet.com:50211"], clientNetwork["node2.testnet.com:50211"])
+}
+
+func TestPredefinedNetworksWithShardAndRealm(t *testing.T) {
+	t.Parallel()
+
+	// Test mainnet
+	client := ClientForMainnetWithShardAndRealm(9, 10)
+	assert.Equal(t, uint64(9), client.GetShard())
+	assert.Equal(t, uint64(10), client.GetRealm())
+
+	// Test testnet
+	client = ClientForTestnetWithShardAndRealm(11, 12)
+	assert.Equal(t, uint64(11), client.GetShard())
+	assert.Equal(t, uint64(12), client.GetRealm())
+
+	// Test previewnet
+	client = ClientForPreviewnetWithShardAndRealm(13, 14)
+	assert.Equal(t, uint64(13), client.GetShard())
+	assert.Equal(t, uint64(14), client.GetRealm())
+}
