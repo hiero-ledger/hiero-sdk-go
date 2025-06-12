@@ -28,6 +28,8 @@ var testTransactionID TransactionID = TransactionID{
 }
 
 const testClientJSON string = `{
+	  "shard": 3,
+	  "realm": 5,
     "network": {
 		"35.237.200.180:50211": "0.0.3",
 		"35.186.191.247:50211": "0.0.4",
