@@ -5,6 +5,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/pkg/errors"
@@ -80,11 +81,19 @@ func (id *DelegatableContractID) ValidateChecksum(client *Client) error {
 }
 
 // DelegatableContractIDFromEvmAddress constructs a DelegatableContractID from a string representation of a _Solidity address
-func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (DelegatableContractID, error) {
-	temp, err := hex.DecodeString(evmAddress)
+func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (DelegatableContractID, error) {
+	// Remove 0x prefix if present
+	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
+
+	// Check if the address is the correct length (40 hex characters = 20 bytes)
+	if len(aliasEvmAddress) != 40 {
+		return DelegatableContractID{}, fmt.Errorf("input EVM address string is not the correct size")
+	}
+	temp, err := hex.DecodeString(aliasEvmAddress)
 	if err != nil {
 		return DelegatableContractID{}, err
 	}
+
 	return DelegatableContractID{
 		Shard:      shard,
 		Realm:      realm,
@@ -96,6 +105,7 @@ func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress 
 
 // DelegatableContractIDFromSolidityAddress constructs a DelegatableContractID from a string representation of a _Solidity address
 // Does not populate DelegatableContractID.EvmAddress
+// Deprecated: use DelegatableContractIDFromEvmAddress instead
 func DelegatableContractIDFromSolidityAddress(s string) (DelegatableContractID, error) {
 	shard, realm, contract, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -139,8 +149,17 @@ func (id DelegatableContractID) ToStringWithChecksum(client Client) (string, err
 }
 
 // ToSolidityAddress returns the string representation of the DelegatableContractID as a _Solidity address.
+// Deprecated: Use ToEvmAddress instead
 func (id DelegatableContractID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
+}
+
+func (id DelegatableContractID) ToEvmAddress() string {
+	if id.EvmAddress != nil {
+		return hex.EncodeToString(id.EvmAddress)
+	} else {
+		return _IdToSolidityAddress(0, 0, id.Contract)
+	}
 }
 
 func (id DelegatableContractID) _ToProtobuf() *services.ContractID {

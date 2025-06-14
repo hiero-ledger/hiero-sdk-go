@@ -8,6 +8,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
@@ -120,10 +121,43 @@ func TestUnitDelegatableContractIDToFromBytes(t *testing.T) {
 func TestUnitDelegatableContractIDFromEvmAddress(t *testing.T) {
 	t.Parallel()
 
-	id, err := DelegatableContractIDFromEvmAddress(0, 0, "0011223344556677889900112233445566778899")
+	// Test with a normal EVM address
+	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	bytes, err := hex.DecodeString(evmAddress)
 	require.NoError(t, err)
-	require.Equal(t, id.Contract, uint64(0))
-	require.Equal(t, id.EvmAddress, []byte{0x0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0x0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99})
+	id, err := DelegatableContractIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(0), id.Contract)
+	require.Equal(t, bytes, id.EvmAddress)
+
+	// Test with a different shard and realm
+	id, err = DelegatableContractIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(0), id.Contract)
+	require.Equal(t, bytes, id.EvmAddress)
+
+	// Test with a long zero address
+	evmAddress = "00000000000000000000000000000000000004d2"
+	bytes, err = hex.DecodeString(evmAddress)
+	require.NoError(t, err)
+	id, err = DelegatableContractIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(1234), id.Contract)
+	require.Nil(t, id.EvmAddress)
+
+	// Test with a different shard and realm
+	id, err = DelegatableContractIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(1234), id.Contract)
+	require.Nil(t, id.EvmAddress)
 }
 
 func TestUnitDelegatableContractIDFromSolidityAddress(t *testing.T) {
@@ -156,4 +190,35 @@ func TestUnitDelegatableContractIDChecksumError(t *testing.T) {
 
 	_, err = id.ToStringWithChecksum(*client)
 	require.Error(t, err)
+}
+
+func TestUnitDelegatableContractIDToEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a normal contract ID
+	id := DelegatableContractID{Shard: 0, Realm: 0, Contract: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	// Test with a different shard and realm
+	id = DelegatableContractID{Shard: 1, Realm: 1, Contract: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	// Test with a long zero address
+	longZeroAddress := "00000000000000000000000000000000000004d2"
+	bytes, err := hex.DecodeString(longZeroAddress)
+	id = DelegatableContractID{Shard: 1, Realm: 1, EvmAddress: bytes}
+	require.NoError(t, err)
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
+
+	// Test with a normal EVM address
+	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	bytes, err = hex.DecodeString(evmAddress)
+	id = DelegatableContractID{Shard: 0, Realm: 0, EvmAddress: bytes}
+	expected := strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	require.NoError(t, err)
+	require.Equal(t, expected, id.ToEvmAddress())
+
+	// Test with different shard and realm
+	id = DelegatableContractID{Shard: 1, Realm: 1, EvmAddress: bytes}
+	require.Equal(t, expected, id.ToEvmAddress())
 }
