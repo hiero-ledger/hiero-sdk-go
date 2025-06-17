@@ -17,7 +17,8 @@ func TestIntegrationClientCanExecuteSerializedTransactionFromAnotherClient(t *te
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	client2 := ClientForNetwork(env.Client.GetNetwork())
+	client2, err := ClientForNetworkV2(env.Client.GetNetwork())
+	require.NoError(t, err)
 	client2.SetOperator(env.OperatorID, env.OperatorKey)
 
 	tx, err := NewTransferTransaction().AddHbarTransfer(env.OperatorID, HbarFromTinybar(-1)).
@@ -51,7 +52,8 @@ func TestIntegrationClientCanFailGracefullyWhenDoesNotHaveNodeOfAnotherClient(t 
 		address: {Account: 99},
 	}
 
-	client2 := ClientForNetwork(network)
+	client2, err := ClientForNetworkV2(network)
+	require.NoError(t, err)
 	client2.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// Create a transaction with a node using original client
@@ -133,7 +135,7 @@ func TestClientInitWithMirrorNetwork(t *testing.T) {
 	assert.Equal(t, mirrorNetworkString, mirrorNetwork[0])
 	assert.NotEmpty(t, client.GetNetwork())
 
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 0, 0)
+	client, err = ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 0, 0)
 	require.NoError(t, err)
 
 	mirrorNetwork = client.GetMirrorNetwork()
@@ -154,8 +156,43 @@ func TestClientIntegrationForMirrorNetworkWithShardAndRealm(t *testing.T) {
 	// client, err = ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 5, 3)
 	// require.NoError(t, err)
 	// require.NotNil(t, client)
+	// require.Equal(t, uint64(5), client.GetShard())
+	// require.Equal(t, uint64(3), client.GetRealm())
 
 	client, err = ClientForMirrorNetworkWithShardAndRealm([]string{}, 0, 0)
 	require.Nil(t, client)
 	assert.Contains(t, err.Error(), "failed to query address book: no healthy nodes")
+}
+
+func TestClientForNetworkV2(t *testing.T) {
+	t.Parallel()
+	network := map[string]AccountID{
+		"127.0.0.1:50211": {Account: 3, Shard: 1, Realm: 2},
+		"127.0.0.1:50212": {Account: 4, Shard: 1, Realm: 2},
+		"127.0.0.1:50213": {Account: 5, Shard: 1, Realm: 2},
+	}
+	client, err := ClientForNetworkV2(network)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(1), client.GetShard())
+	assert.Equal(t, uint64(2), client.GetRealm())
+
+	network = map[string]AccountID{
+		"127.0.0.1:50211": {Account: 3, Shard: 2, Realm: 2},
+		"127.0.0.1:50212": {Account: 4, Shard: 1, Realm: 2},
+		"127.0.0.1:50213": {Account: 5, Shard: 1, Realm: 2},
+	}
+
+	client, err = ClientForNetworkV2(network)
+	require.Error(t, err)
+	assert.Equal(t, err.Error(), "network is not valid, all nodes must be in the same shard and realm")
+
+	network = map[string]AccountID{
+		"127.0.0.1:50211": {Account: 3, Shard: 1, Realm: 1},
+		"127.0.0.1:50212": {Account: 4, Shard: 1, Realm: 2},
+		"127.0.0.1:50213": {Account: 5, Shard: 1, Realm: 2},
+	}
+
+	client, err = ClientForNetworkV2(network)
+	require.Error(t, err)
+	assert.Equal(t, err.Error(), "network is not valid, all nodes must be in the same shard and realm")
 }
