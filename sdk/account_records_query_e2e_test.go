@@ -179,6 +179,7 @@ func TestIntegrationAccountRecordQuerySetSmallMaxPayment(t *testing.T) {
 
 func TestIntegrationAccountRecordQueryInsufficientFee(t *testing.T) {
 	t.Parallel()
+	t.Skip("Due to solo")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 

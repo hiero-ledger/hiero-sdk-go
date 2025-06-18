@@ -102,7 +102,7 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
               with:
                 installMirrorNode: true
-                hieroVersion: v0.61.4
+                hieroVersion: v0.62.3
 
             - name: Tests Unit
               if: success() && matrix.test-type == 'unit'
@@ -175,7 +175,7 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
               with:
                 installMirrorNode: true
-                hieroVersion: v0.61.4
+                hieroVersion: v0.62.3
 
             - name: Run Examples
               if: success()
