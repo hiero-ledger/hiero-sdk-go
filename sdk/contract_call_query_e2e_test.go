@@ -331,6 +331,7 @@ func TestIntegrationContractCallQuerySetSmallMaxPayment(t *testing.T) {
 }
 
 func TestIntegrationContractCallQueryInsufficientFee(t *testing.T) {
+	t.Skip("Due to solo")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)

@@ -177,6 +177,7 @@ func TestIntegrationAccountDeleteTransactionNoSigning(t *testing.T) {
 }
 
 func TestIntegrationAccountDeleteTransactionCannotDeleteWithPendingAirdrops(t *testing.T) {
+	t.Skip("Due to solo")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
