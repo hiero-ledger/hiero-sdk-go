@@ -60,7 +60,7 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 		env.Client = ClientForPreviewnet()
 	} else if os.Getenv("HEDERA_NETWORK") == "localhost" {
 		network := make(map[string]AccountID)
-		network["127.0.0.1:50213"] = AccountID{Account: 3}
+		network["127.0.0.1:50211"] = AccountID{Account: 3}
 		mirror := []string{"127.0.0.1:5600"}
 		env.Client = ClientForNetwork(network)
 		env.Client.SetMirrorNetwork(mirror)
