@@ -68,8 +68,8 @@ jobs:
             test-type: [unit, e2e]
 
         env:
-          OPERATOR_KEY: "9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
-          OPERATOR_ID: "0.0.1031"
+          OPERATOR_KEY: "302a300506032b6570032100b95f51a6f7aca7669da999d1f996c69c274e52a819a1ca71e620d1e4391e7c30"
+          OPERATOR_ID: "0.0.1002"
           HEDERA_NETWORK: "localhost"
 
         steps:
@@ -97,9 +97,12 @@ jobs:
             - name: Check out code into the Go module directory
               uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-            - name: Start the local node
-              if: success() && matrix.test-type == 'e2e'
-              run: npx @hashgraph/hedera-local start -d --network local --balance=100000 --network-tag=0.62.3
+            - name: Prepare Hiero Solo
+              id: solo
+              uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
+              with:
+                installMirrorNode: true
+                hieroVersion: v0.61.4
 
             - name: Tests Unit
               if: success() && matrix.test-type == 'unit'
@@ -135,8 +138,8 @@ jobs:
         needs:
             - build
         env:
-          OPERATOR_KEY: "9a07bbdbb62e24686d2a4259dc88e38438e2c7a1ba167b147ad30ac540b0a3cd"
-          OPERATOR_ID: "0.0.1031"
+          OPERATOR_KEY: "302a300506032b6570032100b95f51a6f7aca7669da999d1f996c69c274e52a819a1ca71e620d1e4391e7c30"
+          OPERATOR_ID: "0.0.1002"
           HEDERA_NETWORK: "localhost"
 
         steps:
@@ -167,9 +170,12 @@ jobs:
             - name: Install Task
               run: go install github.com/go-task/task/v3/cmd/task@v3.17.0
 
-            - name: Start the local node
-              if: success()
-              run: npx @hashgraph/hedera-local start -d --network local --balance=100000 --network-tag=0.62.3
+            - name: Prepare Hiero Solo
+              id: solo
+              uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
+              with:
+                installMirrorNode: true
+                hieroVersion: v0.61.4
 
             - name: Run Examples
               if: success()
