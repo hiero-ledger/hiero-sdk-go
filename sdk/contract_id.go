@@ -89,11 +89,19 @@ func (id *ContractID) Validate(client *Client) error {
 }
 
 // ContractIDFromEvmAddress constructs a ContractID from a string representation of an EVM address
-func ContractIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (ContractID, error) {
-	temp, err := hex.DecodeString(evmAddress)
+func ContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (ContractID, error) {
+	// Remove 0x prefix if present
+	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
+
+	// Check if the address is the correct length (40 hex characters = 20 bytes)
+	if len(aliasEvmAddress) != 40 {
+		return ContractID{}, fmt.Errorf("input EVM address string is not the correct size")
+	}
+	temp, err := hex.DecodeString(aliasEvmAddress)
 	if err != nil {
 		return ContractID{}, err
 	}
+
 	return ContractID{
 		Shard:      shard,
 		Realm:      realm,
@@ -149,8 +157,18 @@ func (id ContractID) ToStringWithChecksum(client Client) (string, error) {
 }
 
 // ToSolidityAddress returns the string representation of the ContractID as a _Solidity address.
+// Deprecated: Use ToEvmAddress instead
 func (id ContractID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
+}
+
+// ToEvmAddress
+func (id ContractID) ToEvmAddress() string {
+	if id.EvmAddress != nil {
+		return hex.EncodeToString(id.EvmAddress)
+	} else {
+		return _IdToSolidityAddress(0, 0, id.Contract)
+	}
 }
 
 // PopulateContract gets the actual `Contract` field of the `ContractId` from the Mirror Node.
