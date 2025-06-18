@@ -148,16 +148,16 @@ func TestUnitDelegatableContractIDFromEvmAddress(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), id.Shard)
 	require.Equal(t, uint64(0), id.Realm)
-	require.Equal(t, uint64(1234), id.Contract)
-	require.Nil(t, id.EvmAddress)
+	require.Equal(t, uint64(0), id.Contract)
+	require.Equal(t, bytes, id.EvmAddress)
 
 	// Test with a different shard and realm
 	id, err = DelegatableContractIDFromEvmAddress(1, 1, evmAddress)
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), id.Shard)
 	require.Equal(t, uint64(1), id.Realm)
-	require.Equal(t, uint64(1234), id.Contract)
-	require.Nil(t, id.EvmAddress)
+	require.Equal(t, uint64(0), id.Contract)
+	require.Equal(t, bytes, id.EvmAddress)
 }
 
 func TestUnitDelegatableContractIDFromSolidityAddress(t *testing.T) {

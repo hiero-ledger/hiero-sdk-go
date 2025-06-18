@@ -235,16 +235,16 @@ func TestUnitAccountIDFromEvmAddress(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), id.Shard)
 	require.Equal(t, uint64(0), id.Realm)
-	require.Equal(t, uint64(1234), id.Account)
-	require.Nil(t, id.AliasEvmAddress)
+	require.Equal(t, uint64(0), id.Account)
+	require.Equal(t, bytes, *id.AliasEvmAddress)
 
 	// Test with a different shard and realm
 	id, err = AccountIDFromEvmAddress(1, 1, evmAddress)
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), id.Shard)
 	require.Equal(t, uint64(1), id.Realm)
-	require.Equal(t, uint64(1234), id.Account)
-	require.Nil(t, id.AliasEvmAddress)
+	require.Equal(t, uint64(0), id.Account)
+	require.Equal(t, bytes, *id.AliasEvmAddress)
 }
 
 func TestUnitAccountIDToEvmAddress(t *testing.T) {
