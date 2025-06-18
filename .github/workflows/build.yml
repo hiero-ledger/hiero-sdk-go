@@ -68,8 +68,8 @@ jobs:
             test-type: [unit, e2e]
 
         env:
-          OPERATOR_KEY: "302a300506032b6570032100b95f51a6f7aca7669da999d1f996c69c274e52a819a1ca71e620d1e4391e7c30"
-          OPERATOR_ID: "0.0.1002"
+          OPERATOR_KEY: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
+          OPERATOR_ID: "0.0.2"
           HEDERA_NETWORK: "localhost"
 
         steps:
@@ -138,8 +138,8 @@ jobs:
         needs:
             - build
         env:
-          OPERATOR_KEY: "302a300506032b6570032100b95f51a6f7aca7669da999d1f996c69c274e52a819a1ca71e620d1e4391e7c30"
-          OPERATOR_ID: "0.0.1002"
+          OPERATOR_KEY: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
+          OPERATOR_ID: "0.0.2"
           HEDERA_NETWORK: "localhost"
 
         steps:
