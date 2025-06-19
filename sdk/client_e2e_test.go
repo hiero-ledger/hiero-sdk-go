@@ -17,7 +17,8 @@ func TestIntegrationClientCanExecuteSerializedTransactionFromAnotherClient(t *te
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	client2 := ClientForNetwork(env.Client.GetNetwork())
+	client2, err := ClientForNetworkV2(env.Client.GetNetwork())
+	require.NoError(t, err)
 	client2.SetOperator(env.OperatorID, env.OperatorKey)
 
 	tx, err := NewTransferTransaction().AddHbarTransfer(env.OperatorID, HbarFromTinybar(-1)).
@@ -51,7 +52,8 @@ func TestIntegrationClientCanFailGracefullyWhenDoesNotHaveNodeOfAnotherClient(t 
 		address: {Account: 99},
 	}
 
-	client2 := ClientForNetwork(network)
+	client2, err := ClientForNetworkV2(network)
+	require.NoError(t, err)
 	client2.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// Create a transaction with a node using original client
@@ -78,7 +80,7 @@ func DisabledTestIntegrationClientPingAllBadNetwork(t *testing.T) { // nolint
 	netwrk := _NewNetwork()
 	netwrk.SetNetwork(env.Client.GetNetwork())
 
-	tempClient := _NewClient(netwrk, env.Client.GetMirrorNetwork(), env.Client.GetLedgerID(), true)
+	tempClient := _NewClient(netwrk, env.Client.GetMirrorNetwork(), env.Client.GetLedgerID(), true, 0, 0)
 	tempClient.SetOperator(env.OperatorID, env.OperatorKey)
 
 	tempClient.SetMaxNodeAttempts(1)
@@ -133,7 +135,7 @@ func TestClientInitWithMirrorNetwork(t *testing.T) {
 	assert.Equal(t, mirrorNetworkString, mirrorNetwork[0])
 	assert.NotEmpty(t, client.GetNetwork())
 
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 0, 0)
+	client, err = ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 0, 0)
 	require.NoError(t, err)
 
 	mirrorNetwork = client.GetMirrorNetwork()
@@ -142,20 +144,22 @@ func TestClientInitWithMirrorNetwork(t *testing.T) {
 	assert.NotEmpty(t, client.GetNetwork())
 }
 
-func TestClientForMirrorNetworkWithRealmAndShard(t *testing.T) {
+func TestClientIntegrationForMirrorNetworkWithShardAndRealm(t *testing.T) {
 	t.Parallel()
 
 	mirrorNetworkString := "testnet.mirrornode.hedera.com:443"
-	client, err := ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 0, 0)
+	client, err := ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 0, 0)
 	require.NoError(t, err)
 	require.NotNil(t, client)
 
 	// TODO enable when we have non-zero realm and shard env
-	// client, err = ClientForMirrorNetworkWithRealmAndShard([]string{mirrorNetworkString}, 5, 3)
+	// client, err = ClientForMirrorNetworkWithShardAndRealm([]string{mirrorNetworkString}, 5, 3)
 	// require.NoError(t, err)
 	// require.NotNil(t, client)
+	// require.Equal(t, uint64(5), client.GetShard())
+	// require.Equal(t, uint64(3), client.GetRealm())
 
-	client, err = ClientForMirrorNetworkWithRealmAndShard([]string{}, 0, 0)
+	client, err = ClientForMirrorNetworkWithShardAndRealm([]string{}, 0, 0)
 	require.Nil(t, client)
 	assert.Contains(t, err.Error(), "failed to query address book: no healthy nodes")
 }
