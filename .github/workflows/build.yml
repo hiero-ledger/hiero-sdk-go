@@ -98,6 +98,7 @@ jobs:
               uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
             - name: Prepare Hiero Solo
+              if: success() && matrix.test-type == 'e2e'
               id: solo
               uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
               with:
