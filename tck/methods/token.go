@@ -991,3 +991,71 @@ func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCanc
 		Status: receipt.Status.String(),
 	}, nil
 }
+
+// RejectToken jRPC method for rejectToken
+func (t *TokenService) RejectToken(_ context.Context, params param.RejectTokenParams) (*response.TokenResponse, error) {
+	transaction := hiero.NewTokenRejectTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	// Set owner ID if present
+	if err := utils.SetAccountIDIfPresent(params.OwnerId, transaction.SetOwnerID); err != nil {
+		return nil, err
+	}
+
+	// Handle token IDs and serial numbers
+	if params.TokenIds != nil && len(*params.TokenIds) > 0 {
+		tokenIds := *params.TokenIds
+
+		// If no serial numbers, add all token IDs as fungible tokens
+		if params.SerialNumbers == nil || len(*params.SerialNumbers) == 0 {
+			for _, tokenIdStr := range tokenIds {
+				tokenId, err := hiero.TokenIDFromString(tokenIdStr)
+				if err != nil {
+					return nil, err
+				}
+				transaction.AddTokenID(tokenId)
+			}
+		} else {
+			// NFT token rejecting - add specific NFTs
+			serialNumbers := *params.SerialNumbers
+			for _, tokenIdStr := range tokenIds {
+				tokenId, err := hiero.TokenIDFromString(tokenIdStr)
+				if err != nil {
+					return nil, err
+				}
+
+				for _, serialNumberStr := range serialNumbers {
+					serialNumber, err := strconv.ParseInt(serialNumberStr, 10, 64)
+					if err != nil {
+						return nil, fmt.Errorf("failed to parse serial number: %w", err)
+					}
+
+					nftID := hiero.NftID{
+						TokenID:      tokenId,
+						SerialNumber: serialNumber,
+					}
+					transaction.AddNftID(nftID)
+				}
+			}
+		}
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TokenResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}

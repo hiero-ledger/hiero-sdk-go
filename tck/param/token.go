@@ -126,3 +126,10 @@ type ClaimTokenParams struct {
 	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
+
+type RejectTokenParams struct {
+	OwnerId                 *string                  `json:"ownerId,omitempty"`
+	TokenIds                *[]string                `json:"tokenIds,omitempty"`
+	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}
