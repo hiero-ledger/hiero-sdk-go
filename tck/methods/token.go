@@ -918,56 +918,61 @@ func (t *TokenService) ClaimToken(_ context.Context, params param.ClaimTokenPara
 
 // CancelAirdrop jRPC method for cancelAirdrop
 func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCancelTokenParams) (*response.TokenResponse, error) {
-	if params.SenderAccountId == nil || params.ReceiverAccountId == nil || params.TokenId == nil {
-		return nil, response.NewInternalError("senderAccountId, receiverAccountId, and tokenId are required")
-	}
-
 	transaction := hiero.NewTokenCancelAirdropTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
-	tokenID, err := hiero.TokenIDFromString(*params.TokenId)
-	if err != nil {
-		return nil, err
+	if params.PendingAirdrops == nil {
+		return nil, response.NewInternalError("pendingAirdrops is required")
 	}
 
-	senderID, err := hiero.AccountIDFromString(*params.SenderAccountId)
-	if err != nil {
-		return nil, err
-	}
+	for _, pendingAirdrop := range *params.PendingAirdrops {
+		if pendingAirdrop.SenderAccountId == nil || pendingAirdrop.ReceiverAccountId == nil || pendingAirdrop.TokenId == nil {
+			return nil, response.NewInternalError("senderAccountId, receiverAccountId, and tokenId are required for each pending airdrop")
+		}
 
-	receiverID, err := hiero.AccountIDFromString(*params.ReceiverAccountId)
-	if err != nil {
-		return nil, err
-	}
+		senderID, err := hiero.AccountIDFromString(*pendingAirdrop.SenderAccountId)
+		if err != nil {
+			return nil, err
+		}
 
-	// NFT token claiming
-	if params.SerialNumbers != nil && len(*params.SerialNumbers) > 0 {
-		for _, serialNumber := range *params.SerialNumbers {
-			fmt.Println("serialNumber", serialNumber)
-			serial, err := strconv.ParseInt(serialNumber, 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse serial number: %w", err)
+		receiverID, err := hiero.AccountIDFromString(*pendingAirdrop.ReceiverAccountId)
+		if err != nil {
+			return nil, err
+		}
+
+		tokenID, err := hiero.TokenIDFromString(*pendingAirdrop.TokenId)
+		if err != nil {
+			return nil, err
+		}
+
+		// NFT token canceling
+		if pendingAirdrop.SerialNumbers != nil && len(*pendingAirdrop.SerialNumbers) > 0 {
+			for _, serialNumberStr := range *pendingAirdrop.SerialNumbers {
+				serialNumber, err := strconv.ParseInt(serialNumberStr, 10, 64)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse serial number: %w", err)
+				}
+
+				nftID := hiero.NftID{
+					TokenID:      tokenID,
+					SerialNumber: serialNumber,
+				}
+
+				pendingAirdropID := &hiero.PendingAirdropId{}
+				pendingAirdropID.SetSender(senderID)
+				pendingAirdropID.SetReceiver(receiverID)
+				pendingAirdropID.SetNftID(nftID)
+
+				transaction.AddPendingAirdropId(*pendingAirdropID)
 			}
-
-			nftID := hiero.NftID{
-				TokenID:      tokenID,
-				SerialNumber: serial,
-			}
-
+		} else {
+			// Fungible token canceling
 			pendingAirdropID := &hiero.PendingAirdropId{}
 			pendingAirdropID.SetSender(senderID)
 			pendingAirdropID.SetReceiver(receiverID)
-			pendingAirdropID.SetNftID(nftID)
+			pendingAirdropID.SetTokenID(tokenID)
 
 			transaction.AddPendingAirdropId(*pendingAirdropID)
 		}
-	} else {
-		// Fungible token claiming
-		pendingAirdropID := &hiero.PendingAirdropId{}
-		pendingAirdropID.SetSender(senderID)
-		pendingAirdropID.SetReceiver(receiverID)
-		pendingAirdropID.SetTokenID(tokenID)
-
-		transaction.AddPendingAirdropId(*pendingAirdropID)
 	}
 
 	if params.CommonTransactionParams != nil {
@@ -981,7 +986,6 @@ func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCanc
 	if err != nil {
 		return nil, err
 	}
-
 	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
 	if err != nil {
 		return nil, err

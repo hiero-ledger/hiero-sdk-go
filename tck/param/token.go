@@ -111,14 +111,6 @@ type AirdropParams struct {
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
 
-type AirdropCancelTokenParams struct {
-	SenderAccountId         *string                  `json:"senderAccountId,omitempty"`
-	ReceiverAccountId       *string                  `json:"receiverAccountId,omitempty"`
-	TokenId                 *string                  `json:"tokenId,omitempty"`
-	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
-}
-
 type ClaimTokenParams struct {
 	SenderAccountId         *string                  `json:"senderAccountId,omitempty"`
 	ReceiverAccountId       *string                  `json:"receiverAccountId,omitempty"`
@@ -127,9 +119,14 @@ type ClaimTokenParams struct {
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
 
-type RejectTokenParams struct {
-	OwnerId                 *string                  `json:"ownerId,omitempty"`
-	TokenIds                *[]string                `json:"tokenIds,omitempty"`
-	SerialNumbers           *[]string                `json:"serialNumbers,omitempty"`
+type PendingAirdropParams struct {
+	SenderAccountId   *string   `json:"senderAccountId,omitempty"`
+	ReceiverAccountId *string   `json:"receiverAccountId,omitempty"`
+	TokenId           *string   `json:"tokenId,omitempty"`
+	SerialNumbers     *[]string `json:"serialNumbers,omitempty"`
+}
+
+type AirdropCancelTokenParams struct {
+	PendingAirdrops         *[]PendingAirdropParams  `json:"pendingAirdrops,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
