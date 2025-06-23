@@ -12,8 +12,8 @@ import (
 
 	"crypto/sha512"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk/bip39"
 	"github.com/pkg/errors"
-	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/text/unicode/norm"
 )
