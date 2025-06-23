@@ -14,9 +14,15 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk/bip39/wordlists"
 	"golang.org/x/crypto/pbkdf2"
+)
+
+var (
+	validateErr      error
+	englishValidated sync.Once
 )
 
 var (
@@ -89,18 +95,25 @@ func GetWordIndex(word string) (int, bool) {
 	return idx, ok
 }
 
+func validateEnglishAndSetWordList() {
+	validateErr = wordlists.ValidateEnglish()
+	if validateErr != nil {
+		return
+	}
+	SetWordList(wordlists.English)
+}
+
 // NewEntropy will create random entropy bytes
 // so long as the requested size bitSize is an appropriate size.
 //
 // bitSize has to be a multiple 32 and be within the inclusive range of {128, 256}
 func NewEntropy(bitSize int) ([]byte, error) {
-	err := wordlists.ValidateEnglish()
-	if err != nil {
-		return nil, err
+	englishValidated.Do(validateEnglishAndSetWordList)
+	if validateErr != nil {
+		return nil, validateErr
 	}
-	SetWordList(wordlists.English)
 
-	err = validateEntropyBitSize(bitSize)
+	err := validateEntropyBitSize(bitSize)
 	if err != nil {
 		return nil, err
 	}
