@@ -1,4 +1,6 @@
-package bip39
+package hiero
+
+// SPDX-License-Identifier: Apache-2.0
 
 // Package bip39 is the Golang implementation of the BIP39 spec.
 //
@@ -16,7 +18,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk/bip39/wordlists"
 	"golang.org/x/crypto/pbkdf2"
 )
 
@@ -76,7 +77,7 @@ var (
 
 // SetWordList sets the list of words to use for mnemonics. Currently the list
 // that is set is used package-wide.
-func SetWordList(list []string) {
+func setWordList(list []string) {
 	wordList = list
 	wordMap = map[string]int{}
 	for i, v := range wordList {
@@ -96,11 +97,11 @@ func GetWordIndex(word string) (int, bool) {
 }
 
 func validateEnglishAndSetWordList() {
-	validateErr = wordlists.ValidateEnglish()
+	validateErr = ValidateEnglish()
 	if validateErr != nil {
 		return
 	}
-	SetWordList(wordlists.English)
+	setWordList(English)
 }
 
 // NewEntropy will create random entropy bytes
@@ -108,11 +109,6 @@ func validateEnglishAndSetWordList() {
 //
 // bitSize has to be a multiple 32 and be within the inclusive range of {128, 256}
 func NewEntropy(bitSize int) ([]byte, error) {
-	englishValidated.Do(validateEnglishAndSetWordList)
-	if validateErr != nil {
-		return nil, validateErr
-	}
-
 	err := validateEntropyBitSize(bitSize)
 	if err != nil {
 		return nil, err
@@ -127,6 +123,10 @@ func NewEntropy(bitSize int) ([]byte, error) {
 // and returns the input entropy used to generate the given mnemonic.
 // An error is returned if the given mnemonic is invalid.
 func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
+	englishValidated.Do(validateEnglishAndSetWordList)
+	if validateErr != nil {
+		return nil, validateErr
+	}
 	mnemonicSlice, isValid := splitMnemonicWords(mnemonic)
 	if !isValid {
 		return nil, ErrInvalidMnemonic
@@ -176,7 +176,12 @@ func EntropyFromMnemonic(mnemonic string) ([]byte, error) {
 // NewMnemonic will return a string consisting of the mnemonic words for
 // the given entropy.
 // If the provide entropy is invalid, an error will be returned.
-func NewMnemonic(entropy []byte) (string, error) {
+func NewMnemonicBip(entropy []byte) (string, error) {
+	englishValidated.Do(validateEnglishAndSetWordList)
+	if validateErr != nil {
+		return "", validateErr
+	}
+
 	// Compute some lengths for convenience.
 	entropyBitLength := len(entropy) * 8
 	checksumBitLength := entropyBitLength / 32
@@ -224,6 +229,11 @@ func NewMnemonic(entropy []byte) (string, error) {
 // suitable for creating another mnemonic.
 // An error is returned if the mnemonic is invalid.
 func MnemonicToByteArray(mnemonic string, raw ...bool) ([]byte, error) {
+	englishValidated.Do(validateEnglishAndSetWordList)
+	if validateErr != nil {
+		return nil, validateErr
+	}
+
 	var (
 		mnemonicSlice    = strings.Split(mnemonic, " ")
 		entropyBitSize   = len(mnemonicSlice) * 11

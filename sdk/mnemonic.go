@@ -12,7 +12,6 @@ import (
 
 	"crypto/sha512"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2/sdk/bip39"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/pbkdf2"
 	"golang.org/x/text/unicode/norm"
@@ -29,7 +28,7 @@ func (m Mnemonic) ToPrivateKey(passPhrase string) (PrivateKey, error) {
 
 // GenerateMnemonic generates a random 24-word mnemonic
 func GenerateMnemonic24() (Mnemonic, error) {
-	entropy, err := bip39.NewEntropy(256)
+	entropy, err := NewEntropy(256)
 
 	if err != nil {
 		// It is only possible for there to be an error if the operating
@@ -37,7 +36,7 @@ func GenerateMnemonic24() (Mnemonic, error) {
 		return Mnemonic{}, fmt.Errorf("could not retrieve random bytes from the operating system")
 	}
 
-	mnemonic, err := bip39.NewMnemonic(entropy)
+	mnemonic, err := NewMnemonicBip(entropy)
 
 	// Note that this should never actually fail since it is being provided by library generated mnemonic
 	if err != nil {
@@ -49,7 +48,7 @@ func GenerateMnemonic24() (Mnemonic, error) {
 
 // GenerateMnemonic12 generates a random 12-word mnemonic
 func GenerateMnemonic12() (Mnemonic, error) {
-	entropy, err := bip39.NewEntropy(128)
+	entropy, err := NewEntropy(128)
 
 	if err != nil {
 		// It is only possible for there to be an error if the operating
@@ -57,7 +56,7 @@ func GenerateMnemonic12() (Mnemonic, error) {
 		return Mnemonic{}, fmt.Errorf("could not retrieve random bytes from the operating system")
 	}
 
-	mnemonic, err := bip39.NewMnemonic(entropy)
+	mnemonic, err := NewMnemonicBip(entropy)
 
 	// Note that this should never actually fail since it is being provided by library generated mnemonic
 	if err != nil {
@@ -95,7 +94,7 @@ func NewMnemonic(words []string) (Mnemonic, error) {
 			return Mnemonic{
 				words: joinedString,
 			}._LegacyValidate()
-		} else if bip39.IsMnemonicValid(joinedString) {
+		} else if IsMnemonicValid(joinedString) {
 			return Mnemonic{
 				words: joinedString,
 			}, nil
@@ -146,9 +145,9 @@ func (m Mnemonic) _Indices() ([]int, error) {
 		}
 	} else if len(temp) == 24 {
 		for _, mnemonicString := range strings.Split(m.words, " ") {
-			t, check := bip39.GetWordIndex(mnemonicString)
+			t, check := GetWordIndex(mnemonicString)
 			if !check {
-				return make([]int, 0), bip39.ErrInvalidMnemonic
+				return make([]int, 0), ErrInvalidMnemonic
 			}
 			indices = append(indices, t)
 		}
@@ -220,9 +219,9 @@ func (m Mnemonic) _ToLegacyEntropy2() ([]byte, error) {
 	}
 
 	for index, word := range indices {
-		nds, check := bip39.GetWordIndex(word)
+		nds, check := GetWordIndex(word)
 		if !check {
-			return make([]byte, 0), bip39.ErrInvalidMnemonic
+			return make([]byte, 0), ErrInvalidMnemonic
 		}
 
 		for i := 0; i < 11; i++ {
