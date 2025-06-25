@@ -104,6 +104,10 @@ func ClientForNetworkV2(network map[string]AccountID) (*Client, error) {
 	var shard uint64
 	var realm uint64
 
+	if len(network) == 0 {
+		return nil, errors.New("network is empty")
+	}
+
 	for _, accountID := range network {
 		if shard == 0 {
 			shard = accountID.Shard
@@ -113,6 +117,7 @@ func ClientForNetworkV2(network map[string]AccountID) (*Client, error) {
 		}
 		if shard != accountID.Shard || realm != accountID.Realm {
 			isValidNetwork = false
+			break
 		}
 	}
 

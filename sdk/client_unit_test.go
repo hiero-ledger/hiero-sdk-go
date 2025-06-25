@@ -364,4 +364,9 @@ func TestUnitClientForNetworkV2(t *testing.T) {
 	client, err = ClientForNetworkV2(network)
 	require.Error(t, err)
 	assert.Equal(t, err.Error(), "network is not valid, all nodes must be in the same shard and realm")
+
+	network = make(map[string]AccountID)
+	client, err = ClientForNetworkV2(network)
+	require.Error(t, err)
+	assert.Equal(t, err.Error(), "network is empty")
 }
