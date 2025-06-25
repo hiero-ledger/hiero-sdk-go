@@ -324,6 +324,8 @@ func TestUnitNodeUpdateTransactionFromToBytes(t *testing.T) {
 	txFromBytes, err := TransactionFromBytes(txBytes)
 	require.NoError(t, err)
 
+	tx.buildProtoBody()
+	txFromBytes.(NodeUpdateTransaction).buildProtoBody()
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeUpdateTransaction).buildProtoBody())
 }
 
@@ -417,4 +419,27 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 
 	proto2 := transaction2.build().GetNodeUpdate()
 	assert.Nil(t, proto2.GrpcProxyEndpoint)
+}
+
+func TestUnitNodeUpdateTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	transaction, err := NewNodeUpdateTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+	require.NoError(t, err)
+
+	require.Error(t, transaction.freezeError)
+	assert.Equal(t, "nodeID is required", transaction.freezeError.Error())
+
+	client, err := _NewMockClient()
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	require.NoError(t, err)
+
+	_, err = transaction.Execute(client)
+	require.Error(t, err)
 }
