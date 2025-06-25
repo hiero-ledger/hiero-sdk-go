@@ -286,20 +286,12 @@ func ClientFromConfigWithoutScheduleNetworkUpdate(jsonBytes []byte) (*Client, er
 func clientFromConfig(jsonBytes []byte, shouldScheduleNetworkUpdate bool) (*Client, error) {
 	var clientConfig _ClientConfig
 	var client *Client
-	var shard uint64
-	var realm uint64
 
 	err := json.Unmarshal(jsonBytes, &clientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	if clientConfig.Shard != 0 {
-		shard = clientConfig.Shard
-	}
-	if clientConfig.Realm != 0 {
-		realm = clientConfig.Realm
-	}
 	network := _NewNetwork()
 	networkAddresses := make(map[string]AccountID)
 
@@ -347,20 +339,20 @@ func clientFromConfig(jsonBytes []byte, shouldScheduleNetworkUpdate bool) (*Clie
 				return client, errors.New("mirrorNetwork is expected to be either string or an array of strings")
 			}
 		}
-		client = _NewClient(network, arr, nil, shouldScheduleNetworkUpdate, shard, realm)
+		client = _NewClient(network, arr, nil, shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 	case string:
 		if len(mirror) > 0 {
 			switch mirror {
 			case string(NetworkNameMainnet):
-				client = _NewClient(network, mainnetMirror, NewLedgerIDMainnet(), shouldScheduleNetworkUpdate, shard, realm)
+				client = _NewClient(network, mainnetMirror, NewLedgerIDMainnet(), shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 			case string(NetworkNameTestnet):
-				client = _NewClient(network, testnetMirror, NewLedgerIDTestnet(), shouldScheduleNetworkUpdate, shard, realm)
+				client = _NewClient(network, testnetMirror, NewLedgerIDTestnet(), shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 			case string(NetworkNamePreviewnet):
-				client = _NewClient(network, previewnetMirror, NewLedgerIDPreviewnet(), shouldScheduleNetworkUpdate, shard, realm)
+				client = _NewClient(network, previewnetMirror, NewLedgerIDPreviewnet(), shouldScheduleNetworkUpdate, clientConfig.Shard, clientConfig.Realm)
 			}
 		}
 	case nil:
-		client = _NewClient(network, []string{}, nil, true, shard, realm)
+		client = _NewClient(network, []string{}, nil, true, clientConfig.Shard, clientConfig.Realm)
 	default:
 		return client, errors.New("mirrorNetwork is expected to be a string, an array of strings or nil")
 	}
