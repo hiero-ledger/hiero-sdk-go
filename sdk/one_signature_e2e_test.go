@@ -28,7 +28,9 @@ func TestIntegrationOneSignature(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	client := ClientForNetwork(env.Client.GetNetwork()).SetOperatorWith(env.OriginalOperatorID, env.OriginalOperatorKey, signingServiceTwo)
+	client, err := ClientForNetworkV2(env.Client.GetNetwork())
+	require.NoError(t, err)
+	client.SetOperatorWith(env.OriginalOperatorID, env.OriginalOperatorKey, signingServiceTwo)
 	response, err := NewTransferTransaction().
 		AddHbarTransfer(env.OriginalOperatorID, NewHbar(-1)).
 		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1)).

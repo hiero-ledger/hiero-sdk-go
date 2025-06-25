@@ -34,7 +34,7 @@ func FileIDForExchangeRate() FileID {
 }
 
 // GetAddressBookFileIDFor returns the public node address book FileID for the given realm and shard.
-func GetAddressBookFileIDFor(realm uint64, shard uint64) FileID {
+func GetAddressBookFileIDFor(shard uint64, realm uint64) FileID {
 	return FileID{
 		Shard: shard,
 		Realm: realm,
@@ -43,7 +43,7 @@ func GetAddressBookFileIDFor(realm uint64, shard uint64) FileID {
 }
 
 // GetFeeScheduleFileIDFor returns the fee schedule FileID for the given realm and shard.
-func GetFeeScheduleFileIDFor(realm uint64, shard uint64) FileID {
+func GetFeeScheduleFileIDFor(shard uint64, realm uint64) FileID {
 	return FileID{
 		Shard: shard,
 		Realm: realm,
@@ -52,7 +52,7 @@ func GetFeeScheduleFileIDFor(realm uint64, shard uint64) FileID {
 }
 
 // GetExchangeRatesFileIDFor returns the exchange rates FileID for the given realm and shard.
-func GetExchangeRatesFileIDFor(realm uint64, shard uint64) FileID {
+func GetExchangeRatesFileIDFor(shard uint64, realm uint64) FileID {
 	return FileID{
 		Shard: shard,
 		Realm: realm,

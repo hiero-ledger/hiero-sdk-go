@@ -19,7 +19,8 @@ func TestIntegrationCanExecuteNodeCreateTransaction(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
 	network["localhost:50211"] = AccountID{Account: 3}
-	client := ClientForNetwork(network)
+	client, err := ClientForNetworkV2(network)
+	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
 	client.SetMirrorNetwork(mirror)
 

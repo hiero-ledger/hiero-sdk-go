@@ -71,7 +71,7 @@ func TestUnitGetAddressBookFileIDFor(t *testing.T) {
 	assert.Equal(t, uint64(102), fileID.File)
 	assert.Equal(t, FileIDForAddressBook(), fileID)
 
-	fileID = GetAddressBookFileIDFor(5, 3)
+	fileID = GetAddressBookFileIDFor(3, 5)
 	assert.Equal(t, uint64(3), fileID.Shard)
 	assert.Equal(t, uint64(5), fileID.Realm)
 	assert.Equal(t, uint64(102), fileID.File)
@@ -86,7 +86,7 @@ func TestUnitGetFeeScheduleFileIDFor(t *testing.T) {
 	assert.Equal(t, uint64(111), fileID.File)
 	assert.Equal(t, FileIDForFeeSchedule(), fileID)
 
-	fileID = GetFeeScheduleFileIDFor(5, 3)
+	fileID = GetFeeScheduleFileIDFor(3, 5)
 	assert.Equal(t, uint64(3), fileID.Shard)
 	assert.Equal(t, uint64(5), fileID.Realm)
 	assert.Equal(t, uint64(111), fileID.File)
@@ -101,7 +101,7 @@ func TestUnitGetExchangeRatesFileIDFor(t *testing.T) {
 	assert.Equal(t, uint64(112), fileID.File)
 	assert.Equal(t, FileIDForExchangeRate(), fileID)
 
-	fileID = GetExchangeRatesFileIDFor(5, 3)
+	fileID = GetExchangeRatesFileIDFor(3, 5)
 	assert.Equal(t, uint64(3), fileID.Shard)
 	assert.Equal(t, uint64(5), fileID.Realm)
 	assert.Equal(t, uint64(112), fileID.File)
