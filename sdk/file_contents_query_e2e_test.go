@@ -209,7 +209,7 @@ func TestIntegrationFileContentsQuerySetSmallMaxPayment(t *testing.T) {
 
 func TestIntegrationFileContentsQueryInsufficientFee(t *testing.T) {
 	t.Parallel()
-	t.Skip("Due to solo")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
