@@ -127,10 +127,6 @@ jobs:
                 token: ${{ secrets.CODECOV_TOKEN }}
                 files: ./e2e.out
 
-            - name: Stop the local node
-              if: matrix.test-type == 'e2e'
-              run: npx @hashgraph/hedera-local stop
-
     run-examples:
         name: Run Examples
         if: success()
@@ -181,9 +177,6 @@ jobs:
             - name: Run Examples
               if: success()
               run: task run-examples
-
-            - name: Stop the local node
-              run: npx @hashgraph/hedera-local stop
 
     build-test-tck:
         name: Build and Test TCK

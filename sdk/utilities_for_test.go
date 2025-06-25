@@ -28,6 +28,8 @@ var testTransactionID TransactionID = TransactionID{
 }
 
 const testClientJSON string = `{
+	  "shard": 3,
+	  "realm": 5,
     "network": {
 		"35.237.200.180:50211": "0.0.3",
 		"35.186.191.247:50211": "0.0.4",
@@ -60,9 +62,10 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 		env.Client = ClientForPreviewnet()
 	} else if os.Getenv("HEDERA_NETWORK") == "localhost" {
 		network := make(map[string]AccountID)
-		network["localhost:50211"] = AccountID{Account: 3}
-		mirror := []string{"localhost:5600"}
-		env.Client = ClientForNetwork(network)
+		network["127.0.0.1:50211"] = AccountID{Account: 3}
+		mirror := []string{"127.0.0.1:5600"}
+		env.Client, err = ClientForNetworkV2(network)
+		require.NoError(t, err)
 		env.Client.SetMirrorNetwork(mirror)
 	} else if os.Getenv("HEDERA_NETWORK") == "testnet" {
 		env.Client = ClientForTestnet()
@@ -173,7 +176,10 @@ func _NewMockClient() (*Client, error) {
 	var net = make(map[string]AccountID)
 	net["nonexistent-testnet:56747"] = AccountID{Account: 3}
 
-	client := ClientForNetwork(net)
+	client, err := ClientForNetworkV2(net)
+	if err != nil {
+		return nil, err
+	}
 	defaultNetwork := []string{"nonexistent-mirror-testnet:443"}
 	client.SetMirrorNetwork(defaultNetwork)
 	client.SetOperator(AccountID{Account: 2}, privateKey)
