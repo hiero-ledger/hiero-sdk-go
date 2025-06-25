@@ -106,7 +106,7 @@ jobs:
             - name: Set Env variables
               if: success() && matrix.test-type == 'e2e'
               run: |
-                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
+                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
                 echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
 
 
@@ -179,7 +179,7 @@ jobs:
 
             - name: Set Env variables
               run: |
-                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
+                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
                 echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
 
             - name: Run Examples
