@@ -324,6 +324,8 @@ func TestUnitNodeUpdateTransactionFromToBytes(t *testing.T) {
 	txFromBytes, err := TransactionFromBytes(txBytes)
 	require.NoError(t, err)
 
+	tx.buildProtoBody()
+	txFromBytes.(NodeUpdateTransaction).buildProtoBody()
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeUpdateTransaction).buildProtoBody())
 }
 

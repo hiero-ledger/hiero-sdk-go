@@ -51,9 +51,9 @@ func NewNodeUpdateTransaction() *NodeUpdateTransaction {
 }
 
 func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], pb *services.TransactionBody) NodeUpdateTransaction {
-	adminKey, err := _KeyFromProtobuf(pb.GetNodeUpdate().GetAdminKey())
-	if err != nil {
-		return NodeUpdateTransaction{}
+	var adminKey Key
+	if pb.GetNodeUpdate().GetAdminKey() != nil {
+		adminKey, _ = _KeyFromProtobuf(pb.GetNodeUpdate().GetAdminKey())
 	}
 
 	accountID := _AccountIDFromProtobuf(pb.GetNodeUpdate().GetAccountId())
@@ -307,8 +307,10 @@ func (tx NodeUpdateTransaction) buildScheduled() (*services.SchedulableTransacti
 }
 
 func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransactionBody {
-	body := &services.NodeUpdateTransactionBody{
-		Description: wrapperspb.String(tx.description),
+	body := &services.NodeUpdateTransactionBody{}
+
+	if tx.description != "" {
+		body.Description = wrapperspb.String(tx.description)
 	}
 
 	if tx.nodeID != nil {
