@@ -51,7 +51,10 @@ func NewNodeCreateTransaction() *NodeCreateTransaction {
 }
 
 func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], pb *services.TransactionBody) NodeCreateTransaction {
-	adminKey, _ := _KeyFromProtobuf(pb.GetNodeCreate().GetAdminKey())
+	var adminKey Key
+	if pb.GetNodeCreate().GetAdminKey() != nil {
+		adminKey, _ = _KeyFromProtobuf(pb.GetNodeCreate().GetAdminKey())
+	}
 
 	accountID := _AccountIDFromProtobuf(pb.GetNodeCreate().GetAccountId())
 	gossipEndpoints := make([]Endpoint, 0)
