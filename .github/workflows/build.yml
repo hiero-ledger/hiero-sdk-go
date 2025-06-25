@@ -68,8 +68,6 @@ jobs:
             test-type: [unit, e2e]
 
         env:
-          OPERATOR_KEY: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
-          OPERATOR_ID: "0.0.2"
           HEDERA_NETWORK: "localhost"
 
         steps:
@@ -105,6 +103,13 @@ jobs:
                 installMirrorNode: true
                 hieroVersion: v0.62.3
 
+            - name: Set Env variables
+              if: success() && matrix.test-type == 'e2e'
+              run: |
+                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
+                echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
+
+
             - name: Tests Unit
               if: success() && matrix.test-type == 'unit'
               run: go test ./sdk -tags="unit" -timeout 9999s -v -coverprofile=unit.out -covermode=atomic -race
@@ -135,8 +140,6 @@ jobs:
         needs:
             - build
         env:
-          OPERATOR_KEY: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
-          OPERATOR_ID: "0.0.2"
           HEDERA_NETWORK: "localhost"
 
         steps:
@@ -173,6 +176,11 @@ jobs:
               with:
                 installMirrorNode: true
                 hieroVersion: v0.62.3
+
+            - name: Set Env variables
+              run: |
+                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
+                echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
 
             - name: Run Examples
               if: success()
