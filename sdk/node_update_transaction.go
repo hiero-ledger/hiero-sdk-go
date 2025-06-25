@@ -2,6 +2,7 @@ package hiero
 
 import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -30,7 +31,7 @@ import (
  */
 type NodeUpdateTransaction struct {
 	*Transaction[*NodeUpdateTransaction]
-	nodeID               uint64
+	nodeID               *uint64
 	accountID            *AccountID
 	description          string
 	gossipEndpoints      []Endpoint
@@ -92,8 +93,9 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 		declineReward = &declineRewardValue
 	}
 
+	nodeID := pb.GetNodeUpdate().GetNodeId()
 	nodeUpdateTransaction := NodeUpdateTransaction{
-		nodeID:               pb.GetNodeUpdate().GetNodeId(),
+		nodeID:               &nodeID,
 		accountID:            accountID,
 		description:          description,
 		gossipEndpoints:      gossipEndpoints,
@@ -112,13 +114,16 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 
 // GetNodeID he consensus node identifier in the network state.
 func (tx *NodeUpdateTransaction) GetNodeID() uint64 {
-	return tx.nodeID
+	if tx.nodeID == nil {
+		return 0
+	}
+	return *tx.nodeID
 }
 
 // SetNodeID the consensus node identifier in the network state.
 func (tx *NodeUpdateTransaction) SetNodeID(nodeID uint64) *NodeUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.nodeID = nodeID
+	tx.nodeID = &nodeID
 	return tx
 }
 
@@ -304,7 +309,12 @@ func (tx NodeUpdateTransaction) buildScheduled() (*services.SchedulableTransacti
 func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransactionBody {
 	body := &services.NodeUpdateTransactionBody{
 		Description: wrapperspb.String(tx.description),
-		NodeId:      tx.nodeID,
+	}
+
+	if tx.nodeID != nil {
+		body.NodeId = *tx.nodeID
+	} else {
+		tx.freezeError = errors.New("nodeID is required")
 	}
 
 	if tx.accountID != nil {
