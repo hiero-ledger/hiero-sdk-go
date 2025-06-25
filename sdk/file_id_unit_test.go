@@ -106,3 +106,34 @@ func TestUnitGetExchangeRatesFileIDFor(t *testing.T) {
 	assert.Equal(t, uint64(5), fileID.Realm)
 	assert.Equal(t, uint64(112), fileID.File)
 }
+
+func TestUnitFileIDFromEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a long zero address representing file 1234
+	evmAddress := "00000000000000000000000000000000000004d2"
+	id, err := FileIDFromEvmAddress(0, 0, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(1234), id.File)
+
+	// Test with a different shard and realm
+	id, err = FileIDFromEvmAddress(1, 1, evmAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(1234), id.File)
+}
+
+func TestUnitFileIDToEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a normal file ID
+	id := FileID{Shard: 0, Realm: 0, File: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+
+	// Test with a different shard and realm
+	id = FileID{Shard: 1, Realm: 1, File: 123}
+	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+}
