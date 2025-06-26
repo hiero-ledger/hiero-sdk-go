@@ -62,6 +62,11 @@ func main() {
 		"claimToken":             postHandler(HandleError, handler.New(tokenService.ClaimToken)),
 		"airdropToken":           postHandler(HandleError, handler.New(tokenService.AirdropToken)),
 		"cancelAirdrop":          postHandler(HandleError, handler.New(tokenService.CancelAirdrop)),
+<<<<<<< Updated upstream
+=======
+		"createFile":             postHandler(HandleError, handler.New(fileService.CreateFile)),
+		"updateFile":             postHandler(HandleError, handler.New(fileService.UpdateFile)),
+>>>>>>> Stashed changes
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
