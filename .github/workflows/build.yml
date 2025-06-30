@@ -98,8 +98,9 @@ jobs:
               uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
             - name: Prepare Hiero Solo
+              if: success() && matrix.test-type == 'e2e'
               id: solo
-              uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
+              uses: hiero-ledger/hiero-solo-action@71219540ac7f578e6ea4fc3c17575c0295e56163 # v0.9
               with:
                 installMirrorNode: true
                 hieroVersion: v0.62.3
@@ -125,10 +126,6 @@ jobs:
               with:
                 token: ${{ secrets.CODECOV_TOKEN }}
                 files: ./e2e.out
-
-            - name: Stop the local node
-              if: matrix.test-type == 'e2e'
-              run: npx @hashgraph/hedera-local stop
 
     run-examples:
         name: Run Examples
@@ -180,9 +177,6 @@ jobs:
             - name: Run Examples
               if: success()
               run: task run-examples
-
-            - name: Stop the local node
-              run: npx @hashgraph/hedera-local stop
 
     build-test-tck:
         name: Build and Test TCK
