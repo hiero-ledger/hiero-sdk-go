@@ -88,7 +88,7 @@ func (id *ContractID) Validate(client *Client) error {
 	return id.ValidateChecksum(client)
 }
 
-// ContractIDFromEvmAddress constructs a ContractID from a string representation of an EVM address
+// ContractIDFromEvmAddress constructs an ContractID from a string formatted as shard.realm.<evm address>
 func ContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (ContractID, error) {
 	// Remove 0x prefix if present
 	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
@@ -162,7 +162,7 @@ func (id ContractID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
 }
 
-// ToEvmAddress
+// ToEvmAddress returns EVM-compatible address representation of the entity
 func (id ContractID) ToEvmAddress() string {
 	if id.EvmAddress != nil {
 		return hex.EncodeToString(id.EvmAddress)

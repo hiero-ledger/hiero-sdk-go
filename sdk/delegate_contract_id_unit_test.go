@@ -33,6 +33,33 @@ func TestUnitDelegatableContractIDChecksumFromString(t *testing.T) {
 	require.Equal(t, strChecksum, "0.0.123-esxsf")
 }
 
+func TestUnitDelegatableContractIDFromEvmAddressIncorrectSize(t *testing.T) {
+	t.Parallel()
+
+	// Test with an EVM address that's too short
+	_, err := DelegatableContractIDFromEvmAddress(0, 0, "abc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Test with an EVM address that's too long
+	_, err = DelegatableContractIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Test with a 0x prefix that gets removed but then is too short
+	_, err = DelegatableContractIDFromEvmAddress(0, 0, "0xabc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Verify a correct length works
+	correctAddress := "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	id, err := DelegatableContractIDFromEvmAddress(0, 0, correctAddress)
+	require.NoError(t, err)
+	require.NotNil(t, id.EvmAddress)
+
+	require.Equal(t, strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e"), hex.EncodeToString(id.EvmAddress))
+}
+
 func TestUnitDelegatableContractIDChecksumToString(t *testing.T) {
 	t.Parallel()
 

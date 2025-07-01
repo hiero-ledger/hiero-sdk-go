@@ -104,6 +104,25 @@ func TestUnitTokenIDChecksumError(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUnitTokenIDFromEvmAddressIncorrectSize(t *testing.T) {
+	t.Parallel()
+
+	// Test with an EVM address that's too short
+	_, err := TokenIDFromEvmAddress(0, 0, "abc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Test with an EVM address that's too long
+	_, err = TokenIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+
+	// Test with a 0x prefix that gets removed but then is too short
+	_, err = TokenIDFromEvmAddress(0, 0, "0xabc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+}
+
 func TestUnitTokenIDFromEvmAddress(t *testing.T) {
 	t.Parallel()
 

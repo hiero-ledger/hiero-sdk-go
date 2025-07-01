@@ -80,7 +80,7 @@ func (id *DelegatableContractID) ValidateChecksum(client *Client) error {
 	return nil
 }
 
-// DelegatableContractIDFromEvmAddress constructs a DelegatableContractID from a string representation of a _Solidity address
+// DelegatableContractIDFromEvmAddress constructs an DelegatableContractID from a string formatted as shard.realm.<evm address>
 func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (DelegatableContractID, error) {
 	// Remove 0x prefix if present
 	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
@@ -154,6 +154,7 @@ func (id DelegatableContractID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
 }
 
+// ToEvmAddress returns EVM-compatible address representation of the entity
 func (id DelegatableContractID) ToEvmAddress() string {
 	if id.EvmAddress != nil {
 		return hex.EncodeToString(id.EvmAddress)

@@ -68,7 +68,7 @@ func AccountIDFromString(data string) (AccountID, error) {
 	}, nil
 }
 
-// AccountIDFromEvmAddress constructs an AccountID from a string formatted as 0.0.<evm address>
+// AccountIDFromEvmAddress constructs an AccountID from a string formatted as shard.realm.<evm address>
 func AccountIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (AccountID, error) {
 	// Remove 0x prefix if present
 	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
@@ -198,6 +198,7 @@ func (id AccountID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Account)
 }
 
+// ToEvmAddress returns EVM-compatible address representation of the entity
 func (id AccountID) ToEvmAddress() string {
 	// If we have the alias set
 	if id.AliasEvmAddress != nil {

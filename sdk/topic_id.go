@@ -4,6 +4,7 @@ package hiero
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 
@@ -154,8 +155,16 @@ func TopicIDFromSolidityAddress(s string) (TopicID, error) {
 	}, nil
 }
 
-func TopicIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (TopicID, error) {
-	_, _, topic, err := _IdFromSolidityAddress(evmAddress)
+// TopicIDFromEvmAddress constructs an TopicID from a string formatted as shard.realm.<evm address>
+func TopicIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (TopicID, error) {
+	// Remove 0x prefix if present
+	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
+
+	// Check if the address is the correct length (40 hex characters = 20 bytes)
+	if len(aliasEvmAddress) != 40 {
+		return TopicID{}, fmt.Errorf("input EVM address string is not the correct size")
+	}
+	_, _, topic, err := _IdFromSolidityAddress(aliasEvmAddress)
 	if err != nil {
 		return TopicID{}, err
 	}
@@ -169,6 +178,7 @@ func (id TopicID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Topic)
 }
 
+// ToEvmAddress returns EVM-compatible address representation of the entity
 func (id TopicID) ToEvmAddress() string {
 	return _IdToSolidityAddress(0, 0, id.Topic)
 }
