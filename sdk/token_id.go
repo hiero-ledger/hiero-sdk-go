@@ -4,7 +4,6 @@ package hiero
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -164,12 +163,8 @@ func TokenIDFromSolidityAddress(s string) (TokenID, error) {
 
 // TokenIDFromEvmAddress constructs an TokenID from a string formatted as shard.realm.<evm address>
 func TokenIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (TokenID, error) {
-	// Remove 0x prefix if present
-	evmAddress = strings.TrimPrefix(evmAddress, "0x")
-
-	// Check if the address is the correct length (40 hex characters = 20 bytes)
-	if len(evmAddress) != 40 {
-		return TokenID{}, fmt.Errorf("input EVM address string is not the correct size")
+	if !isLongZeroAddress(evmAddress) {
+		return TokenID{}, fmt.Errorf("EVM address is not a correct long zero address")
 	}
 	_, _, token, err := _IdFromSolidityAddress(evmAddress)
 	if err != nil {

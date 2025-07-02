@@ -90,14 +90,7 @@ func (id *ContractID) Validate(client *Client) error {
 
 // ContractIDFromEvmAddress constructs an ContractID from a string formatted as shard.realm.<evm address>
 func ContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (ContractID, error) {
-	// Remove 0x prefix if present
-	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
-
-	// Check if the address is the correct length (40 hex characters = 20 bytes)
-	if len(aliasEvmAddress) != 40 {
-		return ContractID{}, fmt.Errorf("input EVM address string is not the correct size")
-	}
-	temp, err := hex.DecodeString(aliasEvmAddress)
+	temp, err := decodeEvmAddress(aliasEvmAddress)
 	if err != nil {
 		return ContractID{}, err
 	}

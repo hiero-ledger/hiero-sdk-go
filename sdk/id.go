@@ -130,6 +130,34 @@ func _ContractIDFromString(s string) (shard int, realm int, num int, checksum *s
 	return shard, realm, num, checksum, nil, nil
 }
 
+func isLongZeroAddress(evmAddress string) bool {
+	address, err := decodeEvmAddress(evmAddress)
+	if err != nil {
+		return false
+	}
+	for i := 0; i < 12; i++ {
+		if address[i] != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func decodeEvmAddress(s string) ([]byte, error) {
+	s = strings.TrimPrefix(s, "0x")
+
+	if len(s) != 40 {
+		return nil, fmt.Errorf("input EVM address string is not the correct size")
+	}
+
+	bytes, err := hex.DecodeString(s)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode EVM address as hex: %w", err)
+	}
+
+	return bytes, nil
+}
+
 func _IdFromString(s string) (shard int, realm int, num int, checksum *string, err error) {
 	if strings.Contains(s, "-") {
 		values := strings.SplitN(s, "-", 2)

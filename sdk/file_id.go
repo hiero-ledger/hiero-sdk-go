@@ -127,8 +127,12 @@ func FileIDFromSolidityAddress(s string) (FileID, error) {
 	}, nil
 }
 
-// FileIDFromEvmAddress
+// FileIDFromEvmAddress constructs an FileID from a string formatted as shard.realm.<evm address>
 func FileIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (FileID, error) {
+	if !isLongZeroAddress(evmAddress) {
+		return FileID{}, fmt.Errorf("EVM address is not a correct long zero address")
+	}
+
 	_, _, file, err := _IdFromSolidityAddress(evmAddress)
 	if err != nil {
 		return FileID{}, err

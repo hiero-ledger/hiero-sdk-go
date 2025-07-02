@@ -107,6 +107,30 @@ func TestUnitGetExchangeRatesFileIDFor(t *testing.T) {
 	assert.Equal(t, uint64(112), fileID.File)
 }
 
+func TestUnitFileIDFromEvmAddressIncorrectAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with an EVM address that's too short
+	_, err := FileIDFromEvmAddress(0, 0, "abc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+
+	// Test with an EVM address that's too long
+	_, err = FileIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+
+	// Test with a 0x prefix that gets removed but then is too short
+	_, err = FileIDFromEvmAddress(0, 0, "0xabc123")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+
+	// Test with non-long-zero address
+	_, err = FileIDFromEvmAddress(0, 0, "742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+}
+
 func TestUnitFileIDFromEvmAddress(t *testing.T) {
 	t.Parallel()
 
