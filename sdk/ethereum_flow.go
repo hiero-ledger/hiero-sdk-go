@@ -8,9 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-const jumboTransactionLimit = 133_000
+const jumboTransactionLimit = 128_000
 
 // Execute an Ethereum transaction on Hiero
+// Deprecated: use EthereumTransaction instead.
+// With the introduction of jumbo transactions, it should always be less cost and more efficient to use EthereumTransaction instead.
 type EthereumFlow struct {
 	ethereumData    *EthereumTransactionData
 	callDataFileID  *FileID

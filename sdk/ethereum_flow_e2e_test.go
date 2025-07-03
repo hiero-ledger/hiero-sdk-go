@@ -149,7 +149,7 @@ func TestIntegrationEthereumFlowJumboTransactionBelowTheLimit(t *testing.T) {
 	assert.NotNil(t, receipt.ContractID)
 	contractID := *receipt.ContractID
 
-	var largeCalldata = make([]byte, 1024*10)
+	var largeCalldata = make([]byte, 1024*50)
 	callData := NewContractFunctionParameters().AddBytes(largeCalldata)
 	function := "consumeLargeCalldata"
 
@@ -177,7 +177,7 @@ func TestIntegrationEthereumFlowJumboTransactionBelowTheLimit(t *testing.T) {
 	assert.Equal(t, record.CallResult.SignerNonce, int64(1))
 }
 
-func TestIntegrationEthereumFlowJumboTransactionAboveTheLimit(t *testing.T) {
+func TestIntegrationEthereumFlowJumboTransactionAboveTheLimitFails(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -242,13 +242,8 @@ func TestIntegrationEthereumFlowJumboTransactionAboveTheLimit(t *testing.T) {
 	messageBytes, err := getCallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes, ecdsaPrivateKey)
 	require.NoError(t, err)
 
-	response, err := NewEthereumFlow().
+	_, err = NewEthereumFlow().
 		SetEthereumDataBytes(messageBytes).
 		Execute(env.Client)
-	require.NoError(t, err)
-
-	record, err := response.SetValidateStatus(true).GetRecord(env.Client)
-	require.NoError(t, err)
-
-	assert.Equal(t, record.CallResult.SignerNonce, int64(1))
+	require.ErrorContains(t, err, "TRANSACTION_OVERSIZE")
 }
