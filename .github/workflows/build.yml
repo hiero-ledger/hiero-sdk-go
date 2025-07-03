@@ -98,7 +98,7 @@ jobs:
             - name: Prepare Hiero Solo
               if: success() && matrix.test-type == 'e2e'
               id: solo
-              uses: hiero-ledger/hiero-solo-action@71219540ac7f578e6ea4fc3c17575c0295e56163 # v0.9
+              uses: hiero-ledger/hiero-solo-action@54caccbfb28c2d1638e2c51a0219568f54f75b5d # v0.9
               with:
                 installMirrorNode: true
                 hieroVersion: v0.63.7
@@ -172,7 +172,7 @@ jobs:
 
             - name: Prepare Hiero Solo
               id: solo
-              uses: hiero-ledger/hiero-solo-action@1ee185112b9c7c45a3c0392f0e99860a45cde689 # v0.7
+              uses: hiero-ledger/hiero-solo-action@54caccbfb28c2d1638e2c51a0219568f54f75b5d # v0.7
               with:
                 installMirrorNode: true
                 hieroVersion: v0.63.7
