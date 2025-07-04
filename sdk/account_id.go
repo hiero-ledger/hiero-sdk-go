@@ -68,20 +68,13 @@ func AccountIDFromString(data string) (AccountID, error) {
 	}, nil
 }
 
-// AccountIDFromEvmAddress constructs an AccountID from a string formatted as 0.0.<evm address>
+// AccountIDFromEvmAddress constructs an AccountID from a string formatted as shard.realm.<evm address>
 func AccountIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (AccountID, error) {
-	// Remove 0x prefix if present
-	aliasEvmAddress = strings.TrimPrefix(aliasEvmAddress, "0x")
-
-	// Check if the address is the correct length (40 hex characters = 20 bytes)
-	if len(aliasEvmAddress) != 40 {
-		return AccountID{}, fmt.Errorf("input EVM address string is not the correct size")
-	}
-
-	temp, err := hex.DecodeString(aliasEvmAddress)
+	temp, err := decodeEvmAddress(aliasEvmAddress)
 	if err != nil {
 		return AccountID{}, err
 	}
+
 	return AccountID{
 		Shard:           shard,
 		Realm:           realm,
@@ -98,6 +91,7 @@ func AccountIDFromEvmPublicAddress(s string) (AccountID, error) {
 
 // AccountIDFromSolidityAddress constructs an AccountID from a string
 // representation of a _Solidity address
+// Deprecated: Use AccountIDFromEvmAddress instead
 func AccountIDFromSolidityAddress(s string) (AccountID, error) {
 	shard, realm, account, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -191,8 +185,19 @@ func (id AccountID) GetChecksum() *string {
 
 // ToSolidityAddress returns the string representation of the AccountID as a
 // _Solidity address.
+// Deprecated: Use ToEvmAddress instead
 func (id AccountID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Account)
+}
+
+// ToEvmAddress returns EVM-compatible address representation of the entity
+func (id AccountID) ToEvmAddress() string {
+	// If we have the alias set
+	if id.AliasEvmAddress != nil {
+		return hex.EncodeToString(*id.AliasEvmAddress)
+	} else { // if we don't have the alias set
+		return _IdToSolidityAddress(0, 0, id.Account)
+	}
 }
 
 func (id AccountID) _ToProtobuf() *services.AccountID {

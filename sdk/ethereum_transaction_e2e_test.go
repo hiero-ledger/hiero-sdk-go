@@ -71,7 +71,7 @@ func TestIntegrationEthereumTransaction(t *testing.T) {
 	nonce, err := hex.DecodeString("00")
 	maxGas, err := hex.DecodeString("d1385c7bf0")
 	gasLimitBytes, err := hex.DecodeString("0249f0") // 150k
-	contractBytes, err := hex.DecodeString(contractID.ToSolidityAddress())
+	contractBytes, err := hex.DecodeString(contractID.ToEvmAddress())
 	value, err := hex.DecodeString("00")
 	callDataBytes := callData._Build(&function)
 	require.NoError(t, err)
