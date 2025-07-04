@@ -719,7 +719,7 @@ func TestIntegrationScheduleCreateTransactionInvalidExpiryInThePast(t *testing.T
 }
 
 func TestIntegrationScheduleCreateTransactionWaitForExpiry(t *testing.T) {
-
+	t.Skip("Due to solo")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -789,7 +789,7 @@ func TestIntegrationScheduleCreateTransactionWaitForExpiry(t *testing.T) {
 		Execute(env.Client)
 	require.NoError(t, err)
 
-	time.Sleep(6 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	accountBalanceAfter, err := NewAccountBalanceQuery().
 		SetAccountID(accountId).
