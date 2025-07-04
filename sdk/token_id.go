@@ -164,7 +164,7 @@ func TokenIDFromSolidityAddress(s string) (TokenID, error) {
 // TokenIDFromEvmAddress constructs an TokenID from a string formatted as shard.realm.<evm address>
 func TokenIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (TokenID, error) {
 	if !isLongZeroAddress(evmAddress) {
-		return TokenID{}, fmt.Errorf("EVM address is not a correct long zero address")
+		return TokenID{}, errEvmAddressIsNotALongZeroAddress
 	}
 	_, _, token, err := _IdFromSolidityAddress(evmAddress)
 	if err != nil {

@@ -157,7 +157,7 @@ func TopicIDFromSolidityAddress(s string) (TopicID, error) {
 // TopicIDFromEvmAddress constructs an TopicID from a string formatted as shard.realm.<evm address>
 func TopicIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAddress string) (TopicID, error) {
 	if !isLongZeroAddress(aliasEvmAddress) {
-		return TopicID{}, fmt.Errorf("EVM address is not a correct long zero address")
+		return TopicID{}, errEvmAddressIsNotALongZeroAddress
 	}
 	_, _, topic, err := _IdFromSolidityAddress(aliasEvmAddress)
 	if err != nil {

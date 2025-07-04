@@ -48,17 +48,17 @@ func TestUnitContractIDFromEvmAddressIncorrectSize(t *testing.T) {
 	// Test with an EVM address that's too short
 	_, err := ContractIDFromEvmAddress(0, 0, "abc123")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+	require.ErrorIs(t, err, errEvmAddressIsNotCorrectSize)
 
 	// Test with an EVM address that's too long
 	_, err = ContractIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+	require.ErrorIs(t, err, errEvmAddressIsNotCorrectSize)
 
 	// Test with a 0x prefix that gets removed but then is too short
 	_, err = ContractIDFromEvmAddress(0, 0, "0xabc123")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "input EVM address string is not the correct size")
+	require.ErrorIs(t, err, errEvmAddressIsNotCorrectSize)
 
 	// Verify a correct length works
 	correctAddress := "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
@@ -66,7 +66,7 @@ func TestUnitContractIDFromEvmAddressIncorrectSize(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, id.EvmAddress)
 
-	require.Equal(t, strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e"), hex.EncodeToString(id.EvmAddress))
+	require.Equal(t, strings.ToLower(evmAddress), hex.EncodeToString(id.EvmAddress))
 }
 
 func TestUnitContractIDChecksumToString(t *testing.T) {
@@ -193,7 +193,7 @@ func TestUnitContractIDFromEvmAddress(t *testing.T) {
 	t.Parallel()
 
 	// Test with a normal EVM address
-	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	evmAddress := evmAddress
 	bytes, err := hex.DecodeString(evmAddress)
 	require.NoError(t, err)
 	id, err := ContractIDFromEvmAddress(0, 0, evmAddress)
@@ -212,7 +212,7 @@ func TestUnitContractIDFromEvmAddress(t *testing.T) {
 	require.Equal(t, bytes, id.EvmAddress)
 
 	// Test with a long zero address
-	evmAddress = "00000000000000000000000000000000000004d2"
+	evmAddress = longZeroAddress
 	bytes, err = hex.DecodeString(evmAddress)
 	require.NoError(t, err)
 	id, err = ContractIDFromEvmAddress(0, 0, evmAddress)
@@ -236,24 +236,24 @@ func TestUnitContractIDToEvmAddress(t *testing.T) {
 
 	// Test with a normal contract ID
 	id := ContractID{Shard: 0, Realm: 0, Contract: 123}
-	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 
 	// Test with a different shard and realm
 	id = ContractID{Shard: 1, Realm: 1, Contract: 123}
-	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 
 	// Test with a long zero address
-	longZeroAddress := "00000000000000000000000000000000000004d2"
+	longZeroAddress := longZeroAddress
 	bytes, err := hex.DecodeString(longZeroAddress)
 	id = ContractID{Shard: 1, Realm: 1, EvmAddress: bytes}
 	require.NoError(t, err)
 	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 
 	// Test with a normal EVM address
-	evmAddress := "742d35Cc6634C0532925a3b844Bc454e4438f44e"
+	evmAddress := evmAddress
 	bytes, err = hex.DecodeString(evmAddress)
 	id = ContractID{Shard: 0, Realm: 0, EvmAddress: bytes}
-	expected := strings.ToLower("742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	expected := strings.ToLower(evmAddress)
 	require.NoError(t, err)
 	require.Equal(t, expected, id.ToEvmAddress())
 

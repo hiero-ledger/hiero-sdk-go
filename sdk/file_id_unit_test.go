@@ -113,41 +113,40 @@ func TestUnitFileIDFromEvmAddressIncorrectAddress(t *testing.T) {
 	// Test with an EVM address that's too short
 	_, err := FileIDFromEvmAddress(0, 0, "abc123")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
 
 	// Test with an EVM address that's too long
 	_, err = FileIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
 
 	// Test with a 0x prefix that gets removed but then is too short
 	_, err = FileIDFromEvmAddress(0, 0, "0xabc123")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
 
 	// Test with non-long-zero address
-	_, err = FileIDFromEvmAddress(0, 0, "742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	_, err = FileIDFromEvmAddress(0, 0, evmAddress)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "EVM address is not a correct long zero addres")
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
 }
 
 func TestUnitFileIDFromEvmAddress(t *testing.T) {
 	t.Parallel()
 
-	// Test with a long zero address representing file 1234
-	evmAddress := "00000000000000000000000000000000000004d2"
-	id, err := FileIDFromEvmAddress(0, 0, evmAddress)
+	// Test with a long zero address representing file 123
+	id, err := FileIDFromEvmAddress(0, 0, longZeroAddress)
 	require.NoError(t, err)
 	require.Equal(t, uint64(0), id.Shard)
 	require.Equal(t, uint64(0), id.Realm)
-	require.Equal(t, uint64(1234), id.File)
+	require.Equal(t, uint64(123), id.File)
 
 	// Test with a different shard and realm
-	id, err = FileIDFromEvmAddress(1, 1, evmAddress)
+	id, err = FileIDFromEvmAddress(1, 1, longZeroAddress)
 	require.NoError(t, err)
 	require.Equal(t, uint64(1), id.Shard)
 	require.Equal(t, uint64(1), id.Realm)
-	require.Equal(t, uint64(1234), id.File)
+	require.Equal(t, uint64(123), id.File)
 }
 
 func TestUnitFileIDToEvmAddress(t *testing.T) {
@@ -155,9 +154,9 @@ func TestUnitFileIDToEvmAddress(t *testing.T) {
 
 	// Test with a normal file ID
 	id := FileID{Shard: 0, Realm: 0, File: 123}
-	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 
 	// Test with a different shard and realm
 	id = FileID{Shard: 1, Realm: 1, File: 123}
-	require.Equal(t, "000000000000000000000000000000000000007b", id.ToEvmAddress())
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 }

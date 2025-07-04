@@ -147,7 +147,7 @@ func decodeEvmAddress(s string) ([]byte, error) {
 	s = strings.TrimPrefix(s, "0x")
 
 	if len(s) != 40 {
-		return nil, fmt.Errorf("input EVM address string is not the correct size")
+		return nil, errEvmAddressIsNotCorrectSize
 	}
 
 	bytes, err := hex.DecodeString(s)
