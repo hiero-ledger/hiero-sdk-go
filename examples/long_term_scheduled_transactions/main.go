@@ -286,7 +286,7 @@ func main() {
 	fmt.Println("Alice's account balance before scheduled transfer", accountBalance.Hbars)
 
 	startTime := time.Now()
-	for time.Since(startTime) < 10*time.Second {
+	for time.Since(startTime) < 11*time.Second {
 		time.Sleep(1000 * time.Millisecond)
 		fmt.Printf("Elapsed time: %.1f seconds\r", time.Since(startTime).Seconds())
 	}

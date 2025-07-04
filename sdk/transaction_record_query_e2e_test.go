@@ -121,7 +121,7 @@ func TestIntegrationTransactionRecordQueryReceiptPaymentZero(t *testing.T) {
 }
 
 func TestIntegrationTransactionRecordQueryInsufficientFee(t *testing.T) {
-	t.Skip("Due to solo")
+
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
