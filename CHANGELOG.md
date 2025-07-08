@@ -7,6 +7,7 @@ These methods remove encoding shards and realm from evm address methods accordin
 ### Deprecated
 - `FromSolidityAddress` in AccountId, ContractId, DelegateContractId, FileId, TokenId, and TopicId [#1391](https://github.com/hiero-ledger/hiero-sdk-go/pull/1391)
 - `ToSolidityAddress` in AccountId, ContractId, DelegateContractId, FileId, TokenId, and TopicId [#1391](https://github.com/hiero-ledger/hiero-sdk-go/pull/1391)
+- `EthereumFlow`, with the introduction of jumbo transactions, it should always be less cost and more efficient to use `EthereumTransaction` instead [#1428](https://github.com/hiero-ledger/hiero-sdk-go/pull/1428)
 
 ## v2.65.0
 
