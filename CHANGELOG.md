@@ -1,3 +1,13 @@
+## v2.66.0
+
+### Added
+- `ToEvmAddress` method in AccountId, ContractId, DelegateContractId, FileId, TokenId, and TopicId [#1391](https://github.com/hiero-ledger/hiero-sdk-go/pull/1391)
+These methods remove encoding shards and realm from evm address methods according to this proposal https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/remove-shard-and-realm-encoding-from-evm-address-generation.md
+
+### Deprecated
+- `FromSolidityAddress` in AccountId, ContractId, DelegateContractId, FileId, TokenId, and TopicId [#1391](https://github.com/hiero-ledger/hiero-sdk-go/pull/1391)
+- `ToSolidityAddress` in AccountId, ContractId, DelegateContractId, FileId, TokenId, and TopicId [#1391](https://github.com/hiero-ledger/hiero-sdk-go/pull/1391)
+
 ## v2.65.0
 
 ### Added
