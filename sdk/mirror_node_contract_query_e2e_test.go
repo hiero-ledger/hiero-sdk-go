@@ -221,7 +221,7 @@ func TestMirrorNodeContractQueryCanSimulateWithSenderSet(t *testing.T) {
 		transaction.SetKeyWithoutAlias(pk)
 	})
 	require.NoError(t, err)
-	receiverEvmAddress := receiverId.ToSolidityAddress()
+	receiverEvmAddress := receiverId.ToEvmAddress()
 
 	// Wait for mirror node to import data
 	time.Sleep(5 * time.Second)

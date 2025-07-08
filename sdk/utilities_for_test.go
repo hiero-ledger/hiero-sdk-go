@@ -21,6 +21,8 @@ var mockPrivateKey string = "302e020100300506032b6570042204203b054fade7a2b0869c6
 var accountIDForTransactionID = AccountID{Account: 3}
 var validStartForTransacionID = time.Unix(124124, 151515)
 var contractDeployGas uint64 = 300_000
+var longZeroAddress = "000000000000000000000000000000000000007b"
+var evmAddress = "742d35Cc6634C0532925a3b844Bc454e4438f44e"
 
 var testTransactionID TransactionID = TransactionID{
 	AccountID:  &accountIDForTransactionID,

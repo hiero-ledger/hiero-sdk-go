@@ -103,3 +103,57 @@ func TestUnitTokenIDChecksumError(t *testing.T) {
 	_, err = id.ToStringWithChecksum(*client)
 	require.Error(t, err)
 }
+
+func TestUnitTokenIDFromEvmAddressIncorrectAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with an EVM address that's too short
+	_, err := TokenIDFromEvmAddress(0, 0, "abc123")
+	require.Error(t, err)
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
+
+	// Test with an EVM address that's too long
+	_, err = TokenIDFromEvmAddress(0, 0, "0123456789abcdef0123456789abcdef0123456789abcdef")
+	require.Error(t, err)
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
+
+	// Test with a 0x prefix that gets removed but then is too short
+	_, err = TokenIDFromEvmAddress(0, 0, "0xabc123")
+	require.Error(t, err)
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
+
+	// Test with non-long-zero address
+	_, err = TokenIDFromEvmAddress(0, 0, evmAddress)
+	require.Error(t, err)
+	require.ErrorIs(t, err, errEvmAddressIsNotALongZeroAddress)
+}
+
+func TestUnitTokenIDFromEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a long zero address representing token 123
+	id, err := TokenIDFromEvmAddress(0, 0, longZeroAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(0), id.Shard)
+	require.Equal(t, uint64(0), id.Realm)
+	require.Equal(t, uint64(123), id.Token)
+
+	// Test with a different shard and realm
+	id, err = TokenIDFromEvmAddress(1, 1, longZeroAddress)
+	require.NoError(t, err)
+	require.Equal(t, uint64(1), id.Shard)
+	require.Equal(t, uint64(1), id.Realm)
+	require.Equal(t, uint64(123), id.Token)
+}
+
+func TestUnitTokenIDToEvmAddress(t *testing.T) {
+	t.Parallel()
+
+	// Test with a normal token ID
+	id := TokenID{Shard: 0, Realm: 0, Token: 123}
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
+
+	// Test with a different shard and realm
+	id = TokenID{Shard: 1, Realm: 1, Token: 123}
+	require.Equal(t, longZeroAddress, id.ToEvmAddress())
+}
