@@ -66,6 +66,7 @@ func main() {
 		"airdropToken":           postHandler(HandleError, handler.New(tokenService.AirdropToken)),
 		"cancelAirdrop":          postHandler(HandleError, handler.New(tokenService.CancelAirdrop)),
 		"createFile":             postHandler(HandleError, handler.New(fileService.CreateFile)),
+		"rejectToken":            postHandler(HandleError, handler.New(tokenService.RejectToken)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 

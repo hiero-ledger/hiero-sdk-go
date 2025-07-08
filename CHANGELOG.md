@@ -1,3 +1,19 @@
+## v2.65.0
+
+### Added
+- Add persistent shard and realm support to Client [#1395](https://github.com/hiero-ledger/hiero-sdk-go/pull/1395)
+  - `ClientForNetworkV2` : extracts the shard and realm from the network map and persists it
+  - `ClientFromConfig` : can now accept shard and realm into the json schema
+  - `GetShard`
+  - `GetRealm`
+
+### Deprecated 
+- `ClientForMirrorNetworkWithRealmAndShard` : Use `ClientForMirrorNetworkWithShardAndRealm` instead.
+- `ClientForNetwork` : Use `ClientForNetworkV2` instead.
+
+### Changed 
+- Replaced bip39 library (https://github.com/tyler-smith/go-bip39), since it is no longer available [#1418](https://github.com/hiero-ledger/hiero-sdk-go/pull/1418)
+
 ## v2.64.0
 
 ### Added

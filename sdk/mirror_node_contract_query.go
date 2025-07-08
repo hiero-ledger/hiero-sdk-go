@@ -187,13 +187,13 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) fillEvmAddresses() error
 		if mirrorNodeContractQuery.contractID == nil {
 			return errors.New("contractID is not set")
 		}
-		address := mirrorNodeContractQuery.contractID.ToSolidityAddress()
+		address := mirrorNodeContractQuery.contractID.ToEvmAddress()
 		mirrorNodeContractQuery.contractEvmAddress = &address
 	}
 
 	// fill senderEvmAddress
 	if mirrorNodeContractQuery.senderEvmAddress == nil && mirrorNodeContractQuery.sender != nil {
-		address := mirrorNodeContractQuery.sender.ToSolidityAddress()
+		address := mirrorNodeContractQuery.sender.ToEvmAddress()
 		mirrorNodeContractQuery.senderEvmAddress = &address
 	}
 	return nil
