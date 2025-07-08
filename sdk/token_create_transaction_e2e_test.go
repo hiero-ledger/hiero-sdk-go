@@ -116,6 +116,7 @@ func TestIntegrationTokenCreateTransactionSetExpirationTime(t *testing.T) {
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetExpirationTime(expirationTime).
 		SetTreasuryAccountID(env.Client.GetOperatorAccountID()).
+		SetAutoRenewAccount(env.Client.GetOperatorAccountID()).
 		Execute(env.Client)
 	require.NoError(t, err)
 
