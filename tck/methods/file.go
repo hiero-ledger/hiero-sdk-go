@@ -3,6 +3,8 @@ package methods
 // SPDX-License-Identifier: Apache-2.0
 import (
 	"context"
+	"errors"
+	"strconv"
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
@@ -40,11 +42,11 @@ func (t *FileService) CreateFile(_ context.Context, params param.CreateFileParam
 	}
 
 	if params.ExpirationTime != nil {
-		expirationTime, err := time.Parse(time.RFC3339, *params.ExpirationTime)
+		expirationTime, err := strconv.ParseInt(*params.ExpirationTime, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetExpirationTime(expirationTime)
+		transaction.SetExpirationTime(time.Unix(expirationTime, 0))
 	}
 
 	if params.Memo != nil {
@@ -69,6 +71,151 @@ func (t *FileService) CreateFile(_ context.Context, params param.CreateFileParam
 
 	return &response.FileResponse{
 		FileId: receipt.FileID.String(),
+		Status: receipt.Status.String(),
+	}, nil
+}
+
+// updateFile jRPC method for updateFile
+func (t *FileService) UpdateFile(_ context.Context, params param.UpdateFileParams) (*response.FileResponse, error) {
+	transaction := hiero.NewFileUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.FileId != nil {
+		fileId, err := hiero.FileIDFromString(*params.FileId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetFileID(fileId)
+	}
+
+	if params.Keys != nil {
+		var keys []hiero.Key
+		for _, keyStr := range *params.Keys {
+			key, err := utils.GetKeyFromString(keyStr)
+			if err != nil {
+				return nil, err
+			}
+			keys = append(keys, key)
+		}
+		transaction.SetKeys(keys...)
+	}
+
+	if params.Contents != nil {
+		transaction.SetContents([]byte(*params.Contents))
+	}
+
+	if params.ExpirationTime != nil {
+		expirationTime, err := strconv.ParseInt(*params.ExpirationTime, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetExpirationTime(time.Unix(expirationTime, 0))
+	}
+
+	if params.Memo != nil {
+		transaction.SetFileMemo(*params.Memo)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.FileResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}
+
+// deleteFile jRPC method for deleteFile
+func (t *FileService) DeleteFile(_ context.Context, params param.UpdateFileParams) (*response.FileResponse, error) {
+	transaction := hiero.NewFileDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.FileId != nil {
+		fileId, err := hiero.FileIDFromString(*params.FileId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetFileID(fileId)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.FileResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}
+
+// appendFile jRPC method for appendFile
+func (t *FileService) AppendFile(_ context.Context, params param.AppendFileParams) (*response.FileResponse, error) {
+	transaction := hiero.NewFileAppendTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.FileId != nil {
+		fileId, err := hiero.FileIDFromString(*params.FileId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetFileID(fileId)
+	}
+
+	if params.Contents != nil {
+		transaction.SetContents([]byte(*params.Contents))
+	}
+
+	if params.ChunkSize != nil {
+		if *params.ChunkSize <= 0 {
+			return nil, errors.New("internal error")
+		}
+		transaction.SetMaxChunkSize(*params.ChunkSize)
+	}
+
+	if params.MaxChunks != nil {
+		if *params.MaxChunks <= 0 {
+			return nil, errors.New("internal error")
+		}
+		transaction.SetMaxChunks(uint64(*params.MaxChunks))
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.FileResponse{
 		Status: receipt.Status.String(),
 	}, nil
 }
