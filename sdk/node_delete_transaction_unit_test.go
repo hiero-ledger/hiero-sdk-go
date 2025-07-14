@@ -246,3 +246,19 @@ func TestUnitNodeDeleteTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeDeleteTransaction).buildProtoBody())
 }
+
+func TestUnitNodeDeleteTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	transaction, err := NewNodeDeleteTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+	require.NoError(t, err)
+
+	require.Error(t, transaction.freezeError)
+	assert.ErrorIs(t, errNodeIdIsRequired, transaction.freezeError)
+}

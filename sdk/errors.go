@@ -34,6 +34,7 @@ var errChecksumMissing = errors.New("no checksum provided")
 var errLockedSlice = errors.New("slice is locked")
 var errBatchedAndNotBatchTransaction = errors.New("cannot execute batchified transaction outside of BatchTransaction")
 var errNodeIsUnhealthy = errors.New("node is unhealthy")
+var errNodeIdIsRequired = errors.New("nodeID is required")
 var errEvmAddressIsNotALongZeroAddress = errors.New("EVM address is not a correct long zero address")
 var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct size")
 

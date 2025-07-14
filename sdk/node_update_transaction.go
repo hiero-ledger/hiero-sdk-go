@@ -30,7 +30,7 @@ import (
  */
 type NodeUpdateTransaction struct {
 	*Transaction[*NodeUpdateTransaction]
-	nodeID               uint64
+	nodeID               *uint64
 	accountID            *AccountID
 	description          string
 	gossipEndpoints      []Endpoint
@@ -50,9 +50,9 @@ func NewNodeUpdateTransaction() *NodeUpdateTransaction {
 }
 
 func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], pb *services.TransactionBody) NodeUpdateTransaction {
-	adminKey, err := _KeyFromProtobuf(pb.GetNodeUpdate().GetAdminKey())
-	if err != nil {
-		return NodeUpdateTransaction{}
+	var adminKey Key
+	if pb.GetNodeUpdate().GetAdminKey() != nil {
+		adminKey, _ = _KeyFromProtobuf(pb.GetNodeUpdate().GetAdminKey())
 	}
 
 	accountID := _AccountIDFromProtobuf(pb.GetNodeUpdate().GetAccountId())
@@ -92,8 +92,9 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 		declineReward = &declineRewardValue
 	}
 
+	nodeID := pb.GetNodeUpdate().GetNodeId()
 	nodeUpdateTransaction := NodeUpdateTransaction{
-		nodeID:               pb.GetNodeUpdate().GetNodeId(),
+		nodeID:               &nodeID,
 		accountID:            accountID,
 		description:          description,
 		gossipEndpoints:      gossipEndpoints,
@@ -112,13 +113,16 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 
 // GetNodeID he consensus node identifier in the network state.
 func (tx *NodeUpdateTransaction) GetNodeID() uint64 {
-	return tx.nodeID
+	if tx.nodeID == nil {
+		return 0
+	}
+	return *tx.nodeID
 }
 
 // SetNodeID the consensus node identifier in the network state.
 func (tx *NodeUpdateTransaction) SetNodeID(nodeID uint64) *NodeUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.nodeID = nodeID
+	tx.nodeID = &nodeID
 	return tx
 }
 
@@ -302,9 +306,16 @@ func (tx NodeUpdateTransaction) buildScheduled() (*services.SchedulableTransacti
 }
 
 func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransactionBody {
-	body := &services.NodeUpdateTransactionBody{
-		Description: wrapperspb.String(tx.description),
-		NodeId:      tx.nodeID,
+	body := &services.NodeUpdateTransactionBody{}
+
+	if tx.description != "" {
+		body.Description = wrapperspb.String(tx.description)
+	}
+
+	if tx.nodeID != nil {
+		body.NodeId = *tx.nodeID
+	} else {
+		tx.freezeError = errNodeIdIsRequired
 	}
 
 	if tx.accountID != nil {
