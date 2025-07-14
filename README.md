@@ -1,8 +1,9 @@
 ![](https://img.shields.io/github/v/tag/hiero-ledger/hiero-sdk-go)
 ![](https://img.shields.io/github/go-mod/go-version/hiero-ledger/hiero-sdk-go)
 [![](https://godoc.org/github.com/hiero-ledger/hiero-sdk-go/v2?status.svg)](http://godoc.org/github.com/hiero-project/hiero-sdk-go/v2)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hiero-ledger/hiero-sdk-go/badge)](https://api.scorecard.dev/projects/github.com/hiero-ledger/hiero-sdk-go)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hiero-ledger/hiero-sdk-go/badge)](https://scorecard.dev/viewer/?uri=github.com/hiero-ledger/hiero-sdk-go)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/10697/badge)](https://bestpractices.coreinfrastructure.org/projects/10697)
+[![License](https://img.shields.io/badge/license-apache2-blue.svg)](LICENSE)
 
 # Hiero Go SDK
 

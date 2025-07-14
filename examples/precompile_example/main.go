@@ -75,13 +75,13 @@ func main() {
 	}
 
 	contractFunctionParameters, err := hiero.NewContractFunctionParameters().
-		AddAddress(client.GetOperatorAccountID().ToSolidityAddress())
+		AddAddress(client.GetOperatorAccountID().ToEvmAddress())
 	if err != nil {
 		panic(fmt.Sprintf("%v : error making contract function parameters", err))
 	}
 
 	contractFunctionParameters, err = contractFunctionParameters.
-		AddAddress(aliceAccountID.ToSolidityAddress())
+		AddAddress(aliceAccountID.ToEvmAddress())
 	if err != nil {
 		panic(fmt.Sprintf("%v : error adding alice's address to contract function parameters", err))
 	}
@@ -114,7 +114,7 @@ func main() {
 	}
 
 	tokenUpdateFunction := func(address string) {
-		id, err := hiero.TokenIDFromSolidityAddress(address)
+		id, err := hiero.TokenIDFromEvmAddress(0, 0, address)
 		if err != nil {
 			panic(err)
 		}

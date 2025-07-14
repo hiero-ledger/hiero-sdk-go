@@ -2,9 +2,17 @@ package hiero
 
 // SPDX-License-Identifier: Apache-2.0
 
-import "github.com/pkg/errors"
+import (
+	"encoding/hex"
+
+	"github.com/pkg/errors"
+)
+
+const jumboTransactionLimit = 128_000
 
 // Execute an Ethereum transaction on Hiero
+// Deprecated: use EthereumTransaction instead.
+// With the introduction of jumbo transactions, it should always be less cost and more efficient to use EthereumTransaction instead.
 type EthereumFlow struct {
 	ethereumData    *EthereumTransactionData
 	callDataFileID  *FileID
@@ -82,14 +90,16 @@ func (transaction *EthereumFlow) GetNodeAccountIDs() []AccountID {
 }
 
 func (transaction *EthereumFlow) _CreateFile(callData []byte, client *Client) (FileID, error) {
+	// The calldata in the file needs to be hex encoded
+	callDataHex := []byte(hex.EncodeToString(callData))
 	fileCreate := NewFileCreateTransaction().SetKeys(client.GetOperatorPublicKey())
 	if len(transaction.nodeAccountIDs) > 0 {
 		fileCreate.SetNodeAccountIDs(transaction.nodeAccountIDs)
 	}
 
-	if len(callData) < 4097 {
+	if len(callDataHex) < 4097 {
 		resp, err := fileCreate.
-			SetContents(callData).
+			SetContents(callDataHex).
 			Execute(client)
 		if err != nil {
 			return FileID{}, err
@@ -104,7 +114,7 @@ func (transaction *EthereumFlow) _CreateFile(callData []byte, client *Client) (F
 	}
 
 	resp, err := fileCreate.
-		SetContents(callData[:4097]).
+		SetContents(callDataHex[:4097]).
 		Execute(client)
 	if err != nil {
 		return FileID{}, err
@@ -119,7 +129,8 @@ func (transaction *EthereumFlow) _CreateFile(callData []byte, client *Client) (F
 
 	resp, err = NewFileAppendTransaction().
 		SetFileID(fileID).
-		SetContents(callData[4097:]).
+		SetContents(callDataHex[4097:]).
+		SetMaxChunks(1000).
 		Execute(client)
 	if err != nil {
 		return FileID{}, err
@@ -160,20 +171,24 @@ func (transaction *EthereumFlow) Execute(client *Client) (TransactionResponse, e
 		ethereumTransaction.
 			SetEthereumData(dataBytes).
 			SetCallDataFileID(*transaction.callDataFileID)
-	} else if len(dataBytes) <= 5120 {
+	} else if len(dataBytes) <= jumboTransactionLimit {
 		ethereumTransaction.
 			SetEthereumData(dataBytes)
 	} else {
 		fileID, err := transaction.
-			_CreateFile(dataBytes, client)
+			_CreateFile(transaction.ethereumData.GetData(), client)
 		if err != nil {
 			return TransactionResponse{}, err
 		}
 
-		transaction.ethereumData.SetData([]byte{})
+		transaction.ethereumData.SetData(make([]byte, 0))
+		ethereumData, err := transaction.ethereumData.ToBytes()
+		if err != nil {
+			return TransactionResponse{}, err
+		}
 
 		ethereumTransaction.
-			SetEthereumData(dataBytes).
+			SetEthereumData(ethereumData).
 			SetCallDataFileID(fileID)
 	}
 

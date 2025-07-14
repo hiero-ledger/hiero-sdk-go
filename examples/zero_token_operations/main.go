@@ -87,11 +87,11 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error unmarshaling the json file", err))
 	}
-	params, err := hiero.NewContractFunctionParameters().AddAddress(myAccountId.ToSolidityAddress())
+	params, err := hiero.NewContractFunctionParameters().AddAddress(myAccountId.ToEvmAddress())
 	if err != nil {
 		panic(fmt.Sprintf("%v : error adding first address to contract function parameters", err))
 	}
-	params, err = params.AddAddress(aliceAccountId.ToSolidityAddress())
+	params, err = params.AddAddress(aliceAccountId.ToEvmAddress())
 	if err != nil {
 		panic(fmt.Sprintf("%v : error adding second address to contract function parameters", err))
 	}

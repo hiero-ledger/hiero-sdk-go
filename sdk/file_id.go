@@ -113,6 +113,7 @@ func (id *FileID) Validate(client *Client) error {
 }
 
 // FileIDFromSolidityAddress returns a FileID parsed from the given solidity address.
+// Deprecated: use FileIDFromEvmAddress instead
 func FileIDFromSolidityAddress(s string) (FileID, error) {
 	shard, realm, file, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -124,6 +125,19 @@ func FileIDFromSolidityAddress(s string) (FileID, error) {
 		Realm: realm,
 		File:  file,
 	}, nil
+}
+
+// FileIDFromEvmAddress constructs an FileID from a string formatted as shard.realm.<evm address>
+func FileIDFromEvmAddress(shard uint64, realm uint64, evmAddress string) (FileID, error) {
+	if !isLongZeroAddress(evmAddress) {
+		return FileID{}, errEvmAddressIsNotALongZeroAddress
+	}
+
+	_, _, file, err := _IdFromSolidityAddress(evmAddress)
+	if err != nil {
+		return FileID{}, err
+	}
+	return FileID{Shard: shard, Realm: realm, File: file}, nil
 }
 
 func (id FileID) _IsZero() bool {
@@ -152,8 +166,14 @@ func (id FileID) ToStringWithChecksum(client Client) (string, error) {
 }
 
 // ToSolidityAddress returns the string representation of a FileID in the format used by Solidity.
+// Deprecated: use ToEvmAddress instead
 func (id FileID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.File)
+}
+
+// ToEvmAddress
+func (id FileID) ToEvmAddress() string {
+	return _IdToSolidityAddress(0, 0, id.File)
 }
 
 func (id FileID) _ToProtobuf() *services.FileID {

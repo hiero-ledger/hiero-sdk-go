@@ -116,6 +116,7 @@ func TestIntegrationTokenCreateTransactionSetExpirationTime(t *testing.T) {
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetExpirationTime(expirationTime).
 		SetTreasuryAccountID(env.Client.GetOperatorAccountID()).
+		SetAutoRenewAccount(env.Client.GetOperatorAccountID()).
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -131,7 +132,7 @@ func TestIntegrationTokenCreateTransactionSetExpirationTime(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.NotNil(t, info.AutoRenewAccountID)
-	assert.Equal(t, info.AutoRenewAccountID.String(), "0.0.0")
+	assert.Equal(t, info.AutoRenewAccountID.String(), env.Client.GetOperatorAccountID().String())
 	assert.NotNil(t, info.AutoRenewPeriod)
 	assert.Equal(t, *info.AutoRenewPeriod, time.Duration(0))
 	assert.NotNil(t, info.ExpirationTime)
