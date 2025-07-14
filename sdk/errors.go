@@ -34,6 +34,7 @@ var errChecksumMissing = errors.New("no checksum provided")
 var errLockedSlice = errors.New("slice is locked")
 var errBatchedAndNotBatchTransaction = errors.New("cannot execute batchified transaction outside of BatchTransaction")
 var errNodeIsUnhealthy = errors.New("node is unhealthy")
+var errNodeIdIsRequired = errors.New("nodeID is required")
 
 // Batch transaction specific errors
 var errInnerTransactionNil = errors.New("inner transaction cannot be nil")

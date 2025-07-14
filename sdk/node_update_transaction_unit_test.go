@@ -324,8 +324,6 @@ func TestUnitNodeUpdateTransactionFromToBytes(t *testing.T) {
 	txFromBytes, err := TransactionFromBytes(txBytes)
 	require.NoError(t, err)
 
-	tx.buildProtoBody()
-	txFromBytes.(NodeUpdateTransaction).buildProtoBody()
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(NodeUpdateTransaction).buildProtoBody())
 }
 
@@ -434,7 +432,7 @@ func TestUnitNodeUpdateTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Error(t, transaction.freezeError)
-	assert.Equal(t, "nodeID is required", transaction.freezeError.Error())
+	assert.ErrorIs(t, errNodeIdIsRequired, transaction.freezeError)
 
 	client, err := _NewMockClient()
 	client.SetLedgerID(*NewLedgerIDTestnet())

@@ -26,7 +26,7 @@ import (
  */
 type NodeDeleteTransaction struct {
 	*Transaction[*NodeDeleteTransaction]
-	nodeID uint64
+	nodeID *uint64
 }
 
 func NewNodeDeleteTransaction() *NodeDeleteTransaction {
@@ -37,9 +37,9 @@ func NewNodeDeleteTransaction() *NodeDeleteTransaction {
 }
 
 func _NodeDeleteTransactionFromProtobuf(tx Transaction[*NodeDeleteTransaction], pb *services.TransactionBody) NodeDeleteTransaction {
-	nodeDeleteTransaction := NodeDeleteTransaction{
-		nodeID: pb.GetNodeDelete().NodeId,
-	}
+	nodeID := pb.GetNodeDelete().GetNodeId()
+
+	nodeDeleteTransaction := NodeDeleteTransaction{nodeID: &nodeID}
 
 	tx.childTransaction = &nodeDeleteTransaction
 	nodeDeleteTransaction.Transaction = &tx
@@ -48,13 +48,16 @@ func _NodeDeleteTransactionFromProtobuf(tx Transaction[*NodeDeleteTransaction], 
 
 // GetNodeID he consensus node identifier in the network state.
 func (tx *NodeDeleteTransaction) GetNodeID() uint64 {
-	return tx.nodeID
+	if tx.nodeID == nil {
+		return 0
+	}
+	return *tx.nodeID
 }
 
 // SetNodeID the consensus node identifier in the network state.
 func (tx *NodeDeleteTransaction) SetNodeID(nodeID uint64) *NodeDeleteTransaction {
 	tx._RequireNotFrozen()
-	tx.nodeID = nodeID
+	tx.nodeID = &nodeID
 	return tx
 }
 
@@ -91,9 +94,14 @@ func (tx NodeDeleteTransaction) buildScheduled() (*services.SchedulableTransacti
 }
 
 func (tx NodeDeleteTransaction) buildProtoBody() *services.NodeDeleteTransactionBody {
-	return &services.NodeDeleteTransactionBody{
-		NodeId: tx.nodeID,
+	body := &services.NodeDeleteTransactionBody{}
+
+	if tx.nodeID != nil {
+		body.NodeId = *tx.nodeID
+	} else {
+		tx.freezeError = errNodeIdIsRequired
 	}
+	return body
 }
 
 func (tx NodeDeleteTransaction) getMethod(channel *_Channel) _Method {

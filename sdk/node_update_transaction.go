@@ -2,7 +2,6 @@ package hiero
 
 import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
-	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -316,7 +315,7 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 	if tx.nodeID != nil {
 		body.NodeId = *tx.nodeID
 	} else {
-		tx.freezeError = errors.New("nodeID is required")
+		tx.freezeError = errNodeIdIsRequired
 	}
 
 	if tx.accountID != nil {

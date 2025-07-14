@@ -5,7 +5,6 @@ package hiero
 import (
 	"context"
 	"encoding/hex"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -279,7 +278,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		}
 		if err != nil {
 			errPersistent = err
-			fmt.Println(errPersistent.Error())
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
 				client.network._IncreaseBackoff(node)
 				continue
