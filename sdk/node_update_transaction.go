@@ -1,6 +1,8 @@
 package hiero
 
 import (
+	"fmt"
+
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -263,6 +265,12 @@ func (tx *NodeUpdateTransaction) SetGrpcWebProxyEndpoint(grpcWebProxyEndpoint En
 	return tx
 }
 
+func (tx *NodeUpdateTransaction) ClearGrpcWebProxyEndpoint() *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.grpcWebProxyEndpoint = &Endpoint{}
+	return tx
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx NodeUpdateTransaction) getName() string {
@@ -331,6 +339,10 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 	}
 
 	if tx.grpcWebProxyEndpoint != nil {
+		if tx.grpcWebProxyEndpoint.address == nil && tx.grpcWebProxyEndpoint.port == 0 {
+			fmt.Println("grpcWebProxyEndpoint is unset")
+			body.GrpcProxyEndpoint = &services.ServiceEndpoint{}
+		}
 		body.GrpcProxyEndpoint = tx.grpcWebProxyEndpoint._ToProtobuf()
 	}
 
