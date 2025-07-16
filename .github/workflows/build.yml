@@ -15,8 +15,8 @@ on:
         branches:
             - main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
 
 jobs:
     build:
@@ -26,12 +26,12 @@ jobs:
             - name: Harden Runner
               uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
               with:
-                egress-policy: audit
+                  egress-policy: audit
 
             - name: Setup GCC
               run: |
-                sudo apt-get update
-                sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.21
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -64,11 +64,11 @@ jobs:
             - build
 
         strategy:
-          matrix:
-            test-type: [unit, e2e]
+            matrix:
+                test-type: [unit, e2e]
 
         env:
-          HEDERA_NETWORK: "localhost"
+            HEDERA_NETWORK: "localhost"
 
         steps:
             - name: Harden Runner
@@ -79,12 +79,12 @@ jobs:
             - name: Setup NodeJS
               uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
               with:
-                node-version: 22
+                  node-version: 22
 
             - name: Setup GCC
               run: |
-                sudo apt-get update
-                sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.21
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -100,15 +100,14 @@ jobs:
               id: solo
               uses: hiero-ledger/hiero-solo-action@a39acf8cfbaa2feb195a86530d0ab643a45aa541 # v0.10.0
               with:
-                installMirrorNode: true
-                hieroVersion: v0.63.7
+                  installMirrorNode: true
+                  hieroVersion: v0.64.0
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
               run: |
-                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
-                echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
-
+                  echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
+                  echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
 
             - name: Tests Unit
               if: success() && matrix.test-type == 'unit'
@@ -122,15 +121,15 @@ jobs:
               if: success() && matrix.test-type == 'unit'
               uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # v5.0.7
               with:
-                token: ${{ secrets.CODECOV_TOKEN }}
-                files: ./unit.out
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./unit.out
 
             - name: Upload e2e test coverage to Codecov
               if: success() && matrix.test-type == 'e2e'
               uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # v5.0.7
               with:
-                token: ${{ secrets.CODECOV_TOKEN }}
-                files: ./e2e.out
+                  token: ${{ secrets.CODECOV_TOKEN }}
+                  files: ./e2e.out
 
     run-examples:
         name: Run Examples
@@ -140,7 +139,7 @@ jobs:
         needs:
             - build
         env:
-          HEDERA_NETWORK: "localhost"
+            HEDERA_NETWORK: "localhost"
 
         steps:
             - name: Harden Runner
@@ -151,12 +150,12 @@ jobs:
             - name: Setup NodeJS
               uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
               with:
-                node-version: 22
+                  node-version: 22
 
             - name: Setup GCC
               run: |
-                sudo apt-get update
-                sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.21
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -174,13 +173,13 @@ jobs:
               id: solo
               uses: hiero-ledger/hiero-solo-action@a39acf8cfbaa2feb195a86530d0ab643a45aa541 # v0.10.0
               with:
-                installMirrorNode: true
-                hieroVersion: v0.63.7
+                  installMirrorNode: true
+                  hieroVersion: v0.64.0
 
             - name: Set Operator Account
               run: |
-                echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
-                echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
+                  echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
+                  echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
 
             - name: Run Examples
               if: success()
@@ -193,12 +192,12 @@ jobs:
             - name: Harden Runner
               uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
               with:
-                egress-policy: audit
+                  egress-policy: audit
 
             - name: Setup GCC
               run: |
-                sudo apt-get update
-                sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.21
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -215,15 +214,15 @@ jobs:
 
             - name: Build TCK
               run: go build -v ./...
-              working-directory: ./tck 
+              working-directory: ./tck
 
             - name: Lint TCK
               uses: golangci/golangci-lint-action@4afd733a84b1f43292c63897423277bb7f4313a9 # v8.0.0
               with:
                   skip-cache: true
-                  args: --timeout=5m   
-                  working-directory: ./tck 
-            
+                  args: --timeout=5m
+                  working-directory: ./tck
+
             - name: Test TCK
               run: go test ./...
               working-directory: ./tck
