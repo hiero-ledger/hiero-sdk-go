@@ -20,6 +20,7 @@ func TestIntegrationTokenUpdateTransactionCanExecute(t *testing.T) {
 	defer CloseIntegrationTestEnv(env, nil)
 
 	tokenID, err := createFungibleToken(&env)
+	fmt.Println("tokenID", tokenID)
 	require.NoError(t, err)
 
 	resp, err := NewTokenUpdateTransaction().
