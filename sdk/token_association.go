@@ -43,7 +43,7 @@ func (association *TokenAssociation) toProtobuf() *services.TokenAssociation {
 
 // ToBytes returns the byte representation of the TokenAssociation
 func (association *TokenAssociation) ToBytes() []byte {
-	data, err := protobuf.Marshal(association.toProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(association.toProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

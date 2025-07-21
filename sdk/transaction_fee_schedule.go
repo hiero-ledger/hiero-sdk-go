@@ -58,7 +58,7 @@ func (txFeeSchedule TransactionFeeSchedule) _ToProtobuf() *services.TransactionF
 }
 
 func (txFeeSchedule TransactionFeeSchedule) ToBytes() []byte {
-	data, err := protobuf.Marshal(txFeeSchedule._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(txFeeSchedule._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

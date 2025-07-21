@@ -68,7 +68,7 @@ func _BatchTransactionFromProtobuf(tx Transaction[*BatchTransaction], pb *servic
 	for _, innerTransaction := range pb.GetAtomicBatch().Transactions {
 		var transaction services.Transaction
 		transaction.SignedTransactionBytes = innerTransaction
-		transactionBytes, _ := protobuf.Marshal(&transaction)
+		transactionBytes, _ := protobuf.MarshalOptions{Deterministic: true}.Marshal(&transaction)
 		transactionFromBytes, _ := TransactionFromBytes(transactionBytes)
 		innerTransactions = append(innerTransactions, transactionFromBytes)
 	}

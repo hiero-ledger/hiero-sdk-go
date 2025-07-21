@@ -32,7 +32,7 @@ func (version *NetworkVersionInfo) _ToProtobuf() *services.NetworkGetVersionInfo
 
 // ToBytes returns the byte representation of the NetworkVersionInfo
 func (version *NetworkVersionInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(version._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(version._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

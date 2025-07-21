@@ -57,7 +57,7 @@ func (tokenNftInfo *TokenNftInfo) _ToProtobuf() *services.TokenNftInfo {
 
 // ToBytes returns the byte representation of the TokenNftInfo
 func (tokenNftInfo *TokenNftInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(tokenNftInfo._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(tokenNftInfo._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

@@ -55,7 +55,7 @@ func (transfer *TokenTransfer) _ToProtobuf() *services.AccountAmount {
 
 // ToBytes returns a protobuf encoded version of the TokenTransfer
 func (transfer TokenTransfer) ToBytes() []byte {
-	data, err := protobuf.Marshal(transfer._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(transfer._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

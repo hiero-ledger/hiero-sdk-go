@@ -49,7 +49,7 @@ func (transfer *_TokenNftTransfer) _ToProtobuf() *services.NftTransfer {
 
 // ToBytes returns the byte representation of the TokenNftTransfer
 func (transfer _TokenNftTransfer) ToBytes() []byte {
-	data, err := protobuf.Marshal(transfer._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(transfer._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

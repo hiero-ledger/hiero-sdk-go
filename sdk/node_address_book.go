@@ -38,7 +38,7 @@ func (book NodeAddressBook) _ToProtobuf() *services.NodeAddressBook {
 
 // ToBytes returns the byte representation of the NodeAddressBook
 func (book NodeAddressBook) ToBytes() []byte {
-	data, err := protobuf.Marshal(book._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(book._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

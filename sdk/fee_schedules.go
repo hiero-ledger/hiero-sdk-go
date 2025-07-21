@@ -61,7 +61,7 @@ func (feeSchedules FeeSchedules) _ToProtobuf() *services.CurrentAndNextFeeSchedu
 
 // ToBytes returns the byte representation of the FeeSchedules
 func (feeSchedules FeeSchedules) ToBytes() []byte {
-	data, err := protobuf.Marshal(feeSchedules._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(feeSchedules._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

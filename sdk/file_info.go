@@ -66,7 +66,7 @@ func (fileInfo *FileInfo) _ToProtobuf() *services.FileGetInfoResponse_FileInfo {
 
 // ToBytes returns the byte representation of the FileInfo
 func (fileInfo FileInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(fileInfo._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(fileInfo._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

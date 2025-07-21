@@ -161,7 +161,7 @@ func (fee CustomFractionalFee) _ToProtobuf() *services.CustomFee {
 
 // ToBytes returns a byte array representation of the CustomFractionalFee
 func (fee CustomFractionalFee) ToBytes() []byte {
-	data, err := protobuf.Marshal(fee._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(fee._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

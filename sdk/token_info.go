@@ -355,7 +355,7 @@ func (tokenInfo *TokenInfo) _ToProtobuf() *services.TokenInfo {
 
 // ToBytes returns the byte representation of the TokenInfo
 func (tokenInfo TokenInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(tokenInfo._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(tokenInfo._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

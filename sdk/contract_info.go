@@ -111,7 +111,7 @@ func (contractInfo *ContractInfo) _ToProtobuf() *services.ContractGetInfoRespons
 
 // ToBytes returns a serialized version of the ContractInfo object
 func (contractInfo ContractInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(contractInfo._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(contractInfo._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

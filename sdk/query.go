@@ -142,7 +142,7 @@ func _QueryMakePaymentTransaction(transactionID TransactionID, nodeAccountID Acc
 		},
 	}
 
-	bodyBytes, err := protobuf.Marshal(&body)
+	bodyBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&body)
 	if err != nil {
 		return nil, errors.Wrap(err, "error serializing Query body")
 	}

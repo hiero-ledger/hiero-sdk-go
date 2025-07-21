@@ -62,7 +62,7 @@ func _LiveHashFromProtobuf(hash *services.LiveHash) (LiveHash, error) {
 
 // ToBytes returns the byte representation of the LiveHash
 func (liveHash LiveHash) ToBytes() []byte {
-	data, err := protobuf.Marshal(liveHash._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(liveHash._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

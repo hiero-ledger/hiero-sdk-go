@@ -73,7 +73,7 @@ func (stakingInfo *StakingInfo) _ToProtobuf() *services.StakingInfo { // nolint
 
 // ToBytes returns the byte representation of the StakingInfo
 func (stakingInfo *StakingInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(stakingInfo._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(stakingInfo._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

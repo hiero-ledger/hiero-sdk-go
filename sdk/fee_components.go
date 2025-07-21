@@ -62,7 +62,7 @@ func (feeComponents FeeComponents) _ToProtobuf() *services.FeeComponents {
 
 // ToBytes returns the byte representation of the FeeComponents
 func (feeComponents FeeComponents) ToBytes() []byte {
-	data, err := protobuf.Marshal(feeComponents._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(feeComponents._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

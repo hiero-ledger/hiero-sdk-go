@@ -44,7 +44,7 @@ func KeyFromBytes(bytes []byte) (Key, error) {
 
 func KeyToBytes(key Key) ([]byte, error) {
 	protoKey := key._ToProtoKey()
-	return protobuf.Marshal(protoKey)
+	return protobuf.MarshalOptions{Deterministic: true}.Marshal(protoKey)
 }
 
 func _KeyFromProtobuf(pbKey *services.Key) (Key, error) {
