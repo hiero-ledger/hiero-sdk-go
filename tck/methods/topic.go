@@ -23,7 +23,7 @@ func (t *TopicService) SetSdkService(service *SDKService) {
 
 // CreateTopic jRPC method for createTopic
 func (t *TopicService) CreateTopic(_ context.Context, params param.CreateTopicParams) (*response.TopicResponse, error) {
-	transaction := hiero.NewTopicCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
+	transaction := hiero.NewTopicCreateTransaction().SetGrpcDeadline(&threeSecondsDuration).SetMaxTransactionFee(hiero.NewHbar(50))
 
 	if params.Memo != nil {
 		transaction.SetTopicMemo(*params.Memo)
