@@ -358,7 +358,7 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// DisassociateToken jRPC method for dissociateToken
+// DissociatesToken jRPC method for dissociateToken
 func (t *TokenService) DissociatesToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenDissociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
