@@ -187,7 +187,7 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 			for _, nodeAccountID := range tx.nodeAccountIDs.slice {
 				body.NodeAccountID = nodeAccountID.(AccountID)._ToProtobuf()
 
-				bodyBytes, err := protobuf.Marshal(body)
+				bodyBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(body)
 				if err != nil {
 					return tx, errors.Wrap(err, "error serializing tx body for topic submission")
 				}

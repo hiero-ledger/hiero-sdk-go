@@ -454,7 +454,7 @@ func (record TransactionRecord) _ToProtobuf() (*services.TransactionGetRecordRes
 
 	var alias []byte
 	if record.AliasKey != nil {
-		alias, _ = protobuf.Marshal(record.AliasKey._ToProtoKey())
+		alias, _ = protobuf.MarshalOptions{Deterministic: true}.Marshal(record.AliasKey._ToProtoKey())
 	}
 
 	paidStakingRewards := make([]*services.AccountAmount, 0)
@@ -565,7 +565,7 @@ func (record TransactionRecord) ToBytes() []byte {
 	if err != nil {
 		return make([]byte, 0)
 	}
-	data, err := protobuf.Marshal(rec)
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(rec)
 	if err != nil {
 		return make([]byte, 0)
 	}

@@ -117,7 +117,7 @@ func (topicInfo *TopicInfo) _ToProtobuf() *services.ConsensusTopicInfo {
 
 // ToBytes returns a byte array representation of the TopicInfo object
 func (topicInfo TopicInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(topicInfo._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(topicInfo._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}
