@@ -37,6 +37,9 @@ func main() {
 	fileService := new(methods.FileService)
 	fileService.SetSdkService(sdkService)
 
+	topicService := new(methods.TopicService)
+	topicService.SetSdkService(sdkService)
+
 	// Create a new RPC server
 	assigner := handler.Map{
 		"setup":                  postHandler(HandleError, handler.New(sdkService.Setup)),
@@ -70,6 +73,7 @@ func main() {
 		"deleteFile":             postHandler(HandleError, handler.New(fileService.DeleteFile)),
 		"appendFile":             postHandler(HandleError, handler.New(fileService.AppendFile)),
 		"rejectToken":            postHandler(HandleError, handler.New(tokenService.RejectToken)),
+		"createTopic":            postHandler(HandleError, handler.New(topicService.CreateTopic)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
