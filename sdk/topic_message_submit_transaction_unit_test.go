@@ -450,3 +450,39 @@ func TestUnitTopicMessageSubmitTransactionClearCustomFeeLimit(t *testing.T) {
 	transaction.ClearCustomFeeLimits()
 	require.Equal(t, 0, len(transaction.GetCustomFeeLimits()))
 }
+
+func TestUnitTopicMessageSubmitTransactionScheduleCustomFees(t *testing.T) {
+	t.Parallel()
+
+	customFeeLimit1 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 10}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).
+			SetDenominatingTokenID(TokenID{Token: 10}))
+
+	customFeeLimit2 := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 11}).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).
+			SetDenominatingTokenID(TokenID{Token: 11}))
+
+	schedule, err := NewTopicMessageSubmitTransaction().
+		SetCustomFeeLimits([]*CustomFeeLimit{customFeeLimit1, customFeeLimit2}).
+		Schedule()
+	require.NoError(t, err)
+
+	require.Equal(t, 2, len(schedule.schedulableBody.MaxCustomFees))
+	require.Equal(t, int64(customFeeLimit1.PayerId.Account), schedule.schedulableBody.MaxCustomFees[0].AccountId.GetAccountNum())
+	require.Equal(t, int64(customFeeLimit2.PayerId.Account), schedule.schedulableBody.MaxCustomFees[1].AccountId.GetAccountNum())
+
+	txBytes, err := schedule.ToBytes()
+	require.NoError(t, err)
+
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	scheduleFromBytes, ok := txFromBytes.(ScheduleCreateTransaction)
+	require.True(t, ok)
+
+	require.Equal(t, 2, len(scheduleFromBytes.schedulableBody.MaxCustomFees))
+	require.Equal(t, int64(customFeeLimit1.PayerId.Account), scheduleFromBytes.schedulableBody.MaxCustomFees[0].AccountId.GetAccountNum())
+	require.Equal(t, int64(customFeeLimit2.PayerId.Account), scheduleFromBytes.schedulableBody.MaxCustomFees[1].AccountId.GetAccountNum())
+}
