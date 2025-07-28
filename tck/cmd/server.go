@@ -74,6 +74,7 @@ func main() {
 		"appendFile":             postHandler(HandleError, handler.New(fileService.AppendFile)),
 		"rejectToken":            postHandler(HandleError, handler.New(tokenService.RejectToken)),
 		"createTopic":            postHandler(HandleError, handler.New(topicService.CreateTopic)),
+		"updateTopic":            postHandler(HandleError, handler.New(topicService.UpdateTopic)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
