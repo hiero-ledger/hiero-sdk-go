@@ -853,3 +853,284 @@ func TestIntegrationRevenueGeneratingTopicDoesNotChargeTreasuries(t *testing.T) 
 
 	assert.True(t, accountBalance.Tokens.Get(tokenId) == 1)
 }
+
+func TestIntegrationRevenueGeneratingTopicCanChargeHbarsWithLimitSchedule(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	var hbar int64 = 100_000_000
+	customFee := NewCustomFixedFee().
+		SetAmount(hbar / 2).
+		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
+
+	// Create a revenue generating topic with Hbar custom fee
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
+		AddCustomFee(customFee).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	// Create payer with 1 Hbar
+	payerId, payerPrivateKey, err := createAccount(&env)
+	require.NoError(t, err)
+
+	customFeeLimit := NewCustomFeeLimit().
+		SetPayerId(payerId).
+		AddCustomFee(NewCustomFixedFee().SetAmount(hbar))
+
+	// Submit a message to the revenue generating topic with custom fee limit
+	env.Client.SetOperator(payerId, payerPrivateKey)
+	schedule, err := NewTopicMessageSubmitTransaction().
+		SetMessage("message").
+		SetTopicID(topicID).
+		AddCustomFeeLimit(customFeeLimit).
+		Schedule()
+	require.NoError(t, err)
+
+	resp, err = schedule.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
+
+	// Verify the custom fee charged
+	accountInfo, err := NewAccountInfoQuery().
+		SetAccountID(payerId).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.True(t, accountInfo.Balance.AsTinybar() < hbar/2)
+}
+
+func TestIntegrationRevenueGeneratingTopicCanotChargeHbarsWithLowerLimitSchedule(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	var hbar int64 = 100_000_000
+	customFee := NewCustomFixedFee().
+		SetAmount(hbar / 2).
+		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
+
+	// Create a revenue generating topic with Hbar custom fee
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
+		AddCustomFee(customFee).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	// Create payer with 1 Hbar
+	payerId, payerPrivateKey, err := createAccount(&env)
+	require.NoError(t, err)
+
+	// Set custom fee limit with lower amount than the custom fee
+	customFeeLimit := NewCustomFeeLimit().
+		SetPayerId(payerId).
+		AddCustomFee(NewCustomFixedFee().SetAmount((hbar / 2) - 1))
+
+	// Submit a message to the revenue generating topic with custom fee limit - fails with INSUFFICIENT_CUSTOM_FEE
+	env.Client.SetOperator(payerId, payerPrivateKey)
+	schedule, err := NewTopicMessageSubmitTransaction().
+		SetMessage("message").
+		SetTopicID(topicID).
+		AddCustomFeeLimit(customFeeLimit).
+		Schedule()
+	require.NoError(t, err)
+
+	resp, err = schedule.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
+	// Verify the custom fee did not charge
+	accountInfo, err := NewAccountInfoQuery().
+		SetAccountID(payerId).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.True(t, accountInfo.Balance.AsTinybar() > hbar/2)
+}
+
+func TestIntegrationRevenueGeneratingTopicCannotExecuteWithInvalidCustomFeeLimitSchedule(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	tokenId, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	customFee := NewCustomFixedFee().
+		SetAmount(2).
+		SetDenominatingTokenID(tokenId).
+		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
+
+	// Create a revenue generating topic with token custom fee
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
+		AddCustomFee(customFee).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	// Create payer with unlimited token associations
+	payerId, payerPrivateKey, err := createAccount(&env, func(transaction *AccountCreateTransaction) {
+		transaction.SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	// Send tokens to payer
+	resp, err = NewTransferTransaction().
+		AddTokenTransfer(tokenId, env.Client.GetOperatorAccountID(), -2).
+		AddTokenTransfer(tokenId, payerId, 2).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	// Set custom fee limit with invalid token Id
+	customFeeLimit := NewCustomFeeLimit().
+		SetPayerId(payerId).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).SetDenominatingTokenID(TokenID{Token: 0}))
+
+	// Submit a message to the revenue generating topic - fails with NO_VALID_MAX_CUSTOM_FEE
+	env.Client.SetOperator(payerId, payerPrivateKey)
+	schedule, err := NewTopicMessageSubmitTransaction().
+		SetMessage("message").
+		SetTopicID(topicID).
+		AddCustomFeeLimit(customFeeLimit).
+		Schedule()
+	require.NoError(t, err)
+
+	resp, err = schedule.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
+	// Verify the custom fee did not charge
+	accountInfo, err := NewAccountInfoQuery().
+		SetAccountID(payerId).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	var hbar int64 = 100_000_000
+	assert.True(t, accountInfo.Balance.AsTinybar() > hbar/2)
+
+	// Set custom fee limit with duplicate denomination token Id
+	customFeeLimit = NewCustomFeeLimit().
+		SetPayerId(payerId).
+		AddCustomFee(NewCustomFixedFee().SetAmount(1).SetDenominatingTokenID(tokenId)).
+		AddCustomFee(NewCustomFixedFee().SetAmount(2).SetDenominatingTokenID(tokenId))
+
+	// Submit a message to the revenue generating topic - fails with DUPLICATE_DENOMINATION_IN_MAX_CUSTOM_FEE_LIST
+	env.Client.SetOperator(payerId, payerPrivateKey)
+	schedule, err = NewTopicMessageSubmitTransaction().
+		SetMessage("message").
+		SetTopicID(topicID).
+		AddCustomFeeLimit(customFeeLimit).
+		Schedule()
+	require.NoError(t, err)
+
+	resp, err = schedule.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+
+	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
+	// Verify the custom fee did not charge
+	accountInfo, err = NewAccountInfoQuery().
+		SetAccountID(payerId).
+		Execute(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationRevenueGeneratingTopicGetScheduledTransactionCustomFeeLimits(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	var hbar int64 = 100_000_000
+	customFee := NewCustomFixedFee().
+		SetAmount(hbar / 2).
+		SetFeeCollectorAccountID(env.Client.GetOperatorAccountID())
+
+	// Create a revenue generating topic with Hbar custom fee
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetFeeScheduleKey(env.Client.GetOperatorPublicKey()).
+		AddCustomFee(customFee).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	// Create payer with 1 Hbar
+	payerId, payerPrivateKey, err := createAccount(&env)
+	require.NoError(t, err)
+
+	customFeeLimit := NewCustomFeeLimit().
+		SetPayerId(payerId).
+		AddCustomFee(NewCustomFixedFee().SetAmount(hbar))
+
+	// Submit a message to the revenue generating topic with custom fee limit
+	env.Client.SetOperator(payerId, payerPrivateKey)
+	schedule, err := NewTopicMessageSubmitTransaction().
+		SetMessage("message").
+		SetTopicID(topicID).
+		AddCustomFeeLimit(customFeeLimit).
+		Schedule()
+	require.NoError(t, err)
+
+	resp, err = schedule.Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	scheduleID := receipt.ScheduleID
+
+	scheduleInfo, err := NewScheduleInfoQuery().
+		SetScheduleID(*scheduleID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	transactionInterface, err := scheduleInfo.GetScheduledTransaction()
+	require.NoError(t, err)
+
+	topicMessageSubmitTransaction, ok := transactionInterface.(TopicMessageSubmitTransaction)
+	require.True(t, ok)
+
+	require.Equal(t, 1, len(topicMessageSubmitTransaction.GetCustomFeeLimits()))
+	require.Equal(t, customFeeLimit.String(), topicMessageSubmitTransaction.GetCustomFeeLimits()[0].String())
+}
