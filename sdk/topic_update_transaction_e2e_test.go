@@ -21,7 +21,7 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 	defer CloseIntegrationTestEnv(env, nil)
 
 	resp, err := NewTopicCreateTransaction().
-		// SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		SetTopicMemo(oldTopicMemo).
 		Execute(env.Client)
@@ -44,7 +44,7 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 
 	assert.Equal(t, oldTopicMemo, info.TopicMemo)
 	assert.Equal(t, uint64(0), info.SequenceNumber)
-	// assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
+	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
 
 	newTopicMemo := "go-sdk::TestConsensusTopicUpdateTransaction_Execute::updated"
 

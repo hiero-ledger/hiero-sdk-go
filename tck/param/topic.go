@@ -26,3 +26,8 @@ type UpdateTopicParams struct {
 	ExpirationTime          *string                  `json:"expirationTime"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type DeleteTopicParams struct {
+	TopicId                 *string                  `json:"topicId"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+}

@@ -23,7 +23,7 @@ func (t *TopicService) SetSdkService(service *SDKService) {
 
 // CreateTopic jRPC method for createTopic
 func (t *TopicService) CreateTopic(_ context.Context, params param.CreateTopicParams) (*response.TopicResponse, error) {
-	transaction := hiero.NewTopicCreateTransaction().SetGrpcDeadline(&threeSecondsDuration).SetMaxTransactionFee(hiero.NewHbar(50))
+	transaction := hiero.NewTopicCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.Memo != nil {
 		transaction.SetTopicMemo(*params.Memo)
@@ -105,7 +105,7 @@ func (t *TopicService) CreateTopic(_ context.Context, params param.CreateTopicPa
 
 // UpdateTopic jRPC method for updateTopic
 func (t *TopicService) UpdateTopic(_ context.Context, params param.UpdateTopicParams) (*response.TopicResponse, error) {
-	transaction := hiero.NewTopicUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration).SetMaxTransactionFee(hiero.NewHbar(50))
+	transaction := hiero.NewTopicUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.TopicId != nil {
 		topicId, err := hiero.TopicIDFromString(*params.TopicId)
@@ -185,6 +185,39 @@ func (t *TopicService) UpdateTopic(_ context.Context, params param.UpdateTopicPa
 			}
 			transaction.SetCustomFees(topicCustomFees)
 		}
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TopicResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}
+
+// DeleteTopic jRPC method for deleteTopic
+func (t *TopicService) DeleteTopic(_ context.Context, params param.DeleteTopicParams) (*response.TopicResponse, error) {
+	transaction := hiero.NewTopicDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TopicId != nil {
+		topicId, err := hiero.TopicIDFromString(*params.TopicId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTopicID(topicId)
 	}
 
 	if params.CommonTransactionParams != nil {
