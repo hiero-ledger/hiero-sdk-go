@@ -50,7 +50,6 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 
 	resp, err = NewTopicUpdateTransaction().
 		SetTopicID(topicID).
-		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetTopicMemo(newTopicMemo).
 		Execute(env.Client)
