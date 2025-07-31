@@ -92,7 +92,7 @@ func (t *TopicService) CreateTopic(_ context.Context, params param.CreateTopicPa
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -198,7 +198,7 @@ func (t *TopicService) UpdateTopic(_ context.Context, params param.UpdateTopicPa
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -231,7 +231,86 @@ func (t *TopicService) DeleteTopic(_ context.Context, params param.DeleteTopicPa
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.TopicResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}
+
+// SubmitTopicMessage jRPC method for submitTopicMessage
+func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.SubmitTopicMessageParams) (*response.TopicResponse, error) {
+	transaction := hiero.NewTopicMessageSubmitTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TopicId != nil {
+		topicId, err := hiero.TopicIDFromString(*params.TopicId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTopicID(topicId)
+	}
+
+	if params.Message != nil {
+		transaction.SetMessage(*params.Message)
+	}
+
+	if params.MaxChunks != nil {
+		if *params.MaxChunks < 0 {
+			return nil, response.NewInternalError("maxChunks must be greater than 0")
+		}
+		transaction.SetMaxChunks(uint64(*params.MaxChunks))
+	}
+
+	if params.ChunkSize != nil {
+		if *params.ChunkSize < 0 {
+			return nil, response.NewInternalError("chunkSize must be greater than 0")
+		}
+		transaction.SetChunkSize(uint64(*params.ChunkSize))
+	}
+
+	if params.CustomFeeLimits != nil {
+		for _, customFeeLimit := range *params.CustomFeeLimits {
+			var sdkCustomFeeLimit hiero.CustomFeeLimit
+			if customFeeLimit.PayerId != nil {
+				payerId, err := hiero.AccountIDFromString(*customFeeLimit.PayerId)
+				if err != nil {
+					return nil, err
+				}
+				sdkCustomFeeLimit.SetPayerId(payerId)
+
+				for _, fixedFee := range *customFeeLimit.FixedFees {
+					sdkFixedFee := hiero.NewCustomFixedFee()
+					if fixedFee.DenominatingTokenId != nil {
+						tokenId, err := hiero.TokenIDFromString(*fixedFee.DenominatingTokenId)
+						if err != nil {
+							return nil, err
+						}
+						sdkFixedFee.SetDenominatingTokenID(tokenId)
+					}
+					parsed, _ := strconv.ParseInt(fixedFee.Amount, 10, 64)
+					sdkFixedFee.SetAmount(parsed)
+					sdkCustomFeeLimit.AddCustomFee(sdkFixedFee)
+				}
+			}
+			transaction.AddCustomFeeLimit(&sdkCustomFeeLimit)
+		}
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(t.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}

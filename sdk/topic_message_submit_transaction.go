@@ -11,14 +11,13 @@ import (
 	protobuf "google.golang.org/protobuf/proto"
 )
 
-const chunkSize = 1024
-
 // TopicMessageSubmitTransaction
 // Sends a message/messages to the Topic ID
 type TopicMessageSubmitTransaction struct {
 	*Transaction[*TopicMessageSubmitTransaction]
 	maxChunks uint64
 	message   []byte
+	chunkSize uint64
 	topicID   *TopicID
 }
 
@@ -27,8 +26,10 @@ type TopicMessageSubmitTransaction struct {
 func NewTopicMessageSubmitTransaction() *TopicMessageSubmitTransaction {
 	tx := &TopicMessageSubmitTransaction{
 		maxChunks: 20,
+		chunkSize: 1024,
 		message:   make([]byte, 0),
 	}
+
 	tx.Transaction = _NewTransaction(tx)
 
 	return tx
@@ -96,6 +97,18 @@ func (tx *TopicMessageSubmitTransaction) GetMaxChunks() uint64 {
 	return tx.maxChunks
 }
 
+// SetChunkSize sets the chunk size to use to send the message
+func (tx *TopicMessageSubmitTransaction) SetChunkSize(chunkSize uint64) *TopicMessageSubmitTransaction {
+	tx._RequireNotFrozen()
+	tx.chunkSize = chunkSize
+	return tx
+}
+
+// GetChunkSize returns the chunk size to use to send the message
+func (tx *TopicMessageSubmitTransaction) GetChunkSize() uint64 {
+	return tx.chunkSize
+}
+
 // SetCustomFeeLimits Sets the maximum custom fee that the user is willing to pay for the message.
 func (tx *TopicMessageSubmitTransaction) SetCustomFeeLimits(customFeeLimits []*CustomFeeLimit) *TopicMessageSubmitTransaction {
 	tx._RequireNotFrozen()
@@ -137,6 +150,10 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 		tx.SetNodeAccountIDs(client.network._GetNodeAccountIDsForExecute())
 	}
 
+	if tx.chunkSize == 0 {
+		return tx, errInvalidChunkSize
+	}
+
 	tx._InitFee(client)
 	err = tx.validateNetworkOnIDs(client)
 	if err != nil {
@@ -147,7 +164,7 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 	}
 	body := tx.build()
 
-	chunks := uint64((len(tx.message) + (chunkSize - 1)) / chunkSize)
+	chunks := (uint64(len(tx.message)) + (tx.chunkSize - 1)) / tx.chunkSize
 	if chunks > tx.maxChunks {
 		return tx, ErrMaxChunksExceeded{
 			Chunks:    chunks,
@@ -161,13 +178,14 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 	tx.transactionIDs = _NewLockableSlice()
 	tx.transactions = _NewLockableSlice()
 	tx.signedTransactions = _NewLockableSlice()
+	var i uint64
 	if b, ok := body.Data.(*services.TransactionBody_ConsensusSubmitMessage); ok {
-		for i := 0; uint64(i) < chunks; i++ {
-			start := i * chunkSize
-			end := start + chunkSize
+		for i = 0; i < chunks; i++ {
+			start := i * tx.chunkSize
+			end := start + tx.chunkSize
 
-			if end > len(tx.message) {
-				end = len(tx.message)
+			if end > uint64(len(tx.message)) {
+				end = uint64(len(tx.message))
 			}
 
 			tx.transactionIDs._Push(_TransactionIDFromProtobuf(nextTransactionID._ToProtobuf()))
@@ -208,7 +226,7 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 }
 
 func (tx *TopicMessageSubmitTransaction) Schedule() (*ScheduleCreateTransaction, error) {
-	chunks := uint64((len(tx.message) + (chunkSize - 1)) / chunkSize)
+	chunks := (uint64(len(tx.message)) + (tx.chunkSize - 1)) / tx.chunkSize
 	if chunks > 1 {
 		return &ScheduleCreateTransaction{}, ErrMaxChunksExceeded{
 			Chunks:    chunks,

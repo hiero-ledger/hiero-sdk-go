@@ -31,3 +31,17 @@ type DeleteTopicParams struct {
 	TopicId                 *string                  `json:"topicId"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type SubmitTopicMessageParams struct {
+	TopicId                 *string                  `json:"topicId"`
+	Message                 *string                  `json:"message"`
+	MaxChunks               *int64                   `json:"maxChunks"`
+	ChunkSize               *int64                   `json:"chunkSize"`
+	CustomFeeLimits         *[]CustomFeeLimit        `json:"customFeeLimits"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+}
+
+type CustomFeeLimit struct {
+	PayerId   *string     `json:"payerId"`
+	FixedFees *[]FixedFee `json:"fixedFees"`
+}
