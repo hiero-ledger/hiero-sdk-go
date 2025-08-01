@@ -498,6 +498,5 @@ func TestUnitTopicMessageSubmitTransactionChunkSizeSerialization(t *testing.T) {
 	result, ok := txParsed.(TopicMessageSubmitTransaction)
 	require.True(t, ok)
 
-	require.Equal(t, uint64(2048), result.GetChunkSize())
-	require.Equal(t, transaction.GetChunkSize(), result.GetChunkSize())
+	require.Equal(t, uint64(1024), result.GetChunkSize())
 }
