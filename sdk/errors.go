@@ -37,6 +37,7 @@ var errNodeIsUnhealthy = errors.New("node is unhealthy")
 var errNodeIdIsRequired = errors.New("nodeID is required")
 var errEvmAddressIsNotALongZeroAddress = errors.New("EVM address is not a correct long zero address")
 var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct size")
+var errInvalidChunkSize = errors.New("chunk size must be greater than 0")
 
 // Batch transaction specific errors
 var errInnerTransactionNil = errors.New("inner transaction cannot be nil")
