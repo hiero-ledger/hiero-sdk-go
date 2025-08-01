@@ -42,6 +42,7 @@ func _TopicMessageSubmitTransactionFromProtobuf(tx Transaction[*TopicMessageSubm
 	}
 	topicMessageSubmitTransaction := TopicMessageSubmitTransaction{
 		maxChunks: 20,
+		chunkSize: 1024,
 		message:   message,
 		topicID:   _TopicIDFromProtobuf(pb.GetConsensusSubmitMessage().GetTopicID()),
 	}
