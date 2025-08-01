@@ -66,8 +66,8 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 	}
 
 	var grpcProxyEndpoint *Endpoint
-	if pb.GetNodeUpdate().GetGrpcWebProxyEndpoint() != nil {
-		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeUpdate().GetGrpcWebProxyEndpoint())
+	if pb.GetNodeUpdate().GetGrpcProxyEndpoint() != nil {
+		grpcProxyEndpointValue := EndpointFromProtobuf(pb.GetNodeUpdate().GetGrpcProxyEndpoint())
 		grpcProxyEndpoint = &grpcProxyEndpointValue
 	}
 

@@ -2,6 +2,7 @@ package hiero
 
 import (
 	"reflect"
+	"slices"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/pkg/errors"
@@ -94,10 +95,8 @@ func (tx *BatchTransaction) validateInnerTransaction(innerTransaction Transactio
 
 	// Validate transaction type is not blacklisted
 	txType := reflect.TypeOf(innerTransaction)
-	for _, blacklistedType := range blacklistedTransactions {
-		if txType == blacklistedType {
-			return errTransactionTypeNotAllowed
-		}
+	if slices.Contains(blacklistedTransactions, txType) {
+		return errTransactionTypeNotAllowed
 	}
 
 	innerBaseTransaction := innerTransaction.getBaseTransaction()
