@@ -450,3 +450,53 @@ func TestUnitTopicMessageSubmitTransactionClearCustomFeeLimit(t *testing.T) {
 	transaction.ClearCustomFeeLimits()
 	require.Equal(t, 0, len(transaction.GetCustomFeeLimits()))
 }
+
+func TestUnitTopicMessageSubmitTransactionSetChunkSize(t *testing.T) {
+	t.Parallel()
+
+	transaction := NewTopicMessageSubmitTransaction()
+
+	// Test default chunk size
+	require.Equal(t, uint64(1024), transaction.GetChunkSize())
+
+	result := transaction.SetChunkSize(2048)
+	require.Equal(t, uint64(2048), transaction.GetChunkSize())
+	require.Equal(t, transaction, result) // Should return the same transaction for method chaining
+
+	// Test setting another chunk size
+	transaction.SetChunkSize(512)
+	require.Equal(t, uint64(512), transaction.GetChunkSize())
+
+	// Test setting chunk size to 0
+	transaction.SetChunkSize(0)
+	require.Equal(t, uint64(0), transaction.GetChunkSize())
+}
+
+func TestUnitTopicMessageSubmitTransactionChunkSizeSerialization(t *testing.T) {
+	t.Parallel()
+
+	topic := TopicID{Topic: 3}
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	transaction, err := NewTopicMessageSubmitTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		SetTopicID(topic).
+		SetMessage([]byte("test message")).
+		SetChunkSize(2048).
+		SetTransactionMemo("chunk size test").
+		Freeze()
+	require.NoError(t, err)
+
+	txBytes, err := transaction.ToBytes()
+	require.NoError(t, err)
+
+	txParsed, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	result, ok := txParsed.(TopicMessageSubmitTransaction)
+	require.True(t, ok)
+
+	require.Equal(t, uint64(1024), result.GetChunkSize())
+}

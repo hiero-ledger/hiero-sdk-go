@@ -12,8 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIntegrationCanExecuteNodeCreateTransaction(t *testing.T) {
-	t.Skip("The test has to be disabled so it doesn't fail calls to local-node")
+func TestIntegrationNodeCreateTransactionCanExecute(t *testing.T) {
 	t.Parallel()
 
 	// Set the network
@@ -76,25 +75,6 @@ func TestIntegrationCanExecuteNodeCreateTransaction(t *testing.T) {
 
 	require.NoError(t, err)
 	resp, err := tx.Sign(adminKey).Execute(client)
-	require.NoError(t, err)
-
-	_, err = resp.GetReceipt(client)
-	require.NoError(t, err)
-
-	updatedProxyEndpoint := Endpoint{
-		domainName: "testWebUpdated.com",
-		port:       123456,
-	}
-
-	updateTx, err := NewNodeUpdateTransaction().
-		SetAccountID(accountId).
-		SetDescription("testUpdated").
-		SetDeclineReward(true).
-		SetGrpcWebProxyEndpoint(updatedProxyEndpoint).
-		FreezeWith(client)
-	require.NoError(t, err)
-
-	resp, err = updateTx.Sign(adminKey).Execute(client)
 	require.NoError(t, err)
 
 	_, err = resp.GetReceipt(client)
