@@ -24,7 +24,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+              uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
               with:
                   egress-policy: audit
 
@@ -33,10 +33,10 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
-            - name: Set up Go 1.21
+            - name: Set up Go 1.24
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
               with:
-                  go-version: "1.21"
+                  go-version: "1.24"
               id: go
 
             - name: Check out code into the Go module directory
@@ -72,7 +72,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+              uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
               with:
                   egress-policy: audit
 
@@ -86,10 +86,10 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
-            - name: Set up Go 1.21
+            - name: Set up Go 1.24
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
               with:
-                  go-version: "1.21"
+                  go-version: "1.24"
               id: go
 
             - name: Check out code into the Go module directory
@@ -101,7 +101,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@a39acf8cfbaa2feb195a86530d0ab643a45aa541 # v0.10.0
               with:
                   installMirrorNode: true
-                  hieroVersion: v0.64.0
+                  hieroVersion: v0.64.2-rc1
+                  mirrorNodeVersion: v0.134.0
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
@@ -143,7 +144,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+              uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
               with:
                   egress-policy: audit
 
@@ -157,10 +158,10 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
-            - name: Set up Go 1.21
+            - name: Set up Go 1.24
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
               with:
-                  go-version: "1.21"
+                  go-version: "1.24"
               id: go
 
             - name: Check out code into the Go module directory
@@ -174,7 +175,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@a39acf8cfbaa2feb195a86530d0ab643a45aa541 # v0.10.0
               with:
                   installMirrorNode: true
-                  hieroVersion: v0.64.0
+                  hieroVersion: v0.64.2-rc1
+                  mirrorNodeVersion: v0.134.0
 
             - name: Set Operator Account
               run: |
@@ -190,7 +192,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+              uses: step-security/harden-runner@ec9f2d5744a09debf3a187a3f4f675c53b671911 # v2.13.0
               with:
                   egress-policy: audit
 
@@ -199,10 +201,10 @@ jobs:
                   sudo apt-get update
                   sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
-            - name: Set up Go 1.21
+            - name: Set up Go 1.24
               uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
               with:
-                  go-version: "1.21"
+                  go-version: "1.24"
               id: go
 
             - name: Check out code into the Go module directory
