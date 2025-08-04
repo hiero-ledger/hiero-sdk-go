@@ -70,7 +70,7 @@ func main() {
 	/*
 	 * Step 2: Wait for mirror node to import data
 	 */
-	time.Sleep(10 * time.Second)
+	time.Sleep(30 * time.Second)
 
 	/*
 	 * Step 3: Estimate the gas needed
