@@ -21,7 +21,7 @@ type TopicUpdateTransaction struct {
 	feeScheduleKey     Key
 	feeExemptKeys      []Key
 	customFees         []*CustomFixedFee
-	memo               string
+	memo               *string
 	autoRenewPeriod    *time.Duration
 	expirationTime     *time.Time
 }
@@ -77,9 +77,9 @@ func _TopicUpdateTransactionFromProtobuf(tx Transaction[*TopicUpdateTransaction]
 		autoRenewVal := _DurationFromProtobuf(pb.GetConsensusUpdateTopic().GetAutoRenewPeriod())
 		autoRenew = &autoRenewVal
 	}
-	var memo string
+	var memo *string
 	if pb.GetConsensusUpdateTopic().GetMemo() != nil {
-		memo = pb.GetConsensusUpdateTopic().GetMemo().Value
+		memo = &pb.GetConsensusUpdateTopic().GetMemo().Value
 	}
 	topicUpdateTransaction := TopicUpdateTransaction{
 		topicID:            _TopicIDFromProtobuf(pb.GetConsensusUpdateTopic().GetTopicID()),
@@ -210,13 +210,17 @@ func (tx *TopicUpdateTransaction) GetCustomFees() []*CustomFixedFee {
 // SetTopicMemo sets a short publicly visible memo about the topic. No guarantee of uniqueness.
 func (tx *TopicUpdateTransaction) SetTopicMemo(memo string) *TopicUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.memo = memo
+	tx.memo = &memo
 	return tx
 }
 
 // GetTopicMemo returns the short publicly visible memo about the topic.
 func (tx *TopicUpdateTransaction) GetTopicMemo() string {
-	return tx.memo
+	if tx.memo != nil {
+		return *tx.memo
+	}
+
+	return ""
 }
 
 // SetExpirationTime sets the effective  timestamp at (and after) which all  transactions and queries
@@ -347,8 +351,8 @@ func (tx TopicUpdateTransaction) buildScheduled() (*services.SchedulableTransact
 func (tx TopicUpdateTransaction) buildProtoBody() *services.ConsensusUpdateTopicTransactionBody {
 	body := &services.ConsensusUpdateTopicTransactionBody{}
 
-	if tx.memo != "" {
-		body.Memo = &wrapperspb.StringValue{Value: tx.memo}
+	if tx.memo != nil {
+		body.Memo = &wrapperspb.StringValue{Value: *tx.memo}
 	}
 
 	if tx.topicID != nil {

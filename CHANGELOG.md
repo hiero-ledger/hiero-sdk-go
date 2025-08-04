@@ -1,3 +1,12 @@
+## v2.67.0
+
+### Added
+- Checks for `NodeUpdate` and `NodeDelete` to Return error when `nodeID` is not explicitly set [#1426](https://github.com/hiero-ledger/hiero-sdk-go/pull/1426)
+    - This prevents users from accidentally updating or deleting node with id 0
+
+### Changed
+- Refactored usage of for loops with `slices.Contains`, which can make the code more concise and easy to read [#1442](https://github.com/hiero-ledger/hiero-sdk-go/pull/1442)
+
 ## v2.66.0
 
 ### Added
