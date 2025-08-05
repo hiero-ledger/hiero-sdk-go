@@ -256,7 +256,7 @@ func (id ContractID) _ToProtoKey() *services.Key {
 
 // ToBytes returns a byte array representation of the ContractID
 func (id ContractID) ToBytes() []byte {
-	data, err := protobuf.Marshal(id._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(id._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

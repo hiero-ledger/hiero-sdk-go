@@ -163,7 +163,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 				BodyBytes: transaction.BodyBytes, // nolint
 				SigMap:    transaction.SigMap,    // nolint
 			}
-			signedBytes, err := protobuf.Marshal(signedTx)
+			signedBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(signedTx)
 			if err != nil {
 				return nil, errors.Wrap(err, "error serializing signed transaction")
 			}
@@ -703,7 +703,7 @@ func (tx *Transaction[T]) buildUnsignedTransaction(index int) (*services.Transac
 	}
 	body.TransactionFee = transactionFee
 
-	bodyBytes, err := protobuf.Marshal(body)
+	bodyBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(body)
 	if err != nil {
 		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
 	}
@@ -814,7 +814,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		originalBody.BatchKey = tx.batchKey._ToProtoKey()
 	}
 
-	updatedBody, err := protobuf.Marshal(&originalBody)
+	updatedBody, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&originalBody)
 	if err != nil {
 		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
 	}
@@ -824,7 +824,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		sigPairLen := len(signedTx.SigMap.GetSigPair())
 		// For cases where we need more than 1 signature
 		if sigPairLen > 0 && sigPairLen == len(tx.publicKeys) {
-			data, err := protobuf.Marshal(signedTx)
+			data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(signedTx)
 			if err != nil {
 				return &services.Transaction{}, errors.Wrap(err, "failed to serialize transactions for building")
 			}
@@ -841,7 +841,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 	tx._SignTransaction(index)
 
 	signed := tx.signedTransactions._Get(index).(*services.SignedTransaction)
-	data, err := protobuf.Marshal(signed)
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(signed)
 	if err != nil {
 		return &services.Transaction{}, errors.Wrap(err, "failed to serialize transactions for building")
 	}
@@ -976,7 +976,7 @@ func (tx *Transaction[T]) ToBytes() ([]byte, error) {
 		return make([]byte, 0), err
 	}
 
-	pbTransactionList, err = protobuf.Marshal(&sdk.TransactionList{
+	pbTransactionList, err = protobuf.MarshalOptions{Deterministic: true}.Marshal(&sdk.TransactionList{
 		TransactionList: allTx,
 	})
 	if err != nil {
@@ -1100,7 +1100,7 @@ func (tx *Transaction[T]) GetTransactionSize() (int, error) {
 		return 0, err
 	}
 
-	txBytes, err := protobuf.Marshal(transaction)
+	txBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(transaction)
 	if err != nil {
 		return 0, err
 	}
@@ -1115,7 +1115,7 @@ func (tx *Transaction[T]) GetTransactionBodySize() (int, error) {
 	}
 
 	transaction := tx.signedTransactions._Get(0).(*services.SignedTransaction)
-	txBytes, err := protobuf.Marshal(transaction)
+	txBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(transaction)
 	if err != nil {
 		return 0, err
 	}
@@ -1135,7 +1135,7 @@ func (tx *Transaction[T]) GetTransactionBodySizeAllChunks() ([]int, error) {
 	var index int
 	for i := 0; i < chunks; i += nodes {
 		transaction := tx.signedTransactions._Get(i).(*services.SignedTransaction)
-		txBytes, err := protobuf.Marshal(transaction)
+		txBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(transaction)
 		if err != nil {
 			return nil, err
 		}
@@ -1512,7 +1512,7 @@ func (tx *Transaction[T]) FreezeWith(client *Client) (T, error) {
 
 	for _, nodeAccountID := range tx.nodeAccountIDs.slice {
 		body.NodeAccountID = nodeAccountID.(AccountID)._ToProtobuf()
-		bodyBytes, err := protobuf.Marshal(body)
+		bodyBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(body)
 
 		if err != nil {
 			// This should be unreachable
