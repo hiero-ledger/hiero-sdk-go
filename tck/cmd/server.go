@@ -40,6 +40,9 @@ func main() {
 	topicService := new(methods.TopicService)
 	topicService.SetSdkService(sdkService)
 
+	contractService := new(methods.ContractService)
+	contractService.SetSdkService(sdkService)
+
 	// Create a new RPC server
 	assigner := handler.Map{
 		"setup":                  postHandler(HandleError, handler.New(sdkService.Setup)),
@@ -77,6 +80,7 @@ func main() {
 		"updateTopic":            postHandler(HandleError, handler.New(topicService.UpdateTopic)),
 		"deleteTopic":            postHandler(HandleError, handler.New(topicService.DeleteTopic)),
 		"submitTopicMessage":     postHandler(HandleError, handler.New(topicService.SubmitTopicMessage)),
+		"createContract":         postHandler(HandleError, handler.New(contractService.CreateContract)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
