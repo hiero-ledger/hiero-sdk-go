@@ -382,7 +382,7 @@ func (tx ContractCreateTransaction) buildProtoBody() *services.ContractCreateTra
 
 	if tx.byteCodeFileID != nil {
 		body.InitcodeSource = &services.ContractCreateTransactionBody_FileID{FileID: tx.byteCodeFileID._ToProtobuf()}
-	} else if len(tx.initcode) != 0 {
+	} else if tx.initcode != nil {
 		body.InitcodeSource = &services.ContractCreateTransactionBody_Initcode{Initcode: tx.initcode}
 	}
 

@@ -1726,6 +1726,10 @@ func TransactionGetSignatures(tx TransactionInterface) (map[AccountID]map[*Publi
 }
 
 func TransactionFreezeWith(tx TransactionInterface, client *Client) (TransactionInterface, error) {
+	fileAppendTx, ok := tx.(*FileAppendTransaction)
+	if ok {
+		return fileAppendTx.FreezeWith(client)
+	}
 	baseTx := tx.getBaseTransaction()
 	_, err := baseTx.FreezeWith(client)
 	if err != nil {
