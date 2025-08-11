@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/hex"
 	"strconv"
-	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/response"
@@ -69,7 +68,7 @@ func (c *ContractService) CreateContract(_ context.Context, params param.Contrac
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetAutoRenewPeriod(time.Duration(autoRenewPeriodSeconds) * time.Second)
+		transaction.SetAutoRenewPeriodInt(autoRenewPeriodSeconds)
 	}
 
 	if params.AutoRenewAccountId != nil {

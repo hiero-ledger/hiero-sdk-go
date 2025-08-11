@@ -20,6 +20,7 @@ type ContractCreateTransaction struct {
 	gas                           int64
 	initialBalance                int64
 	autoRenewPeriod               *time.Duration
+	autoRenewPeriodInt            *int64
 	parameters                    []byte
 	memo                          string
 	initcode                      []byte
@@ -178,6 +179,12 @@ func (tx *ContractCreateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Dur
 	return tx
 }
 
+func (tx *ContractCreateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64) *ContractCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.autoRenewPeriodInt = &autoRenewPeriod
+	return tx
+}
+
 func (tx *ContractCreateTransaction) GetAutoRenewPeriod() time.Duration {
 	if tx.autoRenewPeriod != nil {
 		return *tx.autoRenewPeriod
@@ -273,6 +280,7 @@ func (tx *ContractCreateTransaction) GetMaxAutomaticTokenAssociations() int32 {
 func (tx *ContractCreateTransaction) SetStakedAccountID(id AccountID) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.stakedAccountID = &id
+	tx.stakedNodeID = nil
 	return tx
 }
 
@@ -289,6 +297,7 @@ func (tx *ContractCreateTransaction) GetStakedAccountID() AccountID {
 func (tx *ContractCreateTransaction) SetStakedNodeID(id int64) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.stakedNodeID = &id
+	tx.stakedAccountID = nil
 	return tx
 }
 
@@ -374,6 +383,12 @@ func (tx ContractCreateTransaction) buildProtoBody() *services.ContractCreateTra
 
 	if tx.autoRenewPeriod != nil {
 		body.AutoRenewPeriod = _DurationToProtobuf(*tx.autoRenewPeriod)
+	}
+
+	if tx.autoRenewPeriodInt != nil {
+		body.AutoRenewPeriod = &services.Duration{
+			Seconds: *tx.autoRenewPeriodInt,
+		}
 	}
 
 	if tx.adminKey != nil {

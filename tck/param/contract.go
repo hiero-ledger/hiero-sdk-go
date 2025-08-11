@@ -18,7 +18,7 @@ type ContractCreateTransactionParams struct {
 	StakedAccountId              *string                  `json:"stakedAccountId"`
 	StakedNodeId                 *json.Number             `json:"stakedNodeId"`
 	DeclineStakingReward         *bool                    `json:"declineStakingReward"`
-	MaxAutomaticTokenAssociation *int32                   `json:"maxAutomaticTokenAssociation"`
+	MaxAutomaticTokenAssociation *int32                   `json:"maxAutomaticTokenAssociations"`
 	Initcode                     *string                  `json:"initcode"`
 	CommonTransactionParams      *CommonTransactionParams `json:"commonTransactionParams"`
 }
