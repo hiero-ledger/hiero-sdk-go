@@ -81,6 +81,7 @@ func main() {
 		"deleteTopic":            postHandler(HandleError, handler.New(topicService.DeleteTopic)),
 		"submitTopicMessage":     postHandler(HandleError, handler.New(topicService.SubmitTopicMessage)),
 		"createContract":         postHandler(HandleError, handler.New(contractService.CreateContract)),
+		"updateContract":         postHandler(HandleError, handler.New(contractService.UpdateContract)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 

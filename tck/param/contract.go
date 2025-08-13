@@ -22,3 +22,17 @@ type ContractCreateTransactionParams struct {
 	Initcode                     *string                  `json:"initcode"`
 	CommonTransactionParams      *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type ContractUpdateTransactionParams struct {
+	ContractId                   *string                  `json:"contractId"`
+	AdminKey                     *string                  `json:"adminKey"`
+	AutoRenewPeriod              *string                  `json:"autoRenewPeriod"`
+	ExpirationTime               *string                  `json:"expirationTime"`
+	Memo                         *string                  `json:"memo"`
+	AutoRenewAccountId           *string                  `json:"autoRenewAccountId"`
+	MaxAutomaticTokenAssociation *int32                   `json:"maxAutomaticTokenAssociations"`
+	StakedAccountId              *string                  `json:"stakedAccountId"`
+	StakedNodeId                 *json.Number             `json:"stakedNodeId"`
+	DeclineStakingReward         *bool                    `json:"declineStakingReward"`
+	CommonTransactionParams      *CommonTransactionParams `json:"commonTransactionParams"`
+}

@@ -176,12 +176,14 @@ func (tx *ContractCreateTransaction) GetInitialBalance() Hbar {
 func (tx *ContractCreateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
+	tx.autoRenewPeriodInt = nil
 	return tx
 }
 
 func (tx *ContractCreateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriodInt = &autoRenewPeriod
+	tx.autoRenewPeriod = nil
 	return tx
 }
 
