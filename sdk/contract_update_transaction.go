@@ -30,6 +30,7 @@ type ContractUpdateTransaction struct {
 	bytecodeFileID                *FileID
 	adminKey                      Key
 	autoRenewPeriod               *time.Duration
+	autoRenewPeriodInt            *int64
 	expirationTime                *time.Time
 	memo                          string
 	autoRenewAccountID            *AccountID
@@ -151,7 +152,7 @@ func (tx *ContractUpdateTransaction) GetBytecodeFileID() FileID {
 // SetAdminKey sets the key which can be used to arbitrarily modify the state of the instance by signing a
 // ContractUpdateTransaction to modify it. If the admin key was never set then such modifications are not possible,
 // and there is no administrator that can overrIDe the normal operation of the smart contract instance.
-func (tx *ContractUpdateTransaction) SetAdminKey(publicKey PublicKey) *ContractUpdateTransaction {
+func (tx *ContractUpdateTransaction) SetAdminKey(publicKey Key) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.adminKey = publicKey
 	return tx
@@ -181,11 +182,19 @@ func (tx *ContractUpdateTransaction) GetProxyAccountID() AccountID {
 	return *tx.proxyAccountID
 }
 
+func (tx *ContractUpdateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64) *ContractUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.autoRenewPeriodInt = &autoRenewPeriod
+	tx.autoRenewPeriod = nil
+	return tx
+}
+
 // SetAutoRenewPeriod sets the duration for which the contract instance will automatically charge its account to
 // renew for.
 func (tx *ContractUpdateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
+	tx.autoRenewPeriodInt = nil
 	return tx
 }
 
@@ -217,13 +226,6 @@ func (tx *ContractUpdateTransaction) GetExpirationTime() time.Time {
 func (tx *ContractUpdateTransaction) SetContractMemo(memo string) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.memo = memo
-	// if transaction.pb.GetMemoWrapper() != nil {
-	//	transaction.pb.GetMemoWrapper().Value = memo
-	// } else {
-	//	transaction.pb.MemoField = &services.ContractUpdateTransactionBody_MemoWrapper{
-	//		MemoWrapper: &wrapperspb.StringValue{Value: memo},
-	//	}
-	// }
 
 	return tx
 }
@@ -266,6 +268,7 @@ func (tx *ContractUpdateTransaction) GetContractMemo() string {
 func (tx *ContractUpdateTransaction) SetStakedAccountID(id AccountID) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.stakedAccountID = &id
+	tx.stakedNodeID = nil
 	return tx
 }
 
@@ -280,6 +283,7 @@ func (tx *ContractUpdateTransaction) GetStakedAccountID() AccountID {
 func (tx *ContractUpdateTransaction) SetStakedNodeID(id int64) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.stakedNodeID = &id
+	tx.stakedAccountID = nil
 	return tx
 }
 
@@ -378,6 +382,12 @@ func (tx ContractUpdateTransaction) buildProtoBody() *services.ContractUpdateTra
 		body.AutoRenewPeriod = _DurationToProtobuf(*tx.autoRenewPeriod)
 	}
 
+	if tx.autoRenewPeriodInt != nil {
+		body.AutoRenewPeriod = &services.Duration{
+			Seconds: *tx.autoRenewPeriodInt,
+		}
+	}
+
 	if tx.adminKey != nil {
 		body.AdminKey = tx.adminKey._ToProtoKey()
 	}
@@ -387,7 +397,12 @@ func (tx ContractUpdateTransaction) buildProtoBody() *services.ContractUpdateTra
 	}
 
 	if tx.autoRenewAccountID != nil {
-		body.AutoRenewAccountId = tx.autoRenewAccountID._ToProtobuf()
+		if tx.autoRenewAccountID.Account != 0 {
+			body.AutoRenewAccountId = tx.autoRenewAccountID._ToProtobuf()
+		} else {
+			// removes the auto renew account id
+			body.AutoRenewAccountId = &services.AccountID{}
+		}
 	}
 
 	if body.GetMemoWrapper() != nil {

@@ -20,6 +20,7 @@ type ContractCreateTransaction struct {
 	gas                           int64
 	initialBalance                int64
 	autoRenewPeriod               *time.Duration
+	autoRenewPeriodInt            *int64
 	parameters                    []byte
 	memo                          string
 	initcode                      []byte
@@ -175,6 +176,14 @@ func (tx *ContractCreateTransaction) GetInitialBalance() Hbar {
 func (tx *ContractCreateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
+	tx.autoRenewPeriodInt = nil
+	return tx
+}
+
+func (tx *ContractCreateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64) *ContractCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.autoRenewPeriodInt = &autoRenewPeriod
+	tx.autoRenewPeriod = nil
 	return tx
 }
 
@@ -273,6 +282,7 @@ func (tx *ContractCreateTransaction) GetMaxAutomaticTokenAssociations() int32 {
 func (tx *ContractCreateTransaction) SetStakedAccountID(id AccountID) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.stakedAccountID = &id
+	tx.stakedNodeID = nil
 	return tx
 }
 
@@ -289,6 +299,7 @@ func (tx *ContractCreateTransaction) GetStakedAccountID() AccountID {
 func (tx *ContractCreateTransaction) SetStakedNodeID(id int64) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.stakedNodeID = &id
+	tx.stakedAccountID = nil
 	return tx
 }
 
@@ -376,13 +387,19 @@ func (tx ContractCreateTransaction) buildProtoBody() *services.ContractCreateTra
 		body.AutoRenewPeriod = _DurationToProtobuf(*tx.autoRenewPeriod)
 	}
 
+	if tx.autoRenewPeriodInt != nil {
+		body.AutoRenewPeriod = &services.Duration{
+			Seconds: *tx.autoRenewPeriodInt,
+		}
+	}
+
 	if tx.adminKey != nil {
 		body.AdminKey = tx.adminKey._ToProtoKey()
 	}
 
 	if tx.byteCodeFileID != nil {
 		body.InitcodeSource = &services.ContractCreateTransactionBody_FileID{FileID: tx.byteCodeFileID._ToProtobuf()}
-	} else if len(tx.initcode) != 0 {
+	} else if tx.initcode != nil {
 		body.InitcodeSource = &services.ContractCreateTransactionBody_Initcode{Initcode: tx.initcode}
 	}
 
