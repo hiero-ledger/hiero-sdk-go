@@ -1,3 +1,13 @@
+## v2.68.0
+
+### Added
+- Introduced new method `DeleteGrpcWebProxyEndpoint` for `NodeUpdateTransaction` that effectively sets the proxy to `null` in the mirror node api and removes it from the address book state. [#1444](https://github.com/hiero-ledger/hiero-sdk-go/pull/1444)
+- Chunk size option for `TopicMessageSubmitTransaction`, added `SetChunkSize` and `GetChunkSize` [#1448](https://github.com/hiero-ledger/hiero-sdk-go/pull/1448)
+
+### Changed
+- Now it's possible to update the topic memo to empty string using the setter, as previously the value would be ignored [#1448](https://github.com/hiero-ledger/hiero-sdk-go/pull/1448)
+- Migrated to Go version 1.24 [#1452](https://github.com/hiero-ledger/hiero-sdk-go/pull/1452)
+
 ## v2.67.0
 
 ### Added

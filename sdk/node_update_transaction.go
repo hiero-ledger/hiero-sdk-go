@@ -263,6 +263,13 @@ func (tx *NodeUpdateTransaction) SetGrpcWebProxyEndpoint(grpcWebProxyEndpoint En
 	return tx
 }
 
+// DeleteGrpcWebProxyEndpoint Deletes the gRPC proxy endpoint and sets it to null in the mirror node.
+func (tx *NodeUpdateTransaction) DeleteGrpcWebProxyEndpoint() *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.grpcWebProxyEndpoint = &Endpoint{}
+	return tx
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx NodeUpdateTransaction) getName() string {
