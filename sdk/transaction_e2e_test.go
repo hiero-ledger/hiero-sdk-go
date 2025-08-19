@@ -168,7 +168,7 @@ func DisabledTestTransactionFromBytes(t *testing.T) { // nolint
 		},
 	}
 
-	BodyBytes, err := protobuf.Marshal(&TransactionBody)
+	BodyBytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&TransactionBody)
 	require.NoError(t, err)
 
 	key1, _ := PrivateKeyFromString("302e020100300506032b6570042204203e7fda6dde63c3cdb3cb5ecf5264324c5faad7c9847b6db093c088838b35a110")
@@ -227,10 +227,10 @@ func DisabledTestTransactionFromBytes(t *testing.T) { // nolint
 		},
 	}
 
-	bytes, err := protobuf.Marshal(&signed)
+	bytes, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&signed)
 	require.NoError(t, err)
 
-	bytes, err = protobuf.Marshal(&sdk.TransactionList{
+	bytes, err = protobuf.MarshalOptions{Deterministic: true}.Marshal(&sdk.TransactionList{
 		TransactionList: []*services.Transaction{{
 			SignedTransactionBytes: bytes,
 		}},

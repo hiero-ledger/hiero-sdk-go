@@ -88,14 +88,14 @@ func TestUnitTransactionValidateBodiesEqual(t *testing.T) {
 		},
 	}
 
-	transactionBody, err := protobuf.Marshal(&transaction)
+	transactionBody, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&transaction)
 	require.NoError(t, err)
 
-	signed, err := protobuf.Marshal(&services.SignedTransaction{
+	signed, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&services.SignedTransaction{
 		BodyBytes: transactionBody,
 	})
 	require.NoError(t, err)
-	list, err := protobuf.Marshal(&sdk.TransactionList{
+	list, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&sdk.TransactionList{
 		TransactionList: []*services.Transaction{
 			{
 				SignedTransactionBytes: signed,
@@ -178,22 +178,22 @@ func DisabledTestUnitTransactionValidateBodiesNotEqual(t *testing.T) {
 		},
 	}
 
-	transactionBody, err := protobuf.Marshal(&transaction)
+	transactionBody, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&transaction)
 	require.NoError(t, err)
 
-	signed, err := protobuf.Marshal(&services.SignedTransaction{
+	signed, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&services.SignedTransaction{
 		BodyBytes: transactionBody,
 	})
 
-	transactionBody2, err := protobuf.Marshal(&transaction2)
+	transactionBody2, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&transaction2)
 	require.NoError(t, err)
 
-	signed2, err := protobuf.Marshal(&services.SignedTransaction{
+	signed2, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&services.SignedTransaction{
 		BodyBytes: transactionBody2,
 	})
 
 	require.NoError(t, err)
-	list, err := protobuf.Marshal(&sdk.TransactionList{
+	list, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(&sdk.TransactionList{
 		TransactionList: []*services.Transaction{
 			{
 				SignedTransactionBytes: signed,

@@ -73,7 +73,7 @@ func (relationship *TokenRelationship) _ToProtobuf() *services.TokenRelationship
 }
 
 func (relationship TokenRelationship) ToBytes() []byte {
-	data, err := protobuf.Marshal(relationship._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(relationship._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

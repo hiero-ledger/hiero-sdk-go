@@ -122,7 +122,7 @@ func (info AccountInfo) _ToProtobuf() *services.CryptoGetInfoResponse_AccountInf
 
 	var alias []byte
 	if info.AliasKey != nil {
-		alias, _ = protobuf.Marshal(info.AliasKey._ToProtoKey())
+		alias, _ = protobuf.MarshalOptions{Deterministic: true}.Marshal(info.AliasKey._ToProtoKey())
 	}
 
 	body := &services.CryptoGetInfoResponse_AccountInfo{
@@ -155,7 +155,7 @@ func (info AccountInfo) _ToProtobuf() *services.CryptoGetInfoResponse_AccountInf
 
 // ToBytes returns the serialized bytes of an AccountInfo
 func (info AccountInfo) ToBytes() []byte {
-	data, err := protobuf.Marshal(info._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(info._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}
