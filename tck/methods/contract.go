@@ -127,7 +127,7 @@ func (c *ContractService) CreateContract(_ context.Context, params param.Contrac
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(c.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (c *ContractService) UpdateContract(_ context.Context, params param.Contrac
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(c.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -230,4 +230,54 @@ func (c *ContractService) UpdateContract(_ context.Context, params param.Contrac
 	}
 
 	return &response.ContractResponse{ContractId: contractId, Status: receipt.Status.String()}, nil
+}
+
+func (c *ContractService) DeleteContract(_ context.Context, params param.ContractDeleteTransactionParams) (*response.ContractResponse, error) {
+	transaction := hiero.NewContractDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.ContractId != nil {
+		contractID, err := hiero.ContractIDFromString(*params.ContractId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetContractID(contractID)
+	}
+
+	if params.TransferContractId != nil {
+		transferContractID, err := hiero.ContractIDFromString(*params.TransferContractId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTransferContractID(transferContractID)
+	}
+
+	if params.TransferAccountId != nil {
+		transferAccountID, err := hiero.AccountIDFromString(*params.TransferAccountId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetTransferAccountID(transferAccountID)
+	}
+
+	if params.PermanentRemoval != nil {
+		transaction.SetPermanentRemoval(*params.PermanentRemoval)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(c.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.ContractResponse{Status: receipt.Status.String()}, nil
 }

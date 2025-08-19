@@ -36,3 +36,11 @@ type ContractUpdateTransactionParams struct {
 	DeclineStakingReward         *bool                    `json:"declineStakingReward"`
 	CommonTransactionParams      *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type ContractDeleteTransactionParams struct {
+	ContractId              *string                  `json:"contractId"`
+	TransferContractId      *string                  `json:"transferContractId"`
+	TransferAccountId       *string                  `json:"transferAccountId"`
+	PermanentRemoval        *bool                    `json:"permanentRemoval"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+}
