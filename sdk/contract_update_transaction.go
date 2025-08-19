@@ -422,7 +422,7 @@ func (tx ContractUpdateTransaction) buildProtoBody() *services.ContractUpdateTra
 	}
 
 	if tx.autoRenewAccountID != nil {
-		if tx.autoRenewAccountID.Account != 0 {
+		if tx.autoRenewAccountID.String() != "0.0.0" {
 			body.AutoRenewAccountId = tx.autoRenewAccountID._ToProtobuf()
 		} else {
 			// removes the auto renew account id
