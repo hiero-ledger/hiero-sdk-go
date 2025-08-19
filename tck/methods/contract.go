@@ -69,7 +69,7 @@ func (c *ContractService) CreateContract(_ context.Context, params param.Contrac
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetAutoRenewPeriodInt(autoRenewPeriodSeconds)
+		transaction.SetAutoRenewPeriodSeconds(autoRenewPeriodSeconds)
 	}
 
 	if params.AutoRenewAccountId != nil {
@@ -161,7 +161,7 @@ func (c *ContractService) UpdateContract(_ context.Context, params param.Contrac
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetAutoRenewPeriodInt(autoRenewPeriodSeconds)
+		transaction.SetAutoRenewPeriodSeconds(autoRenewPeriodSeconds)
 	}
 
 	if params.ExpirationTime != nil {

@@ -20,7 +20,7 @@ type ContractCreateTransaction struct {
 	gas                           int64
 	initialBalance                int64
 	autoRenewPeriod               *time.Duration
-	autoRenewPeriodInt            *int64
+	autoRenewPeriodSeconds        *int64
 	parameters                    []byte
 	memo                          string
 	initcode                      []byte
@@ -176,13 +176,13 @@ func (tx *ContractCreateTransaction) GetInitialBalance() Hbar {
 func (tx *ContractCreateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
-	tx.autoRenewPeriodInt = nil
+	tx.autoRenewPeriodSeconds = nil
 	return tx
 }
 
-func (tx *ContractCreateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64) *ContractCreateTransaction {
+func (tx *ContractCreateTransaction) SetAutoRenewPeriodSeconds(autoRenewPeriod int64) *ContractCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.autoRenewPeriodInt = &autoRenewPeriod
+	tx.autoRenewPeriodSeconds = &autoRenewPeriod
 	tx.autoRenewPeriod = nil
 	return tx
 }
@@ -190,6 +190,9 @@ func (tx *ContractCreateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64
 func (tx *ContractCreateTransaction) GetAutoRenewPeriod() time.Duration {
 	if tx.autoRenewPeriod != nil {
 		return *tx.autoRenewPeriod
+	}
+	if tx.autoRenewPeriodSeconds != nil {
+		return time.Duration(*tx.autoRenewPeriodSeconds) * time.Second
 	}
 
 	return time.Duration(0)
@@ -387,9 +390,9 @@ func (tx ContractCreateTransaction) buildProtoBody() *services.ContractCreateTra
 		body.AutoRenewPeriod = _DurationToProtobuf(*tx.autoRenewPeriod)
 	}
 
-	if tx.autoRenewPeriodInt != nil {
+	if tx.autoRenewPeriodSeconds != nil {
 		body.AutoRenewPeriod = &services.Duration{
-			Seconds: *tx.autoRenewPeriodInt,
+			Seconds: *tx.autoRenewPeriodSeconds,
 		}
 	}
 

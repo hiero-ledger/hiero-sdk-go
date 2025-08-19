@@ -30,7 +30,7 @@ type ContractUpdateTransaction struct {
 	bytecodeFileID                *FileID
 	adminKey                      Key
 	autoRenewPeriod               *time.Duration
-	autoRenewPeriodInt            *int64
+	autoRenewPeriodSeconds        *int64
 	expirationTime                *time.Time
 	memo                          *string
 	autoRenewAccountID            *AccountID
@@ -193,9 +193,9 @@ func (tx *ContractUpdateTransaction) GetProxyAccountID() AccountID {
 	return *tx.proxyAccountID
 }
 
-func (tx *ContractUpdateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64) *ContractUpdateTransaction {
+func (tx *ContractUpdateTransaction) SetAutoRenewPeriodSeconds(autoRenewPeriod int64) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.autoRenewPeriodInt = &autoRenewPeriod
+	tx.autoRenewPeriodSeconds = &autoRenewPeriod
 	tx.autoRenewPeriod = nil
 	return tx
 }
@@ -205,7 +205,7 @@ func (tx *ContractUpdateTransaction) SetAutoRenewPeriodInt(autoRenewPeriod int64
 func (tx *ContractUpdateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *ContractUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
-	tx.autoRenewPeriodInt = nil
+	tx.autoRenewPeriodSeconds = nil
 	return tx
 }
 
@@ -407,9 +407,9 @@ func (tx ContractUpdateTransaction) buildProtoBody() *services.ContractUpdateTra
 		body.AutoRenewPeriod = _DurationToProtobuf(*tx.autoRenewPeriod)
 	}
 
-	if tx.autoRenewPeriodInt != nil {
+	if tx.autoRenewPeriodSeconds != nil {
 		body.AutoRenewPeriod = &services.Duration{
-			Seconds: *tx.autoRenewPeriodInt,
+			Seconds: *tx.autoRenewPeriodSeconds,
 		}
 	}
 
