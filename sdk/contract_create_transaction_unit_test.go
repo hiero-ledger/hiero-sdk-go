@@ -353,21 +353,21 @@ func TestUnitContractCreateTransactionFromToBytes(t *testing.T) {
 func TestUnitContractCreateTransactionSetStake(t *testing.T) {
 	tx := NewContractCreateTransaction().SetStakedNodeID(1).SetStakedAccountID(accountIDForTransactionID)
 	require.Nil(t, tx.stakedNodeID)
-	require.Equal(t, accountIDForTransactionID, tx.stakedAccountID)
+	require.Equal(t, accountIDForTransactionID, *tx.stakedAccountID)
 
 	tx.SetStakedNodeID(1)
 	require.Nil(t, tx.stakedAccountID)
-	require.Equal(t, 1, tx.stakedNodeID)
+	require.Equal(t, int64(1), *tx.stakedNodeID)
 }
 
 func TestUnitContractCreateTransactionSetAutorenewPeriodSeconds(t *testing.T) {
 	tx := NewContractCreateTransaction().SetAutoRenewPeriodSeconds(1)
 	require.Nil(t, tx.autoRenewPeriod)
-	require.Equal(t, 1, tx.autoRenewPeriodSeconds)
+	require.Equal(t, int64(1), *tx.autoRenewPeriodSeconds)
 
 	tx.SetAutoRenewPeriodSeconds(1234)
 	require.Nil(t, tx.autoRenewPeriod)
-	require.Equal(t, 1234, tx.autoRenewPeriodSeconds)
+	require.Equal(t, int64(1234), *tx.autoRenewPeriodSeconds)
 
 	require.Equal(t, tx.GetAutoRenewPeriod(), time.Second*1234)
 }
