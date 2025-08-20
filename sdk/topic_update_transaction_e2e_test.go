@@ -60,9 +60,21 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	resp, err = NewTopicUpdateTransaction().
+	info, err = NewTopicInfoQuery().
 		SetTopicID(topicID).
-		SetTopicMemo("asdfsadfasdfads").
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetMaxQueryPayment(NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info)
+
+	assert.Equal(t, newTopicMemo, info.TopicMemo)
+	assert.Equal(t, uint64(0), info.SequenceNumber)
+	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
+
+	resp, err = NewTopicDeleteTransaction().
+		SetTopicID(topicID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		Execute(env.Client)
 	require.NoError(t, err)
 
