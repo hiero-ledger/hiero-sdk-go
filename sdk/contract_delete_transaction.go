@@ -57,6 +57,7 @@ func (tx *ContractDeleteTransaction) GetContractID() ContractID {
 func (tx *ContractDeleteTransaction) SetTransferContractID(transferContactID ContractID) *ContractDeleteTransaction {
 	tx._RequireNotFrozen()
 	tx.transferContactID = &transferContactID
+	tx.transferAccountID = nil
 	return tx
 }
 
@@ -73,7 +74,7 @@ func (tx *ContractDeleteTransaction) GetTransferContractID() ContractID {
 func (tx *ContractDeleteTransaction) SetTransferAccountID(accountID AccountID) *ContractDeleteTransaction {
 	tx._RequireNotFrozen()
 	tx.transferAccountID = &accountID
-
+	tx.transferContactID = nil
 	return tx
 }
 

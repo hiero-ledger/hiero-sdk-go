@@ -144,6 +144,7 @@ func TestUnitContractCreateTransactionGet(t *testing.T) {
 		SetGas(21341).
 		SetProxyAccountID(spenderAccountID1).
 		SetAutoRenewPeriod(60 * time.Second).
+		SetAutoRenewPeriodSeconds(60).
 		SetTransactionMemo("").
 		SetTransactionValidDuration(60 * time.Second).
 		SetContractMemo("yes").
@@ -347,4 +348,26 @@ func TestUnitContractCreateTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ContractCreateTransaction).buildProtoBody())
+}
+
+func TestUnitContractCreateTransactionSetStake(t *testing.T) {
+	tx := NewContractCreateTransaction().SetStakedNodeID(1).SetStakedAccountID(accountIDForTransactionID)
+	require.Nil(t, tx.stakedNodeID)
+	require.Equal(t, accountIDForTransactionID, *tx.stakedAccountID)
+
+	tx.SetStakedNodeID(1)
+	require.Nil(t, tx.stakedAccountID)
+	require.Equal(t, int64(1), *tx.stakedNodeID)
+}
+
+func TestUnitContractCreateTransactionSetAutorenewPeriodSeconds(t *testing.T) {
+	tx := NewContractCreateTransaction().SetAutoRenewPeriodSeconds(1)
+	require.Nil(t, tx.autoRenewPeriod)
+	require.Equal(t, int64(1), *tx.autoRenewPeriodSeconds)
+
+	tx.SetAutoRenewPeriodSeconds(1234)
+	require.Nil(t, tx.autoRenewPeriod)
+	require.Equal(t, int64(1234), *tx.autoRenewPeriodSeconds)
+
+	require.Equal(t, tx.GetAutoRenewPeriod(), time.Second*1234)
 }
