@@ -50,8 +50,6 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 
 	resp, err = NewTopicUpdateTransaction().
 		SetTopicID(topicID).
-		SetAdminKey(NewKeyList()).
-		SetAutoRenewAccountID(AccountID{Shard: 0, Realm: 0, Account: 0}).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetTopicMemo(newTopicMemo).
 		Execute(env.Client)
