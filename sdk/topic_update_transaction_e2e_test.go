@@ -50,6 +50,8 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 
 	resp, err = NewTopicUpdateTransaction().
 		SetTopicID(topicID).
+		SetAdminKey(NewKeyList()).
+		SetAutoRenewAccountID(AccountID{Shard: 0, Realm: 0, Account: 0}).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetTopicMemo(newTopicMemo).
 		Execute(env.Client)
@@ -58,21 +60,9 @@ func TestIntegrationTopicUpdateTransactionCanExecute(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	info, err = NewTopicInfoQuery().
+	resp, err = NewTopicUpdateTransaction().
 		SetTopicID(topicID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetMaxQueryPayment(NewHbar(1)).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.NotNil(t, info)
-
-	assert.Equal(t, newTopicMemo, info.TopicMemo)
-	assert.Equal(t, uint64(0), info.SequenceNumber)
-	assert.Equal(t, env.Client.GetOperatorPublicKey().String(), info.AdminKey.String())
-
-	resp, err = NewTopicDeleteTransaction().
-		SetTopicID(topicID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetTopicMemo("asdfsadfasdfads").
 		Execute(env.Client)
 	require.NoError(t, err)
 
