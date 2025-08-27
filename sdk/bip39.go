@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"slices"
 	"strings"
 	"sync"
 
@@ -360,15 +361,7 @@ func padByteSlice(slice []byte, length int) []byte {
 // compareByteSlices returns true of the byte slices have equal contents and
 // returns false otherwise.
 func compareByteSlices(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
+	return slices.Equal(a, b)
 }
 
 func splitMnemonicWords(mnemonic string) ([]string, bool) {
