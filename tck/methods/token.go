@@ -23,8 +23,8 @@ func (t *TokenService) SetSdkService(service *SDKService) {
 	t.sdkService = service
 }
 
-// CreateToken jRPC method for createToken
-func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenParams) (*response.TokenResponse, error) {
+// buildCreateToken builds a TokenCreateTransaction from parameters
+func (t *TokenService) buildCreateToken(params param.CreateTokenParams) (*hiero.TokenCreateTransaction, error) {
 	transaction := hiero.NewTokenCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	// Set admin key
@@ -127,6 +127,15 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 			return nil, err
 		}
 		transaction.SetCustomFees(customFees)
+	}
+	return transaction, nil
+}
+
+// CreateToken jRPC method for createToken
+func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenParams) (*response.TokenResponse, error) {
+	transaction, err := t.buildCreateToken(params)
+	if err != nil {
+		return nil, err
 	}
 
 	txResponse, err := transaction.Execute(t.sdkService.Client)

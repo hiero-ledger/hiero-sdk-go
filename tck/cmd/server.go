@@ -43,6 +43,9 @@ func main() {
 	contractService := new(methods.ContractService)
 	contractService.SetSdkService(sdkService)
 
+	scheduleService := new(methods.ScheduleService)
+	scheduleService.SetSdkService(sdkService)
+
 	// Create a new RPC server
 	assigner := handler.Map{
 		"setup":                  postHandler(HandleError, handler.New(sdkService.Setup)),
@@ -83,6 +86,7 @@ func main() {
 		"createContract":         postHandler(HandleError, handler.New(contractService.CreateContract)),
 		"updateContract":         postHandler(HandleError, handler.New(contractService.UpdateContract)),
 		"deleteContract":         postHandler(HandleError, handler.New(contractService.DeleteContract)),
+		"createSchedule":         postHandler(HandleError, handler.New(scheduleService.CreateSchedule)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
