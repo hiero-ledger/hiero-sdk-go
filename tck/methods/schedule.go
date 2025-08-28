@@ -51,6 +51,7 @@ func (s *ScheduleService) CreateSchedule(_ context.Context, params param.Schedul
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse payer account ID: %w", err)
 		}
+		fmt.Println("asdf")
 		transaction.SetPayerAccountID(payerAccountID)
 	}
 
@@ -96,29 +97,13 @@ func (s *ScheduleService) CreateSchedule(_ context.Context, params param.Schedul
 // buildScheduledTransaction creates the appropriate transaction based on method name
 func (s *ScheduleService) buildScheduledTransaction(scheduledTx *param.ScheduledTransaction) (hiero.TransactionInterface, error) {
 	switch scheduledTx.Method {
-	case "createAccount":
-		var params param.CreateAccountParams
+	case "transferCrypto":
+		var params param.TransferCryptoParams
 		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal createAccount params: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal transferCrypto params: %w", err)
 		}
 		accountService := &AccountService{sdkService: s.sdkService}
-		return accountService.buildCreateAccount(params)
-
-	case "updateAccount":
-		var params param.UpdateAccountParams
-		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal updateAccount params: %w", err)
-		}
-		accountService := &AccountService{sdkService: s.sdkService}
-		return accountService.buildUpdateAccount(params)
-
-	case "deleteAccount":
-		var params param.DeleteAccountParams
-		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal deleteAccount params: %w", err)
-		}
-		accountService := &AccountService{sdkService: s.sdkService}
-		return accountService.buildDeleteAccount(params)
+		return accountService.buildTransferCrypto(params)
 
 	case "approveAllowance":
 		var params param.AccountAllowanceApproveParams
@@ -128,23 +113,47 @@ func (s *ScheduleService) buildScheduledTransaction(scheduledTx *param.Scheduled
 		accountService := &AccountService{sdkService: s.sdkService}
 		return accountService.buildApproveAllowance(params)
 
-	case "transferCrypto":
-		var params param.TransferCryptoParams
+	case "mintToken":
+		var params param.MintTokenParams
 		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal transferCrypto params: %w", err)
-		}
-		accountService := &AccountService{sdkService: s.sdkService}
-		return accountService.buildTransferCrypto(params)
-
-	case "createToken":
-		var params param.CreateTokenParams
-		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal createToken params: %w", err)
+			return nil, fmt.Errorf("failed to unmarshal mintToken params: %w", err)
 		}
 		tokenService := &TokenService{sdkService: s.sdkService}
-		return tokenService.buildCreateToken(params)
+		return tokenService.buildMintToken(params)
+
+	case "burnToken":
+		var params param.BurnTokenParams
+		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal burnToken params: %w", err)
+		}
+		tokenService := &TokenService{sdkService: s.sdkService}
+		return tokenService.buildBurnToken(params)
+
+	case "submitMessage":
+		var params param.SubmitTopicMessageParams
+		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal submitMessage params: %w", err)
+		}
+		topicService := &TopicService{sdkService: s.sdkService}
+		return topicService.buildSubmitTopicMessage(params)
+
+	case "createTopic":
+		var params param.CreateTopicParams
+		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal createTopic params: %w", err)
+		}
+		topicService := &TopicService{sdkService: s.sdkService}
+		return topicService.buildCreateTopic(params)
+
+	case "createAccount":
+		var params param.CreateAccountParams
+		if err := json.Unmarshal(scheduledTx.Params, &params); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal createAccount params: %w", err)
+		}
+		accountService := &AccountService{sdkService: s.sdkService}
+		return accountService.buildCreateAccount(params)
 
 	default:
-		return nil, fmt.Errorf("unsupported scheduled transaction method: %s", scheduledTx.Method)
+		return nil, fmt.Errorf("unsupported scheduled transaction method: %s (only transferCrypto, approveAllowance, mintToken, burnToken, submitMessage, createTopic, and createAccount are supported)", scheduledTx.Method)
 	}
 }

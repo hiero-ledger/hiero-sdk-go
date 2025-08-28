@@ -157,8 +157,24 @@ func HandleError(_ context.Context, request *jrpc2.Request, err error) error {
 
 // this wraps the jrpc2.Handler as it invokes the ErrorHandler func if error is returned
 func postHandler(handler Handler, h jrpc2.Handler) jrpc2.Handler {
-	return func(ctx context.Context, req *jrpc2.Request) (any, error) {
-		res, err := h(ctx, req)
+	return func(ctx context.Context, req *jrpc2.Request) (res any, err error) {
+		// Recover from panics
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Panic recovered in JSON-RPC handler for request: %s, Panic: %v", req, r)
+				// Convert panic to error and handle it through the error handler
+				var panicErr error
+				if e, ok := r.(error); ok {
+					panicErr = fmt.Errorf("panic: %w", e)
+				} else {
+					panicErr = fmt.Errorf("panic: %v", r)
+				}
+				res = nil
+				err = handler(ctx, req, panicErr)
+			}
+		}()
+
+		res, err = h(ctx, req)
 		if err != nil {
 			log.Printf("Error occurred processing JSON-RPC request: %s, Response error: %s", req, err)
 			return nil, handler(ctx, req, err)

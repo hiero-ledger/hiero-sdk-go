@@ -27,7 +27,77 @@ func (a *AccountService) SetSdkService(service *SDKService) {
 	a.sdkService = service
 }
 
-// buildCreateAccount builds an AccountCreateTransaction from parameters
+// CreateAccount jRPC method for createAccount
+func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAccountParams) (*response.AccountResponse, error) {
+	transaction := hiero.NewAccountCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	// Set key
+	if err := utils.SetKeyIfPresent(params.Key, transaction.SetKeyWithoutAlias); err != nil {
+		return nil, err
+	}
+	if params.InitialBalance != nil {
+		initialBalance, err := strconv.ParseInt(*params.InitialBalance, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetInitialBalance(hiero.HbarFromTinybar(initialBalance))
+	}
+	if params.ReceiverSignatureRequired != nil {
+		transaction.SetReceiverSignatureRequired(*params.ReceiverSignatureRequired)
+	}
+	if params.MaxAutomaticTokenAssociations != nil {
+		transaction.SetMaxAutomaticTokenAssociations(*params.MaxAutomaticTokenAssociations)
+	}
+	// Set staked account ID
+	if err := utils.SetAccountIDIfPresent(params.StakedAccountId, transaction.SetStakedAccountID); err != nil {
+		return nil, err
+	}
+	if params.StakedNodeId != nil {
+		stakedNodeID, err := params.StakedNodeId.Int64()
+		if err != nil {
+			return nil, response.InvalidParams.WithData(err.Error())
+		}
+		transaction.SetStakedNodeID(stakedNodeID)
+	}
+	if params.DeclineStakingReward != nil {
+		transaction.SetDeclineStakingReward(*params.DeclineStakingReward)
+	}
+	if params.Memo != nil {
+		transaction.SetAccountMemo(*params.Memo)
+	}
+	if params.AutoRenewPeriod != nil {
+		autoRenewPeriodSeconds, err := strconv.ParseInt(*params.AutoRenewPeriod, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetAutoRenewPeriod(time.Duration(autoRenewPeriodSeconds) * time.Second)
+	}
+	if params.Alias != nil {
+		transaction.SetAlias(*params.Alias)
+	}
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+	txResponse, err := transaction.Execute(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	var accId string
+	if receipt.Status == hiero.StatusSuccess {
+		accId = receipt.AccountID.String()
+	}
+	return &response.AccountResponse{AccountId: accId, Status: receipt.Status.String()}, nil
+}
+
+// buildCreateAccount builds an account create transaction without executing it (for scheduling)
 func (a *AccountService) buildCreateAccount(params param.CreateAccountParams) (*hiero.AccountCreateTransaction, error) {
 	transaction := hiero.NewAccountCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -82,33 +152,12 @@ func (a *AccountService) buildCreateAccount(params param.CreateAccountParams) (*
 			return nil, err
 		}
 	}
+
 	return transaction, nil
 }
 
-// CreateAccount jRPC method for createAccount
-func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAccountParams) (*response.AccountResponse, error) {
-	transaction, err := a.buildCreateAccount(params)
-	if err != nil {
-		return nil, err
-	}
-
-	txResponse, err := transaction.Execute(a.sdkService.Client)
-	if err != nil {
-		return nil, err
-	}
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
-	if err != nil {
-		return nil, err
-	}
-	var accId string
-	if receipt.Status == hiero.StatusSuccess {
-		accId = receipt.AccountID.String()
-	}
-	return &response.AccountResponse{AccountId: accId, Status: receipt.Status.String()}, nil
-}
-
-// buildUpdateAccount builds an AccountUpdateTransaction from parameters
-func (a *AccountService) buildUpdateAccount(params param.UpdateAccountParams) (*hiero.AccountUpdateTransaction, error) {
+// UpdateAccount jRPC method for updateAccount
+func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 	// Set account ID
 	if err := utils.SetAccountIDIfPresent(params.AccountId, transaction.SetAccountID); err != nil {
@@ -171,15 +220,6 @@ func (a *AccountService) buildUpdateAccount(params param.UpdateAccountParams) (*
 			return nil, err
 		}
 	}
-	return transaction, nil
-}
-
-// UpdateAccount jRPC method for updateAccount
-func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAccountParams) (*response.AccountResponse, error) {
-	transaction, err := a.buildUpdateAccount(params)
-	if err != nil {
-		return nil, err
-	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
 	if err != nil {
@@ -192,8 +232,8 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-// buildDeleteAccount builds an AccountDeleteTransaction from parameters
-func (a *AccountService) buildDeleteAccount(params param.DeleteAccountParams) (*hiero.AccountDeleteTransaction, error) {
+// DeleteAccount jRPC method for deleteAccount
+func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
 	// Set account ID
 	if err := utils.SetAccountIDIfPresent(params.DeleteAccountId, transaction.SetAccountID); err != nil {
@@ -210,15 +250,6 @@ func (a *AccountService) buildDeleteAccount(params param.DeleteAccountParams) (*
 		if err != nil {
 			return nil, err
 		}
-	}
-	return transaction, nil
-}
-
-// DeleteAccount jRPC method for deleteAccount
-func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAccountParams) (*response.AccountResponse, error) {
-	transaction, err := a.buildDeleteAccount(params)
-	if err != nil {
-		return nil, err
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
@@ -356,8 +387,8 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-// buildDeleteAllowance builds an AccountAllowanceDeleteTransaction from parameters
-func (a *AccountService) buildDeleteAllowance(params param.AccountAllowanceDeleteParams) (*hiero.AccountAllowanceDeleteTransaction, error) {
+// DeleteAllowance jRPC method for deleteAllowance
+func (a *AccountService) DeleteAllowance(_ context.Context, params param.AccountAllowanceDeleteParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountAllowanceDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	allowances := *params.Allowances
@@ -399,15 +430,6 @@ func (a *AccountService) buildDeleteAllowance(params param.AccountAllowanceDelet
 		if err != nil {
 			return nil, err
 		}
-	}
-	return transaction, nil
-}
-
-// DeleteAllowance jRPC method for deleteAllowance
-func (a *AccountService) DeleteAllowance(_ context.Context, params param.AccountAllowanceDeleteParams) (*response.AccountResponse, error) {
-	transaction, err := a.buildDeleteAllowance(params)
-	if err != nil {
-		return nil, err
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
