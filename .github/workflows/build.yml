@@ -101,8 +101,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@a39acf8cfbaa2feb195a86530d0ab643a45aa541 # v0.10.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.65.0-rc.4
-                mirrorNodeVersion: v0.134.0
+                hieroVersion: v0.65.0
+                mirrorNodeVersion: v0.136.1
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
@@ -176,8 +176,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@a39acf8cfbaa2feb195a86530d0ab643a45aa541 # v0.10.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.65.0-rc.4
-                mirrorNodeVersion: v0.134.0
+                hieroVersion: v0.65.0
+                mirrorNodeVersion: v0.136.1
 
             - name: Set Operator Account
               run: |
