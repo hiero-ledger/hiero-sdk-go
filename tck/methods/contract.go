@@ -281,3 +281,58 @@ func (c *ContractService) DeleteContract(_ context.Context, params param.Contrac
 
 	return &response.ContractResponse{Status: receipt.Status.String()}, nil
 }
+
+// ExecuteContract jRPC method for contractExecute
+func (c *ContractService) ExecuteContract(_ context.Context, params param.ContractExecuteTransactionParams) (*response.ContractResponse, error) {
+	transaction := hiero.NewContractExecuteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.ContractId != nil {
+		contractID, err := hiero.ContractIDFromString(*params.ContractId)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetContractID(contractID)
+	}
+
+	if params.Gas != nil {
+		gas, err := strconv.ParseUint(*params.Gas, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetGas(gas)
+	}
+
+	if params.PayableAmount != nil {
+		payableAmount, err := strconv.ParseInt(*params.PayableAmount, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetPayableAmount(hiero.HbarFromTinybar(payableAmount))
+	}
+
+	if params.FunctionParameters != nil {
+		functionParams, err := hex.DecodeString(*params.FunctionParameters)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetFunctionParameters(functionParams)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(c.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.ContractResponse{Status: receipt.Status.String()}, nil
+}

@@ -83,6 +83,7 @@ func main() {
 		"createContract":         postHandler(HandleError, handler.New(contractService.CreateContract)),
 		"updateContract":         postHandler(HandleError, handler.New(contractService.UpdateContract)),
 		"deleteContract":         postHandler(HandleError, handler.New(contractService.DeleteContract)),
+		"executeContract":        postHandler(HandleError, handler.New(contractService.ExecuteContract)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
