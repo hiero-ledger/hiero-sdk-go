@@ -373,10 +373,17 @@ func transactionFromScheduledTransaction(scheduledBody *services.SchedulableTran
 	pbBody := &services.TransactionBody{}
 
 	memo := scheduledBody.GetMemo()
+	customFeeLimits := make([]*CustomFeeLimit, 0)
+
+	for _, customFeeLimit := range scheduledBody.GetMaxCustomFees() {
+		customFeeLimits = append(customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
+	}
+
 	baseTx := Transaction[TransactionInterface]{
 		BaseTransaction: &BaseTransaction{
-			memo:           memo,
-			transactionFee: scheduledBody.GetTransactionFee(),
+			memo:            memo,
+			transactionFee:  scheduledBody.GetTransactionFee(),
+			customFeeLimits: customFeeLimits,
 		},
 	}
 
