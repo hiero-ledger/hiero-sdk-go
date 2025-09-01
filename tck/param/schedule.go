@@ -20,3 +20,9 @@ type ScheduleCreateParams struct {
 	WaitForExpiry           *bool                    `json:"waitForExpiry,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
+
+// ScheduleSignParams represents the parameters for signing a schedule
+type ScheduleSignParams struct {
+	ScheduleId              *string                  `json:"scheduleId,omitempty"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+}

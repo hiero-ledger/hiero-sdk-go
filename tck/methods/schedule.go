@@ -51,7 +51,6 @@ func (s *ScheduleService) CreateSchedule(_ context.Context, params param.Schedul
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse payer account ID: %w", err)
 		}
-		fmt.Println("asdf")
 		transaction.SetPayerAccountID(payerAccountID)
 	}
 
@@ -78,7 +77,7 @@ func (s *ScheduleService) CreateSchedule(_ context.Context, params param.Schedul
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(s.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -88,9 +87,44 @@ func (s *ScheduleService) CreateSchedule(_ context.Context, params param.Schedul
 		scheduleId = receipt.ScheduleID.String()
 	}
 
+	fmt.Println(receipt.ScheduledTransactionID)
 	return &response.ScheduleResponse{
-		ScheduleId: scheduleId,
-		Status:     receipt.Status.String(),
+		ScheduleId:    scheduleId,
+		TransactionId: receipt.ScheduledTransactionID.String(),
+		Status:        receipt.Status.String(),
+	}, nil
+}
+
+// SignSchedule jRPC method for signSchedule
+func (s *ScheduleService) SignSchedule(_ context.Context, params param.ScheduleSignParams) (*response.ScheduleResponse, error) {
+	transaction := hiero.NewScheduleSignTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.ScheduleId != nil {
+		scheduleID, err := hiero.ScheduleIDFromString(*params.ScheduleId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse schedule ID: %w", err)
+		}
+		transaction.SetScheduleID(scheduleID)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, s.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(s.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.ScheduleResponse{
+		Status: receipt.Status.String(),
 	}, nil
 }
 

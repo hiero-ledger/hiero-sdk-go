@@ -4,6 +4,7 @@ package response
 
 // ScheduleResponse represents the response from schedule-related operations
 type ScheduleResponse struct {
-	ScheduleId string `json:"scheduleId,omitempty"`
-	Status     string `json:"status"`
+	ScheduleId    string `json:"scheduleId,omitempty"`
+	TransactionId string `json:"transactionId,omitempty"`
+	Status        string `json:"status"`
 }
