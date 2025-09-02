@@ -67,7 +67,10 @@ func (common *CommonTransactionParams) FillOutTransaction(transactionInterface h
 			return err
 		}
 		for _, signer := range *common.Signers {
-			s, _ := hiero.PrivateKeyFromString(signer)
+			s, err := hiero.PrivateKeyFromString(signer)
+			if err != nil {
+				return err
+			}
 			_, err = hiero.TransactionSign(transactionInterface, s)
 			if err != nil {
 				return err
