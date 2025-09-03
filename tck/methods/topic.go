@@ -158,7 +158,6 @@ func (t *TopicService) buildCreateTopic(params param.CreateTopicParams) (*hiero.
 			if fixedFee, ok := fee.(*hiero.CustomFixedFee); ok {
 				topicCustomFees = append(topicCustomFees, fixedFee)
 			}
-			// Ignore fractional and royalty fees as topics don't support them
 		}
 		transaction.SetCustomFees(topicCustomFees)
 	}
