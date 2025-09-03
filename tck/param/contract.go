@@ -44,3 +44,11 @@ type ContractDeleteTransactionParams struct {
 	PermanentRemoval        *bool                    `json:"permanentRemoval"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type ContractExecuteTransactionParams struct {
+	ContractId              *string                  `json:"contractId"`
+	Gas                     *string                  `json:"gas"`
+	PayableAmount           *string                  `json:"amount"`
+	FunctionParameters      *string                  `json:"functionParameters"`
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+}

@@ -334,13 +334,21 @@ func (tx TopicMessageSubmitTransaction) build() *services.TransactionBody {
 }
 
 func (tx TopicMessageSubmitTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
+	scheduledBody := &services.SchedulableTransactionBody{
 		TransactionFee: tx.transactionFee,
 		Memo:           tx.Transaction.memo,
 		Data: &services.SchedulableTransactionBody_ConsensusSubmitMessage{
 			ConsensusSubmitMessage: tx.buildProtoBody(),
 		},
-	}, nil
+	}
+
+	if tx.customFeeLimits != nil {
+		for _, customFeeLimit := range tx.customFeeLimits {
+			scheduledBody.MaxCustomFees = append(scheduledBody.MaxCustomFees, customFeeLimit.toProtobuf())
+		}
+	}
+
+	return scheduledBody, nil
 }
 
 func (tx TopicMessageSubmitTransaction) buildProtoBody() *services.ConsensusSubmitMessageTransactionBody {

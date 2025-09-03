@@ -1,3 +1,12 @@
+## v2.69.0
+
+### Added
+- The ability to set AutoRenewPeriod in seconds
+- Makes SetStakedAccountID and SetStakedNodeID explicitly mutually exclusive
+- Support for Private and Public keys in SetAdminKey for contract update
+- Adds the ability to remove autorenew account via setting it to `0.0.0`
+- `customFeeLimits` for Scheduled Transactions (currently only for `TopicSubmitTransaction`)
+
 ## v2.68.0
 
 ### Added

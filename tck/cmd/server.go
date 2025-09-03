@@ -88,6 +88,7 @@ func main() {
 		"deleteContract":         postHandler(HandleError, handler.New(contractService.DeleteContract)),
 		"createSchedule":         postHandler(HandleError, handler.New(scheduleService.CreateSchedule)),
 		"signSchedule":           postHandler(HandleError, handler.New(scheduleService.SignSchedule)),
+		"executeContract":        postHandler(HandleError, handler.New(contractService.ExecuteContract)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
