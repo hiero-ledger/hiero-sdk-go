@@ -615,8 +615,8 @@ func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevok
 	return &response.TokenResponse{Status: receipt.Status.String()}, nil
 }
 
-// MintToken jRPC method for mintToken
-func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams) (*response.TokenMintResponse, error) {
+// buildMintToken builds a TokenMintTransaction from parameters
+func (t *TokenService) buildMintToken(params param.MintTokenParams) (*hiero.TokenMintTransaction, error) {
 	transaction := hiero.NewTokenMintTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.TokenId != nil {
@@ -657,6 +657,16 @@ func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams
 		}
 	}
 
+	return transaction, nil
+}
+
+// MintToken jRPC method for mintToken
+func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams) (*response.TokenMintResponse, error) {
+	transaction, err := t.buildMintToken(params)
+	if err != nil {
+		return nil, err
+	}
+
 	txResponse, err := transaction.Execute(t.sdkService.Client)
 	if err != nil {
 		return nil, err
@@ -679,8 +689,8 @@ func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams
 	}, nil
 }
 
-// BurnToken jRPC method for burnToken
-func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams) (*response.TokenBurnResponse, error) {
+// buildBurnToken builds a TokenBurnTransaction from parameters
+func (t *TokenService) buildBurnToken(params param.BurnTokenParams) (*hiero.TokenBurnTransaction, error) {
 	transaction := hiero.NewTokenBurnTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.TokenId != nil {
@@ -719,6 +729,16 @@ func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	return transaction, nil
+}
+
+// BurnToken jRPC method for burnToken
+func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams) (*response.TokenBurnResponse, error) {
+	transaction, err := t.buildBurnToken(params)
+	if err != nil {
+		return nil, err
 	}
 
 	txResponse, err := transaction.Execute(t.sdkService.Client)
