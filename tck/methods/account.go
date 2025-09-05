@@ -97,6 +97,65 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 	return &response.AccountResponse{AccountId: accId, Status: receipt.Status.String()}, nil
 }
 
+// buildCreateAccount builds an account create transaction without executing it (for scheduling)
+func (a *AccountService) buildCreateAccount(params param.CreateAccountParams) (*hiero.AccountCreateTransaction, error) {
+	transaction := hiero.NewAccountCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	// Set key
+	if err := utils.SetKeyIfPresent(params.Key, transaction.SetKeyWithoutAlias); err != nil {
+		return nil, err
+	}
+	if params.InitialBalance != nil {
+		initialBalance, err := strconv.ParseInt(*params.InitialBalance, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetInitialBalance(hiero.HbarFromTinybar(initialBalance))
+	}
+	if params.ReceiverSignatureRequired != nil {
+		transaction.SetReceiverSignatureRequired(*params.ReceiverSignatureRequired)
+	}
+	if params.MaxAutomaticTokenAssociations != nil {
+		transaction.SetMaxAutomaticTokenAssociations(*params.MaxAutomaticTokenAssociations)
+	}
+	// Set staked account ID
+	if err := utils.SetAccountIDIfPresent(params.StakedAccountId, transaction.SetStakedAccountID); err != nil {
+		return nil, err
+	}
+	if params.StakedNodeId != nil {
+		stakedNodeID, err := params.StakedNodeId.Int64()
+		if err != nil {
+			return nil, response.InvalidParams.WithData(err.Error())
+		}
+		transaction.SetStakedNodeID(stakedNodeID)
+	}
+	if params.DeclineStakingReward != nil {
+		transaction.SetDeclineStakingReward(*params.DeclineStakingReward)
+	}
+	if params.Memo != nil {
+		transaction.SetAccountMemo(*params.Memo)
+	}
+	if params.AutoRenewPeriod != nil {
+		autoRenewPeriodSeconds, err := strconv.ParseInt(*params.AutoRenewPeriod, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+
+		transaction.SetAutoRenewPeriod(time.Duration(autoRenewPeriodSeconds) * time.Second)
+	}
+	if params.Alias != nil {
+		transaction.SetAlias(*params.Alias)
+	}
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return transaction, nil
+}
+
 // UpdateAccount jRPC method for updateAccount
 func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAccountParams) (*response.AccountResponse, error) {
 	transaction := hiero.NewAccountUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
@@ -204,8 +263,8 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-// ApproveAllowance jRPC method for approveAllowance
-func (a *AccountService) ApproveAllowance(_ context.Context, params param.AccountAllowanceApproveParams) (*response.AccountResponse, error) {
+// buildApproveAllowance builds an AccountAllowanceApproveTransaction from parameters
+func (a *AccountService) buildApproveAllowance(params param.AccountAllowanceApproveParams) (*hiero.AccountAllowanceApproveTransaction, error) {
 	transaction := hiero.NewAccountAllowanceApproveTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	allowances := *params.Allowances
@@ -307,6 +366,15 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 			return nil, err
 		}
 	}
+	return transaction, nil
+}
+
+// ApproveAllowance jRPC method for approveAllowance
+func (a *AccountService) ApproveAllowance(_ context.Context, params param.AccountAllowanceApproveParams) (*response.AccountResponse, error) {
+	transaction, err := a.buildApproveAllowance(params)
+	if err != nil {
+		return nil, err
+	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
 	if err != nil {
@@ -375,8 +443,8 @@ func (a *AccountService) DeleteAllowance(_ context.Context, params param.Account
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-// TransferCrypto jRPC method for transferCrypto
-func (a *AccountService) TransferCrypto(_ context.Context, params param.TransferCryptoParams) (*response.AccountResponse, error) {
+// buildTransferCrypto builds a TransferTransaction from parameters
+func (a *AccountService) buildTransferCrypto(params param.TransferCryptoParams) (*hiero.TransferTransaction, error) {
 	transaction := hiero.NewTransferTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.Transfers == nil {
@@ -399,6 +467,15 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 		if err != nil {
 			return nil, err
 		}
+	}
+	return transaction, nil
+}
+
+// TransferCrypto jRPC method for transferCrypto
+func (a *AccountService) TransferCrypto(_ context.Context, params param.TransferCryptoParams) (*response.AccountResponse, error) {
+	transaction, err := a.buildTransferCrypto(params)
+	if err != nil {
+		return nil, err
 	}
 
 	txResponse, err := transaction.Execute(a.sdkService.Client)
