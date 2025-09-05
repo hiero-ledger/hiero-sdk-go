@@ -2,6 +2,7 @@ package hiero
 
 import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/pkg/errors"
 )
 
 // SPDX-License-Identifier: Apache-2.0
@@ -153,6 +154,10 @@ func (tx *NodeCreateTransaction) SetServiceEndpoints(serviceEndpoints []Endpoint
 // AddServiceEndpoint the list of service endpoints for gRPC calls.
 func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
+	if err := endpoint.Validate(); err != nil {
+		tx.freezeError = err
+		return tx
+	}
 	tx.serviceEndpoints = append(tx.serviceEndpoints, endpoint)
 	return tx
 }
@@ -304,6 +309,76 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 func (tx NodeCreateTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetAddressBook().CreateNode,
+	}
+}
+
+func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
+	if tx.gossipEndpoints != nil {
+		if len(tx.gossipEndpoints) > 0 {
+			if len(tx.gossipEndpoints) > 10 {
+				tx.freezeError = errors.New("gossip endpoints must not contain more than 10 entries")
+				return
+			}
+			for _, endpoint := range tx.gossipEndpoints {
+				if err := endpoint.Validate(); err != nil {
+					tx.freezeError = err
+					return
+				}
+			}
+		} else {
+			tx.freezeError = errors.New("gossip endpoints must not be empty")
+		}
+
+	} else {
+		tx.freezeError = errors.New("gossip endpoints must not be empty")
+	}
+
+	if tx.serviceEndpoints != nil {
+		if len(tx.serviceEndpoints) > 0 {
+			if len(tx.serviceEndpoints) > 8 {
+				tx.freezeError = errors.New("service endpoints must not contain more than 10 entries")
+				return
+			}
+			for _, endpoint := range tx.serviceEndpoints {
+				if err := endpoint.Validate(); err != nil {
+					tx.freezeError = err
+					return
+				}
+			}
+		} else {
+			tx.freezeError = errors.New("service endpoints must not be empty")
+		}
+	} else {
+		tx.freezeError = errors.New("service endpoints must not be empty")
+	}
+
+	if tx.grpcWebProxyEndpoint != nil {
+		if err := tx.grpcWebProxyEndpoint.Validate(); err != nil {
+			tx.freezeError = err
+			return
+		}
+	}
+
+	if tx.description != "" {
+		if len(tx.description) > 100 {
+			tx.freezeError = errors.New("description must be less than 100 characters")
+		}
+	}
+
+	if tx.grpcCertificateHash != nil {
+		if len(tx.grpcCertificateHash) == 0 {
+			tx.freezeError = errors.New("grpc certificate hash must not be empty")
+			return
+		}
+	}
+
+	if tx.gossipCaCertificate != nil {
+		if len(tx.gossipCaCertificate) == 0 {
+			tx.freezeError = errors.New("gossip ca certificate must not be empty")
+			return
+		}
+	} else {
+		tx.freezeError = errors.New("gossip ca certificate must not be empty")
 	}
 }
 
