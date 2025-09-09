@@ -121,6 +121,41 @@ func (n *NodeService) CreateNode(_ context.Context, params param.CreateNodeParam
 	return &response.NodeResponse{NodeId: nodeId, Status: receipt.Status.String()}, nil
 }
 
+func (n *NodeService) DeleteNode(_ context.Context, params param.DeleteNodeParams) (*response.NodeResponse, error) {
+	transaction := hiero.NewNodeDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	// Set node ID
+	if params.NodeId != nil {
+		nodeId, err := strconv.ParseUint(*params.NodeId, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		transaction.SetNodeID(nodeId)
+	}
+
+	// Set common transaction parameters
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.Client)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Execute transaction
+	txResponse, err := transaction.Execute(n.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get receipt
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.NodeResponse{Status: receipt.Status.String()}, nil
+}
+
 // convertEndpointParam converts a param.EndpointParams to hiero.Endpoint
 func convertEndpointParam(endpointParam param.EndpointParams) (hiero.Endpoint, error) {
 	endpoint := hiero.Endpoint{}
