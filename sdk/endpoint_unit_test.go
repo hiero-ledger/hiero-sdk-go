@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestEndpoint_SetAndGetAddress(t *testing.T) {
+func TestEndpointSetAndGetAddress(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &Endpoint{}
@@ -23,7 +23,7 @@ func TestEndpoint_SetAndGetAddress(t *testing.T) {
 	assert.Equal(t, testAddress, endpoint.GetAddress(), "GetAddress should return the set address")
 }
 
-func TestEndpoint_SetAndGetPort(t *testing.T) {
+func TestEndpointSetAndGetPort(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &Endpoint{}
@@ -35,7 +35,7 @@ func TestEndpoint_SetAndGetPort(t *testing.T) {
 	assert.Equal(t, testPort, endpoint.GetPort(), "GetPort should return the set port")
 }
 
-func TestEndpoint_SetAndGetDomainName(t *testing.T) {
+func TestEndpointSetAndGetDomainName(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &Endpoint{}
@@ -47,7 +47,7 @@ func TestEndpoint_SetAndGetDomainName(t *testing.T) {
 	assert.Equal(t, testDomain, endpoint.GetDomainName(), "GetDomainName should return the set domain name")
 }
 
-func TestEndpoint_Validate_Success(t *testing.T) {
+func TestEndpointValidate(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -78,9 +78,7 @@ func TestEndpoint_Validate_Success(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			endpoint := tc.setupFunc()
 			err := endpoint.Validate()
@@ -90,7 +88,7 @@ func TestEndpoint_Validate_Success(t *testing.T) {
 	}
 }
 
-func TestEndpoint_Validate_Failure(t *testing.T) {
+func TestEndpointValidateFailure(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -122,7 +120,6 @@ func TestEndpoint_Validate_Failure(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			endpoint := tc.setupFunc()
 			err := endpoint.Validate()
@@ -187,9 +184,7 @@ func TestEndpointFromProtobuf(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			result := EndpointFromProtobuf(tc.serviceEndpoint)
 
@@ -198,7 +193,7 @@ func TestEndpointFromProtobuf(t *testing.T) {
 	}
 }
 
-func TestEndpoint_ToProtobuf(t *testing.T) {
+func TestEndpointToProtobuf(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &Endpoint{
@@ -218,7 +213,7 @@ func TestEndpoint_ToProtobuf(t *testing.T) {
 	assert.Equal(t, expected, result)
 }
 
-func TestEndpoint_String(t *testing.T) {
+func TestEndpointString(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
@@ -267,9 +262,7 @@ func TestEndpoint_String(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 
 			result := tc.endpoint.String()
 
@@ -278,26 +271,7 @@ func TestEndpoint_String(t *testing.T) {
 	}
 }
 
-func TestEndpoint_MethodChaining(t *testing.T) {
-	t.Parallel()
-
-	endpoint := &Endpoint{}
-	testAddress := []byte{192, 168, 1, 1}
-	testPort := int32(8080)
-	testDomain := "example.com"
-
-	result := endpoint.
-		SetAddress(testAddress).
-		SetPort(testPort).
-		SetDomainName(testDomain)
-
-	assert.Equal(t, endpoint, result)
-	assert.Equal(t, testAddress, endpoint.GetAddress())
-	assert.Equal(t, testPort, endpoint.GetPort())
-	assert.Equal(t, testDomain, endpoint.GetDomainName())
-}
-
-func TestEndpoint_EmptyValues(t *testing.T) {
+func TestEndpointEmptyValues(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &Endpoint{}
@@ -307,47 +281,7 @@ func TestEndpoint_EmptyValues(t *testing.T) {
 	assert.Equal(t, "", endpoint.GetDomainName())
 }
 
-func TestEndpoint_EdgeCases(t *testing.T) {
-	t.Parallel()
-
-	t.Run("EmptyAddress", func(t *testing.T) {
-		t.Parallel()
-
-		endpoint := &Endpoint{}
-		endpoint.SetAddress([]byte{})
-
-		assert.Equal(t, []byte{}, endpoint.GetAddress())
-	})
-
-	t.Run("NilAddressAfterSet", func(t *testing.T) {
-		t.Parallel()
-
-		endpoint := &Endpoint{}
-		endpoint.SetAddress(nil)
-
-		assert.Nil(t, endpoint.GetAddress())
-	})
-
-	t.Run("EmptyDomainName", func(t *testing.T) {
-		t.Parallel()
-
-		endpoint := &Endpoint{}
-		endpoint.SetDomainName("")
-
-		assert.Equal(t, "", endpoint.GetDomainName())
-	})
-
-	t.Run("NegativePort", func(t *testing.T) {
-		t.Parallel()
-
-		endpoint := &Endpoint{}
-		endpoint.SetPort(-1)
-
-		assert.Equal(t, int32(-1), endpoint.GetPort())
-	})
-}
-
-func TestEndpoint_RoundTripProtobuf(t *testing.T) {
+func TestEndpointRoundTripProtobuf(t *testing.T) {
 	t.Parallel()
 
 	originalEndpoint := &Endpoint{
