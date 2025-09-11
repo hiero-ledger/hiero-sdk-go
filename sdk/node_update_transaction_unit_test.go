@@ -170,6 +170,7 @@ func TestUnitNodeUpdateTransactionSetNothing(t *testing.T) {
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
 	transaction, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
@@ -335,6 +336,7 @@ func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
 
 	// Test setting to true
 	transaction, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetDeclineReward(true).
@@ -351,6 +353,7 @@ func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
 
 	// Test setting to false
 	transaction2, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetDeclineReward(false).
@@ -367,6 +370,7 @@ func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
 
 	// Test not setting the field
 	transaction3, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
@@ -391,6 +395,7 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 
 	// Test setting an endpoint
 	transaction, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetGrpcWebProxyEndpoint(proxyEndpoint).
@@ -407,6 +412,7 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 
 	// Test not setting the endpoint
 	transaction2, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
@@ -425,19 +431,10 @@ func TestUnitNodeUpdateTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
-	transaction, err := NewNodeUpdateTransaction().
+	_, err := NewNodeUpdateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
-	require.NoError(t, err)
-
-	require.Error(t, transaction.freezeError)
-	assert.ErrorIs(t, errNodeIdIsRequired, transaction.freezeError)
-
-	client, err := _NewMockClient()
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	require.NoError(t, err)
-
-	_, err = transaction.Execute(client)
 	require.Error(t, err)
+	assert.ErrorIs(t, err, errNodeIdIsRequired)
 }

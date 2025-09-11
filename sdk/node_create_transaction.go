@@ -2,7 +2,6 @@ package hiero
 
 import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
-	"github.com/pkg/errors"
 )
 
 // SPDX-License-Identifier: Apache-2.0
@@ -155,10 +154,6 @@ func (tx *NodeCreateTransaction) SetServiceEndpoints(serviceEndpoints []Endpoint
 // AddServiceEndpoint the list of service endpoints for gRPC calls.
 func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	if err := endpoint.Validate(); err != nil {
-		tx.freezeError = err
-		return tx
-	}
 	tx.serviceEndpoints = append(tx.serviceEndpoints, endpoint)
 	return tx
 }
@@ -318,7 +313,7 @@ func (tx NodeCreateTransaction) getMethod(channel *_Channel) _Method {
 
 func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
 	if len(tx.gossipEndpoints) > 10 {
-		tx.freezeError = errors.New("gossip endpoints must not contain more than 10 entries")
+		tx.freezeError = errTooManyGossipEndpoints
 		return
 	}
 	for _, endpoint := range tx.gossipEndpoints {
@@ -329,7 +324,7 @@ func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionIn
 	}
 
 	if len(tx.serviceEndpoints) > 8 {
-		tx.freezeError = errors.New("service endpoints must not contain more than 10 entries")
+		tx.freezeError = errTooManyServiceEndpoints
 		return
 	}
 	for _, endpoint := range tx.serviceEndpoints {
@@ -347,13 +342,13 @@ func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionIn
 	}
 
 	if tx.gossipCaCertificate != nil && len(*tx.gossipCaCertificate) == 0 {
-		tx.freezeError = errors.New("gossip ca certificate must not be empty")
+		tx.freezeError = errGossipCaCertificateEmpty
 		return
 	}
 
 	if tx.description != "" {
 		if len(tx.description) > 100 {
-			tx.freezeError = errors.New("description must be less than 100 characters")
+			tx.freezeError = errDescriptionTooLong
 		}
 	}
 }
