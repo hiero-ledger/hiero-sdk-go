@@ -2,6 +2,7 @@ package hiero
 
 import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/pkg/errors"
 )
 
 // SPDX-License-Identifier: Apache-2.0
@@ -36,7 +37,7 @@ type NodeCreateTransaction struct {
 	description          string
 	gossipEndpoints      []Endpoint
 	serviceEndpoints     []Endpoint
-	gossipCaCertificate  []byte
+	gossipCaCertificate  *[]byte
 	grpcCertificateHash  []byte
 	adminKey             Key
 	declineReward        *bool
@@ -73,13 +74,14 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 	}
 
 	declineReward := pb.GetNodeCreate().GetDeclineReward()
+	gossipCaCertificate := pb.GetNodeCreate().GetGossipCaCertificate()
 
 	nodeCreateTransaction := NodeCreateTransaction{
 		accountID:            accountID,
 		description:          pb.GetNodeCreate().GetDescription(),
 		gossipEndpoints:      gossipEndpoints,
 		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  pb.GetNodeCreate().GetGossipCaCertificate(),
+		gossipCaCertificate:  &gossipCaCertificate,
 		grpcCertificateHash:  pb.GetNodeCreate().GetGrpcCertificateHash(),
 		adminKey:             adminKey,
 		declineReward:        &declineReward,
@@ -153,20 +155,27 @@ func (tx *NodeCreateTransaction) SetServiceEndpoints(serviceEndpoints []Endpoint
 // AddServiceEndpoint the list of service endpoints for gRPC calls.
 func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
+	if err := endpoint.Validate(); err != nil {
+		tx.freezeError = err
+		return tx
+	}
 	tx.serviceEndpoints = append(tx.serviceEndpoints, endpoint)
 	return tx
 }
 
 // GetGossipCaCertificate the certificate used to sign gossip events.
 func (tx *NodeCreateTransaction) GetGossipCaCertificate() []byte {
-	return tx.gossipCaCertificate
+	if tx.gossipCaCertificate == nil {
+		return []byte{}
+	}
+	return *tx.gossipCaCertificate
 }
 
 // SetGossipCaCertificate the certificate used to sign gossip events.
 // This value MUST be the DER encoding of the certificate presented.
 func (tx *NodeCreateTransaction) SetGossipCaCertificate(gossipCaCertificate []byte) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.gossipCaCertificate = gossipCaCertificate
+	tx.gossipCaCertificate = &gossipCaCertificate
 	return tx
 }
 
@@ -283,7 +292,7 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 	}
 
 	if tx.gossipCaCertificate != nil {
-		body.GossipCaCertificate = tx.gossipCaCertificate
+		body.GossipCaCertificate = *tx.gossipCaCertificate
 	}
 
 	if tx.grpcCertificateHash != nil {
@@ -304,6 +313,48 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 func (tx NodeCreateTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetAddressBook().CreateNode,
+	}
+}
+
+func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
+	if len(tx.gossipEndpoints) > 10 {
+		tx.freezeError = errors.New("gossip endpoints must not contain more than 10 entries")
+		return
+	}
+	for _, endpoint := range tx.gossipEndpoints {
+		if err := endpoint.Validate(); err != nil {
+			tx.freezeError = err
+			return
+		}
+	}
+
+	if len(tx.serviceEndpoints) > 8 {
+		tx.freezeError = errors.New("service endpoints must not contain more than 10 entries")
+		return
+	}
+	for _, endpoint := range tx.serviceEndpoints {
+		if err := endpoint.Validate(); err != nil {
+			tx.freezeError = err
+			return
+		}
+	}
+
+	if tx.grpcWebProxyEndpoint != nil {
+		if err := tx.grpcWebProxyEndpoint.Validate(); err != nil {
+			tx.freezeError = err
+			return
+		}
+	}
+
+	if tx.gossipCaCertificate != nil && len(*tx.gossipCaCertificate) == 0 {
+		tx.freezeError = errors.New("gossip ca certificate must not be empty")
+		return
+	}
+
+	if tx.description != "" {
+		if len(tx.description) > 100 {
+			tx.freezeError = errors.New("description must be less than 100 characters")
+		}
 	}
 }
 

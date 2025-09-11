@@ -46,6 +46,9 @@ func main() {
 	scheduleService := new(methods.ScheduleService)
 	scheduleService.SetSdkService(sdkService)
 
+	nodeService := new(methods.NodeService)
+	nodeService.SetSdkService(sdkService)
+
 	// Create a new RPC server
 	assigner := handler.Map{
 		"setup":                  postHandler(HandleError, handler.New(sdkService.Setup)),
@@ -88,6 +91,7 @@ func main() {
 		"deleteContract":         postHandler(HandleError, handler.New(contractService.DeleteContract)),
 		"createSchedule":         postHandler(HandleError, handler.New(scheduleService.CreateSchedule)),
 		"signSchedule":           postHandler(HandleError, handler.New(scheduleService.SignSchedule)),
+		"createNode":             postHandler(HandleError, handler.New(nodeService.CreateNode)),
 		"executeContract":        postHandler(HandleError, handler.New(contractService.ExecuteContract)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
@@ -152,7 +156,7 @@ func HandleError(_ context.Context, request *jrpc2.Request, err error) error {
 			return response.NewHederaPrecheckError(hieroErr)
 		}
 		// other errors
-		return response.InternalError
+		return response.NewInternalError(err.Error())
 	}
 	return nil
 }

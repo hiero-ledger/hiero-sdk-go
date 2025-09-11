@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/pkg/errors"
 )
 
 type Endpoint struct {
@@ -41,6 +42,16 @@ func (endpoint *Endpoint) GetDomainName() string {
 	return endpoint.domainName
 }
 
+func (endpoint *Endpoint) Validate() error {
+	if endpoint.address == nil && endpoint.domainName == "" {
+		return errors.New("endpoint must have either address or domain name")
+	}
+	if endpoint.address != nil && endpoint.domainName != "" {
+		return errors.New("endpoint must have either address or domain name, but not both")
+	}
+	return nil
+}
+
 func EndpointFromProtobuf(serviceEndpoint *services.ServiceEndpoint) Endpoint {
 	port := serviceEndpoint.GetPort()
 
@@ -56,11 +67,13 @@ func EndpointFromProtobuf(serviceEndpoint *services.ServiceEndpoint) Endpoint {
 }
 
 func (endpoint *Endpoint) _ToProtobuf() *services.ServiceEndpoint {
-	return &services.ServiceEndpoint{
+	body := &services.ServiceEndpoint{
 		IpAddressV4: endpoint.address,
 		Port:        endpoint.port,
 		DomainName:  endpoint.domainName,
 	}
+
+	return body
 }
 
 func (endpoint *Endpoint) String() string {

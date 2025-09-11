@@ -1417,10 +1417,6 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 		return TransactionResponse{}, errNoClientProvided
 	}
 
-	if tx.freezeError != nil {
-		return TransactionResponse{}, tx.freezeError
-	}
-
 	if tx.keyError != nil {
 		return TransactionResponse{}, tx.keyError
 	}
@@ -1430,6 +1426,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 		if err != nil {
 			return TransactionResponse{}, err
 		}
+	}
+
+	if tx.freezeError != nil {
+		return TransactionResponse{}, tx.freezeError
 	}
 
 	transactionID := tx.transactionIDs._GetCurrent().(TransactionID)
