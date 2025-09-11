@@ -27,12 +27,14 @@ func TestIntegrationNodeUpdateTransactionCanExecute(t *testing.T) {
 	require.NoError(t, err)
 	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
 
+	domainName := "testWebUpdated.com"
+
 	resp, err := NewNodeUpdateTransaction().
 		SetNodeID(0).
 		SetDescription("testUpdated").
 		SetDeclineReward(true).
 		SetGrpcWebProxyEndpoint(Endpoint{
-			domainName: "testWebUpdated.com",
+			domainName: &domainName,
 			port:       123456,
 		}).
 		Execute(client)

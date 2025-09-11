@@ -2,6 +2,7 @@ package hiero
 
 import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/pkg/errors"
 
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
@@ -35,7 +36,7 @@ type NodeUpdateTransaction struct {
 	description          string
 	gossipEndpoints      []Endpoint
 	serviceEndpoints     []Endpoint
-	gossipCaCertificate  []byte
+	gossipCaCertificate  *[]byte
 	grpcCertificateHash  []byte
 	adminKey             Key
 	declineReward        *bool
@@ -99,7 +100,7 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 		description:          description,
 		gossipEndpoints:      gossipEndpoints,
 		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  certificate,
+		gossipCaCertificate:  &certificate,
 		grpcCertificateHash:  certificateHash,
 		adminKey:             adminKey,
 		grpcWebProxyEndpoint: grpcProxyEndpoint,
@@ -201,14 +202,17 @@ func (tx *NodeUpdateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeUpda
 
 // GetGossipCaCertificate the certificate used to sign gossip events.
 func (tx *NodeUpdateTransaction) GetGossipCaCertificate() []byte {
-	return tx.gossipCaCertificate
+	if tx.gossipCaCertificate == nil {
+		return []byte{}
+	}
+	return *tx.gossipCaCertificate
 }
 
 // SetGossipCaCertificate the certificate used to sign gossip events.
 // This value MUST be the DER encoding of the certificate presented.
 func (tx *NodeUpdateTransaction) SetGossipCaCertificate(gossipCaCertificate []byte) *NodeUpdateTransaction {
 	tx._RequireNotFrozen()
-	tx.gossipCaCertificate = gossipCaCertificate
+	tx.gossipCaCertificate = &gossipCaCertificate
 	return tx
 }
 
@@ -321,8 +325,6 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 
 	if tx.nodeID != nil {
 		body.NodeId = *tx.nodeID
-	} else {
-		tx.freezeError = errNodeIdIsRequired
 	}
 
 	if tx.accountID != nil {
@@ -342,7 +344,7 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 	}
 
 	if tx.gossipCaCertificate != nil {
-		body.GossipCaCertificate = wrapperspb.Bytes(tx.gossipCaCertificate)
+		body.GossipCaCertificate = wrapperspb.Bytes(*tx.gossipCaCertificate)
 	}
 
 	if tx.grpcCertificateHash != nil {
@@ -358,6 +360,59 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 	}
 
 	return body
+}
+
+func (tx NodeUpdateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
+	if tx.gossipEndpoints != nil {
+		if len(tx.gossipEndpoints) > 10 {
+			tx.freezeError = errors.New("gossip endpoints must not contain more than 10 entries")
+			return
+		}
+		for _, endpoint := range tx.gossipEndpoints {
+			if err := endpoint.Validate(); err != nil {
+				tx.freezeError = err
+				return
+			}
+		}
+	}
+
+	if tx.serviceEndpoints != nil {
+		if len(tx.serviceEndpoints) > 8 {
+			tx.freezeError = errors.New("service endpoints must not contain more than 10 entries")
+			return
+		}
+		for _, endpoint := range tx.serviceEndpoints {
+			if err := endpoint.Validate(); err != nil {
+				tx.freezeError = err
+				return
+			}
+		}
+	}
+
+	// if tx.grpcWebProxyEndpoint != nil {
+	// 	if err := tx.grpcWebProxyEndpoint.Validate(); err != nil {
+	// 		tx.freezeError = err
+	// 		return
+	// 	}
+	// }
+
+	if tx.gossipCaCertificate != nil {
+		if len(*tx.gossipCaCertificate) == 0 {
+			tx.freezeError = errors.New("gossip ca certificate must not be empty")
+			return
+		}
+	}
+
+	if tx.description != "" {
+		if len(tx.description) > 100 {
+			tx.freezeError = errors.New("description must be less than 100 characters")
+			return
+		}
+	}
+
+	if tx.nodeID == nil {
+		tx.freezeError = errNodeIdIsRequired
+	}
 }
 
 func (tx NodeUpdateTransaction) getMethod(channel *_Channel) _Method {

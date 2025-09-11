@@ -18,6 +18,8 @@ func TestUnitNodeAddressStringTest(t *testing.T) {
 	id, err := AccountIDFromString("0.0.123")
 	require.NoError(t, err)
 
+	domainName := "example.com"
+
 	// Prepare a NodeAddress struct for testing
 	nodeAddress := NodeAddress{
 		PublicKey: "sample-public-key",
@@ -28,7 +30,7 @@ func TestUnitNodeAddressStringTest(t *testing.T) {
 			{
 				address:    []byte("192.168.1.1"),
 				port:       8080,
-				domainName: "example.com",
+				domainName: &domainName,
 			},
 		},
 		Description: "Sample Node",

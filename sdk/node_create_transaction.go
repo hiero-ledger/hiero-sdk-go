@@ -37,7 +37,7 @@ type NodeCreateTransaction struct {
 	description          string
 	gossipEndpoints      []Endpoint
 	serviceEndpoints     []Endpoint
-	gossipCaCertificate  []byte
+	gossipCaCertificate  *[]byte
 	grpcCertificateHash  []byte
 	adminKey             Key
 	declineReward        *bool
@@ -74,13 +74,14 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 	}
 
 	declineReward := pb.GetNodeCreate().GetDeclineReward()
+	gossipCaCertificate := pb.GetNodeCreate().GetGossipCaCertificate()
 
 	nodeCreateTransaction := NodeCreateTransaction{
 		accountID:            accountID,
 		description:          pb.GetNodeCreate().GetDescription(),
 		gossipEndpoints:      gossipEndpoints,
 		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  pb.GetNodeCreate().GetGossipCaCertificate(),
+		gossipCaCertificate:  &gossipCaCertificate,
 		grpcCertificateHash:  pb.GetNodeCreate().GetGrpcCertificateHash(),
 		adminKey:             adminKey,
 		declineReward:        &declineReward,
@@ -164,14 +165,17 @@ func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCrea
 
 // GetGossipCaCertificate the certificate used to sign gossip events.
 func (tx *NodeCreateTransaction) GetGossipCaCertificate() []byte {
-	return tx.gossipCaCertificate
+	if tx.gossipCaCertificate == nil {
+		return []byte{}
+	}
+	return *tx.gossipCaCertificate
 }
 
 // SetGossipCaCertificate the certificate used to sign gossip events.
 // This value MUST be the DER encoding of the certificate presented.
 func (tx *NodeCreateTransaction) SetGossipCaCertificate(gossipCaCertificate []byte) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.gossipCaCertificate = gossipCaCertificate
+	tx.gossipCaCertificate = &gossipCaCertificate
 	return tx
 }
 
@@ -288,7 +292,7 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 	}
 
 	if tx.gossipCaCertificate != nil {
-		body.GossipCaCertificate = tx.gossipCaCertificate
+		body.GossipCaCertificate = *tx.gossipCaCertificate
 	}
 
 	if tx.grpcCertificateHash != nil {
@@ -314,42 +318,29 @@ func (tx NodeCreateTransaction) getMethod(channel *_Channel) _Method {
 
 func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
 	if tx.gossipEndpoints != nil {
-		if len(tx.gossipEndpoints) > 0 {
-			if len(tx.gossipEndpoints) > 10 {
-				tx.freezeError = errors.New("gossip endpoints must not contain more than 10 entries")
+		if len(tx.gossipEndpoints) > 10 {
+			tx.freezeError = errors.New("gossip endpoints must not contain more than 10 entries")
+			return
+		}
+		for _, endpoint := range tx.gossipEndpoints {
+			if err := endpoint.Validate(); err != nil {
+				tx.freezeError = err
 				return
 			}
-			for _, endpoint := range tx.gossipEndpoints {
-				if err := endpoint.Validate(); err != nil {
-					tx.freezeError = err
-					return
-				}
-			}
-		} else {
-			tx.freezeError = errors.New("gossip endpoints must not be empty")
 		}
-
-	} else {
-		tx.freezeError = errors.New("gossip endpoints must not be empty")
 	}
 
 	if tx.serviceEndpoints != nil {
-		if len(tx.serviceEndpoints) > 0 {
-			if len(tx.serviceEndpoints) > 8 {
-				tx.freezeError = errors.New("service endpoints must not contain more than 10 entries")
+		if len(tx.serviceEndpoints) > 8 {
+			tx.freezeError = errors.New("service endpoints must not contain more than 10 entries")
+			return
+		}
+		for _, endpoint := range tx.serviceEndpoints {
+			if err := endpoint.Validate(); err != nil {
+				tx.freezeError = err
 				return
 			}
-			for _, endpoint := range tx.serviceEndpoints {
-				if err := endpoint.Validate(); err != nil {
-					tx.freezeError = err
-					return
-				}
-			}
-		} else {
-			tx.freezeError = errors.New("service endpoints must not be empty")
 		}
-	} else {
-		tx.freezeError = errors.New("service endpoints must not be empty")
 	}
 
 	if tx.grpcWebProxyEndpoint != nil {
@@ -359,26 +350,17 @@ func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionIn
 		}
 	}
 
+	if tx.gossipCaCertificate != nil {
+		if len(*tx.gossipCaCertificate) == 0 {
+			tx.freezeError = errors.New("gossip ca certificate must not be empty")
+			return
+		}
+	}
+
 	if tx.description != "" {
 		if len(tx.description) > 100 {
 			tx.freezeError = errors.New("description must be less than 100 characters")
 		}
-	}
-
-	if tx.grpcCertificateHash != nil {
-		if len(tx.grpcCertificateHash) == 0 {
-			tx.freezeError = errors.New("grpc certificate hash must not be empty")
-			return
-		}
-	}
-
-	if tx.gossipCaCertificate != nil {
-		if len(tx.gossipCaCertificate) == 0 {
-			tx.freezeError = errors.New("gossip ca certificate must not be empty")
-			return
-		}
-	} else {
-		tx.freezeError = errors.New("gossip ca certificate must not be empty")
 	}
 }
 
