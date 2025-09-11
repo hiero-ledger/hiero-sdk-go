@@ -1428,6 +1428,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 		}
 	}
 
+	if tx.freezeError != nil {
+		return TransactionResponse{}, tx.freezeError
+	}
+
 	transactionID := tx.transactionIDs._GetCurrent().(TransactionID)
 
 	if !client.GetOperatorAccountID()._IsZero() && client.GetOperatorAccountID()._Equals(*transactionID.AccountID) {
@@ -1528,10 +1532,6 @@ func (tx *Transaction[T]) FreezeWith(client *Client) (T, error) {
 				SigPair: make([]*services.SignaturePair, 0),
 			},
 		})
-	}
-
-	if tx.freezeError != nil {
-		return tx.childTransaction, tx.freezeError
 	}
 
 	return tx.childTransaction, nil

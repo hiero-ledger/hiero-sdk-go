@@ -259,7 +259,8 @@ func TestUnitNodeDeleteTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
 
-	require.Error(t, err)
-	require.ErrorIs(t, errNodeIdIsRequired, transaction.freezeError)
-	assert.ErrorIs(t, errNodeIdIsRequired, err)
+	require.NoError(t, err)
+
+	require.Error(t, transaction.freezeError)
+	assert.ErrorIs(t, errNodeIdIsRequired, transaction.freezeError)
 }
