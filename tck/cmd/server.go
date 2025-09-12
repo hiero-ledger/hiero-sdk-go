@@ -93,6 +93,8 @@ func main() {
 		"signSchedule":           postHandler(HandleError, handler.New(scheduleService.SignSchedule)),
 		"createNode":             postHandler(HandleError, handler.New(nodeService.CreateNode)),
 		"executeContract":        postHandler(HandleError, handler.New(contractService.ExecuteContract)),
+		"updateNode":             postHandler(HandleError, handler.New(nodeService.UpdateNode)),
+		"deleteNode":             postHandler(HandleError, handler.New(nodeService.DeleteNode)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 
