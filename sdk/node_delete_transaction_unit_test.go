@@ -126,6 +126,7 @@ func TestUnitNodeDeleteTransactionSetNothing(t *testing.T) {
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
 	transaction, err := NewNodeDeleteTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
@@ -257,6 +258,7 @@ func TestUnitNodeDeleteTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
+
 	require.NoError(t, err)
 
 	require.Error(t, transaction.freezeError)

@@ -170,6 +170,7 @@ func TestUnitNodeUpdateTransactionSetNothing(t *testing.T) {
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
 	transaction, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
@@ -335,6 +336,7 @@ func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
 
 	// Test setting to true
 	transaction, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetDeclineReward(true).
@@ -351,6 +353,7 @@ func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
 
 	// Test setting to false
 	transaction2, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetDeclineReward(false).
@@ -367,6 +370,7 @@ func TestUnitNodeUpdateTransactionDeclineReward(t *testing.T) {
 
 	// Test not setting the field
 	transaction3, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
@@ -391,6 +395,7 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 
 	// Test setting an endpoint
 	transaction, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		SetGrpcWebProxyEndpoint(proxyEndpoint).
@@ -407,6 +412,7 @@ func TestUnitNodeUpdateTransactionGrpcProxyEndpoint(t *testing.T) {
 
 	// Test not setting the endpoint
 	transaction2, err := NewNodeUpdateTransaction().
+		SetNodeID(0).
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()

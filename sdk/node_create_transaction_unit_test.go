@@ -6,6 +6,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -412,4 +413,331 @@ func TestUnitNodeCreateTransactionGrpcProxyEndpoint(t *testing.T) {
 
 	proto2 := transaction2.build().GetNodeCreate()
 	assert.Nil(t, proto2.GrpcProxyEndpoint)
+}
+
+func TestUnitNodeCreateTransactionGossipEndpointsValidation(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	t.Run("TooManyGossipEndpoints", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add 11 gossip endpoints (more than the limit of 10)
+		for i := 0; i < 11; i++ {
+			endpoint := Endpoint{}
+			endpoint.SetAddress([]byte{192, 168, 1, byte(i + 1)})
+			endpoint.SetPort(8080)
+			tx.AddGossipEndpoint(endpoint)
+		}
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errTooManyGossipEndpoints)
+	})
+
+	t.Run("GossipEndpointWithNoAddressOrDomainName", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add an invalid endpoint (no address or domain name)
+		invalidEndpoint := Endpoint{}
+		tx.AddGossipEndpoint(invalidEndpoint)
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointMustHaveAddressOrDomainName)
+	})
+
+	t.Run("GossipEndpointWithBothAddressOrDomainName", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add an invalid endpoint (no address or domain name)
+		invalidEndpoint := Endpoint{}
+		invalidEndpoint.SetAddress([]byte{192, 168, 1, 1})
+		invalidEndpoint.SetDomainName("example.com")
+		tx.AddGossipEndpoint(invalidEndpoint)
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointCannotHaveBothAddressAndDomainName)
+	})
+
+	t.Run("ValidGossipEndpoints", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add valid endpoints (within limit and properly configured)
+		for i := 0; i < 5; i++ {
+			endpoint := Endpoint{}
+			endpoint.SetAddress([]byte{192, 168, 1, byte(i + 1)})
+			endpoint.SetPort(8080)
+			tx.AddGossipEndpoint(endpoint)
+		}
+
+		// Should not error with valid endpoints
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+}
+
+func TestUnitNodeCreateTransactionServiceEndpointsValidation(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	t.Run("TooManyServiceEndpoints", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		for i := 0; i < 9; i++ {
+			endpoint := Endpoint{}
+			endpoint.SetAddress([]byte{10, 0, 0, byte(i + 1)})
+			endpoint.SetPort(9090)
+			tx.AddServiceEndpoint(endpoint)
+		}
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errTooManyServiceEndpoints)
+	})
+
+	t.Run("ServiceEndpointWithNoAddressOrDomainName", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add an invalid endpoint (no address or domain name)
+		invalidEndpoint := Endpoint{}
+		tx.AddServiceEndpoint(invalidEndpoint)
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointMustHaveAddressOrDomainName)
+	})
+
+	t.Run("ServiceEndpointWithBothAddressOrDomainName", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add an invalid endpoint (both address and domain name set)
+		invalidEndpoint := Endpoint{}
+		invalidEndpoint.SetAddress([]byte{172, 16, 0, 1})
+		invalidEndpoint.SetDomainName("example.com")
+		tx.AddServiceEndpoint(invalidEndpoint)
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointCannotHaveBothAddressAndDomainName)
+	})
+
+	t.Run("ValidServiceEndpoints", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Add valid endpoints (within limit and properly configured)
+		for i := 0; i < 4; i++ {
+			endpoint := Endpoint{}
+			endpoint.SetDomainName("service" + string(rune('a'+i)) + ".example.com")
+			endpoint.SetPort(9090)
+			tx.AddServiceEndpoint(endpoint)
+		}
+
+		// Should not error with valid endpoints
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+}
+
+func TestUnitNodeCreateTransactionGrpcWebProxyEndpointValidation(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	t.Run("GrpcWebProxyEndpointWithNoAddressOrDomainName", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set an invalid gRPC web proxy endpoint
+		invalidEndpoint := Endpoint{}
+		// No address or domain name set, making it invalid
+		tx.SetGrpcWebProxyEndpoint(invalidEndpoint)
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointMustHaveAddressOrDomainName)
+	})
+
+	t.Run("GrpcWebProxyEndpointWithBothAddressOrDomainName", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set an invalid gRPC web proxy endpoint
+		invalidEndpoint := Endpoint{}
+		invalidEndpoint.SetAddress([]byte{192, 168, 1, 1})
+		invalidEndpoint.SetDomainName("example.com")
+		tx.SetGrpcWebProxyEndpoint(invalidEndpoint)
+		_, err := tx.Freeze()
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointCannotHaveBothAddressAndDomainName)
+	})
+
+	t.Run("ValidGrpcWebProxyEndpoint", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set a valid gRPC web proxy endpoint
+		validEndpoint := Endpoint{}
+		validEndpoint.SetDomainName("proxy.example.com")
+		validEndpoint.SetPort(8080)
+		tx.SetGrpcWebProxyEndpoint(validEndpoint)
+
+		// Should not error with valid endpoint
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+
+	t.Run("NoGrpcWebProxyEndpoint", func(t *testing.T) {
+		nodeAccountID := []AccountID{{Account: 10}}
+		transactionID := TransactionIDGenerate(AccountID{Account: 324})
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Don't set gRPC web proxy endpoint (should be fine)
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+}
+
+func TestUnitNodeCreateTransactionGossipCaCertificateValidation(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	t.Run("EmptyGossipCaCertificate", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set an empty gossip CA certificate
+		tx.SetGossipCaCertificate([]byte{})
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errGossipCaCertificateEmpty)
+	})
+
+	t.Run("ValidGossipCaCertificate", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set a valid gossip CA certificate
+		validCert := []byte{0x30, 0x82, 0x01, 0x22}
+		tx.SetGossipCaCertificate(validCert)
+
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+
+	t.Run("NoGossipCaCertificate", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Don't set gossip CA certificate (should be fine)
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+}
+
+func TestUnitNodeCreateTransactionDescriptionValidation(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := []AccountID{{Account: 10}}
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	t.Run("DescriptionTooLong", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set a description longer than 100 characters
+		longDescription := strings.Repeat("a", 101)
+		tx.SetDescription(longDescription)
+
+		_, err := tx.Freeze()
+
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errDescriptionTooLong)
+	})
+
+	t.Run("DescriptionAtLimit", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		// Set a description exactly 100 characters
+		limitDescription := strings.Repeat("a", 100)
+		tx.SetDescription(limitDescription)
+
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+
+	t.Run("ValidDescription", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		tx.SetDescription("Valid node description")
+
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
+
+	t.Run("EmptyDescription", func(t *testing.T) {
+		tx := NewNodeCreateTransaction().
+			SetTransactionID(transactionID).
+			SetNodeAccountIDs(nodeAccountID)
+
+		tx.SetDescription("")
+
+		frozen, err := tx.Freeze()
+		require.NoError(t, err)
+		assert.NotNil(t, frozen)
+	})
 }

@@ -36,7 +36,7 @@ type NodeCreateTransaction struct {
 	description          string
 	gossipEndpoints      []Endpoint
 	serviceEndpoints     []Endpoint
-	gossipCaCertificate  []byte
+	gossipCaCertificate  *[]byte
 	grpcCertificateHash  []byte
 	adminKey             Key
 	declineReward        *bool
@@ -73,13 +73,14 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 	}
 
 	declineReward := pb.GetNodeCreate().GetDeclineReward()
+	gossipCaCertificate := pb.GetNodeCreate().GetGossipCaCertificate()
 
 	nodeCreateTransaction := NodeCreateTransaction{
 		accountID:            accountID,
 		description:          pb.GetNodeCreate().GetDescription(),
 		gossipEndpoints:      gossipEndpoints,
 		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  pb.GetNodeCreate().GetGossipCaCertificate(),
+		gossipCaCertificate:  &gossipCaCertificate,
 		grpcCertificateHash:  pb.GetNodeCreate().GetGrpcCertificateHash(),
 		adminKey:             adminKey,
 		declineReward:        &declineReward,
@@ -159,14 +160,17 @@ func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCrea
 
 // GetGossipCaCertificate the certificate used to sign gossip events.
 func (tx *NodeCreateTransaction) GetGossipCaCertificate() []byte {
-	return tx.gossipCaCertificate
+	if tx.gossipCaCertificate == nil {
+		return []byte{}
+	}
+	return *tx.gossipCaCertificate
 }
 
 // SetGossipCaCertificate the certificate used to sign gossip events.
 // This value MUST be the DER encoding of the certificate presented.
 func (tx *NodeCreateTransaction) SetGossipCaCertificate(gossipCaCertificate []byte) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.gossipCaCertificate = gossipCaCertificate
+	tx.gossipCaCertificate = &gossipCaCertificate
 	return tx
 }
 
@@ -283,7 +287,7 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 	}
 
 	if tx.gossipCaCertificate != nil {
-		body.GossipCaCertificate = tx.gossipCaCertificate
+		body.GossipCaCertificate = *tx.gossipCaCertificate
 	}
 
 	if tx.grpcCertificateHash != nil {
@@ -305,6 +309,43 @@ func (tx NodeCreateTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetAddressBook().CreateNode,
 	}
+}
+
+func (tx NodeCreateTransaction) validateTransactionFields() error {
+	if len(tx.gossipEndpoints) > 10 {
+		return errTooManyGossipEndpoints
+	}
+	for _, endpoint := range tx.gossipEndpoints {
+		if err := endpoint.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if len(tx.serviceEndpoints) > 8 {
+		return errTooManyServiceEndpoints
+	}
+	for _, endpoint := range tx.serviceEndpoints {
+		if err := endpoint.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if tx.grpcWebProxyEndpoint != nil {
+		if err := tx.grpcWebProxyEndpoint.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if tx.gossipCaCertificate != nil && len(*tx.gossipCaCertificate) == 0 {
+		return errGossipCaCertificateEmpty
+	}
+
+	if tx.description != "" {
+		if len(tx.description) > 100 {
+			return errDescriptionTooLong
+		}
+	}
+	return nil
 }
 
 func (tx NodeCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
