@@ -137,6 +137,7 @@ func TestUnitTokenUpdateTransactionGet(t *testing.T) {
 	transaction.GetExpirationTime()
 	transaction.GetMaxTransactionFee()
 	transaction.GetTransactionMemo()
+	transaction.GetAutoRenewPeriod()
 	transaction.GetRegenerateTransactionID()
 	_, err = transaction.GetSignatures()
 	require.NoError(t, err)
@@ -329,4 +330,12 @@ func TestUnitTokenUpdateTransactionSetAutorenewPeriodSeconds(t *testing.T) {
 	tx.SetAutoRenewPeriodSeconds(1234)
 	require.Nil(t, tx.autoRenewPeriod)
 	require.Equal(t, int64(1234), *tx.autoRenewPeriodSeconds)
+}
+
+func TestUnitTokenUpdateTransactionGetAutorenewPeriod(t *testing.T) {
+	tx := NewTokenUpdateTransaction().SetAutoRenewPeriodSeconds(1)
+	require.Equal(t, time.Second, tx.GetAutoRenewPeriod())
+
+	tx.SetAutoRenewPeriod(1234 * time.Second)
+	require.Equal(t, 1234*time.Second, tx.GetAutoRenewPeriod())
 }
