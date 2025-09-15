@@ -100,6 +100,7 @@ func TestUnitTokenUpdateTransactionGet(t *testing.T) {
 		SetKeyVerificationMode(NO_VALIDATION).
 		SetExpirationTime(time.Now()).
 		SetAutoRenewPeriod(60 * time.Second).
+		SetAutoRenewPeriodSeconds(60).
 		SetAutoRenewAccount(accountID).
 		SetMaxTransactionFee(NewHbar(10)).
 		SetTransactionMemo("").
@@ -318,4 +319,14 @@ func TestUnitTokenUpdateTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenUpdateTransaction).buildProtoBody())
+}
+
+func TestUnitTokenUpdateTransactionSetAutorenewPeriodSeconds(t *testing.T) {
+	tx := NewTokenUpdateTransaction().SetAutoRenewPeriodSeconds(1)
+	require.Nil(t, tx.autoRenewPeriod)
+	require.Equal(t, int64(1), *tx.autoRenewPeriodSeconds)
+
+	tx.SetAutoRenewPeriodSeconds(1234)
+	require.Nil(t, tx.autoRenewPeriod)
+	require.Equal(t, int64(1234), *tx.autoRenewPeriodSeconds)
 }
