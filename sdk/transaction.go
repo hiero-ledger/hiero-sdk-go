@@ -29,6 +29,7 @@ type TransactionInterface interface {
 	build() *services.TransactionBody                                         // build a protobuf payload for the transaction
 	buildScheduled() (*services.SchedulableTransactionBody, error)            // builds the protobuf payload for the scheduled transaction
 	preFreezeWith(*Client, TransactionInterface)                              // utility method to set the transaction fields before freezing
+	validateTransactionFields() error                                         // utility method to validate transaction fields
 	constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) // TODO remove this method if possible
 	// NOTE: Any changes to the baseTransaction retuned by getBaseTransaction()
 	// will be reflected in the transaction object
@@ -1316,6 +1317,10 @@ func (tx *Transaction[T]) preFreezeWith(*Client, TransactionInterface) {
 	// No-op for every transaction except TokenCreateTransaction and TopicCreateTransaction
 }
 
+func (tx *Transaction[T]) validateTransactionFields() error {
+	return nil
+}
+
 func (tx *Transaction[T]) getLogID(transactionInterface Executable) string {
 	timestamp := tx.transactionIDs._GetCurrent().(TransactionID).ValidStart
 	return fmt.Sprintf("%s:%d", transactionInterface.getName(), timestamp.UnixNano())
@@ -1421,6 +1426,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 		return TransactionResponse{}, tx.keyError
 	}
 
+	if tx.freezeError != nil {
+		return TransactionResponse{}, tx.freezeError
+	}
+
 	if !tx.IsFrozen() {
 		_, err := tx.FreezeWith(client)
 		if err != nil {
@@ -1477,13 +1486,17 @@ func (tx *Transaction[T]) FreezeWith(client *Client) (T, error) {
 	}
 
 	tx.childTransaction.preFreezeWith(client, tx.childTransaction)
+	err := tx.childTransaction.validateTransactionFields()
+	if err != nil {
+		return tx.childTransaction, err
+	}
 
 	tx._InitFee(client)
 	if err := tx._InitTransactionID(client); err != nil {
 		return tx.childTransaction, err
 	}
 
-	err := tx.childTransaction.validateNetworkOnIDs(client)
+	err = tx.childTransaction.validateNetworkOnIDs(client)
 	if err != nil {
 		return tx.childTransaction, err
 	}

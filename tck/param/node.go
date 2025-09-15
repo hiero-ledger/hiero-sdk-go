@@ -20,7 +20,6 @@ type CreateNodeParams struct {
 	GrpcWebProxyEndpoint    *EndpointParams          `json:"grpcWebProxyEndpoint,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
 }
-
 type UpdateNodeParams struct {
 	NodeId                  *string                  `json:"nodeId,omitempty"`
 	AccountId               *string                  `json:"accountId,omitempty"`
