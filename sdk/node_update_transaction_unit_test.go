@@ -431,19 +431,12 @@ func TestUnitNodeUpdateTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
-	transaction, err := NewNodeUpdateTransaction().
+	_, err := NewNodeUpdateTransaction().
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
 	require.NoError(t, err)
 
-	require.Error(t, transaction.freezeError)
-	assert.ErrorIs(t, errNodeIdIsRequired, transaction.freezeError)
-
-	client, err := _NewMockClient()
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	require.NoError(t, err)
-
-	_, err = transaction.Execute(client)
 	require.Error(t, err)
+	assert.ErrorIs(t, errNodeIdIsRequired, err)
 }

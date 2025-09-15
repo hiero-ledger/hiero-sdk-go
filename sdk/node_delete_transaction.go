@@ -98,8 +98,6 @@ func (tx NodeDeleteTransaction) buildProtoBody() *services.NodeDeleteTransaction
 
 	if tx.nodeID != nil {
 		body.NodeId = *tx.nodeID
-	} else {
-		tx.freezeError = errNodeIdIsRequired
 	}
 	return body
 }
@@ -108,6 +106,13 @@ func (tx NodeDeleteTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetAddressBook().DeleteNode,
 	}
+}
+
+func (tx NodeDeleteTransaction) validateTransactionFields() error {
+	if tx.nodeID == nil {
+		return errNodeIdIsRequired
+	}
+	return nil
 }
 
 func (tx NodeDeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
