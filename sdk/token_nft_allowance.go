@@ -4,6 +4,7 @@ package hiero
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"google.golang.org/protobuf/types/known/wrapperspb"
@@ -118,7 +119,7 @@ func (approval *TokenNftAllowance) String() string {
 	var owner string
 	var spender string
 	var token string
-	var serials string
+	var serials strings.Builder
 
 	if approval.OwnerAccountID != nil {
 		owner = approval.OwnerAccountID.String()
@@ -133,8 +134,8 @@ func (approval *TokenNftAllowance) String() string {
 	}
 
 	for _, serial := range approval.SerialNumbers {
-		serials += fmt.Sprintf("%d, ", serial)
+		serials.WriteString(fmt.Sprintf("%d, ", serial))
 	}
 
-	return fmt.Sprintf("OwnerAccountID: %s, SpenderAccountID: %s, TokenID: %s, Serials: %s, ApprovedForAll: %t", owner, spender, token, serials, approval.AllSerials)
+	return fmt.Sprintf("OwnerAccountID: %s, SpenderAccountID: %s, TokenID: %s, Serials: %s, ApprovedForAll: %t", owner, spender, token, serials.String(), approval.AllSerials)
 }

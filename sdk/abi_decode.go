@@ -183,19 +183,20 @@ func (a Address) checksumEncode() string {
 
 	hash := hex.EncodeToString(Keccak256Hash([]byte(address)).Bytes())
 
-	ret := "0x"
+	var ret strings.Builder
+	ret.WriteString("0x")
 	for i := 0; i < len(address); i++ {
 		character := string(address[i])
 
 		num, _ := strconv.ParseInt(string(hash[i]), 16, 64)
 		if num > 7 {
-			ret += strings.ToUpper(character)
+			ret.WriteString(strings.ToUpper(character))
 		} else {
-			ret += character
+			ret.WriteString(character)
 		}
 	}
 
-	return ret
+	return ret.String()
 }
 
 func readAddr(b []byte) (Address, error) {

@@ -4,6 +4,7 @@ package hiero
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
@@ -60,9 +61,9 @@ func (nodeAdd *NodeAddress) _ToProtobuf() *services.NodeAddress {
 
 // String returns a string representation of the NodeAddress
 func (nodeAdd NodeAddress) String() string {
-	Addresses := ""
+	var Addresses strings.Builder
 	for _, k := range nodeAdd.Addresses {
-		Addresses += k.String()
+		Addresses.WriteString(k.String())
 	}
-	return "NodeAccountId: " + nodeAdd.AccountID.String() + " " + Addresses + "\n" + "CertHash: " + string(nodeAdd.CertHash) + "\n" + "NodeId: " + strconv.FormatInt(nodeAdd.NodeID, 10) + "\n" + "PubKey: " + nodeAdd.PublicKey
+	return "NodeAccountId: " + nodeAdd.AccountID.String() + " " + Addresses.String() + "\n" + "CertHash: " + string(nodeAdd.CertHash) + "\n" + "NodeId: " + strconv.FormatInt(nodeAdd.NodeID, 10) + "\n" + "PubKey: " + nodeAdd.PublicKey
 }
