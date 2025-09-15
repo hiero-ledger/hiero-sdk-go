@@ -41,6 +41,16 @@ func (endpoint *Endpoint) GetDomainName() string {
 	return endpoint.domainName
 }
 
+func (endpoint *Endpoint) Validate() error {
+	if endpoint.address == nil && endpoint.domainName == "" {
+		return errEndpointMustHaveAddressOrDomainName
+	}
+	if endpoint.address != nil && endpoint.domainName != "" {
+		return errEndpointCannotHaveBothAddressAndDomainName
+	}
+	return nil
+}
+
 func EndpointFromProtobuf(serviceEndpoint *services.ServiceEndpoint) Endpoint {
 	port := serviceEndpoint.GetPort()
 

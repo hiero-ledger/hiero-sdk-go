@@ -39,6 +39,16 @@ var errEvmAddressIsNotALongZeroAddress = errors.New("EVM address is not a correc
 var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct size")
 var errInvalidChunkSize = errors.New("chunk size must be greater than 0")
 
+// Endpoint validation errors
+var errEndpointMustHaveAddressOrDomainName = errors.New("endpoint must have either address or domain name")
+var errEndpointCannotHaveBothAddressAndDomainName = errors.New("endpoint must have either address or domain name, but not both")
+
+// Node create transaction validation errors
+var errTooManyGossipEndpoints = errors.New("gossip endpoints must not contain more than 10 entries")
+var errTooManyServiceEndpoints = errors.New("service endpoints must not contain more than 8 entries")
+var errGossipCaCertificateEmpty = errors.New("gossip ca certificate must not be empty")
+var errDescriptionTooLong = errors.New("description must be less than 100 characters")
+
 // Batch transaction specific errors
 var errInnerTransactionNil = errors.New("inner transaction cannot be nil")
 var errTransactionTypeNotAllowed = errors.New("transaction type is not allowed in a batch transaction")

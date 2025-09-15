@@ -309,7 +309,7 @@ const (
 	StatusInvalidNodeAccountId                                     Status = 341
 	StatusInvalidNodeDescription                                   Status = 342
 	StatusInvalidServiceEndpoint                                   Status = 343
-	StatusInvalidGossipCaeCertificate                              Status = 344
+	StatusInvalidGossipCaCertificate                               Status = 344
 	StatusInvalidGrpcCertificate                                   Status = 345
 	StatusInvalidMaxAutoAssociations                               Status = 346
 	StatusMaxNodesCreated                                          Status = 347
@@ -321,8 +321,8 @@ const (
 	StatusTokenReferenceRepeated                                   Status = 353
 	StatusInvalidOwnerID                                           Status = 354
 	StatusTokenReferenceListSizeLimitExceeded                      Status = 355
-	StatusInvalidIPV4Address                                       Status = 356
-	StatusServiceEndpointsExceededLimit                            Status = 357
+	StatusServiceEndpointsExceededLimit                            Status = 356
+	StatusInvalidIPV4Address                                       Status = 357
 	StatusEmptyTokenReferenceList                                  Status = 358
 	StatusUpdateNodeAccountNotAllowed                              Status = 359
 	StatusTokenHasNoMetadataOrSupplyKey                            Status = 360
@@ -975,8 +975,8 @@ func (status Status) String() string { // nolint
 		return "INVALID_NODE_DESCRIPTION"
 	case StatusInvalidServiceEndpoint:
 		return "INVALID_SERVICE_ENDPOINT"
-	case StatusInvalidGossipCaeCertificate:
-		return "INVALID_GOSSIP_CAE_CERTIFICATE"
+	case StatusInvalidGossipCaCertificate:
+		return "INVALID_GOSSIP_CA_CERTIFICATE"
 	case StatusInvalidGrpcCertificate:
 		return "INVALID_GRPC_CERTIFICATE"
 	case StatusInvalidMaxAutoAssociations:
