@@ -311,46 +311,41 @@ func (tx NodeCreateTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx NodeCreateTransaction) preFreezeWith(client *Client, self TransactionInterface) {
+func (tx NodeCreateTransaction) validateTransactionFields() error {
 	if len(tx.gossipEndpoints) > 10 {
-		tx.freezeError = errTooManyGossipEndpoints
-		return
+		return errTooManyGossipEndpoints
 	}
 	for _, endpoint := range tx.gossipEndpoints {
 		if err := endpoint.Validate(); err != nil {
-			tx.freezeError = err
-			return
+			return err
 		}
 	}
 
 	if len(tx.serviceEndpoints) > 8 {
-		tx.freezeError = errTooManyServiceEndpoints
-		return
+		return errTooManyServiceEndpoints
 	}
 	for _, endpoint := range tx.serviceEndpoints {
 		if err := endpoint.Validate(); err != nil {
-			tx.freezeError = err
-			return
+			return err
 		}
 	}
 
 	if tx.grpcWebProxyEndpoint != nil {
 		if err := tx.grpcWebProxyEndpoint.Validate(); err != nil {
-			tx.freezeError = err
-			return
+			return err
 		}
 	}
 
 	if tx.gossipCaCertificate != nil && len(*tx.gossipCaCertificate) == 0 {
-		tx.freezeError = errGossipCaCertificateEmpty
-		return
+		return errGossipCaCertificateEmpty
 	}
 
 	if tx.description != "" {
 		if len(tx.description) > 100 {
-			tx.freezeError = errDescriptionTooLong
+			return errDescriptionTooLong
 		}
 	}
+	return nil
 }
 
 func (tx NodeCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {

@@ -434,10 +434,10 @@ func TestUnitNodeCreateTransactionGossipEndpointsValidation(t *testing.T) {
 			tx.AddGossipEndpoint(endpoint)
 		}
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errTooManyGossipEndpoints)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errTooManyGossipEndpoints)
 	})
 
 	t.Run("GossipEndpointWithNoAddressOrDomainName", func(t *testing.T) {
@@ -449,10 +449,10 @@ func TestUnitNodeCreateTransactionGossipEndpointsValidation(t *testing.T) {
 		invalidEndpoint := Endpoint{}
 		tx.AddGossipEndpoint(invalidEndpoint)
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errEndpointMustHaveAddressOrDomainName)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointMustHaveAddressOrDomainName)
 	})
 
 	t.Run("GossipEndpointWithBothAddressOrDomainName", func(t *testing.T) {
@@ -466,10 +466,10 @@ func TestUnitNodeCreateTransactionGossipEndpointsValidation(t *testing.T) {
 		invalidEndpoint.SetDomainName("example.com")
 		tx.AddGossipEndpoint(invalidEndpoint)
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errEndpointCannotHaveBothAddressAndDomainName)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointCannotHaveBothAddressAndDomainName)
 	})
 
 	t.Run("ValidGossipEndpoints", func(t *testing.T) {
@@ -510,10 +510,10 @@ func TestUnitNodeCreateTransactionServiceEndpointsValidation(t *testing.T) {
 			tx.AddServiceEndpoint(endpoint)
 		}
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errTooManyServiceEndpoints)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errTooManyServiceEndpoints)
 	})
 
 	t.Run("ServiceEndpointWithNoAddressOrDomainName", func(t *testing.T) {
@@ -525,10 +525,10 @@ func TestUnitNodeCreateTransactionServiceEndpointsValidation(t *testing.T) {
 		invalidEndpoint := Endpoint{}
 		tx.AddServiceEndpoint(invalidEndpoint)
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errEndpointMustHaveAddressOrDomainName)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointMustHaveAddressOrDomainName)
 	})
 
 	t.Run("ServiceEndpointWithBothAddressOrDomainName", func(t *testing.T) {
@@ -542,10 +542,10 @@ func TestUnitNodeCreateTransactionServiceEndpointsValidation(t *testing.T) {
 		invalidEndpoint.SetDomainName("example.com")
 		tx.AddServiceEndpoint(invalidEndpoint)
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errEndpointCannotHaveBothAddressAndDomainName)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointCannotHaveBothAddressAndDomainName)
 	})
 
 	t.Run("ValidServiceEndpoints", func(t *testing.T) {
@@ -584,10 +584,10 @@ func TestUnitNodeCreateTransactionGrpcWebProxyEndpointValidation(t *testing.T) {
 		// No address or domain name set, making it invalid
 		tx.SetGrpcWebProxyEndpoint(invalidEndpoint)
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errEndpointMustHaveAddressOrDomainName)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointMustHaveAddressOrDomainName)
 	})
 
 	t.Run("GrpcWebProxyEndpointWithBothAddressOrDomainName", func(t *testing.T) {
@@ -600,9 +600,9 @@ func TestUnitNodeCreateTransactionGrpcWebProxyEndpointValidation(t *testing.T) {
 		invalidEndpoint.SetAddress([]byte{192, 168, 1, 1})
 		invalidEndpoint.SetDomainName("example.com")
 		tx.SetGrpcWebProxyEndpoint(invalidEndpoint)
-		tx, err := tx.Freeze()
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errEndpointCannotHaveBothAddressAndDomainName)
+		_, err := tx.Freeze()
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errEndpointCannotHaveBothAddressAndDomainName)
 	})
 
 	t.Run("ValidGrpcWebProxyEndpoint", func(t *testing.T) {
@@ -650,10 +650,10 @@ func TestUnitNodeCreateTransactionGossipCaCertificateValidation(t *testing.T) {
 		// Set an empty gossip CA certificate
 		tx.SetGossipCaCertificate([]byte{})
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errGossipCaCertificateEmpty)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errGossipCaCertificateEmpty)
 	})
 
 	t.Run("ValidGossipCaCertificate", func(t *testing.T) {
@@ -697,10 +697,10 @@ func TestUnitNodeCreateTransactionDescriptionValidation(t *testing.T) {
 		longDescription := strings.Repeat("a", 101)
 		tx.SetDescription(longDescription)
 
-		tx, err := tx.Freeze()
+		_, err := tx.Freeze()
 
-		require.NoError(t, err)
-		assert.ErrorIs(t, tx.freezeError, errDescriptionTooLong)
+		require.Error(t, err)
+		assert.ErrorIs(t, err, errDescriptionTooLong)
 	})
 
 	t.Run("DescriptionAtLimit", func(t *testing.T) {
