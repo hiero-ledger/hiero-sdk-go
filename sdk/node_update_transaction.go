@@ -321,8 +321,6 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 
 	if tx.nodeID != nil {
 		body.NodeId = *tx.nodeID
-	} else {
-		tx.freezeError = errNodeIdIsRequired
 	}
 
 	if tx.accountID != nil {
@@ -364,6 +362,41 @@ func (tx NodeUpdateTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetAddressBook().UpdateNode,
 	}
+}
+
+func (tx NodeUpdateTransaction) validateTransactionFields() error {
+	if len(tx.gossipEndpoints) > 10 {
+		return errTooManyGossipEndpoints
+	}
+	for _, endpoint := range tx.gossipEndpoints {
+		if err := endpoint.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if len(tx.serviceEndpoints) > 8 {
+		return errTooManyServiceEndpoints
+	}
+	for _, endpoint := range tx.serviceEndpoints {
+		if err := endpoint.Validate(); err != nil {
+			return err
+		}
+	}
+
+	if tx.gossipCaCertificate != nil && len(tx.gossipCaCertificate) == 0 {
+		return errGossipCaCertificateEmpty
+	}
+
+	if tx.description != "" {
+		if len(tx.description) > 100 {
+			return errDescriptionTooLong
+		}
+	}
+
+	if tx.nodeID == nil {
+		return errNodeIdIsRequired
+	}
+	return nil
 }
 
 func (tx NodeUpdateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {

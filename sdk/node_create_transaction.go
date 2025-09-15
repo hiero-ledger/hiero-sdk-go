@@ -36,7 +36,7 @@ type NodeCreateTransaction struct {
 	description          string
 	gossipEndpoints      []Endpoint
 	serviceEndpoints     []Endpoint
-	gossipCaCertificate  *[]byte
+	gossipCaCertificate  []byte
 	grpcCertificateHash  []byte
 	adminKey             Key
 	declineReward        *bool
@@ -80,7 +80,7 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 		description:          pb.GetNodeCreate().GetDescription(),
 		gossipEndpoints:      gossipEndpoints,
 		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  &gossipCaCertificate,
+		gossipCaCertificate:  gossipCaCertificate,
 		grpcCertificateHash:  pb.GetNodeCreate().GetGrpcCertificateHash(),
 		adminKey:             adminKey,
 		declineReward:        &declineReward,
@@ -160,17 +160,14 @@ func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCrea
 
 // GetGossipCaCertificate the certificate used to sign gossip events.
 func (tx *NodeCreateTransaction) GetGossipCaCertificate() []byte {
-	if tx.gossipCaCertificate == nil {
-		return []byte{}
-	}
-	return *tx.gossipCaCertificate
+	return tx.gossipCaCertificate
 }
 
 // SetGossipCaCertificate the certificate used to sign gossip events.
 // This value MUST be the DER encoding of the certificate presented.
 func (tx *NodeCreateTransaction) SetGossipCaCertificate(gossipCaCertificate []byte) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
-	tx.gossipCaCertificate = &gossipCaCertificate
+	tx.gossipCaCertificate = gossipCaCertificate
 	return tx
 }
 
@@ -287,7 +284,7 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 	}
 
 	if tx.gossipCaCertificate != nil {
-		body.GossipCaCertificate = *tx.gossipCaCertificate
+		body.GossipCaCertificate = tx.gossipCaCertificate
 	}
 
 	if tx.grpcCertificateHash != nil {
@@ -336,7 +333,7 @@ func (tx NodeCreateTransaction) validateTransactionFields() error {
 		}
 	}
 
-	if tx.gossipCaCertificate != nil && len(*tx.gossipCaCertificate) == 0 {
+	if tx.gossipCaCertificate != nil && len(tx.gossipCaCertificate) == 0 {
 		return errGossipCaCertificateEmpty
 	}
 
