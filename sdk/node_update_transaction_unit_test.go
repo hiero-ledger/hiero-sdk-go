@@ -435,7 +435,6 @@ func TestUnitNodeUpdateTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 		SetTransactionID(transactionID).
 		SetNodeAccountIDs(nodeAccountID).
 		Freeze()
-	require.NoError(t, err)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, errNodeIdIsRequired, err)
