@@ -50,6 +50,7 @@ type TokenUpdateTransaction struct {
 	tokenKeyVerificationMode TokenKeyValidation
 	expirationTime           *time.Time
 	autoRenewPeriod          *time.Duration
+	autoRenewPeriodSeconds   *int64
 }
 
 // NewTokenUpdateTransaction creates TokenUpdateTransaction which at consensus,
@@ -355,13 +356,25 @@ func (tx *TokenUpdateTransaction) GetAutoRenewAccount() AccountID {
 func (tx *TokenUpdateTransaction) SetAutoRenewPeriod(autoRenewPeriod time.Duration) *TokenUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.autoRenewPeriod = &autoRenewPeriod
+	tx.autoRenewPeriodSeconds = nil
+	return tx
+}
+
+func (tx *TokenUpdateTransaction) SetAutoRenewPeriodSeconds(autoRenewPeriod int64) *TokenUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.autoRenewPeriodSeconds = &autoRenewPeriod
+	tx.autoRenewPeriod = nil
 	return tx
 }
 
 // GetAutoRenewPeriod returns the new interval at which the auto-renew account will be charged to extend the token's expiry.
 func (tx *TokenUpdateTransaction) GetAutoRenewPeriod() time.Duration {
 	if tx.autoRenewPeriod != nil {
-		return time.Duration(int64(tx.autoRenewPeriod.Seconds()) * time.Second.Nanoseconds())
+		return *tx.autoRenewPeriod
+	}
+
+	if tx.autoRenewPeriodSeconds != nil {
+		return time.Duration(*tx.autoRenewPeriodSeconds) * time.Second
 	}
 
 	return time.Duration(0)
@@ -492,6 +505,12 @@ func (tx TokenUpdateTransaction) buildProtoBody() *services.TokenUpdateTransacti
 
 	if tx.autoRenewPeriod != nil {
 		body.AutoRenewPeriod = _DurationToProtobuf(*tx.autoRenewPeriod)
+	}
+
+	if tx.autoRenewPeriodSeconds != nil {
+		body.AutoRenewPeriod = &services.Duration{
+			Seconds: *tx.autoRenewPeriodSeconds,
+		}
 	}
 
 	if tx.expirationTime != nil {

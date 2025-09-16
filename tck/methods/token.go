@@ -216,7 +216,7 @@ func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenPa
 		if err != nil {
 			return nil, err
 		}
-		transaction.SetAutoRenewPeriod(time.Duration(autoRenewPeriodSeconds) * time.Second)
+		transaction.SetAutoRenewPeriodSeconds(autoRenewPeriodSeconds)
 	}
 
 	if params.Metadata != nil {
