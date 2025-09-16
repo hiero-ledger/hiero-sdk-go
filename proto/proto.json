@@ -122,7 +122,10 @@
       "hints_types.proto",
       "history_types.proto",
       "consensus_service.proto",
-      "mirror_network_service.proto"
+      "mirror_network_service.proto",
+      "lambda_sstore.proto",
+      "hook_types.proto",
+      "hook_dispatch.proto"
     ]
   }
   

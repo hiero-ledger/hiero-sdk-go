@@ -55,9 +55,17 @@ type SignedTransaction struct {
 	// This set MUST contain all signatures required to authenticate
 	// and authorize the transaction.<br/>
 	// This set MAY contain additional signatures.
-	SigMap        *SignatureMap `protobuf:"bytes,2,opt,name=sigMap,proto3" json:"sigMap,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	SigMap *SignatureMap `protobuf:"bytes,2,opt,name=sigMap,proto3" json:"sigMap,omitempty"`
+	// *
+	// If false then the hash of this transaction is the SHA-384 hash of the
+	// serialization of this SignedTransaction message as it arrived on the wire.
+	// <p>
+	// If true then the hash of this transaction is the SHA-384 hash of the
+	// ascending field order serialization of the Transaction whose `bodyBytes`
+	// and sigMap fields are deserialized from the contents of this message.
+	UseSerializedTxMessageHashAlgorithm bool `protobuf:"varint,3,opt,name=use_serialized_tx_message_hash_algorithm,json=useSerializedTxMessageHashAlgorithm,proto3" json:"use_serialized_tx_message_hash_algorithm,omitempty"`
+	unknownFields                       protoimpl.UnknownFields
+	sizeCache                           protoimpl.SizeCache
 }
 
 func (x *SignedTransaction) Reset() {
@@ -104,14 +112,22 @@ func (x *SignedTransaction) GetSigMap() *SignatureMap {
 	return nil
 }
 
+func (x *SignedTransaction) GetUseSerializedTxMessageHashAlgorithm() bool {
+	if x != nil {
+		return x.UseSerializedTxMessageHashAlgorithm
+	}
+	return false
+}
+
 var File_transaction_contents_proto protoreflect.FileDescriptor
 
 const file_transaction_contents_proto_rawDesc = "" +
 	"\n" +
-	"\x1atransaction_contents.proto\x12\x05proto\x1a\x11basic_types.proto\"^\n" +
+	"\x1atransaction_contents.proto\x12\x05proto\x1a\x11basic_types.proto\"\xb5\x01\n" +
 	"\x11SignedTransaction\x12\x1c\n" +
 	"\tbodyBytes\x18\x01 \x01(\fR\tbodyBytes\x12+\n" +
-	"\x06sigMap\x18\x02 \x01(\v2\x13.proto.SignatureMapR\x06sigMapB&\n" +
+	"\x06sigMap\x18\x02 \x01(\v2\x13.proto.SignatureMapR\x06sigMap\x12U\n" +
+	"(use_serialized_tx_message_hash_algorithm\x18\x03 \x01(\bR#useSerializedTxMessageHashAlgorithmB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

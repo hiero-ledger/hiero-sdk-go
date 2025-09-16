@@ -35,6 +35,9 @@ const (
 
 // *
 // Context of an internal call in an EVM transaction that is not otherwise externalized.<br/>
+// This message does not say anything about whether an EVM transaction is itself a logical
+// transaction in a Hiero transactional unit. It simply provides context on an internal
+// message call within an EVM transaction.
 type InternalCallContext struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
