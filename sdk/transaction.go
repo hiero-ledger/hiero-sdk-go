@@ -1131,7 +1131,7 @@ func (tx *Transaction[T]) GetTransactionBodySize() (int, error) {
 	return len(txBytes), nil
 }
 
-// GetBodySizeAllChunks returns the total size of the transaction, for all chunks.
+// GetTransactionBodySizeAllChunks returns the total size of the transaction, for all chunks.
 func (tx *Transaction[T]) GetTransactionBodySizeAllChunks() ([]int, error) {
 	if !tx.IsFrozen() {
 		return nil, errTransactionIsNotFrozen
