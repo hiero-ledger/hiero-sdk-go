@@ -1,3 +1,13 @@
+## v2.70.0
+
+### Added
+- Validation to `NodeUpdateTransaction` setters to align with JS SDK [#1490](https://github.com/hiero-ledger/hiero-sdk-go/pull/1490)
+- `slices.Equal` to simplify code [#1476](https://github.com/hiero-ledger/hiero-sdk-go/pull/1476) 
+
+### Fixed
+- Status codes `StatusServiceEndpointsExceededLimit`, `StatusInvalidGossipCaCertificate`, `StatusInvalidIPV4Address` has swapped places [#1486](https://github.com/hiero-ledger/hiero-sdk-go/pull/1486)
+- Freeze error not being checked in some flows [#1486](https://github.com/hiero-ledger/hiero-sdk-go/pull/1486)
+
 ## v2.69.0
 
 ### Added
