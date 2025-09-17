@@ -20,14 +20,14 @@ func NewLambdaSStoreTransaction() *LambdaSStoreTransaction {
 	return tx
 }
 
-func _LambdaSStoreTransactionFromProtobuf(tx Transaction[*LambdaSStoreTransaction], pb *services.TransactionBody) LambdaSStoreTransaction {
+func lambdaSStoreTransactionFromProtobuf(tx Transaction[*LambdaSStoreTransaction], pb *services.TransactionBody) LambdaSStoreTransaction {
 	protoBody := pb.GetLambdaSstore()
 	storageUpdates := make([]LambdaStorageUpdate, 0)
 	for _, storageUpdate := range protoBody.GetStorageUpdates() {
-		storageUpdates = append(storageUpdates, _LambdaStorageUpdateFromProtobuf(storageUpdate))
+		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
 	}
 	lambdaSStoreTransaction := LambdaSStoreTransaction{
-		hookId:         _HookIdFromProtobuf(protoBody.GetHookId()),
+		hookId:         hookIdFromProtobuf(protoBody.GetHookId()),
 		storageUpdates: storageUpdates,
 	}
 

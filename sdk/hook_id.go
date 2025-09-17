@@ -11,11 +11,8 @@ type HookId struct {
 }
 
 // NewHookId creates a new HookId
-func NewHookId(entityId HookEntityId, hookId int64) HookId {
-	return HookId{
-		entityId: entityId,
-		hookId:   hookId,
-	}
+func NewHookId() *HookId {
+	return &HookId{}
 }
 
 // GetEntityId returns the entity ID
@@ -51,9 +48,9 @@ func (id HookId) toProtobuf() *services.HookId {
 	}
 }
 
-func _HookIdFromProtobuf(pb *services.HookId) HookId {
+func hookIdFromProtobuf(pb *services.HookId) HookId {
 	return HookId{
-		entityId: _HookEntityIdFromProtobuf(pb.GetEntityId()),
+		entityId: hookEntityIdFromProtobuf(pb.GetEntityId()),
 		hookId:   pb.GetHookId(),
 	}
 }
@@ -64,10 +61,8 @@ type HookEntityId struct {
 }
 
 // NewHookEntityId creates a new HookEntityId
-func NewHookEntityId(accountId AccountID) HookEntityId {
-	return HookEntityId{
-		accountId: accountId,
-	}
+func NewHookEntityId() *HookEntityId {
+	return &HookEntityId{}
 }
 
 // GetAccountId returns the account ID
@@ -93,7 +88,7 @@ func (id HookEntityId) toProtobuf() *services.HookEntityId {
 	}
 }
 
-func _HookEntityIdFromProtobuf(pb *services.HookEntityId) HookEntityId {
+func hookEntityIdFromProtobuf(pb *services.HookEntityId) HookEntityId {
 	accountId := _AccountIDFromProtobuf(pb.GetAccountId())
 	if accountId != nil {
 		return HookEntityId{

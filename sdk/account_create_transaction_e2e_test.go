@@ -863,3 +863,44 @@ func TestIntegrationAccountCreateWithKeyAndAlias(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, expectedEvmAddress, info.ContractAccountID)
 }
+
+// HIP-1195 hooks
+
+func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hexBytecode, err := hex.DecodeString(EMPTY_CONTRACT)
+	require.NoError(t, err)
+
+	resp, err := NewContractCreateTransaction().
+		SetGas(300_000).
+		SetBytecode(hexBytecode).
+		Execute(env.Client)
+	require.NoError(t, err)
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	contractID := receipt.ContractID
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(contractID)))
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err = NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetMaxAutomaticTokenAssociations(100).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}

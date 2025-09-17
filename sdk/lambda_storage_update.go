@@ -55,7 +55,7 @@ func (lu *LambdaStorageUpdate) SetMappingEntries(mappingEntries LambdaMappingEnt
 	return lu
 }
 
-func _LambdaStorageUpdateFromProtobuf(pb *services.LambdaStorageUpdate) LambdaStorageUpdate {
+func lambdaStorageUpdateFromProtobuf(pb *services.LambdaStorageUpdate) LambdaStorageUpdate {
 	lu := LambdaStorageUpdate{}
 	if pb.GetStorageSlot() != nil {
 		storageSlot := pb.GetStorageSlot()
