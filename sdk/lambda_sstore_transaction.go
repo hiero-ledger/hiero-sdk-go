@@ -1,0 +1,125 @@
+package hiero
+
+import (
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/pkg/errors"
+)
+
+// SPDX-License-Identifier: Apache-2.0
+
+type LambdaSStoreTransaction struct {
+	*Transaction[*LambdaSStoreTransaction]
+	hookId         HookId
+	storageUpdates []LambdaStorageUpdate
+}
+
+func NewLambdaSStoreTransaction() *LambdaSStoreTransaction {
+	tx := &LambdaSStoreTransaction{}
+	tx.Transaction = _NewTransaction(tx)
+
+	return tx
+}
+
+func _LambdaSStoreTransactionFromProtobuf(tx Transaction[*LambdaSStoreTransaction], pb *services.TransactionBody) LambdaSStoreTransaction {
+	protoBody := pb.GetLambdaSstore()
+	storageUpdates := make([]LambdaStorageUpdate, 0)
+	for _, storageUpdate := range protoBody.GetStorageUpdates() {
+		storageUpdates = append(storageUpdates, _LambdaStorageUpdateFromProtobuf(storageUpdate))
+	}
+	lambdaSStoreTransaction := LambdaSStoreTransaction{
+		hookId:         _HookIdFromProtobuf(protoBody.GetHookId()),
+		storageUpdates: storageUpdates,
+	}
+
+	tx.childTransaction = &lambdaSStoreTransaction
+	lambdaSStoreTransaction.Transaction = &tx
+	return lambdaSStoreTransaction
+}
+
+func (tx *LambdaSStoreTransaction) SetHookId(hookId HookId) *LambdaSStoreTransaction {
+	tx._RequireNotFrozen()
+	tx.hookId = hookId
+	return tx
+}
+
+func (tx *LambdaSStoreTransaction) getHookId() HookId {
+	return tx.hookId
+}
+
+func (tx *LambdaSStoreTransaction) addStorageUpdate(storageUpdate LambdaStorageUpdate) *LambdaSStoreTransaction {
+	tx._RequireNotFrozen()
+	tx.storageUpdates = append(tx.storageUpdates, storageUpdate)
+	return tx
+}
+
+func (tx *LambdaSStoreTransaction) setStorageUpdates(storageUpdates []LambdaStorageUpdate) *LambdaSStoreTransaction {
+	tx._RequireNotFrozen()
+	tx.storageUpdates = storageUpdates
+	return tx
+}
+
+func (tx *LambdaSStoreTransaction) getStorageUpdates() []LambdaStorageUpdate {
+	return tx.storageUpdates
+}
+
+// ----------- Overridden functions ----------------
+
+func (tx LambdaSStoreTransaction) getName() string {
+	return "LambdaSStoreTransaction"
+}
+
+func (tx LambdaSStoreTransaction) validateNetworkOnIDs(client *Client) error {
+	if client == nil || !client.autoValidateChecksums {
+		return nil
+	}
+
+	if err := tx.hookId.validateChecksum(client); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tx LambdaSStoreTransaction) build() *services.TransactionBody {
+	return &services.TransactionBody{
+		TransactionFee:           tx.transactionFee,
+		Memo:                     tx.Transaction.memo,
+		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
+		TransactionID:            tx.transactionID._ToProtobuf(),
+		Data: &services.TransactionBody_LambdaSstore{
+			LambdaSstore: tx.buildProtoBody(),
+		},
+	}
+}
+
+func (tx LambdaSStoreTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
+	return nil, errors.New("cannot schedule `LambdaSStoreTransaction`")
+}
+
+func (tx LambdaSStoreTransaction) buildProtoBody() *services.LambdaSStoreTransactionBody {
+	body := &services.LambdaSStoreTransactionBody{
+		HookId: tx.hookId.toProtobuf(),
+	}
+
+	storageUpdates := make([]*services.LambdaStorageUpdate, 0)
+	for _, storageUpdate := range tx.storageUpdates {
+		storageUpdates = append(storageUpdates, storageUpdate.toProtobuf())
+	}
+	body.StorageUpdates = storageUpdates
+
+	return body
+}
+
+func (tx LambdaSStoreTransaction) getMethod(channel *_Channel) _Method {
+	return _Method{
+		transaction: channel._GetContract().LambdaSStore,
+	}
+}
+
+func (tx LambdaSStoreTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
+	return tx.buildScheduled()
+}
+
+func (tx LambdaSStoreTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
+	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
+}
