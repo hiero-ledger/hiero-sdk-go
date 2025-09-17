@@ -221,9 +221,9 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		}
 
 		if e.isTransaction() {
-			marshaledRequest, _ = protobuf.Marshal(protoRequest.(*services.Transaction))
+			marshaledRequest, _ = protobuf.MarshalOptions{Deterministic: true}.Marshal(protoRequest.(*services.Transaction))
 		} else {
-			marshaledRequest, _ = protobuf.Marshal(protoRequest.(*services.Query))
+			marshaledRequest, _ = protobuf.MarshalOptions{Deterministic: true}.Marshal(protoRequest.(*services.Query))
 		}
 
 		node._InUse()
@@ -264,12 +264,12 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		if method.query != nil {
 			resp, err = method.query(ctx, protoRequest.(*services.Query))
 			if err == nil {
-				marshaledResponse, _ = protobuf.Marshal(resp.(*services.Response))
+				marshaledResponse, _ = protobuf.MarshalOptions{Deterministic: true}.Marshal(resp.(*services.Response))
 			}
 		} else {
 			resp, err = method.transaction(ctx, protoRequest.(*services.Transaction))
 			if err == nil {
-				marshaledResponse, _ = protobuf.Marshal(resp.(*services.TransactionResponse))
+				marshaledResponse, _ = protobuf.MarshalOptions{Deterministic: true}.Marshal(resp.(*services.TransactionResponse))
 			}
 		}
 
