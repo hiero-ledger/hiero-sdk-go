@@ -259,15 +259,12 @@ func TestIntegrationContractCreateTransactionSetBytecode(t *testing.T) {
 // HIP-1195 hooks
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
-	testContractByteCode := []byte(`608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506101cb806100606000396000f3fe608060405260043610610046576000357c01000000000000000000000000000000000000000000000000000000009004806341c0e1b51461004b578063cfae321714610062575b600080fd5b34801561005757600080fd5b506100606100f2565b005b34801561006e57600080fd5b50610077610162565b6040518080602001828103825283818151815260200191508051906020019080838360005b838110156100b757808201518184015260208101905061009c565b50505050905090810190601f1680156100e45780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff161415610160573373ffffffffffffffffffffffffffffffffffffffff16ff5b565b60606040805190810160405280600d81526020017f48656c6c6f2c20776f726c64210000000000000000000000000000000000000081525090509056fea165627a7a72305820ae96fb3af7cde9c0abfe365272441894ab717f816f07f41f07b1cbede54e256e0029`)
-
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	resp, err := NewFileCreateTransaction().
-		SetKeys(env.Client.GetOperatorPublicKey()).
-		SetContents(testContractByteCode).
+		SetContents([]byte(SIMPLE_SMART_CONTRACT_BYTECODE)).
 		Execute(env.Client)
 
 	require.NoError(t, err)
@@ -278,28 +275,153 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 	fileID := *receipt.FileID
 	assert.NotNil(t, fileID)
 
-	// create the hook
-	hexBytecode, err := hex.DecodeString(EMPTY_CONTRACT)
-	require.NoError(t, err)
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
 
 	resp, err = NewContractCreateTransaction().
-		SetGas(300_000).
-		SetBytecode(hexBytecode).
+		SetGas(400_000).
+		SetBytecodeFileID(fileID).
+		AddHook(*hookDetail).
 		Execute(env.Client)
 	require.NoError(t, err)
+
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
-	contractID := receipt.ContractID
+
+	assert.NotNil(t, receipt.ContractID)
+}
+
+func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorageUpdates(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(SIMPLE_SMART_CONTRACT_BYTECODE)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
 
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(contractID)))
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageUpdate().SetStorageSlot(*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02}))}).
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
 
 	resp, err = NewContractCreateTransaction().
-		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetGas(contractDeployGas).
-		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
+		SetGas(400_000).
+		SetBytecodeFileID(fileID).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+}
+
+func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContractId(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(SIMPLE_SMART_CONTRACT_BYTECODE)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec()))
+
+	resp, err = NewContractCreateTransaction().
+		SetGas(400_000).
+		SetBytecodeFileID(fileID).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: INVALID_HOOK_CREATION_SPEC")
+}
+
+func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(SIMPLE_SMART_CONTRACT_BYTECODE)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	resp, err = NewContractCreateTransaction().
+		SetGas(400_000).
+		SetBytecodeFileID(fileID).
+		SetHooks([]HookCreationDetails{*hookDetail, *hookDetail}).
+		Execute(env.Client)
+
+	require.ErrorContains(t, err, "exceptional precheck status HOOK_ID_REPEATED_IN_CREATION_DETAILS")
+}
+
+func TestIntegrationContractCreateTransactionCanExecuteWithHookAndAdminKey(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(SIMPLE_SMART_CONTRACT_BYTECODE)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookAdminKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1}))).
+		SetAdminKey(hookAdminKey)
+
+	resp, err = NewContractCreateTransaction().
+		SetGas(400_000).
 		SetBytecodeFileID(fileID).
 		AddHook(*hookDetail).
 		Execute(env.Client)

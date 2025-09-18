@@ -871,34 +871,116 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	hexBytecode, err := hex.DecodeString(EMPTY_CONTRACT)
-	require.NoError(t, err)
-
-	resp, err := NewContractCreateTransaction().
-		SetGas(300_000).
-		SetBytecode(hexBytecode).
-		Execute(env.Client)
-	require.NoError(t, err)
-	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
-	require.NoError(t, err)
-	contractID := receipt.ContractID
-
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(contractID)))
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
 
 	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	resp, err = NewAccountCreateTransaction().
+	resp, err := NewAccountCreateTransaction().
 		SetKeyWithoutAlias(newKey).
-		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetInitialBalance(NewHbar(2)).
-		SetMaxAutomaticTokenAssociations(100).
 		AddHook(*hookDetail).
 		Execute(env.Client)
 
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndInitialStorageUpdates(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageUpdate().SetStorageSlot(*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02}))}).
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationAccountCreateTransactionCannotExecuteWithHookWithoutContractId(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec()))
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: INVALID_HOOK_CREATION_SPEC")
+}
+
+func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetHookId(-1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	_, err = NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		SetHooks([]HookCreationDetails{*hookDetail, *hookDetail}).
+		Execute(env.Client)
+
+	require.ErrorContains(t, err, "exceptional precheck status HOOK_ID_REPEATED_IN_CREATION_DETAILS")
+}
+
+func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookAdminKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1}))).
+		SetAdminKey(hookAdminKey)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		AddHook(*hookDetail).
+		Execute(env.Client)
 	require.NoError(t, err)
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)

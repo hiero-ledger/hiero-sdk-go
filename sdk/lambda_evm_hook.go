@@ -79,13 +79,13 @@ func NewEvmHookSpec() *EvmHookSpec {
 }
 
 // GetContractId returns the contract ID
-func (eh EvmHookSpec) GetContractId() *ContractID {
-	return eh.contractId
+func (eh EvmHookSpec) GetContractId() ContractID {
+	return *eh.contractId
 }
 
 // SetContractId sets the contract ID
-func (eh *EvmHookSpec) SetContractId(contractId *ContractID) *EvmHookSpec {
-	eh.contractId = contractId
+func (eh *EvmHookSpec) SetContractId(contractId ContractID) *EvmHookSpec {
+	eh.contractId = &contractId
 	return eh
 }
 
@@ -96,9 +96,11 @@ func evmHookSpecFromProtobuf(pb *services.EvmHookSpec) EvmHookSpec {
 }
 
 func (eh EvmHookSpec) toProtobuf() *services.EvmHookSpec {
-	return &services.EvmHookSpec{
-		BytecodeSource: &services.EvmHookSpec_ContractId{
+	protoBody := &services.EvmHookSpec{}
+	if eh.contractId != nil {
+		protoBody.BytecodeSource = &services.EvmHookSpec_ContractId{
 			ContractId: eh.contractId._ToProtobuf(),
-		},
+		}
 	}
+	return protoBody
 }

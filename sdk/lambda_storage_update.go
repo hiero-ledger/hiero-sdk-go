@@ -17,18 +17,9 @@ type LambdaStorageUpdate struct {
 	mappingEntries *LambdaMappingEntries
 }
 
-// NewLambdaStorageUpdateWithStorageSlot creates a new LambdaStorageUpdate with storage slot
-func NewLambdaStorageUpdateWithStorageSlot(storageSlot LambdaStorageSlot) LambdaStorageUpdate {
-	return LambdaStorageUpdate{
-		storageSlot: &storageSlot,
-	}
-}
-
-// NewLambdaStorageUpdateWithMappingEntries creates a new LambdaStorageUpdate with mapping entries
-func NewLambdaStorageUpdateWithMappingEntries(mappingEntries LambdaMappingEntries) LambdaStorageUpdate {
-	return LambdaStorageUpdate{
-		mappingEntries: &mappingEntries,
-	}
+// NewLambdaStorageUpdate
+func NewLambdaStorageUpdate() *LambdaStorageUpdate {
+	return &LambdaStorageUpdate{}
 }
 
 // GetStorageSlot returns the storage slot
@@ -108,12 +99,9 @@ type LambdaStorageSlot struct {
 	value []byte
 }
 
-// NewLambdaStorageSlot creates a new LambdaStorageSlot
-func NewLambdaStorageSlot(key []byte, value []byte) LambdaStorageSlot {
-	return LambdaStorageSlot{
-		key:   key,
-		value: value,
-	}
+// NewLambdaStorageSlot
+func NewLambdaStorageSlot() *LambdaStorageSlot {
+	return &LambdaStorageSlot{}
 }
 
 // GetKey returns the storage slot key

@@ -35,7 +35,7 @@ func TestIntegrationLambdaSStoreTransactionCanExecute(t *testing.T) {
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(contractID)))
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(*contractID)))
 
 	resp, err = NewAccountCreateTransaction().
 		SetKeyWithoutAlias(newKey).

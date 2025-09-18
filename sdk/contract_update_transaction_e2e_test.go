@@ -234,7 +234,7 @@ func TestIntegrationContractUpdateTransactionCanExecuteWithHook(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(&ContractID{})))
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
 
 	resp, err = NewContractUpdateTransaction().
 		SetContractID(contractID).
