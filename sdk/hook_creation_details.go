@@ -12,6 +12,18 @@ const (
 	ACCOUNT_ALLOWANCE_HOOK HookExtensionPoint = iota
 )
 
+type HookType int32
+
+const (
+	NO_HOOK HookType = iota
+	PRE_HOOK
+	PRE_POST_HOOK
+	PRE_HOOK_SENDER
+	PRE_POST_HOOK_SENDER
+	PRE_HOOK_RECEIVER
+	PRE_POST_HOOK_RECEIVER
+)
+
 type HookCreationDetails struct {
 	extensionPoint HookExtensionPoint
 	hookId         int64

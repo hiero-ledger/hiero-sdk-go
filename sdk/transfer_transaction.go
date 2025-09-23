@@ -170,6 +170,11 @@ func (tx *TransferTransaction) GetHbarTransfers() map[AccountID]Hbar {
 
 // AddHbarTransfer Sets The desired hbar balance adjustments
 func (tx *TransferTransaction) AddHbarTransfer(accountID AccountID, amount Hbar) *TransferTransaction {
+	return tx.AddHbarTransferWithHook(accountID, amount, HookCall{}, NO_HOOK)
+}
+
+// AddHbarTransferWithHook
+func (tx *TransferTransaction) AddHbarTransferWithHook(accountID AccountID, amount Hbar, hookCall HookCall, hookType HookType) *TransferTransaction {
 	tx._RequireNotFrozen()
 
 	for _, transfer := range tx.hbarTransfers {
@@ -178,12 +183,20 @@ func (tx *TransferTransaction) AddHbarTransfer(accountID AccountID, amount Hbar)
 			return tx
 		}
 	}
-
-	tx.hbarTransfers = append(tx.hbarTransfers, &_HbarTransfer{
+	transfer := &_HbarTransfer{
 		accountID:  &accountID,
 		Amount:     amount,
 		IsApproved: false,
-	})
+	}
+
+	switch hookType {
+	case PRE_HOOK:
+		transfer.PreTransactionAllowanceHook = &hookCall
+	case PRE_POST_HOOK:
+		transfer.PrePostTransactionAllowanceHook = &hookCall
+	}
+
+	tx.hbarTransfers = append(tx.hbarTransfers, transfer)
 
 	return tx
 }
@@ -242,6 +255,10 @@ func (tx *TransferTransaction) AddTokenTransferWithDecimals(tokenID TokenID, acc
 // AddTokenTransfer Sets the desired token unit balance adjustments
 // Applicable to tokens of type FUNGIBLE_COMMON.
 func (tx *TransferTransaction) AddTokenTransfer(tokenID TokenID, accountID AccountID, value int64) *TransferTransaction { //nolint
+	return tx.AddTokenTransferWithHook(tokenID, accountID, value, HookCall{}, NO_HOOK)
+}
+
+func (tx *TransferTransaction) AddTokenTransferWithHook(tokenID TokenID, accountID AccountID, value int64, hookCall HookCall, hookType HookType) *TransferTransaction {
 	tx._RequireNotFrozen()
 
 	for token, tokenTransfer := range tx.tokenTransfers {
@@ -256,22 +273,29 @@ func (tx *TransferTransaction) AddTokenTransfer(tokenID TokenID, accountID Accou
 		}
 	}
 
+	transfer := &_HbarTransfer{
+		accountID:  &accountID,
+		Amount:     HbarFromTinybar(value),
+		IsApproved: false,
+	}
+
+	switch hookType {
+	case PRE_HOOK:
+		transfer.PreTransactionAllowanceHook = &hookCall
+	case PRE_POST_HOOK:
+		transfer.PrePostTransactionAllowanceHook = &hookCall
+	}
+
+	// append to existing _TokenTransfer
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
-		v.Transfers = append(v.Transfers, &_HbarTransfer{
-			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
-		})
+		v.Transfers = append(v.Transfers, transfer)
 
 		return tx
 	}
 
+	// create new _TokenTransfer
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
-		Transfers: []*_HbarTransfer{{
-			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
-		}},
+		Transfers: []*_HbarTransfer{transfer},
 	}
 
 	return tx
@@ -280,21 +304,39 @@ func (tx *TransferTransaction) AddTokenTransfer(tokenID TokenID, accountID Accou
 // AddNftTransfer Sets the desired nft token unit balance adjustments
 // Applicable to tokens of type NON_FUNGIBLE_UNIQUE.
 func (tx *TransferTransaction) AddNftTransfer(nftID NftID, sender AccountID, receiver AccountID) *TransferTransaction {
+	return tx.addNftTransferWithHook(nftID, sender, receiver, HookCall{}, NO_HOOK)
+}
+
+func (tx *TransferTransaction) addNftTransferWithHook(nftID NftID, sender AccountID, receiver AccountID, hookCall HookCall, hookType HookType) *TransferTransaction {
 	tx._RequireNotFrozen()
 
-	if tx.nftTransfers == nil {
-		tx.nftTransfers = make(map[TokenID][]*_TokenNftTransfer)
-	}
+	// TODO check if this is needed
+	// if tx.nftTransfers == nil {
+	// 	tx.nftTransfers = make(map[TokenID][]*_TokenNftTransfer)
+	// }
 
 	if tx.nftTransfers[nftID.TokenID] == nil {
 		tx.nftTransfers[nftID.TokenID] = make([]*_TokenNftTransfer, 0)
 	}
 
-	tx.nftTransfers[nftID.TokenID] = append(tx.nftTransfers[nftID.TokenID], &_TokenNftTransfer{
+	transfer := &_TokenNftTransfer{
 		SenderAccountID:   sender,
 		ReceiverAccountID: receiver,
 		SerialNumber:      nftID.SerialNumber,
-	})
+	}
+
+	switch hookType {
+	case PRE_HOOK_SENDER:
+		transfer.PreTransactionSenderAllowanceHook = &hookCall
+	case PRE_POST_HOOK_SENDER:
+		transfer.PrePostTransactionSenderAllowanceHook = &hookCall
+	case PRE_HOOK_RECEIVER:
+		transfer.PreTransactionReceiverAllowanceHook = &hookCall
+	case PRE_POST_HOOK_RECEIVER:
+		transfer.PrePostTransactionReceiverAllowanceHook = &hookCall
+	}
+
+	tx.nftTransfers[nftID.TokenID] = append(tx.nftTransfers[nftID.TokenID], transfer)
 
 	return tx
 }
@@ -508,11 +550,7 @@ func (tx TransferTransaction) buildProtoBody() *services.CryptoTransferTransacti
 	if len(tx.hbarTransfers) > 0 {
 		body.Transfers.AccountAmounts = make([]*services.AccountAmount, 0)
 		for _, hbarTransfer := range tx.hbarTransfers {
-			body.Transfers.AccountAmounts = append(body.Transfers.AccountAmounts, &services.AccountAmount{
-				AccountID:  hbarTransfer.accountID._ToProtobuf(),
-				Amount:     hbarTransfer.Amount.AsTinybar(),
-				IsApproval: hbarTransfer.IsApproved,
-			})
+			body.Transfers.AccountAmounts = append(body.Transfers.AccountAmounts, hbarTransfer._ToProtobuf())
 		}
 	}
 
