@@ -512,7 +512,7 @@ func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
 	tx.Sign(newKey)
 
 	resp, err = tx.Execute(env.Client)
-	require.ErrorContains(t, err, "exceptional receipt status: HOOK_ID_REPEATED_IN_CREATION_DETAILS")
+	require.ErrorContains(t, err, "exceptional precheck status HOOK_ID_REPEATED_IN_CREATION_DETAILS")
 }
 
 func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {

@@ -194,17 +194,15 @@ func TestIntegrationContractUpdateTransactionCanRemoveAutoRenewAccount(t *testin
 	assert.Equal(t, info.AutoRenewAccountID, &AccountID{Shard: 0, Realm: 0, Account: 0})
 }
 
-func TestIntegrationContractUpdateTransactionCanExecuteWithHook(t *testing.T) {
+// HIP-1195 hooks
+
+func TestIntegrationContractUpdateTransactionAddHook(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	testContractByteCode := []byte(`608060405234801561001057600080fd5b50336000806101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055506101cb806100606000396000f3fe608060405260043610610046576000357c01000000000000000000000000000000000000000000000000000000009004806341c0e1b51461004b578063cfae321714610062575b600080fd5b34801561005757600080fd5b506100606100f2565b005b34801561006e57600080fd5b50610077610162565b6040518080602001828103825283818151815260200191508051906020019080838360005b838110156100b757808201518184015260208101905061009c565b50505050905090810190601f1680156100e45780820380516001836020036101000a031916815260200191505b509250505060405180910390f35b6000809054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff161415610160573373ffffffffffffffffffffffffffffffffffffffff16ff5b565b60606040805190810160405280600d81526020017f48656c6c6f2c20776f726c64210000000000000000000000000000000000000081525090509056fea165627a7a72305820ae96fb3af7cde9c0abfe365272441894ab717f816f07f41f07b1cbede54e256e0029`)
-
 	resp, err := NewFileCreateTransaction().
-		SetKeys(env.Client.GetOperatorPublicKey()).
-		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetContents(testContractByteCode).
+		SetContents([]byte(EMPTY_CONTRACT)).
 		Execute(env.Client)
 
 	require.NoError(t, err)
@@ -218,10 +216,7 @@ func TestIntegrationContractUpdateTransactionCanExecuteWithHook(t *testing.T) {
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetGas(contractDeployGas).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
 		SetBytecodeFileID(fileID).
-		SetContractMemo("[e2e::ContractCreateTransaction]").
 		Execute(env.Client)
 	require.NoError(t, err)
 
@@ -244,4 +239,383 @@ func TestIntegrationContractUpdateTransactionCanExecuteWithHook(t *testing.T) {
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+func TestIntegrationContractUpdateTransactionAddDuplicateHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		SetHooks([]HookCreationDetails{*hookDetail, *hookDetail}).
+		Execute(env.Client)
+
+	require.ErrorContains(t, err, "exceptional precheck status HOOK_ID_REPEATED_IN_CREATION_DETAILS")
+}
+
+func TestIntegrationContractUpdateTransactionAddExisingHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		AddHook(*hookDetail).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_ID_IN_USE")
+}
+
+func TestIntegrationContractUpdateTransactionUpdateAddHookWithInitialStorageUpdates(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageUpdate().SetStorageSlot(*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02}))}).
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationContractUpdateTransactionCannotAddHookThatIsInUse(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		AddHook(*hookDetail).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_ID_IN_USE")
+}
+
+func TestIntegrationContractUpdateTransactionCanDeleteHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		AddHook(*hookDetail).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		DeleteHook(1).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationContractUpdateTransactionCanotDeleteNonExistantHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		AddHook(*hookDetail).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		DeleteHook(123).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_NOT_FOUND")
+}
+
+func TestIntegrationContractUpdateTransactionCanotAddAndDeleteHookAtTheSameTime(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		SetHooks([]HookCreationDetails{*hookDetail}).
+		DeleteHook(1).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_NOT_FOUND")
+}
+
+func TestIntegrationContractUpdateTransactionCanotDeleteDeletedHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte(EMPTY_CONTRACT)).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	fileID := *receipt.FileID
+	assert.NotNil(t, fileID)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{})))
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		AddHook(*hookDetail).
+		SetGas(contractDeployGas).
+		SetBytecodeFileID(fileID).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, receipt.ContractID)
+	contractID := *receipt.ContractID
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		DeleteHook(1).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	resp, err = NewContractUpdateTransaction().
+		SetContractID(contractID).
+		DeleteHook(1).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_DELETED")
 }
