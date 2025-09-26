@@ -21,7 +21,7 @@ func (t *FileService) SetSdkService(service *SDKService) {
 	t.sdkService = service
 }
 
-// createFile jRPC method for createFile
+// CreateFile jRPC method for createFile
 func (t *FileService) CreateFile(_ context.Context, params param.CreateFileParams) (*response.FileResponse, error) {
 	transaction := hiero.NewFileCreateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -75,7 +75,7 @@ func (t *FileService) CreateFile(_ context.Context, params param.CreateFileParam
 	}, nil
 }
 
-// updateFile jRPC method for updateFile
+// UpdateFile jRPC method for updateFile
 func (t *FileService) UpdateFile(_ context.Context, params param.UpdateFileParams) (*response.FileResponse, error) {
 	transaction := hiero.NewFileUpdateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -136,7 +136,7 @@ func (t *FileService) UpdateFile(_ context.Context, params param.UpdateFileParam
 	}, nil
 }
 
-// deleteFile jRPC method for deleteFile
+// DeleteFile jRPC method for deleteFile
 func (t *FileService) DeleteFile(_ context.Context, params param.UpdateFileParams) (*response.FileResponse, error) {
 	transaction := hiero.NewFileDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
@@ -169,7 +169,7 @@ func (t *FileService) DeleteFile(_ context.Context, params param.UpdateFileParam
 	}, nil
 }
 
-// appendFile jRPC method for appendFile
+// AppendFile jRPC method for appendFile
 func (t *FileService) AppendFile(_ context.Context, params param.AppendFileParams) (*response.FileResponse, error) {
 	transaction := hiero.NewFileAppendTransaction().SetGrpcDeadline(&threeSecondsDuration)
 

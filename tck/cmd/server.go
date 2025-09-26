@@ -64,7 +64,7 @@ func main() {
 		"deleteToken":            postHandler(HandleError, handler.New(tokenService.DeleteToken)),
 		"updateTokenFeeSchedule": postHandler(HandleError, handler.New(tokenService.UpdateTokenFeeSchedule)),
 		"associateToken":         postHandler(HandleError, handler.New(tokenService.AssociateToken)),
-		"dissociateToken":        postHandler(HandleError, handler.New(tokenService.DissociatesToken)),
+		"dissociateToken":        postHandler(HandleError, handler.New(tokenService.DisassociateToken)),
 		"pauseToken":             postHandler(HandleError, handler.New(tokenService.PauseToken)),
 		"unpauseToken":           postHandler(HandleError, handler.New(tokenService.UnpauseToken)),
 		"freezeToken":            postHandler(HandleError, handler.New(tokenService.FreezeToken)),
