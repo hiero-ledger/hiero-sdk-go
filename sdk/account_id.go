@@ -342,29 +342,18 @@ func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (ma
 		return nil, errors.New("mirror node is not set")
 	}
 
-	mirrorUrl := client.GetMirrorNetwork()[0]
-	index := strings.Index(mirrorUrl, ":")
-	if index == -1 {
-		return nil, errors.New("invalid mirrorUrl format")
-	}
-	mirrorUrl = mirrorUrl[:index]
-
-	var url string
-	protocol := "https"
-	port := ""
-
-	if client.GetLedgerID() == nil {
-		protocol = "http"
-		port = ":5551"
+	mirrorUrl, err := client.GetMirrorBaseUrl()
+	if err != nil {
+		return nil, err
 	}
 
 	if populateType == "account" {
-		url = fmt.Sprintf("%s://%s%s/api/v1/accounts/%s", protocol, mirrorUrl, port, hex.EncodeToString(*id.AliasEvmAddress))
+		mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, hex.EncodeToString(*id.AliasEvmAddress))
 	} else {
-		url = fmt.Sprintf("%s://%s%s/api/v1/accounts/%s", protocol, mirrorUrl, port, id.String())
+		mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, id.String())
 	}
 
-	resp, err := http.Get(url) // #nosec
+	resp, err := http.Get(mirrorUrl) // #nosec
 	if err != nil {
 		return nil, err
 	}
