@@ -35,13 +35,7 @@ func (node *_MirrorNode) getScheme() (string, error) {
 	if node.address.address == nil {
 		return "", errors.New("mirror node address is not set")
 	}
-	host := *node.address.address
 	port := node.address.port
-
-	// For localhost and 127.0.0.1, use HTTP scheme
-	if host == "localhost" || host == "127.0.0.1" {
-		return "http", nil
-	}
 
 	// Standard HTTPS ports
 	if port == 443 {
@@ -68,7 +62,11 @@ func (node *_MirrorNode) getBaseUrl() (string, error) {
 	if host == nil && port == 0 {
 		return "", errors.New("mirror node address is not set")
 	}
-	return fmt.Sprintf("%s://%s:%d/api/v1", scheme, *host, port), nil
+	hostStr := *host
+	if hostStr == "localhost" || hostStr == "127.0.0.1" {
+		return "http://localhost:5551/api/v1", nil
+	}
+	return fmt.Sprintf("%s://%s:%d/api/v1", scheme, hostStr, port), nil
 }
 
 func _NewMirrorNode(address string) (node *_MirrorNode, err error) {
