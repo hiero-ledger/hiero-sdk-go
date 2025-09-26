@@ -171,9 +171,12 @@ type CryptoCreateTransactionBody struct {
 	// transfer value _to_ that alias SHALL deposit the transferred value in
 	// the existing account, and SHALL NOT assess an account creation fee.<br/>
 	// Once set, an account alias is immutable and MUST NOT be changed.
-	Alias         []byte `protobuf:"bytes,18,opt,name=alias,proto3" json:"alias,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Alias []byte `protobuf:"bytes,18,opt,name=alias,proto3" json:"alias,omitempty"`
+	// *
+	// Details of hooks to add immediately after creating this account.
+	HookCreationDetails []*HookCreationDetails `protobuf:"bytes,19,rep,name=hook_creation_details,json=hookCreationDetails,proto3" json:"hook_creation_details,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CryptoCreateTransactionBody) Reset() {
@@ -333,6 +336,13 @@ func (x *CryptoCreateTransactionBody) GetAlias() []byte {
 	return nil
 }
 
+func (x *CryptoCreateTransactionBody) GetHookCreationDetails() []*HookCreationDetails {
+	if x != nil {
+		return x.HookCreationDetails
+	}
+	return nil
+}
+
 type isCryptoCreateTransactionBody_StakedId interface {
 	isCryptoCreateTransactionBody_StakedId()
 }
@@ -366,7 +376,7 @@ var File_crypto_create_proto protoreflect.FileDescriptor
 
 const file_crypto_create_proto_rawDesc = "" +
 	"\n" +
-	"\x13crypto_create.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x0eduration.proto\"\xab\x06\n" +
+	"\x13crypto_create.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x0eduration.proto\x1a\x10hook_types.proto\"\x90\a\n" +
 	"\x1bCryptoCreateTransactionBody\x12\x1c\n" +
 	"\x03key\x18\x01 \x01(\v2\n" +
 	".proto.KeyR\x03key\x12&\n" +
@@ -386,7 +396,8 @@ const file_crypto_create_proto_rawDesc = "" +
 	"\x11staked_account_id\x18\x0f \x01(\v2\x10.proto.AccountIDH\x00R\x0fstakedAccountId\x12&\n" +
 	"\x0estaked_node_id\x18\x10 \x01(\x03H\x00R\fstakedNodeId\x12%\n" +
 	"\x0edecline_reward\x18\x11 \x01(\bR\rdeclineReward\x12\x14\n" +
-	"\x05alias\x18\x12 \x01(\fR\x05aliasB\v\n" +
+	"\x05alias\x18\x12 \x01(\fR\x05alias\x12c\n" +
+	"\x15hook_creation_details\x18\x13 \x03(\v2/.com.hedera.hapi.node.hooks.HookCreationDetailsR\x13hookCreationDetailsB\v\n" +
 	"\tstaked_idJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
@@ -410,6 +421,7 @@ var file_crypto_create_proto_goTypes = []any{
 	(*Duration)(nil),                    // 3: proto.Duration
 	(*ShardID)(nil),                     // 4: proto.ShardID
 	(*RealmID)(nil),                     // 5: proto.RealmID
+	(*HookCreationDetails)(nil),         // 6: com.hedera.hapi.node.hooks.HookCreationDetails
 }
 var file_crypto_create_proto_depIdxs = []int32{
 	1, // 0: proto.CryptoCreateTransactionBody.key:type_name -> proto.Key
@@ -419,11 +431,12 @@ var file_crypto_create_proto_depIdxs = []int32{
 	5, // 4: proto.CryptoCreateTransactionBody.realmID:type_name -> proto.RealmID
 	1, // 5: proto.CryptoCreateTransactionBody.newRealmAdminKey:type_name -> proto.Key
 	2, // 6: proto.CryptoCreateTransactionBody.staked_account_id:type_name -> proto.AccountID
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	6, // 7: proto.CryptoCreateTransactionBody.hook_creation_details:type_name -> com.hedera.hapi.node.hooks.HookCreationDetails
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_crypto_create_proto_init() }
@@ -433,6 +446,7 @@ func file_crypto_create_proto_init() {
 	}
 	file_basic_types_proto_init()
 	file_duration_proto_init()
+	file_hook_types_proto_init()
 	file_crypto_create_proto_msgTypes[0].OneofWrappers = []any{
 		(*CryptoCreateTransactionBody_StakedAccountId)(nil),
 		(*CryptoCreateTransactionBody_StakedNodeId)(nil),
