@@ -359,7 +359,7 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 }
 
 // DisassociateToken jRPC method for dissociateToken
-func (t *TokenService) DissociatesToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
+func (t *TokenService) DisassociateToken(_ context.Context, params param.AssociateDissociatesTokenParams) (*response.TokenResponse, error) {
 	transaction := hiero.NewTokenDissociateTransaction().SetGrpcDeadline(&threeSecondsDuration)
 
 	// Set account ID
