@@ -326,3 +326,87 @@ func TestIntegrationTransactionAddSignatureV2(t *testing.T) {
 	require.NoError(t, err)
 
 }
+
+func TestIntegrationTransactionStaticMethodsFileAppend(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	frozenFileCreateTx, err := NewFileCreateTransaction().
+		SetKeys(newKey.PublicKey()).
+		SetContents([]byte("Initial content")).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	fileCreateResp, err := frozenFileCreateTx.Sign(newKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	fileReceipt, err := fileCreateResp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+	fileID := *fileReceipt.FileID
+
+	fileAppendTx := NewFileAppendTransaction().
+		SetFileID(fileID).
+		SetContents([]byte(bigContents))
+
+	require.False(t, fileAppendTx.IsFrozen())
+
+	frozenFileTxInterface, err := TransactionFreezeWith(fileAppendTx, env.Client)
+	require.NoError(t, err)
+	frozenFileTx, ok := frozenFileTxInterface.(*FileAppendTransaction)
+	require.True(t, ok)
+
+	require.True(t, frozenFileTx.IsFrozen())
+
+	frozenFileTxInterface, err = TransactionSign(frozenFileTx, newKey)
+	require.NoError(t, err)
+
+	resp, err := TransactionExecute(frozenFileTxInterface, env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTransactionStaticMethodsTopicMessageSubmit(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	adminKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	frozenTopicCreateTx, err := NewTopicCreateTransaction().
+		SetAdminKey(adminKey.PublicKey()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	resp, err := frozenTopicCreateTx.Sign(adminKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	topicMessageSubmitTx := NewTopicMessageSubmitTransaction().
+		SetMessage([]byte(bigContents)).
+		SetTopicID(topicID)
+
+	frozenTopicMessageSubmitTx, err := TransactionFreezeWith(topicMessageSubmitTx, env.Client)
+	require.NoError(t, err)
+	topicMessageSubmitTx, ok := frozenTopicMessageSubmitTx.(*TopicMessageSubmitTransaction)
+	require.True(t, ok)
+
+	topicMessageSubmitTx.Sign(adminKey)
+
+	resp, err = TransactionExecute(topicMessageSubmitTx, env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
