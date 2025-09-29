@@ -6,6 +6,10 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -201,4 +205,404 @@ func stringPtr(s string) *string {
 
 func int64Ptr(i int64) *int64 {
 	return &i
+}
+
+func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	tests := []struct {
+		name           string
+		domain         string
+		expectedScheme string
+		description    string
+	}{
+		{
+			name:           "port 80 uses HTTP",
+			domain:         "mirror80.example.com:80",
+			expectedScheme: "http",
+			description:    "Port 80 should use HTTP scheme",
+		},
+		{
+			name:           "port 443 uses HTTPS",
+			domain:         "mirror443.example.com:443",
+			expectedScheme: "https",
+			description:    "Port 443 should use HTTPS scheme",
+		},
+		{
+			name:           "port 8443 uses HTTPS",
+			domain:         "mirror8443.example.com:8443",
+			expectedScheme: "https",
+			description:    "Other ports should use HTTPS scheme for security",
+		},
+		{
+			name:           "port 9999 uses HTTPS",
+			domain:         "mirror9999.example.com:9999",
+			expectedScheme: "https",
+			description:    "Any non-standard port should use HTTPS scheme",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Test EstimateGas
+			t.Run("EstimateGas", func(t *testing.T) {
+				// Create a mock server that responds with gas estimation
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Verify the request path contains contracts/call
+					assert.Contains(t, r.URL.Path, "contracts/call")
+
+					response := map[string]interface{}{
+						"result": "0x5208", // 21000 gas in hex
+					}
+					w.Header().Set("Content-Type", "application/json")
+					err := json.NewEncoder(w).Encode(response)
+					require.NoError(t, err)
+				}))
+				defer server.Close()
+
+				// Setup mock transport
+				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
+				defer cleanup()
+
+				// Setup client with the test domain as the mirror network
+				client, err := _NewMockClient()
+				require.NoError(t, err)
+				client.SetLedgerID(*NewLedgerIDTestnet())
+				client.SetMirrorNetwork([]string{test.domain})
+
+				// Create a contract query
+				query := NewMirrorNodeContractEstimateGasQuery()
+				query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+				query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+				// Test EstimateGas
+				gasEstimate, err := query.Execute(client)
+				require.NoError(t, err, "EstimateGas should succeed for %s", test.description)
+				assert.Equal(t, uint64(21000), gasEstimate)
+			})
+
+			// Test ContractCall
+			t.Run("ContractCall", func(t *testing.T) {
+				// Create a mock server that responds with contract call result
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Verify the request path contains contracts/call
+					assert.Contains(t, r.URL.Path, "contracts/call")
+
+					response := map[string]interface{}{
+						"result": "0x0000000000000000000000000000000000000000000000000000000000000001",
+					}
+					w.Header().Set("Content-Type", "application/json")
+					err := json.NewEncoder(w).Encode(response)
+					require.NoError(t, err)
+				}))
+				defer server.Close()
+
+				// Setup mock transport
+				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
+				defer cleanup()
+
+				// Setup client with the test domain as the mirror network
+				client, err := _NewMockClient()
+				require.NoError(t, err)
+				client.SetLedgerID(*NewLedgerIDTestnet())
+				client.SetMirrorNetwork([]string{test.domain})
+
+				// Create a contract call query
+				query := NewMirrorNodeContractCallQuery()
+				query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+				query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+				// Test ContractCall
+				result, err := query.Execute(client)
+				require.NoError(t, err, "ContractCall should succeed for %s", test.description)
+				assert.Equal(t, "0x0000000000000000000000000000000000000000000000000000000000000001", result)
+			})
+		})
+	}
+}
+
+func TestUnitMirrorNodeContractQueryWithCustomDomain(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	t.Run("EstimateGas with custom domain", func(t *testing.T) {
+		// Create a mock server that responds with gas estimation
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify the request path contains contracts/call
+			assert.Contains(t, r.URL.Path, "contracts/call")
+
+			response := map[string]interface{}{
+				"result": "0x7530", // 30000 gas in hex
+			}
+			w.Header().Set("Content-Type", "application/json")
+			err := json.NewEncoder(w).Encode(response)
+			require.NoError(t, err)
+		}))
+		defer server.Close()
+
+		// Setup mock transport for test.example.com
+		cleanup := SetupMockTransportForDomain("test.example.com:443", server.URL)
+		defer cleanup()
+
+		// Setup client with test.example.com as the mirror network
+		client, err := _NewMockClient()
+		require.NoError(t, err)
+		client.SetLedgerID(*NewLedgerIDTestnet())
+		client.SetMirrorNetwork([]string{"test.example.com:443"})
+
+		// Verify URL construction
+		baseURL, err := client.GetMirrorRestApiBaseUrl()
+		require.NoError(t, err)
+		assert.Equal(t, "https://test.example.com:443/api/v1", baseURL)
+
+		// Create a contract query
+		query := NewMirrorNodeContractEstimateGasQuery()
+		query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+		query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+		// Test EstimateGas
+		gasEstimate, err := query.Execute(client)
+		require.NoError(t, err)
+		assert.Equal(t, uint64(30000), gasEstimate)
+	})
+
+	t.Run("ContractCall with custom domain", func(t *testing.T) {
+		// Create a mock server that responds with contract call result
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Verify the request path contains contracts/call
+			assert.Contains(t, r.URL.Path, "contracts/call")
+
+			response := map[string]interface{}{
+				"result": "0x000000000000000000000000000000000000000000000000000000000000007b",
+			}
+			w.Header().Set("Content-Type", "application/json")
+			err := json.NewEncoder(w).Encode(response)
+			require.NoError(t, err)
+		}))
+		defer server.Close()
+
+		// Setup mock transport for test.example.com
+		cleanup := SetupMockTransportForDomain("test.example.com:443", server.URL)
+		defer cleanup()
+
+		// Setup client with test.example.com as the mirror network
+		client, err := _NewMockClient()
+		require.NoError(t, err)
+		client.SetLedgerID(*NewLedgerIDTestnet())
+		client.SetMirrorNetwork([]string{"test.example.com:443"})
+
+		// Create a contract call query
+		query := NewMirrorNodeContractCallQuery()
+		query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+		query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+		query.SetBlockNumber(123456)
+
+		// Test ContractCall
+		result, err := query.Execute(client)
+		require.NoError(t, err)
+		assert.Equal(t, "0x000000000000000000000000000000000000000000000000000000000000007b", result)
+	})
+}
+
+func TestUnitMirrorNodeContractQueryErrorScenarios(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	tests := []struct {
+		name           string
+		serverResponse map[string]interface{}
+		expectedError  string
+	}{
+		{
+			name: "missing result field",
+			serverResponse: map[string]interface{}{
+				"some_other_field": "value",
+			},
+			expectedError: "result is not a string",
+		},
+		{
+			name: "non-string result",
+			serverResponse: map[string]interface{}{
+				"result": 123,
+			},
+			expectedError: "result is not a string",
+		},
+		{
+			name: "valid result for gas estimation",
+			serverResponse: map[string]interface{}{
+				"result": "0xinvalid",
+			},
+			expectedError: "failed to parse the result",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name+" EstimateGas", func(t *testing.T) {
+			// Create a mock server that responds with test data
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				err := json.NewEncoder(w).Encode(test.serverResponse)
+				require.NoError(t, err)
+			}))
+			defer server.Close()
+
+			// Setup mock transport
+			cleanup := SetupMockTransportForDomain("error.example.com:443", server.URL)
+			defer cleanup()
+
+			// Setup client
+			client, err := _NewMockClient()
+			require.NoError(t, err)
+			client.SetLedgerID(*NewLedgerIDTestnet())
+			client.SetMirrorNetwork([]string{"error.example.com:443"})
+
+			// Create a contract query
+			query := NewMirrorNodeContractEstimateGasQuery()
+			query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+			query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+			// Test EstimateGas - should fail with expected error
+			_, err = query.Execute(client)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), test.expectedError)
+		})
+
+		if test.name != "valid result for gas estimation" { // ContractCall doesn't parse hex to int
+			t.Run(test.name+" ContractCall", func(t *testing.T) {
+				// Create a mock server that responds with test data
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					err := json.NewEncoder(w).Encode(test.serverResponse)
+					require.NoError(t, err)
+				}))
+				defer server.Close()
+
+				// Setup mock transport
+				cleanup := SetupMockTransportForDomain("error.example.com:443", server.URL)
+				defer cleanup()
+
+				// Setup client
+				client, err := _NewMockClient()
+				require.NoError(t, err)
+				client.SetLedgerID(*NewLedgerIDTestnet())
+				client.SetMirrorNetwork([]string{"error.example.com:443"})
+
+				// Create a contract call query
+				query := NewMirrorNodeContractCallQuery()
+				query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+				query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+				// Test ContractCall - should fail with expected error
+				_, err = query.Execute(client)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), test.expectedError)
+			})
+		}
+	}
+}
+
+func TestUnitMirrorNodeContractQueryHttpErrorScenarios(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	tests := []struct {
+		name          string
+		statusCode    int
+		responseBody  string
+		expectedError string
+	}{
+		{
+			name:          "500 Internal Server Error",
+			statusCode:    http.StatusInternalServerError,
+			responseBody:  "Internal server error",
+			expectedError: "received non-200 response from Mirror Node: 500",
+		},
+		{
+			name:          "404 Not Found",
+			statusCode:    http.StatusNotFound,
+			responseBody:  "Not found",
+			expectedError: "received non-200 response from Mirror Node: 404",
+		},
+		{
+			name:          "400 Bad Request",
+			statusCode:    http.StatusBadRequest,
+			responseBody:  "Bad request",
+			expectedError: "received non-200 response from Mirror Node: 400",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Create a mock server that returns the specified error
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(test.statusCode)
+				w.Write([]byte(test.responseBody))
+			}))
+			defer server.Close()
+
+			// Setup mock transport
+			cleanup := SetupMockTransportForDomain("error.example.com:443", server.URL)
+			defer cleanup()
+
+			// Setup client
+			client, err := _NewMockClient()
+			require.NoError(t, err)
+			client.SetLedgerID(*NewLedgerIDTestnet())
+			client.SetMirrorNetwork([]string{"error.example.com:443"})
+
+			// Create a contract query
+			query := NewMirrorNodeContractEstimateGasQuery()
+			query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+			query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+			// Test EstimateGas - should fail with expected error
+			_, err = query.Execute(client)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), test.expectedError)
+		})
+	}
+}
+
+func TestUnitMirrorNodeContractQuerySchemeValidation(t *testing.T) {
+	// This test validates that the mirror node URL construction follows the expected scheme rules
+
+	tests := []struct {
+		name           string
+		domain         string
+		expectedScheme string
+	}{
+		{
+			name:           "HTTP for port 80",
+			domain:         "mirror.example.com:80",
+			expectedScheme: "http",
+		},
+		{
+			name:           "HTTPS for port 443",
+			domain:         "mirror.example.com:443",
+			expectedScheme: "https",
+		},
+		{
+			name:           "HTTPS for custom port",
+			domain:         "mirror.example.com:8080",
+			expectedScheme: "https",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Setup client with the test domain
+			client, err := _NewMockClient()
+			require.NoError(t, err)
+			client.SetLedgerID(*NewLedgerIDTestnet())
+			client.SetMirrorNetwork([]string{test.domain})
+
+			// Verify the URL construction by checking the mirror node's getBaseRestUrl
+			baseURL, err := client.GetMirrorRestApiBaseUrl()
+			require.NoError(t, err)
+
+			// Parse the URL to verify the scheme
+			assert.True(t, strings.HasPrefix(baseURL, test.expectedScheme+"://"),
+				"Expected scheme %s for domain %s, but got URL: %s",
+				test.expectedScheme, test.domain, baseURL)
+		})
+	}
 }

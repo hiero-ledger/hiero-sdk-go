@@ -7,7 +7,10 @@ package hiero
 
 import (
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -260,4 +263,134 @@ func TestUnitContractIDToEvmAddress(t *testing.T) {
 	// Test with different shard and realm
 	id = ContractID{Shard: 1, Realm: 1, EvmAddress: bytes}
 	require.Equal(t, expected, id.ToEvmAddress())
+}
+
+func TestUnitContractIDPopulateContractWithDifferentPorts(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	tests := []struct {
+		name           string
+		domain         string
+		expectedScheme string
+		description    string
+	}{
+		{
+			name:           "port 80 uses HTTP",
+			domain:         "mirror80.example.com:80",
+			expectedScheme: "http",
+			description:    "Port 80 should use HTTP scheme",
+		},
+		{
+			name:           "port 443 uses HTTPS",
+			domain:         "mirror443.example.com:443",
+			expectedScheme: "https",
+			description:    "Port 443 should use HTTPS scheme",
+		},
+		{
+			name:           "port 8443 uses HTTPS",
+			domain:         "mirror8443.example.com:8443",
+			expectedScheme: "https",
+			description:    "Other ports should use HTTPS scheme for security",
+		},
+		{
+			name:           "port 9999 uses HTTPS",
+			domain:         "mirror9999.example.com:9999",
+			expectedScheme: "https",
+			description:    "Any non-standard port should use HTTPS scheme",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Test PopulateContract
+			t.Run("PopulateContract", func(t *testing.T) {
+				// Create a mock server that responds with contract data
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Verify the request path contains contracts
+					assert.Contains(t, r.URL.Path, "contracts")
+
+					response := map[string]interface{}{
+						"contract_id": "0.0.12345",
+					}
+					w.Header().Set("Content-Type", "application/json")
+					err := json.NewEncoder(w).Encode(response)
+					require.NoError(t, err)
+				}))
+				defer server.Close()
+
+				// Setup mock transport
+				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
+				defer cleanup()
+
+				// Setup client with the test domain as the mirror network
+				client, err := _NewMockClient()
+				require.NoError(t, err)
+				client.SetLedgerID(*NewLedgerIDTestnet())
+				client.SetMirrorNetwork([]string{test.domain})
+
+				// Create a contract ID with EVM address
+				evmAddressBytes, err := hex.DecodeString(evmAddress)
+				require.NoError(t, err)
+				contractID := ContractID{
+					Shard:      0,
+					Realm:      0,
+					Contract:   0,
+					EvmAddress: evmAddressBytes,
+				}
+
+				// Test PopulateContract
+				err = contractID.PopulateContract(client)
+				require.NoError(t, err, "PopulateContract should succeed for %s", test.description)
+				assert.Equal(t, uint64(12345), contractID.Contract)
+			})
+		})
+	}
+}
+
+func TestUnitContractIDPopulateContractWithCustomDomain(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	// Create a mock server that responds with contract data
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify the request path contains contracts
+		assert.Contains(t, r.URL.Path, "contracts")
+
+		response := map[string]interface{}{
+			"contract_id": "0.0.67890",
+		}
+		w.Header().Set("Content-Type", "application/json")
+		err := json.NewEncoder(w).Encode(response)
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	// Setup mock transport for test.example.com
+	cleanup := SetupMockTransportForDomain("test.example.com:443", server.URL)
+	defer cleanup()
+
+	// Setup client with test.example.com as the mirror network
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{"test.example.com:443"})
+
+	// Verify URL construction
+	baseURL, err := client.GetMirrorRestApiBaseUrl()
+	require.NoError(t, err)
+	assert.Equal(t, "https://test.example.com:443/api/v1", baseURL)
+
+	// Create a contract ID with EVM address
+	evmAddressBytes, err := hex.DecodeString(evmAddress)
+	require.NoError(t, err)
+	contractID := ContractID{
+		Shard:      0,
+		Realm:      0,
+		Contract:   0,
+		EvmAddress: evmAddressBytes,
+	}
+
+	// Test PopulateContract
+	err = contractID.PopulateContract(client)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(67890), contractID.Contract)
 }

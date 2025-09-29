@@ -342,7 +342,7 @@ func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (ma
 		return nil, errors.New("mirror node is not set")
 	}
 
-	mirrorUrl, err := client.GetMirrorBaseUrl()
+	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
 	if err != nil {
 		return nil, err
 	}

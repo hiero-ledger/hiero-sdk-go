@@ -171,7 +171,7 @@ func (id *ContractID) PopulateContract(client *Client) error {
 	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
 		return errors.New("mirror node is not set")
 	}
-	mirrorUrl, err := client.GetMirrorBaseUrl()
+	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
 	if err != nil {
 		return err
 	}

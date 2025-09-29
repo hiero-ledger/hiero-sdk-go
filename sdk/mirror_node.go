@@ -51,7 +51,7 @@ func (node *_MirrorNode) getScheme() (string, error) {
 	return "https", nil
 }
 
-func (node *_MirrorNode) getBaseUrl() (string, error) {
+func (node *_MirrorNode) getBaseRestUrl() (string, error) {
 	scheme, err := node.getScheme()
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func (node *_MirrorNode) getBaseUrl() (string, error) {
 	}
 	hostStr := *host
 	if hostStr == "localhost" || hostStr == "127.0.0.1" {
-		return "http://localhost:5551/api/v1", nil
+		return fmt.Sprintf("http://%s:5551/api/v1", hostStr), nil
 	}
 	return fmt.Sprintf("%s://%s:%d/api/v1", scheme, hostStr, port), nil
 }

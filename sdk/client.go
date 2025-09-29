@@ -789,10 +789,10 @@ func (client *Client) SetLogLevel(level LogLevel) *Client {
 	return client
 }
 
-func (client *Client) GetMirrorBaseUrl() (string, error) {
+func (client *Client) GetMirrorRestApiBaseUrl() (string, error) {
 	mirrorNode, err := client.mirrorNetwork._GetNextMirrorNode()
 	if err != nil {
 		return "", err
 	}
-	return mirrorNode.getBaseUrl()
+	return mirrorNode.getBaseRestUrl()
 }

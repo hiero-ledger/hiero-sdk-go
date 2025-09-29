@@ -7,6 +7,7 @@ package hiero
 
 import (
 	"bytes"
+	"net/url"
 	"testing"
 	"time"
 
@@ -369,4 +370,95 @@ func TestUnitClientForNetworkV2(t *testing.T) {
 	client, err = ClientForNetworkV2(network)
 	require.Error(t, err)
 	assert.Equal(t, err.Error(), "network is empty")
+}
+
+func TestUnitClientGetMirrorRestApiBaseUrl(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		domain         string
+		expectedScheme string
+	}{
+		{
+			name:           "HTTP for port 80",
+			domain:         "mirror.example.com:80",
+			expectedScheme: "http",
+		},
+		{
+			name:           "HTTPS for port 443",
+			domain:         "mirror.example.com:443",
+			expectedScheme: "https",
+		},
+		{
+			name:           "HTTPS for custom port",
+			domain:         "mirror.example.com:8080",
+			expectedScheme: "https",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := _NewMockClient()
+			require.NoError(t, err)
+			client.SetLedgerID(*NewLedgerIDTestnet())
+			client.SetMirrorNetwork([]string{test.domain})
+
+			baseURL, err := client.GetMirrorRestApiBaseUrl()
+			require.NoError(t, err)
+
+			parsedURL, err := url.Parse(baseURL)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedScheme, parsedURL.Scheme)
+
+			assert.Equal(t, test.domain, parsedURL.Host)
+			assert.Equal(t, "/api/v1", parsedURL.Path)
+		})
+	}
+}
+
+func TestUnitClientGetMirrorRestApiBaseUrlLocalHost(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name           string
+		domain         string
+		expectedScheme string
+		expectedPort   string
+	}{
+		{
+			name:           "HTTP local host",
+			domain:         "localhost:80",
+			expectedScheme: "http",
+		},
+		{
+			name:           "HTTP 127.0.0.1",
+			domain:         "127.0.0.1:8080",
+			expectedScheme: "http",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			client, err := _NewMockClient()
+			require.NoError(t, err)
+			client.SetLedgerID(*NewLedgerIDTestnet())
+			client.SetMirrorNetwork([]string{test.domain})
+
+			baseURL, err := client.GetMirrorRestApiBaseUrl()
+			require.NoError(t, err)
+
+			parsedURL, err := url.Parse(baseURL)
+			require.NoError(t, err)
+			assert.Equal(t, test.expectedScheme, parsedURL.Scheme)
+
+			if test.domain == "localhost:80" {
+				assert.Equal(t, "localhost:5551", parsedURL.Host)
+			} else {
+				assert.Equal(t, "127.0.0.1:5551", parsedURL.Host)
+			}
+
+			assert.Equal(t, "/api/v1", parsedURL.Path)
+		})
+	}
 }
