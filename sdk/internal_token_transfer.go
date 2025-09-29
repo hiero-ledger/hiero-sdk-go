@@ -31,11 +31,7 @@ func _TokenTransferPrivateFromProtobuf(pb *services.TokenTransferList) *_TokenTr
 func (transfer *_TokenTransfer) _ToProtobuf() []*services.AccountAmount {
 	transfers := make([]*services.AccountAmount, 0)
 	for _, t := range transfer.Transfers {
-		transfers = append(transfers, &services.AccountAmount{
-			AccountID:  t.accountID._ToProtobuf(),
-			Amount:     t.Amount.AsTinybar(),
-			IsApproval: t.IsApproved,
-		})
+		transfers = append(transfers, t._ToProtobuf())
 	}
 	return transfers
 }
