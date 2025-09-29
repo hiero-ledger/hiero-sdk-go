@@ -98,11 +98,9 @@ jobs:
             - name: Prepare Hiero Solo
               if: success() && matrix.test-type == 'e2e'
               id: solo
-              uses: hiero-ledger/hiero-solo-action@be37932d21b1a1deaaca6ce8d7fc28a7251cfb56 # v0.13.0
+              uses: hiero-ledger/hiero-solo-action@b76850c1ac44466900f8e7412b309c3aa0f539c1 # v0.14.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.65.0
-                mirrorNodeVersion: v0.136.1
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
@@ -173,11 +171,9 @@ jobs:
 
             - name: Prepare Hiero Solo
               id: solo
-              uses: hiero-ledger/hiero-solo-action@be37932d21b1a1deaaca6ce8d7fc28a7251cfb56 # v0.13.0
+              uses: hiero-ledger/hiero-solo-action@b76850c1ac44466900f8e7412b309c3aa0f539c1 # v0.14.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.65.0
-                mirrorNodeVersion: v0.136.1
 
             - name: Set Operator Account
               run: |

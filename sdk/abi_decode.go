@@ -117,13 +117,6 @@ var (
 // Address is an Ethereum address
 type Address [20]byte
 
-func min(i, j int) int {
-	if i < j {
-		return i
-	}
-	return j
-}
-
 // BytesToAddress converts bytes to an address object
 func BytesToAddress(b []byte) Address {
 	var a Address

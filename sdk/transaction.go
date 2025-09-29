@@ -1131,7 +1131,7 @@ func (tx *Transaction[T]) GetTransactionBodySize() (int, error) {
 	return len(txBytes), nil
 }
 
-// GetBodySizeAllChunks returns the total size of the transaction, for all chunks.
+// GetTransactionBodySizeAllChunks returns the total size of the transaction, for all chunks.
 func (tx *Transaction[T]) GetTransactionBodySizeAllChunks() ([]int, error) {
 	if !tx.IsFrozen() {
 		return nil, errTransactionIsNotFrozen
@@ -1629,6 +1629,16 @@ func (tx *Transaction[T]) SetLogLevel(level LogLevel) T {
 // Static Utility functions //
 
 func TransactionExecute(tx TransactionInterface, client *Client) (TransactionResponse, error) {
+	fileAppendTx, ok := tx.(*FileAppendTransaction)
+	if ok {
+		return fileAppendTx.Execute(client)
+	}
+
+	messageSubmitTx, ok := tx.(*TopicMessageSubmitTransaction)
+	if ok {
+		return messageSubmitTx.Execute(client)
+	}
+
 	return tx.getBaseTransaction().Execute(client)
 }
 
@@ -1746,6 +1756,12 @@ func TransactionFreezeWith(tx TransactionInterface, client *Client) (Transaction
 	if ok {
 		return fileAppendTx.FreezeWith(client)
 	}
+
+	messageSubmitTx, ok := tx.(*TopicMessageSubmitTransaction)
+	if ok {
+		return messageSubmitTx.FreezeWith(client)
+	}
+
 	baseTx := tx.getBaseTransaction()
 	_, err := baseTx.FreezeWith(client)
 	if err != nil {
