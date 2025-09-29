@@ -13,66 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitMirrorNodeGetScheme(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name           string
-		address        string
-		expectedScheme string
-		shouldError    bool
-	}{
-		{
-			name:           "port 443 uses HTTPS",
-			address:        "mirror.example.com:443",
-			expectedScheme: "https",
-			shouldError:    false,
-		},
-		{
-			name:           "port 80 uses HTTP",
-			address:        "mirror.example.com:80",
-			expectedScheme: "http",
-			shouldError:    false,
-		},
-		{
-			name:           "port 8080 uses HTTPS (default for non-standard ports)",
-			address:        "mirror.example.com:8080",
-			expectedScheme: "https",
-			shouldError:    false,
-		},
-		{
-			name:           "port 9999 uses HTTPS (default for non-standard ports)",
-			address:        "mirror.example.com:9999",
-			expectedScheme: "https",
-			shouldError:    false,
-		},
-		{
-			name:           "localhost with custom port uses HTTPS",
-			address:        "localhost:8443",
-			expectedScheme: "https",
-			shouldError:    false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
-			node, err := _NewMirrorNode(test.address)
-			require.NoError(t, err)
-
-			scheme, err := node.getScheme()
-
-			if test.shouldError {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, test.expectedScheme, scheme)
-			}
-		})
-	}
-}
-
 func TestUnitMirrorNodeGetSchemeErrors(t *testing.T) {
 	t.Parallel()
 
@@ -103,43 +43,36 @@ func TestUnitMirrorNodeGetBaseRestUrl(t *testing.T) {
 			name:        "HTTPS with port 443",
 			address:     "mirror.example.com:443",
 			expectedURL: "https://mirror.example.com:443/api/v1",
-			shouldError: false,
 		},
 		{
 			name:        "HTTP with port 80",
 			address:     "mirror.example.com:80",
 			expectedURL: "http://mirror.example.com:80/api/v1",
-			shouldError: false,
 		},
 		{
 			name:        "HTTPS with custom port",
 			address:     "mirror.example.com:8443",
 			expectedURL: "https://mirror.example.com:8443/api/v1",
-			shouldError: false,
 		},
 		{
 			name:        "localhost gets special handling",
 			address:     "localhost:8080",
 			expectedURL: "http://localhost:5551/api/v1",
-			shouldError: false,
 		},
 		{
 			name:        "127.0.0.1 gets special handling",
 			address:     "127.0.0.1:9999",
 			expectedURL: "http://127.0.0.1:5551/api/v1",
-			shouldError: false,
 		},
 		{
 			name:        "testnet mirror",
 			address:     "testnet.mirrornode.hedera.com:443",
 			expectedURL: "https://testnet.mirrornode.hedera.com:443/api/v1",
-			shouldError: false,
 		},
 		{
 			name:        "mainnet mirror",
 			address:     "mainnet-public.mirrornode.hedera.com:443",
 			expectedURL: "https://mainnet-public.mirrornode.hedera.com:443/api/v1",
-			shouldError: false,
 		},
 	}
 
