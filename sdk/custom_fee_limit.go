@@ -1,5 +1,7 @@
 package hiero
 
+import "strings"
+
 import "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
 // SPDX-License-Identifier: Apache-2.0
@@ -83,13 +85,14 @@ func (feeLimit *CustomFeeLimit) toProtobuf() *services.CustomFeeLimit {
 }
 
 func (feeLimit *CustomFeeLimit) String() string {
-	customFeesStr := "["
+	var customFeesStr strings.Builder
+	customFeesStr.WriteString("[")
 	for i, fee := range feeLimit.CustomFees {
 		if i > 0 {
-			customFeesStr += ", "
+			customFeesStr.WriteString(", ")
 		}
-		customFeesStr += fee.String()
+		customFeesStr.WriteString(fee.String())
 	}
-	customFeesStr += "]"
-	return "CustomFeeLimit{PayerId: " + feeLimit.PayerId.String() + ", CustomFees: " + customFeesStr + "}"
+	customFeesStr.WriteString("]")
+	return "CustomFeeLimit{PayerId: " + feeLimit.PayerId.String() + ", CustomFees: " + customFeesStr.String() + "}"
 }
