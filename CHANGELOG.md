@@ -1,3 +1,16 @@
+## v2.71.0
+
+### Added
+- Introduced Client.GetMirrorRestApiBaseUrl getter to provide the full Mirror Node REST API base URL, including scheme and port [#1507](https://github.com/hiero-ledger/hiero-sdk-go/pull/1507)
+
+### Changed
+- Updated AccountId.populateAccountEvmAddress, AccountId.populateAccountNum MirrorNodeContractQuery to construct URLs using mirrorRestApiBaseUrl instead of manually parsing strings [#1507](https://github.com/hiero-ledger/hiero-sdk-go/pull/1507)
+- Used `strings.Builder` in `String` methods for various structs [#1508](https://github.com/hiero-ledger/hiero-sdk-go/pull/1508)
+- Replaced custom min func with built-in function min. [#1506](https://github.com/hiero-ledger/hiero-sdk-go/pull/1506)
+
+### Fixed
+- `TransactionSign` and `TransactionExecute` to work with chunked transactions by calling the overridden implementations [#1505](https://github.com/hiero-ledger/hiero-sdk-go/pull/1505)
+
 ## v2.70.0
 
 ### Added
