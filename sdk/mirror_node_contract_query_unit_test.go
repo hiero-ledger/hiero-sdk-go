@@ -6,6 +6,9 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -201,4 +204,118 @@ func stringPtr(s string) *string {
 
 func int64Ptr(i int64) *int64 {
 	return &i
+}
+
+func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+
+	tests := []struct {
+		name           string
+		domain         string
+		expectedScheme string
+		description    string
+	}{
+		{
+			name:           "port 80 uses HTTP",
+			domain:         "mirror80.example.com:80",
+			expectedScheme: "http",
+			description:    "Port 80 should use HTTP scheme",
+		},
+		{
+			name:           "port 443 uses HTTPS",
+			domain:         "mirror443.example.com:443",
+			expectedScheme: "https",
+			description:    "Port 443 should use HTTPS scheme",
+		},
+		{
+			name:           "port 8443 uses HTTPS",
+			domain:         "mirror8443.example.com:8443",
+			expectedScheme: "https",
+			description:    "Other ports should use HTTPS scheme for security",
+		},
+		{
+			name:           "port 9999 uses HTTPS",
+			domain:         "mirror9999.example.com:9999",
+			expectedScheme: "https",
+			description:    "Any non-standard port should use HTTPS scheme",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			// Test EstimateGas
+			t.Run("EstimateGas", func(t *testing.T) {
+				// Create a mock server that responds with gas estimation
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Verify the request path contains contracts/call
+					assert.Contains(t, r.URL.Path, "contracts/call")
+
+					response := map[string]interface{}{
+						"result": "0x5208", // 21000 gas in hex
+					}
+					w.Header().Set("Content-Type", "application/json")
+					err := json.NewEncoder(w).Encode(response)
+					require.NoError(t, err)
+				}))
+				defer server.Close()
+
+				// Setup mock transport
+				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
+				defer cleanup()
+
+				// Setup client with the test domain as the mirror network
+				client, err := _NewMockClient()
+				require.NoError(t, err)
+				client.SetLedgerID(*NewLedgerIDTestnet())
+				client.SetMirrorNetwork([]string{test.domain})
+
+				// Create a contract query
+				query := NewMirrorNodeContractEstimateGasQuery()
+				query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+				query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+				// Test EstimateGas
+				gasEstimate, err := query.Execute(client)
+				require.NoError(t, err, "EstimateGas should succeed for %s", test.description)
+				assert.Equal(t, uint64(21000), gasEstimate)
+			})
+
+			// Test ContractCall
+			t.Run("ContractCall", func(t *testing.T) {
+				// Create a mock server that responds with contract call result
+				server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					// Verify the request path contains contracts/call
+					assert.Contains(t, r.URL.Path, "contracts/call")
+
+					response := map[string]interface{}{
+						"result": "0x0000000000000000000000000000000000000000000000000000000000000001",
+					}
+					w.Header().Set("Content-Type", "application/json")
+					err := json.NewEncoder(w).Encode(response)
+					require.NoError(t, err)
+				}))
+				defer server.Close()
+
+				// Setup mock transport
+				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
+				defer cleanup()
+
+				// Setup client with the test domain as the mirror network
+				client, err := _NewMockClient()
+				require.NoError(t, err)
+				client.SetLedgerID(*NewLedgerIDTestnet())
+				client.SetMirrorNetwork([]string{test.domain})
+
+				// Create a contract call query
+				query := NewMirrorNodeContractCallQuery()
+				query.SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+				query.SetFunction("testFunction", NewContractFunctionParameters().AddString("test"))
+
+				// Test ContractCall
+				result, err := query.Execute(client)
+				require.NoError(t, err, "ContractCall should succeed for %s", test.description)
+				assert.Equal(t, "0x0000000000000000000000000000000000000000000000000000000000000001", result)
+			})
+		})
+	}
 }

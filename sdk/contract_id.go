@@ -171,16 +171,11 @@ func (id *ContractID) PopulateContract(client *Client) error {
 	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
 		return errors.New("mirror node is not set")
 	}
-	mirrorUrl := client.GetMirrorNetwork()[0]
-	index := strings.Index(mirrorUrl, ":")
-	if index == -1 {
-		return errors.New("invalid mirrorUrl format")
+	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	if err != nil {
+		return err
 	}
-	mirrorUrl = mirrorUrl[:index]
-	url := fmt.Sprintf("https://%s/api/v1/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
-	if client.GetLedgerID() == nil {
-		url = fmt.Sprintf("http://%s:5551/api/v1/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
-	}
+	url := fmt.Sprintf("%s/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
 
 	resp, err := http.Get(url) // #nosec
 	if err != nil {

@@ -4,6 +4,7 @@ package hiero
 
 import (
 	"crypto/tls"
+	"fmt"
 	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
@@ -28,6 +29,44 @@ func (node *_MirrorNode) _SetVerifyCertificate(_ bool) {
 
 func (node *_MirrorNode) _GetVerifyCertificate() bool {
 	return false
+}
+
+func (node *_MirrorNode) getScheme() (string, error) {
+	if node.address.address == nil {
+		return "", errors.New("mirror node address is not set")
+	}
+	port := node.address.port
+
+	// Standard HTTPS ports
+	if port == 443 {
+		return "https", nil
+	}
+
+	// Standard HTTP ports
+	if port == 80 {
+		return "http", nil
+	}
+
+	// For other ports, assume HTTPS for security
+	return "https", nil
+}
+
+func (node *_MirrorNode) getBaseRestUrl() (string, error) {
+	scheme, err := node.getScheme()
+	if err != nil {
+		return "", err
+	}
+	host := node.address.address
+	port := node.address.port
+
+	if host == nil && port == 0 {
+		return "", errors.New("mirror node address is not set")
+	}
+	hostStr := *host
+	if hostStr == "localhost" || hostStr == "127.0.0.1" {
+		return fmt.Sprintf("http://%s:5551/api/v1", hostStr), nil
+	}
+	return fmt.Sprintf("%s://%s:%d/api/v1", scheme, hostStr, port), nil
 }
 
 func _NewMirrorNode(address string) (node *_MirrorNode, err error) {

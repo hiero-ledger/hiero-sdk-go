@@ -203,24 +203,19 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMir
 	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
 		return nil, errors.New("mirror node is not set")
 	}
-	mirrorUrl := client.GetMirrorNetwork()[0]
-	index := strings.Index(mirrorUrl, ":")
-	if index == -1 {
-		return nil, errors.New("invalid mirrorUrl format")
+	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	if err != nil {
+		return nil, err
 	}
-	mirrorUrl = mirrorUrl[:index]
 
-	var url string
-	protocol := "https"
-	port := ""
-
-	if client.GetLedgerID() == nil {
-		protocol = "http"
-		port = ":8545"
+	isLocalHost := strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1")
+	if isLocalHost {
+		mirrorUrl = "http://localhost:8545/api/v1"
 	}
-	url = fmt.Sprintf("%s://%s%s/api/v1/contracts/call", protocol, mirrorUrl, port)
 
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer([]byte(jsonPayload))) // #nosec
+	mirrorUrl = fmt.Sprintf("%s/contracts/call", mirrorUrl)
+
+	resp, err := http.Post(mirrorUrl, "application/json", bytes.NewBuffer([]byte(jsonPayload))) // #nosec
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
