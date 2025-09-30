@@ -490,3 +490,36 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
+
+// GetAccountBalance jRPC method for getAccountBalance
+func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAccountBalanceParams) (*response.AccountBalanceResponse, error) {
+	query := hiero.NewAccountBalanceQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	// Set account ID
+	if params.AccountId != nil {
+		accountID, err := hiero.AccountIDFromString(*params.AccountId)
+		if err != nil {
+			return nil, err
+		}
+		query.SetAccountID(accountID)
+	} else {
+		return nil, response.NewInternalError("accountId is required")
+	}
+
+	// Execute the query
+	balance, err := query.Execute(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert token balances to string map for JSON serialization
+	tokenBalances := make(map[string]uint64)
+	for tokenID, amount := range balance.Tokens.GetAll() {
+		tokenBalances[tokenID] = amount
+	}
+
+	return &response.AccountBalanceResponse{
+		HbarBalance: balance.Hbars.String(),
+		Tokens:      tokenBalances,
+	}, nil
+}

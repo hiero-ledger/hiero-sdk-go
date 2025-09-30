@@ -13,6 +13,11 @@ type TokenBalanceMap struct {
 func (tokenBalances *TokenBalanceMap) Get(tokenID TokenID) uint64 {
 	return tokenBalances.balances[tokenID.String()]
 }
+
+func (tokenBalances *TokenBalanceMap) GetAll() map[string]uint64 {
+	return tokenBalances.balances
+}
+
 func _TokenBalanceMapFromProtobuf(pb []*services.TokenBalance) TokenBalanceMap {
 	balances := make(map[string]uint64)
 

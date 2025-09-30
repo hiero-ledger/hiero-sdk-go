@@ -48,3 +48,7 @@ type AccountAllowanceDeleteParams struct {
 	Allowances              *[]DeleteAllowanceParams `json:"allowances,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
 }
+
+type GetAccountBalanceParams struct {
+	AccountId *string `json:"accountId"`
+}
