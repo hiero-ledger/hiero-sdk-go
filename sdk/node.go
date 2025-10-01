@@ -278,9 +278,10 @@ func getUserAgent() string {
 		return fmt.Sprintf("%s/%s", identifier, version)
 	}
 
-	if buildInfo.Main.Version != "(devel)" && buildInfo.Main.Version != "" {
-		// If the version is not "(devel)", set the version to the build info.
-		version = buildInfo.Main.Version
+	for _, dep := range buildInfo.Deps {
+		if dep.Path == "github.com/hiero-ledger/hiero-sdk-go" {
+			return dep.Version
+		}
 	}
 
 	return fmt.Sprintf("%s/%s", identifier, version)
