@@ -279,8 +279,8 @@ func getUserAgent() string {
 	}
 
 	for _, dep := range buildInfo.Deps {
-		if dep.Path == "github.com/hiero-ledger/hiero-sdk-go" {
-			return dep.Version
+		if dep.Path == "github.com/hiero-ledger/hiero-sdk-go/v2" {
+			version = dep.Version
 		}
 	}
 
