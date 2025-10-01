@@ -280,7 +280,19 @@ func getUserAgent() string {
 
 	for _, dep := range buildInfo.Deps {
 		if dep.Path == "github.com/hiero-ledger/hiero-sdk-go/v2" {
-			version = dep.Version
+			if len(dep.Version) > 0 {
+				// Find the first space or dash to separate version from metadata
+				for i, char := range dep.Version {
+					if char == ' ' || char == '-' {
+						version = dep.Version[:i]
+						break
+					}
+				}
+				// Remove "v" prefix if present
+				if len(version) > 1 && version[0] == 'v' {
+					version = version[1:]
+				}
+			}
 		}
 	}
 
