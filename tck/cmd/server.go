@@ -95,6 +95,7 @@ func main() {
 		"executeContract":        postHandler(HandleError, handler.New(contractService.ExecuteContract)),
 		"updateNode":             postHandler(HandleError, handler.New(nodeService.UpdateNode)),
 		"deleteNode":             postHandler(HandleError, handler.New(nodeService.DeleteNode)),
+		"getAccountBalance":      postHandler(HandleError, handler.New(accountService.GetAccountBalance)),
 		"generateKey":            postHandler(HandleError, handler.New(methods.GenerateKey)),
 	}
 

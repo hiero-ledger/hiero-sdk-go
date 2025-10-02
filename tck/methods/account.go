@@ -490,3 +490,45 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
+
+// GetAccountBalance jRPC method for getAccountBalance
+func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAccountBalanceParams) (*response.AccountBalanceResponse, error) {
+	query := hiero.NewAccountBalanceQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.AccountId != nil {
+		accountID, err := hiero.AccountIDFromString(*params.AccountId)
+		if err != nil {
+			return nil, err
+		}
+		query.SetAccountID(accountID)
+	}
+
+	if params.ContractId != nil {
+		contractID, err := hiero.ContractIDFromString(*params.ContractId)
+		if err != nil {
+			return nil, err
+		}
+		query.SetContractID(contractID)
+	}
+
+	balance, err := query.Execute(a.sdkService.Client)
+	if err != nil {
+		return nil, err
+	}
+
+	tokenBalances := make(map[string]uint64)
+	for tokenID, amount := range balance.Tokens.GetAll() {
+		tokenBalances[tokenID] = amount
+	}
+
+	tokenDecimals := make(map[string]uint64)
+	for tokenID, decimals := range balance.TokenDecimals.GetAll() {
+		tokenDecimals[tokenID] = decimals
+	}
+
+	return &response.AccountBalanceResponse{
+		Hbar:          strconv.Itoa(int(balance.Hbars.AsTinybar())),
+		TokenBalances: tokenBalances,
+		TokenDecimals: tokenDecimals,
+	}, nil
+}
