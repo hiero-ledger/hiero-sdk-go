@@ -50,5 +50,6 @@ type AccountAllowanceDeleteParams struct {
 }
 
 type GetAccountBalanceParams struct {
-	AccountId *string `json:"accountId"`
+	AccountId  *string `json:"accountId"`
+	ContractId *string `json:"contractId"`
 }

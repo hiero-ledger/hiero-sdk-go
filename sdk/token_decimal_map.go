@@ -18,6 +18,10 @@ func (tokenDecimals *TokenDecimalMap) Get(tokenID TokenID) uint64 {
 	}.String()]
 }
 
+func (tokenDecimals *TokenDecimalMap) GetAll() map[string]uint64 {
+	return tokenDecimals.decimals
+}
+
 func _TokenDecimalMapFromProtobuf(pb []*services.TokenBalance) TokenDecimalMap {
 	decimals := make(map[string]uint64)
 

@@ -8,6 +8,7 @@ type AccountResponse struct {
 }
 
 type AccountBalanceResponse struct {
-	HbarBalance string            `json:"hbarBalance"`
-	Tokens      map[string]uint64 `json:"tokens,omitempty"`
+	Hbar          string            `json:"hbars"`
+	TokenBalances map[string]uint64 `json:"tokenBalances,omitempty"`
+	TokenDecimals map[string]uint64 `json:"tokenDecimals,omitempty"`
 }
