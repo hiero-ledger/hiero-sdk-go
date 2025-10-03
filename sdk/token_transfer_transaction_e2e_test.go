@@ -1038,3 +1038,181 @@ func DisabledTestIntegrationTokenFeeScheduleUpdateCustomFeeChargingExceededMax(t
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 }
+
+func TestIntegrationTokenTransferTransactionFungibleWithPreHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(2).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	accountID, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.
+			AddHook(*hookDetail).
+			SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	tokenID, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	hookCall := NewHookCall().SetHookId(2).SetEvmHookCall(*NewEvmHookCall().SetData([]byte{}).SetGasLimit(25_000))
+
+	resp, err := NewTransferTransaction().
+		AddTokenTransfer(tokenID, env.Client.GetOperatorAccountID(), -10).
+		AddTokenTransferWithHook(tokenID, accountID, 10, *hookCall, PRE_HOOK).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTokenTransferTransactionFungibleWithPrePostHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(2).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	accountID, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.
+			AddHook(*hookDetail).
+			SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	tokenID, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	hookCall := NewHookCall().SetHookId(2).SetEvmHookCall(*NewEvmHookCall().SetData([]byte{}).SetGasLimit(25_000))
+
+	resp, err := NewTransferTransaction().
+		AddTokenTransfer(tokenID, env.Client.GetOperatorAccountID(), -10).
+		AddTokenTransferWithHook(tokenID, accountID, 10, *hookCall, PRE_POST_HOOK).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTokenTransferTransactionNftWithPreHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(2).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	sender, senderKey, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
+	require.NoError(t, err)
+
+	receiver, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.
+			AddHook(*hookDetail).
+			SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	tokenID, err := createNft(&env, func(tx *TokenCreateTransaction) {
+		tx, _ = tx.
+			SetAdminKey(senderKey.PublicKey()).
+			SetSupplyKey(senderKey.PublicKey()).
+			SetTreasuryAccountID(sender).
+			FreezeWith(env.Client)
+		tx.Sign(senderKey)
+	})
+	require.NoError(t, err)
+
+	metaData := []byte{1, 2}
+
+	frozenMint, err := NewTokenMintTransaction().
+		SetTokenID(tokenID).
+		SetMetadata(metaData).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	mint, err := frozenMint.Sign(senderKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = mint.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	hookCall := NewHookCall().SetHookId(2).SetEvmHookCall(*NewEvmHookCall().SetData([]byte{}).SetGasLimit(25_000))
+
+	resp, err := NewTransferTransaction().
+		addNftTransferWithHook(NftID{TokenID: tokenID, SerialNumber: 1}, sender, receiver, *hookCall, PRE_HOOK_SENDER, PRE_HOOK_RECEIVER).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTokenTransferTransactionNftWithPrePostHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(2).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	sender, senderKey, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
+	require.NoError(t, err)
+
+	receiver, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.
+			AddHook(*hookDetail).
+			SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	tokenID, err := createNft(&env, func(tx *TokenCreateTransaction) {
+		tx, _ = tx.
+			SetAdminKey(senderKey.PublicKey()).
+			SetSupplyKey(senderKey.PublicKey()).
+			SetTreasuryAccountID(sender).
+			FreezeWith(env.Client)
+		tx.Sign(senderKey)
+	})
+	require.NoError(t, err)
+
+	metaData := []byte{1, 2}
+
+	frozenMint, err := NewTokenMintTransaction().
+		SetTokenID(tokenID).
+		SetMetadata(metaData).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	mint, err := frozenMint.Sign(senderKey).Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = mint.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	hookCall := NewHookCall().SetHookId(2).SetEvmHookCall(*NewEvmHookCall().SetData([]byte{}).SetGasLimit(25_000))
+
+	resp, err := NewTransferTransaction().
+		addNftTransferWithHook(NftID{TokenID: tokenID, SerialNumber: 1}, sender, receiver, *hookCall, PRE_POST_HOOK_SENDER, PRE_POST_HOOK_RECEIVER).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}

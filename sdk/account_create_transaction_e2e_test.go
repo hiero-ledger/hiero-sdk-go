@@ -876,17 +876,9 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
 		SetHookId(1).
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
 
-	newKey, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-
-	resp, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(newKey).
-		AddHook(*hookDetail).
-		Execute(env.Client)
-
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	_, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
 	require.NoError(t, err)
 }
 
@@ -902,17 +894,9 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndInitialStorageU
 			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageUpdate().SetStorageSlot(*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02}))}).
 			SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
 
-	newKey, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-
-	resp, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(newKey).
-		AddHook(*hookDetail).
-		Execute(env.Client)
-
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	_, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
 	require.NoError(t, err)
 }
 
@@ -974,15 +958,8 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *tes
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1}))).
 		SetAdminKey(hookAdminKey)
 
-	newKey, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-
-	resp, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(newKey).
-		AddHook(*hookDetail).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	_, _, err = createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
 	require.NoError(t, err)
 }

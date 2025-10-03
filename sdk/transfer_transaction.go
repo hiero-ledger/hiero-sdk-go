@@ -304,16 +304,11 @@ func (tx *TransferTransaction) AddTokenTransferWithHook(tokenID TokenID, account
 // AddNftTransfer Sets the desired nft token unit balance adjustments
 // Applicable to tokens of type NON_FUNGIBLE_UNIQUE.
 func (tx *TransferTransaction) AddNftTransfer(nftID NftID, sender AccountID, receiver AccountID) *TransferTransaction {
-	return tx.addNftTransferWithHook(nftID, sender, receiver, HookCall{}, NO_HOOK)
+	return tx.addNftTransferWithHook(nftID, sender, receiver, HookCall{}, NO_HOOK, NO_HOOK)
 }
 
-func (tx *TransferTransaction) addNftTransferWithHook(nftID NftID, sender AccountID, receiver AccountID, hookCall HookCall, hookType HookType) *TransferTransaction {
+func (tx *TransferTransaction) addNftTransferWithHook(nftID NftID, sender AccountID, receiver AccountID, hookCall HookCall, senderHookType HookType, receiverHookType HookType) *TransferTransaction {
 	tx._RequireNotFrozen()
-
-	// TODO check if this is needed
-	// if tx.nftTransfers == nil {
-	// 	tx.nftTransfers = make(map[TokenID][]*_TokenNftTransfer)
-	// }
 
 	if tx.nftTransfers[nftID.TokenID] == nil {
 		tx.nftTransfers[nftID.TokenID] = make([]*_TokenNftTransfer, 0)
@@ -325,11 +320,14 @@ func (tx *TransferTransaction) addNftTransferWithHook(nftID NftID, sender Accoun
 		SerialNumber:      nftID.SerialNumber,
 	}
 
-	switch hookType {
+	switch senderHookType {
 	case PRE_HOOK_SENDER:
 		transfer.PreTransactionSenderAllowanceHook = &hookCall
 	case PRE_POST_HOOK_SENDER:
 		transfer.PrePostTransactionSenderAllowanceHook = &hookCall
+	}
+
+	switch receiverHookType {
 	case PRE_HOOK_RECEIVER:
 		transfer.PreTransactionReceiverAllowanceHook = &hookCall
 	case PRE_POST_HOOK_RECEIVER:

@@ -283,3 +283,61 @@ func TestIntegrationTransferTransactionCanTransferHbarWithAliasID(t *testing.T) 
 	require.NoError(t, err)
 
 }
+
+// HIP-1195 hooks
+
+func TestIntegrationTransferTransactionCanTransferHbarWithPreHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(2).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	accountID, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
+	require.NoError(t, err)
+
+	hookCall := NewHookCall().SetHookId(2).SetEvmHookCall(*NewEvmHookCall().SetData([]byte{}).SetGasLimit(25_000))
+
+	resp, err := NewTransferTransaction().
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
+		AddHbarTransferWithHook(accountID, NewHbar(1), *hookCall, PRE_HOOK).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTransferTransactionCanTransferHbarWithPrePostHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(2).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetEvmHookSpec(*NewEvmHookSpec().SetContractId(ContractID{Contract: 1})))
+
+	accountID, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.AddHook(*hookDetail)
+	})
+	require.NoError(t, err)
+
+	hookCall := NewHookCall().SetHookId(2).SetEvmHookCall(*NewEvmHookCall().SetData([]byte{}).SetGasLimit(25_000))
+
+	resp, err := NewTransferTransaction().
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
+		AddHbarTransferWithHook(accountID, NewHbar(1), *hookCall, PRE_POST_HOOK).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
