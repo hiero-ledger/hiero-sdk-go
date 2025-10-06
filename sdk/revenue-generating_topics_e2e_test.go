@@ -638,9 +638,6 @@ func TestIntegrationRevenueGeneratingTopicCanotChargeHbarsWithLowerLimit(t *test
 		SetTopicID(topicID).
 		AddCustomFeeLimit(customFeeLimit).
 		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.ErrorContains(t, err, "exceptional receipt status: MAX_CUSTOM_FEE_LIMIT_EXCEEDED")
 }
 
@@ -699,9 +696,6 @@ func TestIntegrationRevenueGeneratingTopicCannotChargeTokensWithLowerLimit(t *te
 		SetTopicID(topicID).
 		AddCustomFeeLimit(customFeeLimit).
 		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.ErrorContains(t, err, "exceptional receipt status: MAX_CUSTOM_FEE_LIMIT_EXCEEDED")
 }
 
@@ -760,9 +754,6 @@ func TestIntegrationRevenueGeneratingTopicCannotExecuteWithInvalidCustomFeeLimit
 		SetTopicID(topicID).
 		AddCustomFeeLimit(customFeeLimit).
 		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.ErrorContains(t, err, "exceptional receipt status: NO_VALID_MAX_CUSTOM_FEE")
 
 	// Set custom fee limit with duplicate denomination token Id
