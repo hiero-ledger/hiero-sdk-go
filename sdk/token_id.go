@@ -62,7 +62,7 @@ func (id TokenID) ToStringWithChecksum(client Client) (string, error) {
 
 // ToBytes returns a byte array representation of the TokenID
 func (id TokenID) ToBytes() []byte {
-	data, err := protobuf.Marshal(id._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(id._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}
