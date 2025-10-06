@@ -252,13 +252,14 @@ func (tx *FileAppendTransaction) ExecuteAll(
 			return list, err
 		}
 
-		originalTxID := tx.GetTransactionID()
+		respTx := resp.(TransactionResponse)
+		originalTxID := respTx.TransactionID
 		tx.regenerateID(client)
 
 		list[i] = TransactionResponse{
 			TransactionID:  originalTxID,
-			NodeID:         resp.(TransactionResponse).NodeID,
-			Hash:           resp.(TransactionResponse).Hash,
+			NodeID:         respTx.NodeID,
+			Hash:           respTx.Hash,
 			ValidateStatus: true,
 			// set the tx in the response, in case of throttle error in the receipt
 			// we can use this to re-submit the transaction
