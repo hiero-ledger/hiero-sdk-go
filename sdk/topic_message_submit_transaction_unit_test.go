@@ -118,8 +118,20 @@ func TestUnitTopicMessageSubmitTransactionMock(t *testing.T) {
 			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
 		}
 	}
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
 	responses := [][]interface{}{{
-		call, call, call, call, call, call, call, call, call, call, call, call, call, call,
+		call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk,
 	}}
 
 	client, server := NewMockClientAndServer(responses)
@@ -188,8 +200,20 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
 		}
 	}
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
 	responses := [][]interface{}{{
-		call, call, call, call, call, call, call, call, call, call, call, call, call, call,
+		call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk,
 	}}
 
 	client, server := NewMockClientAndServer(responses)
@@ -198,6 +222,7 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 	submit, err := NewTopicMessageSubmitTransaction().
 		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetMessage([]byte(bigContents2)).
+		SetChunkSize(2048).
 		SetTopicID(TopicID{Topic: 3}).
 		FreezeWith(client)
 	require.NoError(t, err)
