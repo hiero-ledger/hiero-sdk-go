@@ -296,22 +296,33 @@ func (tx *TopicMessageSubmitTransaction) ExecuteAll(
 			return list, err
 		}
 
-		respTx := resp.(TransactionResponse)
-		originalTxID := respTx.TransactionID
-		tx.regenerateID(client)
-
-		list[i] = TransactionResponse{
-			TransactionID:  originalTxID,
-			NodeID:         respTx.NodeID,
-			Hash:           respTx.Hash,
-			ValidateStatus: true,
-			// set the tx in the response, in case of throttle error in the receipt
-			// we can use this to re-submit the transaction
-			Transaction: tx.childTransaction,
-		}
-
-		_, err = list[i].SetValidateStatus(true).GetReceipt(client)
+		list[i] = resp.(TransactionResponse)
+		receipt, err := list[i].GetReceipt(client)
 		if err != nil {
+			return list, err
+		}
+		// retry in case of throttle error
+		for receipt.Status == StatusThrottledAtConsensus {
+			tx.regenerateID(client)
+			resp, err := _Execute(client, tx)
+			if err != nil {
+				return list, err
+			}
+			respTx := resp.(TransactionResponse)
+			receipt, err = NewTransactionReceiptQuery().
+				SetTransactionID(respTx.TransactionID).
+				SetNodeAccountIDs([]AccountID{respTx.NodeID}).
+				SetIncludeChildren(respTx.IncludeChildReceipts).
+				Execute(client)
+
+			// if we get a non-throttled receipt, we can break out of the loop
+			if err == nil && receipt.Status != StatusThrottledAtConsensus {
+				list[i] = respTx
+				break
+			}
+		}
+		// validate the receipt status
+		if err = receipt.ValidateStatus(true); err != nil {
 			return list, err
 		}
 	}
