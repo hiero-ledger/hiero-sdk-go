@@ -17,14 +17,14 @@ func NewLambdaEvmHook() *LambdaEvmHook {
 	return &LambdaEvmHook{}
 }
 
-// GetEvmHookSpec returns the EVM hook specification
-func (leh LambdaEvmHook) GetEvmHookSpec() evmHookSpec {
-	return leh.evmHookSpec
+// GetContractId returns the contract ID
+func (leh LambdaEvmHook) GetContractId() *ContractID {
+	return leh.evmHookSpec.contractId
 }
 
-// SetEvmHookSpec sets the EVM hook specification
-func (leh *LambdaEvmHook) SetEvmHookSpec(evmHookSpec evmHookSpec) *LambdaEvmHook {
-	leh.evmHookSpec = evmHookSpec
+// SetContractId sets the contract ID
+func (leh *LambdaEvmHook) SetContractId(contractId *ContractID) *LambdaEvmHook {
+	leh.evmHookSpec.contractId = contractId
 	return leh
 }
 
@@ -50,7 +50,7 @@ func lambdaEvmHookFromProtobuf(pb *services.LambdaEvmHook) LambdaEvmHook {
 		evmHookSpec: evmHookSpecFromProtobuf(pb.GetSpec()),
 	}
 
-	storageUpdates := make([]LambdaStorageUpdate, 0)
+	var storageUpdates []LambdaStorageUpdate
 	for _, storageUpdate := range pb.GetStorageUpdates() {
 		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
 	}
@@ -64,7 +64,9 @@ func (leh LambdaEvmHook) toProtobuf() *services.LambdaEvmHook {
 	}
 
 	for _, storageUpdate := range leh.storageUpdates {
-		protoBody.StorageUpdates = append(protoBody.StorageUpdates, storageUpdate.toProtobuf())
+		if storageUpdate != nil {
+			protoBody.StorageUpdates = append(protoBody.StorageUpdates, storageUpdate.toProtobuf())
+		}
 	}
 
 	return protoBody
@@ -74,17 +76,6 @@ type evmHookSpec struct {
 	contractId *ContractID
 }
 
-// GetContractId returns the contract ID
-func (eh evmHookSpec) GetContractId() *ContractID {
-	return eh.contractId
-}
-
-// SetContractId sets the contract ID
-func (eh *evmHookSpec) SetContractId(contractId *ContractID) *evmHookSpec {
-	eh.contractId = contractId
-	return eh
-}
-
 func evmHookSpecFromProtobuf(pb *services.EvmHookSpec) evmHookSpec {
 	return evmHookSpec{
 		contractId: _ContractIDFromProtobuf(pb.GetContractId()),
@@ -92,9 +83,12 @@ func evmHookSpecFromProtobuf(pb *services.EvmHookSpec) evmHookSpec {
 }
 
 func (eh evmHookSpec) toProtobuf() *services.EvmHookSpec {
-	return &services.EvmHookSpec{
-		BytecodeSource: &services.EvmHookSpec_ContractId{
+	pbBody := &services.EvmHookSpec{}
+	if eh.contractId != nil {
+		pbBody.BytecodeSource = &services.EvmHookSpec_ContractId{
 			ContractId: eh.contractId._ToProtobuf(),
-		},
+		}
 	}
+
+	return pbBody
 }

@@ -70,7 +70,10 @@ func (hcd *HookCreationDetails) SetAdminKey(adminKey Key) *HookCreationDetails {
 }
 
 func hookCreationDetailsFromProtobuf(pb *services.HookCreationDetails) HookCreationDetails {
-	key, _ := _KeyFromProtobuf(pb.GetAdminKey())
+	var key Key
+	if pb.GetAdminKey() != nil {
+		key, _ = _KeyFromProtobuf(pb.GetAdminKey())
+	}
 	return HookCreationDetails{
 		extensionPoint: HookExtensionPoint(pb.GetExtensionPoint()),
 		hookId:         pb.GetHookId(),
