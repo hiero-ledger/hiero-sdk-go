@@ -78,7 +78,7 @@ func (response *TransactionResponse) GetReceipt(client *Client) (TransactionRece
 		SetIncludeChildren(response.IncludeChildReceipts).
 		Execute(client)
 
-	if receipt.Status == StatusThrottledAtConsensus {
+	if receipt.Status == StatusThrottledAtConsensus && response.ValidateStatus {
 		receipt, err = response.retryTransaction(client)
 	}
 
