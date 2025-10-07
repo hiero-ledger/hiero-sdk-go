@@ -42,23 +42,29 @@ func (tx *LambdaSStoreTransaction) SetHookId(hookId HookId) *LambdaSStoreTransac
 	return tx
 }
 
-func (tx *LambdaSStoreTransaction) getHookId() HookId {
+func (tx *LambdaSStoreTransaction) GetHookId() HookId {
 	return tx.hookId
 }
 
-func (tx *LambdaSStoreTransaction) addStorageUpdate(storageUpdate LambdaStorageUpdate) *LambdaSStoreTransaction {
+func (tx *LambdaSStoreTransaction) AddStorageUpdate(storageUpdate LambdaStorageUpdate) *LambdaSStoreTransaction {
 	tx._RequireNotFrozen()
 	tx.storageUpdates = append(tx.storageUpdates, storageUpdate)
 	return tx
 }
 
-func (tx *LambdaSStoreTransaction) setStorageUpdates(storageUpdates []LambdaStorageUpdate) *LambdaSStoreTransaction {
+func (tx *LambdaSStoreTransaction) SetStorageUpdates(storageUpdates []LambdaStorageUpdate) *LambdaSStoreTransaction {
 	tx._RequireNotFrozen()
 	tx.storageUpdates = storageUpdates
 	return tx
 }
 
-func (tx *LambdaSStoreTransaction) getStorageUpdates() []LambdaStorageUpdate {
+func (tx *LambdaSStoreTransaction) ClearStorageUpdate(key []byte) *LambdaSStoreTransaction {
+	tx._RequireNotFrozen()
+	tx.AddStorageUpdate(*NewLambdaStorageUpdate().SetStorageSlot(*NewLambdaStorageSlot().SetKey(key).SetValue([]byte{})))
+	return tx
+}
+
+func (tx *LambdaSStoreTransaction) GetStorageUpdates() []LambdaStorageUpdate {
 	return tx.storageUpdates
 }
 
