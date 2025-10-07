@@ -366,6 +366,26 @@ const (
 	AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN                  Status = 398
 	GRPC_WEB_PROXY_NOT_SUPPORTED                                   Status = 399
 	NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE             Status = 400
+	INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM                   Status = 401
+	EVM_HOOK_GAS_THROTTLED                                         Status = 500
+	HOOK_ID_IN_USE                                                 Status = 501
+	BAD_HOOK_REQUEST                                               Status = 502
+	REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK                             Status = 503
+	HOOK_NOT_FOUND                                                 Status = 504
+	LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG                           Status = 505
+	LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION    Status = 506
+	INVALID_HOOK_ID                                                Status = 507
+	EMPTY_LAMBDA_STORAGE_UPDATE                                    Status = 508
+	HOOK_ID_REPEATED_IN_CREATION_DETAILS                           Status = 509
+	HOOKS_NOT_ENABLED                                              Status = 510
+	HOOK_IS_NOT_A_LAMBDA                                           Status = 511
+	HOOK_DELETED                                                   Status = 512
+	TOO_MANY_LAMBDA_STORAGE_UPDATES                                Status = 513
+	HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION            Status = 514
+	HOOK_CREATION_BYTES_TOO_LONG                                   Status = 515
+	INVALID_HOOK_CREATION_SPEC                                     Status = 516
+	HOOK_EXTENSION_EMPTY                                           Status = 517
+	INVALID_HOOK_ADMIN_KEY                                         Status = 518
 )
 
 // String() returns a string representation of the status
@@ -1089,6 +1109,46 @@ func (status Status) String() string { // nolint
 		return "GRPC_WEB_PROXY_NOT_SUPPORTED"
 	case NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE:
 		return "NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE"
+	case INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM:
+		return "INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM"
+	case EVM_HOOK_GAS_THROTTLED:
+		return "EVM_HOOK_GAS_THROTTLED"
+	case HOOK_ID_IN_USE:
+		return "HOOK_ID_IN_USE"
+	case BAD_HOOK_REQUEST:
+		return "BAD_HOOK_REQUEST"
+	case REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK:
+		return "REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK"
+	case HOOK_NOT_FOUND:
+		return "HOOK_NOT_FOUND"
+	case LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG:
+		return "LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG"
+	case LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION:
+		return "LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION"
+	case INVALID_HOOK_ID:
+		return "INVALID_HOOK_ID"
+	case EMPTY_LAMBDA_STORAGE_UPDATE:
+		return "EMPTY_LAMBDA_STORAGE_UPDATE"
+	case HOOK_ID_REPEATED_IN_CREATION_DETAILS:
+		return "HOOK_ID_REPEATED_IN_CREATION_DETAILS"
+	case HOOKS_NOT_ENABLED:
+		return "HOOKS_NOT_ENABLED"
+	case HOOK_IS_NOT_A_LAMBDA:
+		return "HOOK_IS_NOT_A_LAMBDA"
+	case HOOK_DELETED:
+		return "HOOK_DELETED"
+	case TOO_MANY_LAMBDA_STORAGE_UPDATES:
+		return "TOO_MANY_LAMBDA_STORAGE_UPDATES"
+	case HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION:
+		return "HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION"
+	case HOOK_CREATION_BYTES_TOO_LONG:
+		return "HOOK_CREATION_BYTES_TOO_LONG"
+	case INVALID_HOOK_CREATION_SPEC:
+		return "INVALID_HOOK_CREATION_SPEC"
+	case HOOK_EXTENSION_EMPTY:
+		return "HOOK_EXTENSION_EMPTY"
+	case INVALID_HOOK_ADMIN_KEY:
+		return "INVALID_HOOK_ADMIN_KEY"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))
