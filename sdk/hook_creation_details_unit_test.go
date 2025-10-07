@@ -321,6 +321,6 @@ func TestUnitHookCreationDetailsEmptyLambdaEvmHook(t *testing.T) {
 
 	assert.Equal(t, emptyLambdaHook, hcd.GetLambdaEvmHook())
 
-	// Note: We cannot test protobuf conversion with empty hook because it causes nil pointer dereference
-	// when evmHookSpec.contractId is nil. This is a limitation of the current implementation.
+	pb := hcd.toProtobuf()
+	hookCreationDetailsFromProtobuf(pb)
 }

@@ -72,6 +72,7 @@ func (leh LambdaEvmHook) toProtobuf() *services.LambdaEvmHook {
 	return protoBody
 }
 
+// Shared specifications for an EVM hook. May be used for any extension point.
 type evmHookSpec struct {
 	contractId *ContractID
 }
