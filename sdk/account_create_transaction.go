@@ -31,6 +31,7 @@ type AccountCreateTransaction struct {
 	stakedNodeID                  *int64
 	declineReward                 bool
 	alias                         []byte
+	hookCreationDetails           []HookCreationDetails
 }
 
 // NewAccountCreateTransaction creates an AccountCreateTransaction transaction which can be used to construct and
@@ -67,6 +68,13 @@ func _AccountCreateTransactionFromProtobuf(tx Transaction[*AccountCreateTransact
 		stakeAccountID = _AccountIDFromProtobuf(pb.GetCryptoCreateAccount().GetStakedAccountId())
 	}
 
+	var hookCreationDetails []HookCreationDetails
+	if pb.GetCryptoCreateAccount().GetHookCreationDetails() != nil {
+		for _, hookCreationDetail := range pb.GetCryptoCreateAccount().GetHookCreationDetails() {
+			hookCreationDetails = append(hookCreationDetails, hookCreationDetailsFromProtobuf(hookCreationDetail))
+		}
+	}
+
 	accountCreateTransaction := AccountCreateTransaction{
 		key:                           key,
 		initialBalance:                pb.GetCryptoCreateAccount().InitialBalance,
@@ -77,6 +85,7 @@ func _AccountCreateTransactionFromProtobuf(tx Transaction[*AccountCreateTransact
 		stakedAccountID:               stakeAccountID,
 		stakedNodeID:                  stakedNodeID,
 		declineReward:                 pb.GetCryptoCreateAccount().GetDeclineReward(),
+		hookCreationDetails:           hookCreationDetails,
 	}
 
 	if pb.GetCryptoCreateAccount().GetAlias() != nil {
@@ -354,6 +363,25 @@ func (tx *AccountCreateTransaction) GetReceiverSignatureRequired() bool {
 	return tx.receiverSignatureRequired
 }
 
+// AddHook adds hook to the account
+func (tx *AccountCreateTransaction) AddHook(hookCreationDetails HookCreationDetails) *AccountCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = append(tx.hookCreationDetails, hookCreationDetails)
+	return tx
+}
+
+// SetHooks sets a list of hooks to the account
+func (tx *AccountCreateTransaction) SetHooks(hookCreationDetails []HookCreationDetails) *AccountCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = hookCreationDetails
+	return tx
+}
+
+// GetHooks returns the hooks list
+func (tx *AccountCreateTransaction) GetHooks() []HookCreationDetails {
+	return tx.hookCreationDetails
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx AccountCreateTransaction) getName() string {
@@ -419,6 +447,10 @@ func (tx AccountCreateTransaction) buildProtoBody() *services.CryptoCreateTransa
 		body.StakedId = &services.CryptoCreateTransactionBody_StakedAccountId{StakedAccountId: tx.stakedAccountID._ToProtobuf()}
 	} else if tx.stakedNodeID != nil {
 		body.StakedId = &services.CryptoCreateTransactionBody_StakedNodeId{StakedNodeId: *tx.stakedNodeID}
+	}
+
+	for _, hookCreationDetail := range tx.hookCreationDetails {
+		body.HookCreationDetails = append(body.HookCreationDetails, hookCreationDetail.toProtobuf())
 	}
 
 	return body

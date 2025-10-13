@@ -30,6 +30,8 @@ type AccountUpdateTransaction struct {
 	stakedAccountID               *AccountID
 	stakedNodeID                  *int64
 	declineReward                 *bool
+	hookCreationDetails           []HookCreationDetails
+	hooksForDeletion              []int64
 }
 
 // NewAccountUpdateTransaction
@@ -104,6 +106,13 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 		maxAutoTokenAssociations = &maxVal
 	}
 
+	var hookCreationDetails []HookCreationDetails
+	if pb.GetCryptoUpdateAccount().GetHookCreationDetails() != nil {
+		for _, hookCreationDetail := range pb.GetCryptoUpdateAccount().GetHookCreationDetails() {
+			hookCreationDetails = append(hookCreationDetails, hookCreationDetailsFromProtobuf(hookCreationDetail))
+		}
+	}
+
 	accountUpdateTransaction := AccountUpdateTransaction{
 		accountID:                     _AccountIDFromProtobuf(pb.GetCryptoUpdateAccount().GetAccountIDToUpdate()),
 		key:                           key,
@@ -115,6 +124,8 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 		stakedAccountID:               stakeNodeAccountID,
 		stakedNodeID:                  stakedNodeID,
 		declineReward:                 declineReward,
+		hookCreationDetails:           hookCreationDetails,
+		hooksForDeletion:              pb.GetCryptoUpdateAccount().GetHookIdsToDelete(),
 	}
 
 	tx.childTransaction = &accountUpdateTransaction
@@ -312,6 +323,44 @@ func (tx *AccountUpdateTransaction) GetAccountMemo() string {
 	return *tx.memo
 }
 
+// AddHookToCreate adds a hook to create for the account
+func (tx *AccountUpdateTransaction) AddHookToCreate(hookCreationDetails HookCreationDetails) *AccountUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = append(tx.hookCreationDetails, hookCreationDetails)
+	return tx
+}
+
+// SetHooksToCreate sets a list of hooks to create for the account
+func (tx *AccountUpdateTransaction) SetHooksToCreate(hookCreationDetails []HookCreationDetails) *AccountUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = hookCreationDetails
+	return tx
+}
+
+// GetHooksToCreate gets the list of hooks to create for the account
+func (tx *AccountUpdateTransaction) GetHooksToCreate() []HookCreationDetails {
+	return tx.hookCreationDetails
+}
+
+// AddHookToDelete adds a hook to delete for the account
+func (tx *AccountUpdateTransaction) AddHookToDelete(hookId int64) *AccountUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hooksForDeletion = append(tx.hooksForDeletion, hookId)
+	return tx
+}
+
+// SetHooksToDelete sets a list of hooks to delete for the account
+func (tx *AccountUpdateTransaction) SetHooksToDelete(hookIds []int64) *AccountUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hooksForDeletion = hookIds
+	return tx
+}
+
+// GetHooksToDelete gets the list of hooks to delete for the account
+func (tx *AccountUpdateTransaction) GetHooksToDelete() []int64 {
+	return tx.hooksForDeletion
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx AccountUpdateTransaction) getName() string {
@@ -402,6 +451,12 @@ func (tx AccountUpdateTransaction) buildProtoBody() *services.CryptoUpdateTransa
 	} else if tx.stakedNodeID != nil {
 		body.StakedId = &services.CryptoUpdateTransactionBody_StakedNodeId{StakedNodeId: *tx.stakedNodeID}
 	}
+
+	for _, hookCreationDetail := range tx.hookCreationDetails {
+		body.HookCreationDetails = append(body.HookCreationDetails, hookCreationDetail.toProtobuf())
+	}
+
+	body.HookIdsToDelete = tx.hooksForDeletion
 
 	return body
 }
