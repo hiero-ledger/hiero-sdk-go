@@ -378,7 +378,7 @@ func (tx *AccountCreateTransaction) SetHooks(hookCreationDetails []HookCreationD
 }
 
 // GetHooks returns the hooks list
-func (tx *AccountCreateTransaction) GetHooks() []HookCreationDetails {
+func (tx AccountCreateTransaction) GetHooks() []HookCreationDetails {
 	return tx.hookCreationDetails
 }
 

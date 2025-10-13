@@ -338,7 +338,7 @@ func (tx *AccountUpdateTransaction) SetHooksToCreate(hookCreationDetails []HookC
 }
 
 // GetHooksToCreate gets the list of hooks to create for the account
-func (tx *AccountUpdateTransaction) GetHooksToCreate() []HookCreationDetails {
+func (tx AccountUpdateTransaction) GetHooksToCreate() []HookCreationDetails {
 	return tx.hookCreationDetails
 }
 
@@ -357,7 +357,7 @@ func (tx *AccountUpdateTransaction) SetHooksToDelete(hookIds []int64) *AccountUp
 }
 
 // GetHooksToDelete gets the list of hooks to delete for the account
-func (tx *AccountUpdateTransaction) GetHooksToDelete() []int64 {
+func (tx AccountUpdateTransaction) GetHooksToDelete() []int64 {
 	return tx.hooksForDeletion
 }
 
