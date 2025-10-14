@@ -1,3 +1,9 @@
+## v2.72.0
+
+### Fixed
+- Usage metrics not being detected due to malformed version being passed as grpc metadata [#1514](https://github.com/hiero-ledger/hiero-sdk-go/pull/1514)
+- `THROTTLED_AT_CONSENSUS` causing null pointer for chunked transactions [#1509](https://github.com/hiero-ledger/hiero-sdk-go/pull/1509)
+
 ## v2.71.0
 
 ### Added
