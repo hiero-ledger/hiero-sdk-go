@@ -48,7 +48,7 @@ func (e *EthereumService) CreateEthereumTransaction(ctx context.Context, params 
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, e.sdkService.Client)
 		if err != nil {
 			return nil, err
 		}
