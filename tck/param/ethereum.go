@@ -5,6 +5,6 @@ package param
 type EthereumTransactionParams struct {
 	EthereumData            *string                  `json:"ethereumData,omitempty"`
 	CallDataFileID          *string                  `json:"callDataFileId,omitempty"`
-	MaxGasAllowed           *string                  `json:"maxGasAllowed,omitempty"`
+	MaxGasAllowed           *string                  `json:"maxGasAllowance,omitempty"`
 	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
 }

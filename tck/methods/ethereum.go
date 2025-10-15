@@ -55,7 +55,7 @@ func (e *EthereumService) CreateEthereumTransaction(ctx context.Context, params 
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(e.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(e.sdkService.Client)
 	if err != nil {
 		return nil, err
 	}
