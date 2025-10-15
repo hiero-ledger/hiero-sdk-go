@@ -5,6 +5,7 @@ package hiero
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -33,6 +34,7 @@ type Executable interface {
 	GetMaxBackoff() time.Duration
 	GetMinBackoff() time.Duration
 	GetGrpcDeadline() *time.Duration
+	GetRequestTimeout() *time.Duration
 	GetMaxRetry() int
 	GetNodeAccountIDs() []AccountID
 	GetLogLevel() *LogLevel
@@ -59,6 +61,7 @@ type executable struct {
 	maxBackoff     *time.Duration
 	minBackoff     *time.Duration
 	grpcDeadline   *time.Duration
+	requestTimeout *time.Duration
 	maxRetry       int
 	logLevel       *LogLevel
 }
@@ -112,14 +115,27 @@ func (e *executable) SetMinBackoff(min time.Duration) *executable {
 	return e
 }
 
-// GetGrpcDeadline returns the grpc deadline
+// When execution is attempted, a single attempt will timeout when this deadline is reached.
+// The SDK will flag this node as unhealthy and move forward with other nodes
 func (e *executable) GetGrpcDeadline() *time.Duration {
 	return e.grpcDeadline
 }
 
-// When execution is attempted, a single attempt will timeout when this deadline is reached. (The SDK may subsequently retry the execution.)
+// When execution is attempted, a single attempt will timeout when this deadline is reached.
+// The SDK will flag this node as unhealthy and move forward with other nodes
 func (e *executable) SetGrpcDeadline(deadline *time.Duration) *executable {
 	e.grpcDeadline = deadline
+	return e
+}
+
+// GetRequestTimeout returns the total time budget for a complete Transaction or Query execute operation
+func (e *executable) GetRequestTimeout() *time.Duration {
+	return e.requestTimeout
+}
+
+// SetRequestTimeout sets the total time budget for a complete Transaction or Query execute operation
+func (e *executable) SetRequestTimeout(timeout *time.Duration) *executable {
+	e.requestTimeout = timeout
 	return e
 }
 
@@ -191,7 +207,19 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 	txLogger := e.getLogger(client.logger)
 	txID, msg := e.getTransactionIDAndMessage()
 
+	var requestTimeout time.Duration
+	if e.GetRequestTimeout() != nil {
+		requestTimeout = *e.GetRequestTimeout()
+	} else {
+		requestTimeout = client.GetRequestTimeout()
+	}
+
+	startTime := time.Now()
 	for attempt = int64(0); attempt < int64(maxAttempts); attempt++ {
+		if time.Since(startTime) > requestTimeout {
+			return TransactionResponse{}, fmt.Errorf("request timed out after %s", requestTimeout)
+		}
+
 		var protoRequest interface{}
 		var node *_Node
 		var ok bool
@@ -250,13 +278,14 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 		var resp interface{}
 
-		ctx := context.Background()
-		var cancel context.CancelFunc
-
+		var grpcDeadline time.Duration
 		if e.GetGrpcDeadline() != nil {
-			grpcDeadline := time.Now().Add(*e.GetGrpcDeadline())
-			ctx, cancel = context.WithDeadline(ctx, grpcDeadline)
+			grpcDeadline = *e.GetGrpcDeadline()
+		} else {
+			grpcDeadline = client.GetGrpcDeadline()
 		}
+		ctx, cancel := context.WithTimeout(context.Background(), grpcDeadline)
+		defer cancel()
 
 		txLogger.Trace("executing gRPC call", "requestId", e.getLogID(e))
 
@@ -273,17 +302,11 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			}
 		}
 
-		if cancel != nil {
-			cancel()
-		}
 		if err != nil {
 			errPersistent = err
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
 				client.network._IncreaseBackoff(node)
 				continue
-			}
-			if errPersistent == nil {
-				errPersistent = errors.New("error")
 			}
 
 			if e.isTransaction() {
@@ -364,7 +387,7 @@ func _ExecutableDefaultRetryHandler(logID string, err error, logger Logger) bool
 	code := status.Code(err)
 	logger.Trace("received gRPC error with status code", "requestId", logID, "status", code.String())
 	switch code {
-	case codes.ResourceExhausted, codes.Unavailable:
+	case codes.ResourceExhausted, codes.Unavailable, codes.DeadlineExceeded:
 		return true
 	case codes.Internal:
 		grpcErr, ok := status.FromError(err)

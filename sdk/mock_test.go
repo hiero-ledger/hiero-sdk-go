@@ -473,6 +473,8 @@ func NewMockClientAndServer(allNodeResponses [][]interface{}) (*Client, *MockSer
 		maxAttempts:                     nil,
 		minBackoff:                      250 * time.Millisecond,
 		maxBackoff:                      8 * time.Second,
+		grpcDeadline:                    10 * time.Second,
+		requestTimeout:                  2 * time.Minute,
 		defaultRegenerateTransactionIDs: true,
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
@@ -806,6 +808,55 @@ func TestUnitMockTransactionMetadata(t *testing.T) {
 
 	_, err = freeze.Sign(newKey).Execute(client)
 	require.NoError(t, err)
+}
+
+func TestUnitMockExecutionGrpcTimeout(t *testing.T) {
+	t.Parallel()
+	timeoutCall := func(request *services.Transaction) *services.TransactionResponse {
+		time.Sleep(200 * time.Microsecond)
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	fastCall := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	responses := [][]interface{}{{
+		timeoutCall, fastCall,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	client.SetGrpcDeadline(100 * time.Microsecond)
+	defer server.Close()
+
+	_, err := NewFileCreateTransaction().
+		SetContents([]byte("hello")).
+		Execute(client)
+	require.NoError(t, err)
+}
+
+func TestUnitMockExecutionRequestTimeout(t *testing.T) {
+	t.Parallel()
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		time.Sleep(50 * time.Microsecond)
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY,
+		}
+	}
+	responses := [][]interface{}{{
+		call, call,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	client.SetRequestTimeout(100 * time.Microsecond)
+	defer server.Close()
+
+	_, err := NewFileCreateTransaction().
+		SetContents([]byte("hello")).
+		Execute(client)
+	require.ErrorContains(t, err, "request timed out")
 }
 
 // Define new handler types that accept context
