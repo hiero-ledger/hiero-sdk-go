@@ -152,6 +152,7 @@ func TestUnitAccountCreateTransactionGet(t *testing.T) {
 		SetMaxAutomaticTokenAssociations(2).
 		SetAutoRenewPeriod(60 * time.Second).
 		SetTransactionMemo("").
+		AddHook(*NewHookCreationDetails()).
 		SetTransactionValidDuration(60 * time.Second).
 		Freeze()
 	require.NoError(t, err)
@@ -176,6 +177,7 @@ func TestUnitAccountCreateTransactionGet(t *testing.T) {
 	transaction.GetInitialBalance()
 	transaction.GetAutoRenewPeriod()
 	transaction.GetReceiverSignatureRequired()
+	transaction.GetHooks()
 }
 
 func TestUnitAccountCreateTransactionSetNothing(t *testing.T) {
@@ -237,6 +239,7 @@ func TestUnitAccountCreateTransactionProtoCheck(t *testing.T) {
 		SetStakedAccountID(stackedAccountID).
 		SetDeclineStakingReward(true).
 		SetAutoRenewPeriod(60 * time.Second).
+		AddHook(*NewHookCreationDetails().SetHookId(1).SetAdminKey(key)).
 		SetTransactionMemo("").
 		SetTransactionValidDuration(60 * time.Second).
 		SetAlias(alias).
@@ -257,6 +260,9 @@ func TestUnitAccountCreateTransactionProtoCheck(t *testing.T) {
 	require.Equal(t, proto.DeclineReward, true)
 	require.Equal(t, proto.AutoRenewPeriod.String(), _DurationToProtobuf(60*time.Second).String())
 	require.Equal(t, hex.EncodeToString(proto.Alias), alias)
+	require.Len(t, proto.HookCreationDetails, 1)
+	require.Equal(t, proto.HookCreationDetails[0].HookId, int64(1))
+	require.Equal(t, proto.HookCreationDetails[0].AdminKey, key._ToProtoKey())
 }
 
 func TestUnitAccountCreateTransactionCoverage(t *testing.T) {
@@ -484,4 +490,55 @@ func TestUnitAccountCreateSetKeyWithAlias(t *testing.T) {
 	tx.SetKeyWithAlias(edKey, edKey.PublicKey())
 	require.Error(t, tx.freezeError)
 	require.Contains(t, tx.freezeError.Error(), "Public key is not ECDSA")
+}
+
+func TestUnitAccountCreateSetHooks(t *testing.T) {
+	tx := NewAccountCreateTransaction()
+
+	hook1 := NewHookCreationDetails()
+	hook2 := NewHookCreationDetails()
+
+	tx.AddHook(*hook1)
+	tx.AddHook(*hook2)
+
+	require.Equal(t, 2, len(tx.GetHooks()))
+	require.Equal(t, *hook1, tx.GetHooks()[0])
+	require.Equal(t, *hook2, tx.GetHooks()[1])
+
+	tx.SetHooks([]HookCreationDetails{*hook1, *hook2})
+	require.Equal(t, 2, len(tx.GetHooks()))
+	require.Equal(t, *hook1, tx.GetHooks()[0])
+	require.Equal(t, *hook2, tx.GetHooks()[1])
+}
+
+func TestUnitAccountCreateToProtoHooks(t *testing.T) {
+	tx := NewAccountCreateTransaction()
+	proto := tx.buildProtoBody()
+	require.Equal(t, 0, len(proto.HookCreationDetails))
+
+	hook := NewHookCreationDetails()
+	tx.AddHook(*hook)
+	proto = tx.buildProtoBody()
+	require.Equal(t, 1, len(proto.HookCreationDetails))
+	require.Equal(t, hook.toProtobuf(), proto.HookCreationDetails[0])
+}
+
+func TestUnitAccountCreateBytesHooks(t *testing.T) {
+	contractID, err := ContractIDFromString("0.0.123")
+	require.NoError(t, err)
+	ed25519PrivateKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ed25519PublicKey := ed25519PrivateKey.PublicKey()
+
+	hook := NewHookCreationDetails().SetHookId(1).
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&contractID)).
+		SetAdminKey(ed25519PublicKey)
+	tx := NewAccountCreateTransaction().SetHooks([]HookCreationDetails{*hook})
+	byt, err := tx.ToBytes()
+	require.NoError(t, err)
+	txFromBytes, err := TransactionFromBytes(byt)
+	accountCreateTx := txFromBytes.(AccountCreateTransaction)
+	require.NoError(t, err)
+	require.Equal(t, *hook, accountCreateTx.GetHooks()[0])
 }
