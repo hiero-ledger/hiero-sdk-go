@@ -38,11 +38,12 @@ type Client struct {
 	autoValidateChecksums           bool
 	defaultRegenerateTransactionIDs bool
 	maxAttempts                     *int
+	grpcDeadline                    time.Duration
 
 	maxBackoff time.Duration
 	minBackoff time.Duration
 
-	requestTimeout             *time.Duration
+	requestTimeout             time.Duration
 	defaultNetworkUpdatePeriod time.Duration
 	networkUpdateContext       context.Context
 	cancelNetworkUpdate        context.CancelFunc
@@ -173,6 +174,8 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 		maxAttempts:                     nil,
 		minBackoff:                      250 * time.Millisecond,
 		maxBackoff:                      8 * time.Second,
+		grpcDeadline:                    10 * time.Second,
+		requestTimeout:                  2 * time.Minute,
 		defaultRegenerateTransactionIDs: true,
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
@@ -544,6 +547,18 @@ func (client *Client) GetNodeMaxBackoff() time.Duration {
 	return client.network._GetNodeMaxBackoff()
 }
 
+// GetGrpcDeadline returns the grpc deadline for a single grpc request.
+// All executable objects will inherit this deadline from the client
+func (client Client) GetGrpcDeadline() time.Duration {
+	return client.grpcDeadline
+}
+
+// SetGrpcDeadline returns the grpc deadline for a single grpc request.
+// All executable objects will inherit this deadline from the client
+func (client *Client) SetGrpcDeadline(deadline time.Duration) {
+	client.grpcDeadline = deadline
+}
+
 // SetMaxNodesPerTransaction sets the maximum number of nodes to try for a single transaction.
 func (client *Client) SetMaxNodesPerTransaction(max int) {
 	client.network._SetMaxNodesPerTransaction(max)
@@ -693,13 +708,13 @@ func (client *Client) SetOperatorWith(accountID AccountID, publicKey PublicKey, 
 	return client
 }
 
-// SetRequestTimeout sets the timeout for all requests made by the client.
-func (client *Client) SetRequestTimeout(timeout *time.Duration) {
+// SetRequestTimeout sets the timeout for the total time budget for a complete Transaction or Query execute operation
+func (client *Client) SetRequestTimeout(timeout time.Duration) {
 	client.requestTimeout = timeout
 }
 
-// GetRequestTimeout returns the timeout for all requests made by the client.
-func (client *Client) GetRequestTimeout() *time.Duration {
+// GetRequestTimeout returns the timeout for  the total time budget for a complete Transaction or Query execute operation
+func (client *Client) GetRequestTimeout() time.Duration {
 	return client.requestTimeout
 }
 
