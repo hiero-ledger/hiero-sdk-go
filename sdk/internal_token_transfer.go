@@ -33,8 +33,8 @@ func (transfer *_TokenTransfer) _ToProtobuf() []*services.AccountAmount {
 	for _, t := range transfer.Transfers {
 		transfers = append(transfers, &services.AccountAmount{
 			AccountID:  t.accountID._ToProtobuf(),
-			Amount:     t.Amount.AsTinybar(),
-			IsApproval: t.IsApproved,
+			Amount:     t.amount.AsTinybar(),
+			IsApproval: t.isApproved,
 		})
 	}
 	return transfers
