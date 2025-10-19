@@ -371,3 +371,54 @@ func TestUnitContractCreateTransactionSetAutorenewPeriodSeconds(t *testing.T) {
 
 	require.Equal(t, tx.GetAutoRenewPeriod(), time.Second*1234)
 }
+
+func TestUnitContractCreateSetHooks(t *testing.T) {
+	tx := NewContractCreateTransaction()
+
+	hook1 := NewHookCreationDetails()
+	hook2 := NewHookCreationDetails()
+
+	tx.AddHook(*hook1)
+	tx.AddHook(*hook2)
+
+	require.Equal(t, 2, len(tx.GetHooks()))
+	require.Equal(t, *hook1, tx.GetHooks()[0])
+	require.Equal(t, *hook2, tx.GetHooks()[1])
+
+	tx.SetHooks([]HookCreationDetails{*hook1, *hook2})
+	require.Equal(t, 2, len(tx.GetHooks()))
+	require.Equal(t, *hook1, tx.GetHooks()[0])
+	require.Equal(t, *hook2, tx.GetHooks()[1])
+}
+
+func TestUnitContractCreateToProtoHooks(t *testing.T) {
+	tx := NewContractCreateTransaction()
+	proto := tx.buildProtoBody()
+	require.Equal(t, 0, len(proto.HookCreationDetails))
+
+	hook := NewHookCreationDetails()
+	tx.AddHook(*hook)
+	proto = tx.buildProtoBody()
+	require.Equal(t, 1, len(proto.HookCreationDetails))
+	require.Equal(t, hook.toProtobuf(), proto.HookCreationDetails[0])
+}
+
+func TestUnitContractCreateBytesHooks(t *testing.T) {
+	contractID, err := ContractIDFromString("0.0.123")
+	require.NoError(t, err)
+	ed25519PrivateKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ed25519PublicKey := ed25519PrivateKey.PublicKey()
+
+	hook := NewHookCreationDetails().SetHookId(1).
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&contractID)).
+		SetAdminKey(ed25519PublicKey)
+	tx := NewContractCreateTransaction().SetHooks([]HookCreationDetails{*hook})
+	byt, err := tx.ToBytes()
+	require.NoError(t, err)
+	txFromBytes, err := TransactionFromBytes(byt)
+	contractCreateTx := txFromBytes.(ContractCreateTransaction)
+	require.NoError(t, err)
+	require.Equal(t, *hook, contractCreateTx.GetHooks()[0])
+}
