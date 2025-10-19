@@ -118,8 +118,20 @@ func TestUnitTopicMessageSubmitTransactionMock(t *testing.T) {
 			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
 		}
 	}
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
 	responses := [][]interface{}{{
-		call, call, call, call, call, call, call, call, call, call, call, call, call, call,
+		call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk,
 	}}
 
 	client, server := NewMockClientAndServer(responses)
@@ -188,8 +200,20 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
 		}
 	}
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
 	responses := [][]interface{}{{
-		call, call, call, call, call, call, call, call, call, call, call, call, call, call,
+		call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk,
 	}}
 
 	client, server := NewMockClientAndServer(responses)
@@ -198,6 +222,7 @@ func TestUnitTopicMessageSubmitTransactionFreezeMock(t *testing.T) {
 	submit, err := NewTopicMessageSubmitTransaction().
 		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetMessage([]byte(bigContents2)).
+		SetChunkSize(2048).
 		SetTopicID(TopicID{Topic: 3}).
 		FreezeWith(client)
 	require.NoError(t, err)
@@ -535,4 +560,180 @@ func TestUnitTopicMessageSubmitTransactionChunkSizeSerialization(t *testing.T) {
 	require.True(t, ok)
 
 	require.Equal(t, uint64(1024), result.GetChunkSize())
+}
+
+func TestUnitTopicMessageSubmitTransactionThrottle(t *testing.T) {
+	t.Parallel()
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	receiptThrottled := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_THROTTLED_AT_CONSENSUS,
+				},
+			},
+		},
+	}
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
+	responses := [][]interface{}{{
+		call, receiptThrottled, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	submit, err := NewTopicMessageSubmitTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetMessage([]byte(bigContents2)).
+		SetChunkSize(2048).
+		SetTopicID(TopicID{Topic: 3}).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	_, err = submit.Execute(client)
+	require.NoError(t, err)
+}
+
+func TestUnitTopicMessageSubmitTransactionThrottlePrecheckError(t *testing.T) {
+	t.Parallel()
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	receiptThrottled := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_THROTTLED_AT_CONSENSUS,
+				},
+			},
+		},
+	}
+
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
+
+	callError := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_ACCOUNT_DELETED,
+		}
+	}
+
+	responses := [][]interface{}{{
+		call, receiptThrottled, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, callError,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	submit, err := NewTopicMessageSubmitTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetMessage([]byte(bigContents2)).
+		SetChunkSize(2048).
+		SetTopicID(TopicID{Topic: 3}).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	_, err = submit.Execute(client)
+	require.ErrorContains(t, err, "exceptional precheck status ACCOUNT_DELETE")
+}
+
+func TestUnitTopicMessageSubmitTransactionThrottleReceiptError(t *testing.T) {
+	t.Parallel()
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	receiptThrottled := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_THROTTLED_AT_CONSENSUS,
+				},
+			},
+		},
+	}
+
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+				},
+			},
+		},
+	}
+
+	receiptError := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_ACCOUNT_DELETED,
+				},
+			},
+		},
+	}
+
+	responses := [][]interface{}{{
+		call, receiptThrottled, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptError,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	submit, err := NewTopicMessageSubmitTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetMessage([]byte(bigContents2)).
+		SetChunkSize(2048).
+		SetTopicID(TopicID{Topic: 3}).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	_, err = submit.Execute(client)
+	require.ErrorContains(t, err, "exceptional receipt status: ACCOUNT_DELETE")
 }

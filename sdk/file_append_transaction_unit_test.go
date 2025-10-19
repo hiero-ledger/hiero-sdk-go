@@ -261,7 +261,7 @@ func TestUnitFileAppendTransactionBigContentsMock(t *testing.T) {
 		}
 	}
 	responses := [][]interface{}{{
-		call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call,
+		call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt, call, receipt,
 	}}
 
 	client, server := NewMockClientAndServer(responses)
@@ -420,4 +420,176 @@ func TestUnitFileAppendTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(FileAppendTransaction).buildProtoBody())
+}
+
+func TestUnitFileAppendTransactionBigContentsThrottle(t *testing.T) {
+	t.Parallel()
+
+	receiptThrottled := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_THROTTLED_AT_CONSENSUS,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	responses := [][]interface{}{{
+		call, receiptThrottled, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	_, err := NewFileAppendTransaction().
+		SetFileID(FileID{File: 3}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetContents([]byte(bigContents2)).
+		Execute(client)
+	require.NoError(t, err)
+}
+
+func TestUnitFileAppendTransactionBigContentsThrottleReceiptError(t *testing.T) {
+	t.Parallel()
+
+	receiptThrottled := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_THROTTLED_AT_CONSENSUS,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	receiptError := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_ACCOUNT_DELETED,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	responses := [][]interface{}{{
+		call, receiptThrottled, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptError,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	_, err := NewFileAppendTransaction().
+		SetFileID(FileID{File: 3}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetContents([]byte(bigContents2)).
+		Execute(client)
+	require.ErrorContains(t, err, "exceptional receipt status: ACCOUNT_DELETED")
+}
+
+func TestUnitFileAppendTransactionBigContentsThrottlePrecheckError(t *testing.T) {
+	t.Parallel()
+
+	receiptThrottled := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_THROTTLED_AT_CONSENSUS,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	receiptOk := &services.Response{
+		Response: &services.Response_TransactionGetReceipt{
+			TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+				Header: &services.ResponseHeader{
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				Receipt: &services.TransactionReceipt{
+					Status: services.ResponseCodeEnum_SUCCESS,
+					FileID: &services.FileID{FileNum: 3},
+				},
+			},
+		},
+	}
+
+	call := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	callError := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_ACCOUNT_DELETED,
+		}
+	}
+	responses := [][]interface{}{{
+		call, receiptThrottled, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, call, receiptOk, callError,
+	}}
+
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	_, err := NewFileAppendTransaction().
+		SetFileID(FileID{File: 3}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetContents([]byte(bigContents2)).
+		Execute(client)
+	require.ErrorContains(t, err, "exceptional precheck status ACCOUNT_DELETE")
 }

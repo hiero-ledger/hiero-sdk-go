@@ -253,9 +253,33 @@ func (tx *FileAppendTransaction) ExecuteAll(
 		}
 
 		list[i] = resp.(TransactionResponse)
-
-		_, err = list[i].SetValidateStatus(true).GetReceipt(client)
+		receipt, err := list[i].GetReceipt(client)
 		if err != nil {
+			return list, err
+		}
+
+		// retry in case of throttle error
+		for receipt.Status == StatusThrottledAtConsensus {
+			tx.regenerateID(client)
+			resp, err := _Execute(client, tx)
+			if err != nil {
+				return list, err
+			}
+			respTx := resp.(TransactionResponse)
+			receipt, err = NewTransactionReceiptQuery().
+				SetTransactionID(respTx.TransactionID).
+				SetNodeAccountIDs([]AccountID{respTx.NodeID}).
+				SetIncludeChildren(respTx.IncludeChildReceipts).
+				Execute(client)
+
+			// if we get a non-throttled receipt, we can break out of the loop
+			if err == nil && receipt.Status != StatusThrottledAtConsensus {
+				list[i] = respTx
+				break
+			}
+		}
+		// validate the receipt status
+		if err = receipt.ValidateStatus(true); err != nil {
 			return list, err
 		}
 	}
