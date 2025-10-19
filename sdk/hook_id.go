@@ -95,21 +95,27 @@ func (id HookEntityId) validateChecksum(client *Client) error {
 }
 
 func (id HookEntityId) toProtobuf() *services.HookEntityId {
-	// TODO
-	return &services.HookEntityId{
-		EntityId: &services.HookEntityId_AccountId{
-			AccountId: id.accountId._ToProtobuf(),
-		},
+	if id.accountId != nil {
+		return &services.HookEntityId{
+			EntityId: &services.HookEntityId_AccountId{
+				AccountId: id.accountId._ToProtobuf(),
+			},
+		}
 	}
+
+	if id.contractId != nil {
+		return &services.HookEntityId{
+			EntityId: &services.HookEntityId_ContractId{
+				ContractId: id.contractId._ToProtobuf(),
+			},
+		}
+	}
+	return nil
 }
 
 func hookEntityIdFromProtobuf(pb *services.HookEntityId) HookEntityId {
-	// TODO
-	accountId := _AccountIDFromProtobuf(pb.GetAccountId())
-	if accountId != nil {
-		return HookEntityId{
-			accountId: accountId,
-		}
+	return HookEntityId{
+		accountId:  _AccountIDFromProtobuf(pb.GetAccountId()),
+		contractId: _ContractIDFromProtobuf(pb.GetContractId()),
 	}
-	return HookEntityId{}
 }
