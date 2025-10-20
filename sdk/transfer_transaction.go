@@ -307,13 +307,13 @@ func (tx *TransferTransaction) addTokenTransfer(tokenID TokenID, accountID Accou
 				if transfer.accountID.Compare(accountID) == 0 {
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 					tokenTransfer.ExpectedDecimals = decimal
+					transfer.hookCall = hookCall
 					for _, transfer := range tokenTransfer.Transfers {
 						transfer.isApproved = approve
 					}
 
 					return tx
 				}
-				transfer.hookCall = hookCall
 			}
 		}
 	}
@@ -398,9 +398,11 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 			if err != nil {
 				return err
 			}
-			err = transfer.hookCall.validateChecksum(client)
-			if err != nil {
-				return err
+			if transfer.hookCall != nil {
+				err = transfer.hookCall.validateChecksum(client)
+				if err != nil {
+					return err
+				}
 			}
 		}
 		if err != nil {
@@ -413,13 +415,17 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 			return err
 		}
 		for _, nftTransfer := range nftTransfers {
-			err = nftTransfer.SenderHookCall.validateChecksum(client)
-			if err != nil {
-				return err
+			if nftTransfer.SenderHookCall != nil {
+				err = nftTransfer.SenderHookCall.validateChecksum(client)
+				if err != nil {
+					return err
+				}
 			}
-			err = nftTransfer.ReceiverHookCall.validateChecksum(client)
-			if err != nil {
-				return err
+			if nftTransfer.ReceiverHookCall != nil {
+				err = nftTransfer.ReceiverHookCall.validateChecksum(client)
+				if err != nil {
+					return err
+				}
 			}
 			err = nftTransfer.SenderAccountID.ValidateChecksum(client)
 			if err != nil {
@@ -436,9 +442,11 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 		if err != nil {
 			return err
 		}
-		err = hbarTransfer.hookCall.validateChecksum(client)
-		if err != nil {
-			return err
+		if hbarTransfer.hookCall != nil {
+			err = hbarTransfer.hookCall.validateChecksum(client)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
