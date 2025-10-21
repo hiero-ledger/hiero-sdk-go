@@ -18,31 +18,13 @@ func TestUnitNftHookCallWithHookId(t *testing.T) {
 	hookId := int64(123)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x01, 0x02}).SetGasLimit(25000)
 
-	nftHookCall := NewNftHookCallWithHookId(hookId, evmCall, PRE_HOOK_SENDER)
+	nftHookCall := NewNftHookCall(hookId, evmCall, PRE_HOOK_SENDER)
 
 	require.NotNil(t, nftHookCall)
 	require.Equal(t, hookId, nftHookCall.GetHookId())
 	require.Equal(t, evmCall.GetData(), nftHookCall.GetEvmHookCall().GetData())
 	require.Equal(t, evmCall.GetGasLimit(), nftHookCall.GetEvmHookCall().GetGasLimit())
 	require.Equal(t, PRE_HOOK_SENDER, nftHookCall.hookType)
-}
-
-func TestUnitNftHookCallWithHookIdFull(t *testing.T) {
-	t.Parallel()
-
-	contractId := ContractID{Contract: 456}
-	entityId := NewHookEntityIdWithContractId(contractId)
-	hookIdFull := NewHookId(*entityId, 789)
-	evmCall := *NewEvmHookCall().SetData([]byte{0x03, 0x04}).SetGasLimit(30000)
-
-	nftHookCall := NewNftHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_POST_HOOK_SENDER)
-
-	require.NotNil(t, nftHookCall)
-	require.Equal(t, hookIdFull.GetHookId(), nftHookCall.GetHookIdFull().GetHookId())
-	require.Equal(t, contractId.Contract, nftHookCall.GetHookIdFull().GetEntityId().GetContractId().Contract)
-	require.Equal(t, evmCall.GetData(), nftHookCall.GetEvmHookCall().GetData())
-	require.Equal(t, evmCall.GetGasLimit(), nftHookCall.GetEvmHookCall().GetGasLimit())
-	require.Equal(t, PRE_POST_HOOK_SENDER, nftHookCall.hookType)
 }
 
 func TestUnitNftHookCallAllHookTypes(t *testing.T) {
@@ -64,7 +46,7 @@ func TestUnitNftHookCallAllHookTypes(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			hookCall := NewNftHookCallWithHookId(hookId, evmCall, tc.hookType)
+			hookCall := NewNftHookCall(hookId, evmCall, tc.hookType)
 			require.Equal(t, tc.hookType, hookCall.hookType)
 		})
 	}
@@ -76,7 +58,7 @@ func TestUnitNftHookCallToProtobuf(t *testing.T) {
 	hookId := int64(999)
 	evmCall := *NewEvmHookCall().SetData([]byte{0xaa, 0xbb}).SetGasLimit(50000)
 
-	nftHookCall := NewNftHookCallWithHookId(hookId, evmCall, PRE_HOOK_SENDER)
+	nftHookCall := NewNftHookCall(hookId, evmCall, PRE_HOOK_SENDER)
 
 	proto := nftHookCall.toProtobuf()
 	require.NotNil(t, proto)
@@ -234,31 +216,13 @@ func TestUnitFungibleHookCallWithHookId(t *testing.T) {
 	hookId := int64(555)
 	evmCall := *NewEvmHookCall().SetData([]byte{0xcc, 0xdd}).SetGasLimit(45000)
 
-	fungibleHookCall := NewFungibleHookCallWithHookId(hookId, evmCall, PRE_HOOK)
+	fungibleHookCall := NewFungibleHookCall(hookId, evmCall, PRE_HOOK)
 
 	require.NotNil(t, fungibleHookCall)
 	require.Equal(t, hookId, fungibleHookCall.GetHookId())
 	require.Equal(t, evmCall.GetData(), fungibleHookCall.GetEvmHookCall().GetData())
 	require.Equal(t, evmCall.GetGasLimit(), fungibleHookCall.GetEvmHookCall().GetGasLimit())
 	require.Equal(t, PRE_HOOK, fungibleHookCall.hookType)
-}
-
-func TestUnitFungibleHookCallWithHookIdFull(t *testing.T) {
-	t.Parallel()
-
-	contractId := ContractID{Contract: 777}
-	entityId := NewHookEntityIdWithContractId(contractId)
-	hookIdFull := NewHookId(*entityId, 888)
-	evmCall := *NewEvmHookCall().SetData([]byte{0xee, 0xff}).SetGasLimit(55000)
-
-	fungibleHookCall := NewFungibleHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_POST_HOOK)
-
-	require.NotNil(t, fungibleHookCall)
-	require.Equal(t, hookIdFull.GetHookId(), fungibleHookCall.GetHookIdFull().GetHookId())
-	require.Equal(t, contractId.Contract, fungibleHookCall.GetHookIdFull().GetEntityId().GetContractId().Contract)
-	require.Equal(t, evmCall.GetData(), fungibleHookCall.GetEvmHookCall().GetData())
-	require.Equal(t, evmCall.GetGasLimit(), fungibleHookCall.GetEvmHookCall().GetGasLimit())
-	require.Equal(t, PRE_POST_HOOK, fungibleHookCall.hookType)
 }
 
 func TestUnitFungibleHookCallAllHookTypes(t *testing.T) {
@@ -278,7 +242,7 @@ func TestUnitFungibleHookCallAllHookTypes(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			hookCall := NewFungibleHookCallWithHookId(hookId, evmCall, tc.hookType)
+			hookCall := NewFungibleHookCall(hookId, evmCall, tc.hookType)
 			require.Equal(t, tc.hookType, hookCall.hookType)
 		})
 	}
@@ -290,7 +254,7 @@ func TestUnitFungibleHookCallToProtobuf(t *testing.T) {
 	hookId := int64(666)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x12, 0x34}).SetGasLimit(60000)
 
-	fungibleHookCall := NewFungibleHookCallWithHookId(hookId, evmCall, PRE_HOOK)
+	fungibleHookCall := NewFungibleHookCall(hookId, evmCall, PRE_HOOK)
 
 	proto := fungibleHookCall.toProtobuf()
 	require.NotNil(t, proto)
@@ -441,35 +405,8 @@ func TestUnitHookCallFromProtobufWithFullHookId(t *testing.T) {
 
 	hookCall := hookCallFromProtobuf(pb)
 	require.NotNil(t, hookCall)
-	require.Equal(t, hookIdNum, hookCall.GetHookIdFull().GetHookId())
-	require.Equal(t, uint64(contractNum), hookCall.GetHookIdFull().GetEntityId().GetContractId().Contract)
 	require.Equal(t, data, hookCall.GetEvmHookCall().GetData())
 	require.Equal(t, gasLimit, hookCall.GetEvmHookCall().GetGasLimit())
-}
-
-func TestUnitHookCallGetHookIdWhenNil(t *testing.T) {
-	t.Parallel()
-
-	hc := hookCall{
-		hookId:      nil,
-		hookIdFull:  nil,
-		evmHookCall: *NewEvmHookCall(),
-	}
-
-	require.Equal(t, int64(0), hc.GetHookId())
-}
-
-func TestUnitHookCallGetHookIdFullWhenNil(t *testing.T) {
-	t.Parallel()
-
-	hc := hookCall{
-		hookId:      nil,
-		hookIdFull:  nil,
-		evmHookCall: *NewEvmHookCall(),
-	}
-
-	hookIdFull := hc.GetHookIdFull()
-	require.Equal(t, HookId{}, hookIdFull)
 }
 
 func TestUnitNftHookCallRoundTripProtobufWithHookId(t *testing.T) {
@@ -478,7 +415,7 @@ func TestUnitNftHookCallRoundTripProtobufWithHookId(t *testing.T) {
 	hookId := int64(11111)
 	evmCall := *NewEvmHookCall().SetData([]byte{0xaa, 0xbb, 0xcc, 0xdd}).SetGasLimit(100000)
 
-	original := NewNftHookCallWithHookId(hookId, evmCall, PRE_HOOK_SENDER)
+	original := NewNftHookCall(hookId, evmCall, PRE_HOOK_SENDER)
 
 	// Convert to protobuf
 	proto := original.toProtobuf()
@@ -507,7 +444,7 @@ func TestUnitFungibleHookCallRoundTripProtobufWithHookId(t *testing.T) {
 	hookId := int64(22222)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x11, 0x22, 0x33}).SetGasLimit(110000)
 
-	original := NewFungibleHookCallWithHookId(hookId, evmCall, PRE_POST_HOOK)
+	original := NewFungibleHookCall(hookId, evmCall, PRE_POST_HOOK)
 
 	// Convert to protobuf
 	proto := original.toProtobuf()

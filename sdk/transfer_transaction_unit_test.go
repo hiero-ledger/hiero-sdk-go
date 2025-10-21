@@ -65,7 +65,7 @@ func TestUnitTransferTransactionAddHbarTransferWithHook(t *testing.T) {
 	accountID := AccountID{Account: 123}
 	amount := NewHbar(5)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x01, 0x02}).SetGasLimit(25000)
-	hookCall := NewFungibleHookCallWithHookId(1, evmCall, PRE_HOOK)
+	hookCall := NewFungibleHookCall(1, evmCall, PRE_HOOK)
 
 	transaction := NewTransferTransaction().
 		AddHbarTransferWithHook(accountID, amount, *hookCall)
@@ -85,7 +85,7 @@ func TestUnitTransferTransactionAddTokenTransferWithHook(t *testing.T) {
 	accountID := AccountID{Account: 200}
 	amount := int64(1000)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x03, 0x04}).SetGasLimit(30000)
-	hookCall := NewFungibleHookCallWithHookId(2, evmCall, PRE_POST_HOOK)
+	hookCall := NewFungibleHookCall(2, evmCall, PRE_POST_HOOK)
 
 	transaction := NewTransferTransaction().
 		AddTokenTransferWithHook(tokenID, accountID, amount, *hookCall)
@@ -106,8 +106,8 @@ func TestUnitTransferTransactionAddNftTransferWithHook(t *testing.T) {
 	sender := AccountID{Account: 400}
 	receiver := AccountID{Account: 500}
 	evmCall := *NewEvmHookCall().SetData([]byte{0x05, 0x06}).SetGasLimit(35000)
-	senderHookCall := NewNftHookCallWithHookId(3, evmCall, PRE_HOOK_SENDER)
-	receiverHookCall := NewNftHookCallWithHookId(4, evmCall, PRE_HOOK_RECEIVER)
+	senderHookCall := NewNftHookCall(3, evmCall, PRE_HOOK_SENDER)
+	receiverHookCall := NewNftHookCall(4, evmCall, PRE_HOOK_RECEIVER)
 
 	transaction := NewTransferTransaction().
 		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
@@ -120,155 +120,6 @@ func TestUnitTransferTransactionAddNftTransferWithHook(t *testing.T) {
 	require.NotNil(t, transaction.nftTransfers[nftID.TokenID][0].ReceiverHookCall)
 	require.Equal(t, int64(3), transaction.nftTransfers[nftID.TokenID][0].SenderHookCall.GetHookId())
 	require.Equal(t, int64(4), transaction.nftTransfers[nftID.TokenID][0].ReceiverHookCall.GetHookId())
-}
-
-func TestUnitTransferTransactionValidateHbarTransferWithHook(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	accountID, err := AccountIDFromString("0.0.123-esxsf")
-	require.NoError(t, err)
-
-	contractID, err := ContractIDFromString("0.0.456-fuxra")
-	require.NoError(t, err)
-
-	entityId := NewHookEntityIdWithContractId(contractID)
-	hookIdFull := NewHookId(*entityId, 789)
-	evmCall := *NewEvmHookCall().SetData([]byte{0x01}).SetGasLimit(20000)
-	hookCall := NewFungibleHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_HOOK)
-
-	transaction := NewTransferTransaction().
-		AddHbarTransferWithHook(accountID, NewHbar(1), *hookCall)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.NoError(t, err)
-}
-
-func TestUnitTransferTransactionValidateHbarTransferWithHookWrongChecksum(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	accountID, err := AccountIDFromString("0.0.123-esxsf")
-	require.NoError(t, err)
-
-	// Wrong checksum for contract ID
-	contractID, err := ContractIDFromString("0.0.456-rmkykd")
-	require.NoError(t, err)
-
-	entityId := NewHookEntityIdWithContractId(contractID)
-	hookIdFull := NewHookId(*entityId, 789)
-	evmCall := *NewEvmHookCall().SetData([]byte{0x01}).SetGasLimit(20000)
-	hookCall := NewFungibleHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_HOOK)
-
-	transaction := NewTransferTransaction().
-		AddHbarTransferWithHook(accountID, NewHbar(1), *hookCall)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.Error(t, err)
-}
-
-func TestUnitTransferTransactionValidateTokenTransferWithHook(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	tokenID, err := TokenIDFromString("0.0.100-quros")
-	require.NoError(t, err)
-
-	accountID, err := AccountIDFromString("0.0.200-tyrmb")
-	require.NoError(t, err)
-
-	contractID, err := ContractIDFromString("0.0.300-xcrjk")
-	require.NoError(t, err)
-
-	entityId := NewHookEntityIdWithContractId(contractID)
-	hookIdFull := NewHookId(*entityId, 123)
-	evmCall := *NewEvmHookCall().SetData([]byte{0x02}).SetGasLimit(25000)
-	hookCall := NewFungibleHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_POST_HOOK)
-
-	transaction := NewTransferTransaction().
-		AddTokenTransferWithHook(tokenID, accountID, 1000, *hookCall)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.NoError(t, err)
-}
-
-func TestUnitTransferTransactionValidateTokenTransferWithHookWrongTokenChecksum(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	// Wrong checksum for token ID
-	tokenID, err := TokenIDFromString("0.0.100-rmkykd")
-	require.NoError(t, err)
-
-	accountID, err := AccountIDFromString("0.0.200-tyrmb")
-	require.NoError(t, err)
-
-	evmCall := *NewEvmHookCall().SetData([]byte{0x02}).SetGasLimit(25000)
-	hookCall := NewFungibleHookCallWithHookId(1, evmCall, PRE_HOOK)
-
-	transaction := NewTransferTransaction().
-		AddTokenTransferWithHook(tokenID, accountID, 1000, *hookCall)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.Error(t, err)
-}
-
-func TestUnitTransferTransactionValidateNftTransferWithHooks(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	tokenID, err := TokenIDFromString("0.0.100-quros")
-	require.NoError(t, err)
-
-	sender, err := AccountIDFromString("0.0.200-tyrmb")
-	require.NoError(t, err)
-
-	receiver, err := AccountIDFromString("0.0.300-xcrjk")
-	require.NoError(t, err)
-
-	contractID1, err := ContractIDFromString("0.0.400-agrgt")
-	require.NoError(t, err)
-
-	contractID2, err := ContractIDFromString("0.0.500-dkrec")
-	require.NoError(t, err)
-
-	entityId1 := NewHookEntityIdWithContractId(contractID1)
-	hookIdFull1 := NewHookId(*entityId1, 111)
-	evmCall1 := *NewEvmHookCall().SetData([]byte{0x03}).SetGasLimit(30000)
-	senderHookCall := NewNftHookCallWithHookIdFull(*hookIdFull1, evmCall1, PRE_HOOK_SENDER)
-
-	entityId2 := NewHookEntityIdWithContractId(contractID2)
-	hookIdFull2 := NewHookId(*entityId2, 222)
-	evmCall2 := *NewEvmHookCall().SetData([]byte{0x04}).SetGasLimit(35000)
-	receiverHookCall := NewNftHookCallWithHookIdFull(*hookIdFull2, evmCall2, PRE_HOOK_RECEIVER)
-
-	nftID := tokenID.Nft(1)
-
-	transaction := NewTransferTransaction().
-		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.NoError(t, err)
 }
 
 func TestUnitTransferTransactionValidateNftTransferWithHooksWrongSenderChecksum(t *testing.T) {
@@ -290,7 +141,7 @@ func TestUnitTransferTransactionValidateNftTransferWithHooksWrongSenderChecksum(
 	require.NoError(t, err)
 
 	evmCall := *NewEvmHookCall().SetData([]byte{0x03}).SetGasLimit(30000)
-	senderHookCall := NewNftHookCallWithHookId(1, evmCall, PRE_HOOK_SENDER)
+	senderHookCall := NewNftHookCall(1, evmCall, PRE_HOOK_SENDER)
 
 	nftID := tokenID.Nft(1)
 
@@ -299,80 +150,6 @@ func TestUnitTransferTransactionValidateNftTransferWithHooksWrongSenderChecksum(
 
 	err = transaction.validateNetworkOnIDs(client)
 	require.Error(t, err)
-}
-
-func TestUnitTransferTransactionValidateNftTransferWithHooksWrongHookChecksum(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	tokenID, err := TokenIDFromString("0.0.100-quros")
-	require.NoError(t, err)
-
-	sender, err := AccountIDFromString("0.0.200-tyrmb")
-	require.NoError(t, err)
-
-	receiver, err := AccountIDFromString("0.0.300-xcrjk")
-	require.NoError(t, err)
-
-	// Wrong checksum for contract ID in hook
-	contractID, err := ContractIDFromString("0.0.400-rmkykd")
-	require.NoError(t, err)
-
-	entityId := NewHookEntityIdWithContractId(contractID)
-	hookIdFull := NewHookId(*entityId, 111)
-	evmCall := *NewEvmHookCall().SetData([]byte{0x03}).SetGasLimit(30000)
-	senderHookCall := NewNftHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_HOOK_SENDER)
-
-	nftID := tokenID.Nft(1)
-
-	transaction := NewTransferTransaction().
-		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, nil)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.Error(t, err)
-}
-
-func TestUnitTransferTransactionValidateMixedTransfersWithHooks(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	require.NoError(t, err)
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	client.SetAutoValidateChecksums(true)
-
-	// Setup accounts
-	account1, err := AccountIDFromString("0.0.100-quros")
-	require.NoError(t, err)
-
-	account2, err := AccountIDFromString("0.0.200-tyrmb")
-	require.NoError(t, err)
-
-	// Setup token
-	tokenID, err := TokenIDFromString("0.0.300-xcrjk")
-	require.NoError(t, err)
-
-	// Setup contract for hook
-	contractID, err := ContractIDFromString("0.0.400-agrgt")
-	require.NoError(t, err)
-
-	entityId := NewHookEntityIdWithContractId(contractID)
-	hookIdFull := NewHookId(*entityId, 123)
-	evmCall := *NewEvmHookCall().SetData([]byte{0x05}).SetGasLimit(40000)
-	hookCall := NewFungibleHookCallWithHookIdFull(*hookIdFull, evmCall, PRE_HOOK)
-
-	// Create transaction with mixed transfers (HBAR and Token with hooks)
-	transaction := NewTransferTransaction().
-		AddHbarTransferWithHook(account1, NewHbar(-2), *hookCall).
-		AddHbarTransferWithHook(account2, NewHbar(2), *hookCall).
-		AddTokenTransferWithHook(tokenID, account1, -1000, *hookCall).
-		AddTokenTransferWithHook(tokenID, account2, 1000, *hookCall)
-
-	err = transaction.validateNetworkOnIDs(client)
-	require.NoError(t, err)
 }
 
 func TestUnitTransferTransactionValidateWithNoClient(t *testing.T) {
@@ -380,7 +157,7 @@ func TestUnitTransferTransactionValidateWithNoClient(t *testing.T) {
 
 	accountID := AccountID{Account: 123}
 	evmCall := *NewEvmHookCall().SetData([]byte{0x01}).SetGasLimit(20000)
-	hookCall := NewFungibleHookCallWithHookId(1, evmCall, PRE_HOOK)
+	hookCall := NewFungibleHookCall(1, evmCall, PRE_HOOK)
 
 	transaction := NewTransferTransaction().
 		AddHbarTransferWithHook(accountID, NewHbar(1), *hookCall)
@@ -402,7 +179,7 @@ func TestUnitTransferTransactionValidateWithChecksumDisabled(t *testing.T) {
 	require.NoError(t, err)
 
 	evmCall := *NewEvmHookCall().SetData([]byte{0x01}).SetGasLimit(20000)
-	hookCall := NewFungibleHookCallWithHookId(1, evmCall, PRE_HOOK)
+	hookCall := NewFungibleHookCall(1, evmCall, PRE_HOOK)
 
 	transaction := NewTransferTransaction().
 		AddHbarTransferWithHook(accountID, NewHbar(1), *hookCall)
@@ -602,7 +379,7 @@ func TestUnitTransferTransactionAddHbarTransferWithHookProtobuf(t *testing.T) {
 	account := AccountID{Account: 123}
 	amount := NewHbar(10)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x01, 0x02}).SetGasLimit(25000)
-	hookCall := NewFungibleHookCallWithHookId(5, evmCall, PRE_HOOK)
+	hookCall := NewFungibleHookCall(5, evmCall, PRE_HOOK)
 
 	transaction := NewTransferTransaction().
 		AddHbarTransferWithHook(account, amount, *hookCall)
@@ -716,7 +493,7 @@ func TestUnitTransferTransactionAddTokenTransferWithHookProtobuf(t *testing.T) {
 	account := AccountID{Account: 420}
 	amount := int64(2000)
 	evmCall := *NewEvmHookCall().SetData([]byte{0x03, 0x04}).SetGasLimit(30000)
-	hookCall := NewFungibleHookCallWithHookId(7, evmCall, PRE_POST_HOOK)
+	hookCall := NewFungibleHookCall(7, evmCall, PRE_POST_HOOK)
 
 	transaction := NewTransferTransaction().
 		AddTokenTransferWithHook(tokenID, account, amount, *hookCall)
@@ -832,8 +609,8 @@ func TestUnitTransferTransactionAddNftTransferWithHookProtobuf(t *testing.T) {
 	sender := AccountID{Account: 610}
 	receiver := AccountID{Account: 710}
 	evmCall := *NewEvmHookCall().SetData([]byte{0x05, 0x06}).SetGasLimit(35000)
-	senderHookCall := NewNftHookCallWithHookId(8, evmCall, PRE_HOOK_SENDER)
-	receiverHookCall := NewNftHookCallWithHookId(9, evmCall, PRE_HOOK_RECEIVER)
+	senderHookCall := NewNftHookCall(8, evmCall, PRE_HOOK_SENDER)
+	receiverHookCall := NewNftHookCall(9, evmCall, PRE_HOOK_RECEIVER)
 
 	transaction := NewTransferTransaction().
 		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
@@ -996,7 +773,7 @@ func TestUnitTransferTransactionHookAndApprovalMutuallyExclusiveHbar(t *testing.
 	account1 := AccountID{Account: 100}
 	account2 := AccountID{Account: 200}
 	evmCall := *NewEvmHookCall().SetData([]byte{0x01}).SetGasLimit(20000)
-	hookCall := NewFungibleHookCallWithHookId(1, evmCall, PRE_HOOK)
+	hookCall := NewFungibleHookCall(1, evmCall, PRE_HOOK)
 
 	// Add transfer with hook
 	txWithHook := NewTransferTransaction().
@@ -1023,7 +800,7 @@ func TestUnitTransferTransactionHookAndApprovalMutuallyExclusiveToken(t *testing
 	account1 := AccountID{Account: 400}
 	account2 := AccountID{Account: 500}
 	evmCall := *NewEvmHookCall().SetData([]byte{0x02}).SetGasLimit(25000)
-	hookCall := NewFungibleHookCallWithHookId(2, evmCall, PRE_POST_HOOK)
+	hookCall := NewFungibleHookCall(2, evmCall, PRE_POST_HOOK)
 
 	// Add transfer with hook
 	txWithHook := NewTransferTransaction().
@@ -1052,7 +829,7 @@ func TestUnitTransferTransactionHookAndApprovalMutuallyExclusiveNft(t *testing.T
 	sender := AccountID{Account: 600}
 	receiver := AccountID{Account: 700}
 	evmCall := *NewEvmHookCall().SetData([]byte{0x03}).SetGasLimit(30000)
-	senderHookCall := NewNftHookCallWithHookId(3, evmCall, PRE_HOOK_SENDER)
+	senderHookCall := NewNftHookCall(3, evmCall, PRE_HOOK_SENDER)
 
 	// Add NFT transfer with hook
 	txWithHook := NewTransferTransaction().

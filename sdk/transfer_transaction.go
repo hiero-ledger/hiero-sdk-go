@@ -398,12 +398,6 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 			if err != nil {
 				return err
 			}
-			if transfer.hookCall != nil {
-				err = transfer.hookCall.validateChecksum(client)
-				if err != nil {
-					return err
-				}
-			}
 		}
 		if err != nil {
 			return err
@@ -415,18 +409,6 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 			return err
 		}
 		for _, nftTransfer := range nftTransfers {
-			if nftTransfer.SenderHookCall != nil {
-				err = nftTransfer.SenderHookCall.validateChecksum(client)
-				if err != nil {
-					return err
-				}
-			}
-			if nftTransfer.ReceiverHookCall != nil {
-				err = nftTransfer.ReceiverHookCall.validateChecksum(client)
-				if err != nil {
-					return err
-				}
-			}
 			err = nftTransfer.SenderAccountID.ValidateChecksum(client)
 			if err != nil {
 				return err
@@ -441,12 +423,6 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 		err = hbarTransfer.accountID.ValidateChecksum(client)
 		if err != nil {
 			return err
-		}
-		if hbarTransfer.hookCall != nil {
-			err = hbarTransfer.hookCall.validateChecksum(client)
-			if err != nil {
-				return err
-			}
 		}
 	}
 

@@ -38,7 +38,7 @@ func TestIntegrationTransferHbarWithPreTransactionAllowanceHookSucceeds(t *testi
 	require.NoError(t, err)
 	accountId := *receipt.AccountID
 
-	hookCall := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
+	hookCall := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
 
 	transferResponse, err := NewTransferTransaction().
 		AddHbarTransfer(env.OperatorID, NewHbar(1)).
@@ -98,8 +98,8 @@ func TestIntegrationMultipleAccountsHooksMustAllApprove(t *testing.T) {
 	require.NoError(t, err)
 	acct2 := *receipt2.AccountID
 
-	hookCall1 := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
-	hookCall2 := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
+	hookCall1 := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
+	hookCall2 := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
 
 	resp, err := NewTransferTransaction().
 		SetNodeAccountIDs(env.NodeAccountIDs).
@@ -163,7 +163,7 @@ func TestIntegrationTransferFungibleTokenWithPreTransactionAllowanceHookSucceeds
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	hookCall := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
+	hookCall := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK)
 
 	transferResponse, err := NewTransferTransaction().
 		AddTokenTransfer(tokenId, env.Client.GetOperatorAccountID(), 100).
@@ -233,7 +233,7 @@ func TestIntegrationTransferNftWithPreTransactionAllowanceHookSucceeds(t *testin
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	hookCall := NewNftHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_SENDER)
+	hookCall := NewNftHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_SENDER)
 
 	transferResponse, err := NewTransferTransaction().
 		AddNftTransferWitHook(tokenId.Nft(1), accountId, env.Client.GetOperatorAccountID(), hookCall, nil).
@@ -295,7 +295,7 @@ func TestIntegrationTransferNftWithReceiverAllowanceHookSucceeds(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	receiverHookCall := NewNftHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_RECEIVER)
+	receiverHookCall := NewNftHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_RECEIVER)
 
 	transferResponse, err := NewTransferTransaction().
 		AddNftTransfer(tokenId.Nft(1), env.Client.GetOperatorAccountID(), receiverId).
@@ -392,8 +392,8 @@ func TestIntegrationTransferNftWithBothSenderAndReceiverHooksSucceeds(t *testing
 	require.NoError(t, err)
 
 	// Test NFT transfer with both sender and receiver hooks
-	senderHookCall := NewNftHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_SENDER)
-	receiverHookCall := NewNftHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_RECEIVER)
+	senderHookCall := NewNftHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_SENDER)
+	receiverHookCall := NewNftHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_HOOK_RECEIVER)
 
 	transferResponse, err := NewTransferTransaction().
 		AddNftTransferWitHook(tokenId.Nft(1), senderId, receiverId, senderHookCall, receiverHookCall).
@@ -431,7 +431,7 @@ func TestIntegrationTransferWithInvalidGasHook(t *testing.T) {
 	require.NoError(t, err)
 	accountId := *receipt.AccountID
 
-	hookCall := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(0), PRE_HOOK)
+	hookCall := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(0), PRE_HOOK)
 
 	transferResponse, err := NewTransferTransaction().
 		AddHbarTransfer(env.OperatorID, NewHbar(1)).
@@ -469,7 +469,7 @@ func TestIntegrationTransferHbarWithPrePostTransactionAllowanceHookSucceeds(t *t
 	require.NoError(t, err)
 	accountId := *receipt.AccountID
 
-	hookCall := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK)
+	hookCall := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK)
 
 	transferResponse, err := NewTransferTransaction().
 		AddHbarTransfer(env.OperatorID, NewHbar(1)).
@@ -530,7 +530,7 @@ func TestIntegrationTransferFungibleTokenWithPrePostTransactionAllowanceHookSucc
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	hookCall := NewFungibleHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK)
+	hookCall := NewFungibleHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK)
 
 	transferResponse, err := NewTransferTransaction().
 		AddTokenTransfer(tokenId, env.Client.GetOperatorAccountID(), 100).
@@ -600,7 +600,7 @@ func TestIntegrationTransferNftWithPrePostSenderAllowanceHookSucceeds(t *testing
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	hookCall := NewNftHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK_SENDER)
+	hookCall := NewNftHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK_SENDER)
 
 	transferResponse, err := NewTransferTransaction().
 		AddNftTransferWitHook(tokenId.Nft(1), accountId, env.Client.GetOperatorAccountID(), hookCall, nil).
@@ -661,7 +661,7 @@ func TestIntegrationTransferNftWithPrePostReceiverAllowanceHookSucceeds(t *testi
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	receiverHookCall := NewNftHookCallWithHookId(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK_RECEIVER)
+	receiverHookCall := NewNftHookCall(2, *NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), PRE_POST_HOOK_RECEIVER)
 
 	transferResponse, err := NewTransferTransaction().
 		AddNftTransfer(tokenId.Nft(1), env.Client.GetOperatorAccountID(), receiverId).
@@ -700,7 +700,7 @@ func TestIntegrationTransferNftWithPrePostReceiverAllowanceHookSucceeds(t *testi
 // 	require.NoError(t, err)
 // 	accountId := *receipt.AccountID
 
-// 	hookCall := NewFungibleHookCallWithHookIdFull(*NewHookId(*NewHookEntityIdWithAccountId(accountId), 2), *NewEvmHookCall().SetData([]byte{}).SetGasLimit(20000), PRE_HOOK)
+// 	hookCall := NewFungibleHookCallFull(*NewHookId(*NewHookEntityIdWithAccountId(accountId), 2), *NewEvmHookCall().SetData([]byte{}).SetGasLimit(20000), PRE_HOOK)
 
 // 	transferResponse, err := NewTransferTransaction().
 // 		AddHbarTransfer(env.OperatorID, NewHbar(1)).

@@ -21,24 +21,13 @@ const (
 )
 
 type hookCall struct {
-	hookId      *int64
-	hookIdFull  *HookId
+	hookId      int64
 	evmHookCall EvmHookCall
 }
 
 // GetHookId returns the hook ID
 func (hc hookCall) GetHookId() int64 {
-	if hc.hookId == nil {
-		return 0
-	}
-	return *hc.hookId
-}
-
-func (hc hookCall) GetHookIdFull() HookId {
-	if hc.hookIdFull == nil {
-		return HookId{}
-	}
-	return *hc.hookIdFull
+	return hc.hookId
 }
 
 // GetEvmHookCall returns the EVM hook call details
@@ -48,17 +37,8 @@ func (hc hookCall) GetEvmHookCall() EvmHookCall {
 
 func (hc hookCall) toProtobuf() *services.HookCall {
 	protoBody := &services.HookCall{}
-
-	if hc.hookIdFull != nil {
-		protoBody.Id = &services.HookCall_FullHookId{
-			FullHookId: hc.hookIdFull.toProtobuf(),
-		}
-	}
-
-	if hc.hookId != nil {
-		protoBody.Id = &services.HookCall_HookId{
-			HookId: *hc.hookId,
-		}
+	protoBody.Id = &services.HookCall_HookId{
+		HookId: hc.hookId,
 	}
 
 	protoBody.CallSpec = &services.HookCall_EvmHookCall{
@@ -68,30 +48,14 @@ func (hc hookCall) toProtobuf() *services.HookCall {
 	return protoBody
 }
 
-func (hc hookCall) validateChecksum(client *Client) error {
-	if hc.hookIdFull != nil {
-		return hc.hookIdFull.validateChecksum(client)
-	}
-	return nil
-}
-
 func hookCallFromProtobuf(pb *services.HookCall) *hookCall {
 	if pb == nil {
 		return nil
 	}
-	hookCall := &hookCall{
+	return &hookCall{
 		evmHookCall: evmHookCallFromProtobuf(pb.GetEvmHookCall()),
+		hookId:      pb.GetHookId(),
 	}
-
-	if pb.GetFullHookId() != nil {
-		hookIdFull := hookIdFromProtobuf(pb.GetFullHookId())
-		hookCall.hookIdFull = &hookIdFull
-	} else {
-		hookId := pb.GetHookId()
-		hookCall.hookId = &hookId
-	}
-
-	return hookCall
 }
 
 type NftHookCall struct {
@@ -99,22 +63,10 @@ type NftHookCall struct {
 	hookType NftHookType
 }
 
-func NewNftHookCallWithHookId(hookId int64, evmHookCall EvmHookCall, hookType NftHookType) *NftHookCall {
+func NewNftHookCall(hookId int64, evmHookCall EvmHookCall, hookType NftHookType) *NftHookCall {
 	return &NftHookCall{
 		hookCall: hookCall{
-			hookId:      &hookId,
-			hookIdFull:  nil,
-			evmHookCall: evmHookCall,
-		},
-		hookType: hookType,
-	}
-}
-
-func NewNftHookCallWithHookIdFull(hookIdFull HookId, evmHookCall EvmHookCall, hookType NftHookType) *NftHookCall {
-	return &NftHookCall{
-		hookCall: hookCall{
-			hookId:      nil,
-			hookIdFull:  &hookIdFull,
+			hookId:      hookId,
 			evmHookCall: evmHookCall,
 		},
 		hookType: hookType,
@@ -130,7 +82,6 @@ func nftHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
 		return &NftHookCall{
 			hookCall: hookCall{
 				hookId:      base.hookId,
-				hookIdFull:  base.hookIdFull,
 				evmHookCall: base.evmHookCall,
 			},
 			hookType: PRE_HOOK_SENDER,
@@ -140,7 +91,6 @@ func nftHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
 		return &NftHookCall{
 			hookCall: hookCall{
 				hookId:      base.hookId,
-				hookIdFull:  base.hookIdFull,
 				evmHookCall: base.evmHookCall,
 			},
 			hookType: PRE_POST_HOOK_SENDER,
@@ -151,7 +101,6 @@ func nftHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
 		return &NftHookCall{
 			hookCall: hookCall{
 				hookId:      base.hookId,
-				hookIdFull:  base.hookIdFull,
 				evmHookCall: base.evmHookCall,
 			},
 			hookType: PRE_HOOK_RECEIVER,
@@ -161,7 +110,6 @@ func nftHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
 		return &NftHookCall{
 			hookCall: hookCall{
 				hookId:      base.hookId,
-				hookIdFull:  base.hookIdFull,
 				evmHookCall: base.evmHookCall,
 			},
 			hookType: PRE_POST_HOOK_RECEIVER,
@@ -175,22 +123,10 @@ type FungibleHookCall struct {
 	hookType FungibleHookType
 }
 
-func NewFungibleHookCallWithHookId(hookId int64, evmHookCall EvmHookCall, hookType FungibleHookType) *FungibleHookCall {
+func NewFungibleHookCall(hookId int64, evmHookCall EvmHookCall, hookType FungibleHookType) *FungibleHookCall {
 	return &FungibleHookCall{
 		hookCall: hookCall{
-			hookId:      &hookId,
-			hookIdFull:  nil,
-			evmHookCall: evmHookCall,
-		},
-		hookType: hookType,
-	}
-}
-
-func NewFungibleHookCallWithHookIdFull(hookIdFull HookId, evmHookCall EvmHookCall, hookType FungibleHookType) *FungibleHookCall {
-	return &FungibleHookCall{
-		hookCall: hookCall{
-			hookId:      nil,
-			hookIdFull:  &hookIdFull,
+			hookId:      hookId,
 			evmHookCall: evmHookCall,
 		},
 		hookType: hookType,
@@ -207,7 +143,6 @@ func fungibleHookCallFromProtobuf(pb *services.AccountAmount) *FungibleHookCall 
 		return &FungibleHookCall{
 			hookCall: hookCall{
 				hookId:      base.hookId,
-				hookIdFull:  base.hookIdFull,
 				evmHookCall: base.evmHookCall,
 			},
 			hookType: PRE_HOOK,
@@ -218,7 +153,6 @@ func fungibleHookCallFromProtobuf(pb *services.AccountAmount) *FungibleHookCall 
 		return &FungibleHookCall{
 			hookCall: hookCall{
 				hookId:      base.hookId,
-				hookIdFull:  base.hookIdFull,
 				evmHookCall: base.evmHookCall,
 			},
 			hookType: PRE_POST_HOOK,
