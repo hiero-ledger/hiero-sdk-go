@@ -73,7 +73,7 @@ func NewNftHookCall(hookId int64, evmHookCall EvmHookCall, hookType NftHookType)
 	}
 }
 
-func nftHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
+func nftSenderHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
 	if pb == nil {
 		return nil
 	}
@@ -95,6 +95,13 @@ func nftHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
 			},
 			hookType: PRE_POST_HOOK_SENDER,
 		}
+	}
+	return nil
+}
+
+func nftReceiverHookCallFromProtobuf(pb *services.NftTransfer) *NftHookCall {
+	if pb == nil {
+		return nil
 	}
 	if pb.GetPreTxReceiverAllowanceHook() != nil {
 		base := hookCallFromProtobuf(pb.GetPreTxReceiverAllowanceHook())

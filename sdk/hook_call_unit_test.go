@@ -91,7 +91,7 @@ func TestUnitNftHookCallFromProtobufPreHookSender(t *testing.T) {
 		},
 	}
 
-	nftHookCall := nftHookCallFromProtobuf(pbNftTransfer)
+	nftHookCall := nftSenderHookCallFromProtobuf(pbNftTransfer)
 	require.NotNil(t, nftHookCall)
 	require.Equal(t, hookId, nftHookCall.GetHookId())
 	require.Equal(t, data, nftHookCall.GetEvmHookCall().GetData())
@@ -122,7 +122,7 @@ func TestUnitNftHookCallFromProtobufPrePostHookSender(t *testing.T) {
 		},
 	}
 
-	nftHookCall := nftHookCallFromProtobuf(pbNftTransfer)
+	nftHookCall := nftSenderHookCallFromProtobuf(pbNftTransfer)
 	require.NotNil(t, nftHookCall)
 	require.Equal(t, hookId, nftHookCall.GetHookId())
 	require.Equal(t, data, nftHookCall.GetEvmHookCall().GetData())
@@ -153,7 +153,7 @@ func TestUnitNftHookCallFromProtobufPreHookReceiver(t *testing.T) {
 		},
 	}
 
-	nftHookCall := nftHookCallFromProtobuf(pbNftTransfer)
+	nftHookCall := nftReceiverHookCallFromProtobuf(pbNftTransfer)
 	require.NotNil(t, nftHookCall)
 	require.Equal(t, hookId, nftHookCall.GetHookId())
 	require.Equal(t, data, nftHookCall.GetEvmHookCall().GetData())
@@ -184,7 +184,7 @@ func TestUnitNftHookCallFromProtobufPrePostHookReceiver(t *testing.T) {
 		},
 	}
 
-	nftHookCall := nftHookCallFromProtobuf(pbNftTransfer)
+	nftHookCall := nftReceiverHookCallFromProtobuf(pbNftTransfer)
 	require.NotNil(t, nftHookCall)
 	require.Equal(t, hookId, nftHookCall.GetHookId())
 	require.Equal(t, data, nftHookCall.GetEvmHookCall().GetData())
@@ -195,7 +195,7 @@ func TestUnitNftHookCallFromProtobufPrePostHookReceiver(t *testing.T) {
 func TestUnitNftHookCallFromProtobufNil(t *testing.T) {
 	t.Parallel()
 
-	nftHookCall := nftHookCallFromProtobuf(nil)
+	nftHookCall := nftSenderHookCallFromProtobuf(nil)
 	require.Nil(t, nftHookCall)
 }
 
@@ -204,7 +204,7 @@ func TestUnitNftHookCallFromProtobufNoHook(t *testing.T) {
 
 	pbNftTransfer := &services.NftTransfer{}
 
-	nftHookCall := nftHookCallFromProtobuf(pbNftTransfer)
+	nftHookCall := nftSenderHookCallFromProtobuf(pbNftTransfer)
 	require.Nil(t, nftHookCall)
 }
 
@@ -429,7 +429,7 @@ func TestUnitNftHookCallRoundTripProtobufWithHookId(t *testing.T) {
 	}
 
 	// Convert back from protobuf
-	reconstructed := nftHookCallFromProtobuf(pbNftTransfer)
+	reconstructed := nftSenderHookCallFromProtobuf(pbNftTransfer)
 
 	// Verify round-trip
 	require.Equal(t, original.GetHookId(), reconstructed.GetHookId())

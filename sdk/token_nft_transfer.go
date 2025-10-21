@@ -32,8 +32,8 @@ func _NftTransferFromProtobuf(pb *services.NftTransfer) _TokenNftTransfer {
 		receiverAccountID = *_AccountIDFromProtobuf(pb.ReceiverAccountID)
 	}
 
-	senderHookCall := nftHookCallFromProtobuf(pb)
-	receiverHookCall := nftHookCallFromProtobuf(pb)
+	senderHookCall := nftSenderHookCallFromProtobuf(pb)
+	receiverHookCall := nftReceiverHookCallFromProtobuf(pb)
 	return _TokenNftTransfer{
 		SenderAccountID:   senderAccountID,
 		ReceiverAccountID: receiverAccountID,
