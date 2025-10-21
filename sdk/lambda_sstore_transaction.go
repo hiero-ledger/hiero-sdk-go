@@ -107,11 +107,9 @@ func (tx LambdaSStoreTransaction) buildProtoBody() *services.LambdaSStoreTransac
 		HookId: tx.hookId.toProtobuf(),
 	}
 
-	storageUpdates := make([]*services.LambdaStorageUpdate, 0)
 	for _, storageUpdate := range tx.storageUpdates {
-		storageUpdates = append(storageUpdates, storageUpdate.toProtobuf())
+		body.StorageUpdates = append(body.StorageUpdates, storageUpdate.toProtobuf())
 	}
-	body.StorageUpdates = storageUpdates
 
 	return body
 }

@@ -61,6 +61,17 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 	resp, err = frozenTxn.Sign(accountKey).Execute(env.Client)
 	require.NoError(t, err)
 
+	toBytes, err := frozenTxn.ToBytes()
+	require.NoError(t, err)
+
+	newFrozenTxn, err := TransactionFromBytes(toBytes)
+	require.NoError(t, err)
+	lambdaSStoreTxn, ok := newFrozenTxn.(LambdaSStoreTransaction)
+	require.True(t, ok)
+	require.NoError(t, err)
+	resp, err = lambdaSStoreTxn.Execute(env.Client)
+	require.NoError(t, err)
+
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 	assert.Equal(t, StatusSuccess, receipt.Status)
