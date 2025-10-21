@@ -42,12 +42,13 @@
 package services
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
@@ -2148,6 +2149,7 @@ type HookEntityId struct {
 	// Types that are valid to be assigned to EntityId:
 	//
 	//	*HookEntityId_AccountId
+	//	*HookEntityId_ContractId
 	EntityId      isHookEntityId_EntityId `protobuf_oneof:"entity_id"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -2199,6 +2201,15 @@ func (x *HookEntityId) GetAccountId() *AccountID {
 	return nil
 }
 
+func (x *HookEntityId) GetContractId() *ContractID {
+	if x != nil {
+		if x, ok := x.EntityId.(*HookEntityId_ContractId); ok {
+			return x.ContractId
+		}
+	}
+	return nil
+}
+
 type isHookEntityId_EntityId interface {
 	isHookEntityId_EntityId()
 }
@@ -2210,6 +2221,14 @@ type HookEntityId_AccountId struct {
 }
 
 func (*HookEntityId_AccountId) isHookEntityId_EntityId() {}
+
+type HookEntityId_ContractId struct {
+	// *
+	// A contract using a hook.
+	ContractId *ContractID `protobuf:"bytes,2,opt,name=contract_id,json=accountId,proto3,oneof"`
+}
+
+func (*HookEntityId_ContractId) isHookEntityId_EntityId() {}
 
 // *
 // Specifies a call to a hook from within a transaction.

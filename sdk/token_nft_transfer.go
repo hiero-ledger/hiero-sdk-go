@@ -13,6 +13,8 @@ type _TokenNftTransfer struct {
 	ReceiverAccountID AccountID
 	SerialNumber      int64
 	IsApproved        bool
+	SenderHookCall    *NftHookCall
+	ReceiverHookCall  *NftHookCall
 }
 
 func _NftTransferFromProtobuf(pb *services.NftTransfer) _TokenNftTransfer {
@@ -30,21 +32,53 @@ func _NftTransferFromProtobuf(pb *services.NftTransfer) _TokenNftTransfer {
 		receiverAccountID = *_AccountIDFromProtobuf(pb.ReceiverAccountID)
 	}
 
+	senderHookCall := nftSenderHookCallFromProtobuf(pb)
+	receiverHookCall := nftReceiverHookCallFromProtobuf(pb)
 	return _TokenNftTransfer{
 		SenderAccountID:   senderAccountID,
 		ReceiverAccountID: receiverAccountID,
 		SerialNumber:      pb.SerialNumber,
 		IsApproved:        pb.IsApproval,
+		SenderHookCall:    senderHookCall,
+		ReceiverHookCall:  receiverHookCall,
 	}
 }
 
 func (transfer *_TokenNftTransfer) _ToProtobuf() *services.NftTransfer {
-	return &services.NftTransfer{
+	pbBody := &services.NftTransfer{
 		SenderAccountID:   transfer.SenderAccountID._ToProtobuf(),
 		ReceiverAccountID: transfer.ReceiverAccountID._ToProtobuf(),
 		SerialNumber:      transfer.SerialNumber,
 		IsApproval:        transfer.IsApproved,
 	}
+
+	if transfer.SenderHookCall != nil {
+		switch transfer.SenderHookCall.hookType {
+		case PRE_HOOK_SENDER:
+			pbBody.SenderAllowanceHookCall = &services.NftTransfer_PreTxSenderAllowanceHook{
+				PreTxSenderAllowanceHook: transfer.SenderHookCall.toProtobuf(),
+			}
+		case PRE_POST_HOOK_SENDER:
+			pbBody.SenderAllowanceHookCall = &services.NftTransfer_PrePostTxSenderAllowanceHook{
+				PrePostTxSenderAllowanceHook: transfer.SenderHookCall.toProtobuf(),
+			}
+		}
+	}
+
+	if transfer.ReceiverHookCall != nil {
+		switch transfer.ReceiverHookCall.hookType {
+		case PRE_HOOK_RECEIVER:
+			pbBody.ReceiverAllowanceHookCall = &services.NftTransfer_PreTxReceiverAllowanceHook{
+				PreTxReceiverAllowanceHook: transfer.ReceiverHookCall.toProtobuf(),
+			}
+		case PRE_POST_HOOK_RECEIVER:
+			pbBody.ReceiverAllowanceHookCall = &services.NftTransfer_PrePostTxReceiverAllowanceHook{
+				PrePostTxReceiverAllowanceHook: transfer.ReceiverHookCall.toProtobuf(),
+			}
+		}
+	}
+
+	return pbBody
 }
 
 // ToBytes returns the byte representation of the TokenNftTransfer
