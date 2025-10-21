@@ -136,3 +136,5 @@ Hiero uses the Linux Foundation Decentralised Trust [Code of Conduct](https://ww
 ## License
 
 [Apache License 2.0](LICENSE)
+<br>## Welcome to HCS Messaging<br>Hedera SDK sends ordered messages in Go—new contributors, start with the Topic tutorial for your first submission. Tip: Use Consensus for timestamps! <br>
+
