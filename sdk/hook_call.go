@@ -4,19 +4,31 @@ import "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
 // SPDX-License-Identifier: Apache-2.0
 
+// NftHookType represents the type of hook that can be executed for NFT transfers.
 type NftHookType int32
 
 const (
+	// executes a hook on the sender's account before the NFT transfer.
 	PRE_HOOK_SENDER NftHookType = iota
+
+	//  xecutes hooks on the sender's account both before and after
 	PRE_POST_HOOK_SENDER
+
+	// executes a hook on the receiver's account before the NFT transfer.
 	PRE_HOOK_RECEIVER
+
+	// PRE_POST_HOOK_RECEIVER executes hooks on the receiver's account both before and after
 	PRE_POST_HOOK_RECEIVER
 )
 
+// FungibleHookType represents the type of hook that can be executed for fungible token transfers.
 type FungibleHookType uint32
 
 const (
+	// executes a hook before the fungible token transfer.
 	PRE_HOOK FungibleHookType = iota
+
+	// executes hooks both before and after the fungible token transfer.
 	PRE_POST_HOOK
 )
 

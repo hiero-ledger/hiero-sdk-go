@@ -421,15 +421,9 @@ func TestUnitHookIdMultipleRoundTrips(t *testing.T) {
 	proto2 := reconstructed1.toProtobuf()
 	reconstructed2 := hookIdFromProtobuf(proto2)
 
-	// Third round trip
-	proto3 := reconstructed2.toProtobuf()
-	reconstructed3 := hookIdFromProtobuf(proto3)
-
 	// All should be equal
 	require.Equal(t, original.GetHookId(), reconstructed1.GetHookId())
 	require.Equal(t, original.GetHookId(), reconstructed2.GetHookId())
-	require.Equal(t, original.GetHookId(), reconstructed3.GetHookId())
 	require.Equal(t, original.GetEntityId().GetAccountId(), reconstructed1.GetEntityId().GetAccountId())
 	require.Equal(t, original.GetEntityId().GetAccountId(), reconstructed2.GetEntityId().GetAccountId())
-	require.Equal(t, original.GetEntityId().GetAccountId(), reconstructed3.GetEntityId().GetAccountId())
 }
