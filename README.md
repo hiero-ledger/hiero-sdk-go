@@ -9,7 +9,7 @@
 
 The Go SDK for interacting with a Hiero based network.
 Hiero communicates using [gRPC](https://grpc.io);
-the Protobufs definitions for the protocol are available in the [hashgraph/hedera-protobuf](https://github.com/hashgraph/hedera-protobuf) repository (the repo will be migrated to Hiero in near future).
+the Protobufs definitions for the protocol are available in the [hashgraph/hedera-protobuf](https://github.com/hashgraph/hedera-protobufs) repository (the repo will be migrated to Hiero in near future).
 
 ## Usage
 
