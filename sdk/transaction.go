@@ -1348,6 +1348,10 @@ func (tx *Transaction[T]) shouldRetry(_ Executable, response interface{}) _Execu
 		return executionStateFinished
 	}
 
+	if status == StatusInvalidNodeAccount {
+		return executionStateRetryWithAnotherNode
+	}
+
 	return executionStateError
 }
 

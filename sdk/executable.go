@@ -5,6 +5,7 @@ package hiero
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -23,10 +24,11 @@ const maxAttempts = 10
 type _ExecutionState uint32
 
 const (
-	executionStateRetry    _ExecutionState = 0
-	executionStateFinished _ExecutionState = 1
-	executionStateError    _ExecutionState = 2
-	executionStateExpired  _ExecutionState = 3
+	executionStateRetry                _ExecutionState = 0
+	executionStateFinished             _ExecutionState = 1
+	executionStateError                _ExecutionState = 2
+	executionStateExpired              _ExecutionState = 3
+	executionStateRetryWithAnotherNode _ExecutionState = 4
 )
 
 type Executable interface {
@@ -201,12 +203,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			currentBackoff *= 2
 		}
 
-		if e.isTransaction() {
-			if attempt > 0 && len(e.GetNodeAccountIDs()) > 1 {
-				e.advanceRequest()
-			}
-		}
-
 		protoRequest = e.makeRequest()
 		if e.isBatchedAndNotBatchTransaction() {
 			return TransactionResponse{}, errBatchedAndNotBatchTransaction
@@ -244,8 +240,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			continue
 		}
 
-		e.advanceRequest()
-
 		method := e.getMethod(channel)
 
 		var resp interface{}
@@ -277,6 +271,8 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			cancel()
 		}
 		if err != nil {
+			fmt.Println(err.Error())
+			e.advanceRequest()
 			errPersistent = err
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
 				client.network._IncreaseBackoff(node)
@@ -338,6 +334,14 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		case executionStateFinished:
 			txLogger.Trace("finished", "Response Proto", hex.EncodeToString(marshaledResponse))
 			return e.mapResponse(resp, node.accountID, protoRequest)
+		case executionStateRetryWithAnotherNode:
+			e.advanceRequest()
+			txLogger.Trace("received `INVALID_NODE_ACCOUNT`; updating addressbook and marking node as unhealthy", "requestId", e.getLogID(e), "nodeAccountId", node.accountID)
+			client._UpdateAddressBook()
+			// mark this node as unhealthy
+			client.network._IncreaseBackoff(node)
+			// continue with other nodes
+			continue
 		}
 	}
 
