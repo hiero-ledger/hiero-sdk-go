@@ -297,7 +297,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		}
 
 		if err != nil {
-			fmt.Println(err.Error())
 			e.advanceRequest()
 			errPersistent = err
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
