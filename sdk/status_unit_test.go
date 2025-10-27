@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// TestStatusFromProtoToString tests pulling all codes from the proto generated code,
+// TestUnitStatusFromProtoToString tests pulling all codes from the proto generated code,
 // converting it to the sdk enum, and calling String()
 //
 // Ideally this will catch any changes to _Response codes when the protobufs get updated
