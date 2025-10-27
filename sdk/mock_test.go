@@ -112,7 +112,7 @@ func DisabledTestUnitMockBackoff(t *testing.T) {
 	tran := TransactionIDGenerate(AccountID{Account: 3})
 
 	_, err = NewAccountCreateTransaction().
-		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetKeyWithoutAlias(newKey).
 		SetTransactionID(tran).
 		SetInitialBalance(newBalance).
@@ -765,10 +765,10 @@ func TestUnitMockTransactionMetadata(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestUnitMockExecutionGrpcTimeout(t *testing.T) {
+func TestUnitMockExecutionGrpcTimeoutTwoNodes(t *testing.T) {
 	t.Parallel()
 	timeoutCall := func(request *services.Transaction) *services.TransactionResponse {
-		time.Sleep(200 * time.Microsecond)
+		time.Sleep(200 * time.Millisecond)
 		return &services.TransactionResponse{
 			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
 		}
@@ -779,11 +779,37 @@ func TestUnitMockExecutionGrpcTimeout(t *testing.T) {
 		}
 	}
 	responses := [][]interface{}{{
-		timeoutCall, fastCall,
-	}}
+		timeoutCall}, {fastCall}}
 
 	client, server := NewMockClientAndServer(responses)
-	client.SetGrpcDeadline(100 * time.Microsecond)
+	client.SetGrpcDeadline(100 * time.Millisecond)
+	defer server.Close()
+
+	_, err := NewFileCreateTransaction().
+		SetContents([]byte("hello")).
+		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		Execute(client)
+	require.NoError(t, err)
+}
+
+func TestUnitMockExecutionGrpcTimeoutOneNode(t *testing.T) {
+	t.Parallel()
+	timeoutCall := func(request *services.Transaction) *services.TransactionResponse {
+		time.Sleep(200 * time.Millisecond)
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	fastCall := func(request *services.Transaction) *services.TransactionResponse {
+		return &services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		}
+	}
+	responses := [][]interface{}{{
+		timeoutCall, fastCall}}
+
+	client, server := NewMockClientAndServer(responses)
+	client.SetGrpcDeadline(100 * time.Millisecond)
 	defer server.Close()
 
 	_, err := NewFileCreateTransaction().

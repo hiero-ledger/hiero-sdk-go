@@ -229,12 +229,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			currentBackoff *= 2
 		}
 
-		if e.isTransaction() {
-			if attempt > 0 && len(e.GetNodeAccountIDs()) > 1 {
-				e.advanceRequest()
-			}
-		}
-
 		protoRequest = e.makeRequest()
 		if e.isBatchedAndNotBatchTransaction() {
 			return TransactionResponse{}, errBatchedAndNotBatchTransaction
@@ -268,11 +262,10 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		channel, err := node._GetChannel(txLogger)
 		if err != nil {
 			client.network._IncreaseBackoff(node)
+			e.advanceRequest()
 			errPersistent = err
 			continue
 		}
-
-		e.advanceRequest()
 
 		method := e.getMethod(channel)
 
@@ -305,6 +298,7 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		if err != nil {
 			errPersistent = err
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
+				e.advanceRequest()
 				client.network._IncreaseBackoff(node)
 				continue
 			}
