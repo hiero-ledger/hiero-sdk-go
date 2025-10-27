@@ -179,8 +179,8 @@ func (a *ABI) UnmarshalJSON(data []byte) error {
 func NewABIFromList(humanReadableAbi []string) (*ABI, error) {
 	res := &ABI{}
 	for _, c := range humanReadableAbi {
-		if strings.HasPrefix(c, "constructor") {
-			typ, err := NewType("tuple" + strings.TrimPrefix(c, "constructor"))
+		if after, ok := strings.CutPrefix(c, "constructor"); ok {
+			typ, err := NewType("tuple" + after)
 			if err != nil {
 				return nil, err
 			}

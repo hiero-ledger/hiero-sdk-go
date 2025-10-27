@@ -121,7 +121,7 @@ func TestUnitAccountCreateTransactionMock(t *testing.T) {
 	tran := TransactionIDGenerate(AccountID{Account: 3})
 
 	resp, err := NewAccountCreateTransaction().
-		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetKeyWithoutAlias(newKey).
 		SetTransactionID(tran).
 		SetInitialBalance(newBalance).

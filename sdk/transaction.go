@@ -1446,10 +1446,6 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 		)
 	}
 
-	if tx.grpcDeadline == nil {
-		tx.grpcDeadline = client.requestTimeout
-	}
-
 	resp, err := _Execute(client, tx.childTransaction)
 
 	if err != nil {
