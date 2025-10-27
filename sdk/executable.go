@@ -216,7 +216,7 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 	startTime := time.Now()
 	for attempt = int64(0); attempt < int64(maxAttempts); attempt++ {
-		if time.Since(startTime) > requestTimeout {
+		if time.Since(startTime) >= requestTimeout {
 			return TransactionResponse{}, fmt.Errorf("request timed out after %s", requestTimeout)
 		}
 

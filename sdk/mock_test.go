@@ -37,48 +37,6 @@ func TestUnitMockQuery(t *testing.T) {
 			&services.Response{
 				Response: &services.Response_CryptogetAccountBalance{
 					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
 						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_COST_ANSWER, Cost: 0},
 						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
 							AccountNum: 1800,
@@ -462,8 +420,7 @@ func NewMockClientAndServer(allNodeResponses [][]interface{}) (*Client, *MockSer
 	servers := make([]*MockServer, len(allNodeResponses))
 	ctx, cancel := context.WithCancel(context.Background())
 
-	logger := NewLogger("hedera client mock", LoggerLevelError)
-	var defaultLogger Logger = logger
+	logger := NewLogger("hedera client mock", LoggerLevelDisabled)
 
 	client := &Client{
 		defaultMaxQueryPayment:          NewHbar(1),
@@ -479,12 +436,10 @@ func NewMockClientAndServer(allNodeResponses [][]interface{}) (*Client, *MockSer
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
-		logger:                          defaultLogger,
+		logger:                          logger,
 	}
 
 	for i, responses := range allNodeResponses {
-		responses := responses
-
 		serverReady := make(chan bool)
 		nodeAccountID := AccountID{Account: uint64(3 + i)}
 		go func() {
