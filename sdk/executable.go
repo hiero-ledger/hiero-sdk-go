@@ -299,7 +299,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			e.advanceRequest()
 			errPersistent = err
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
-				e.advanceRequest()
 				client.network._IncreaseBackoff(node)
 				continue
 			}
