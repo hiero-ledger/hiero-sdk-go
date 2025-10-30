@@ -97,6 +97,32 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdToTheSameAccount(
 	require.NoError(t, err)
 }
 
+// func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountId(t *testing.T) {
+// 	// Set the network
+// 	network := make(map[string]AccountID)
+// 	network["localhost:50211"] = AccountID{Account: 1038}
+// 	client, err := ClientForNetworkV2(network)
+// 	require.NoError(t, err)
+// 	defer client.Close()
+// 	mirror := []string{"localhost:5600"}
+// 	client.SetMirrorNetwork(mirror)
+
+// 	// Set the operator to be account 0.0.2
+// 	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
+// 	require.NoError(t, err)
+// 	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
+
+// 	resp, err := NewNodeUpdateTransaction().
+// 		SetNodeID(0).
+// 		SetDescription("testUpdated").
+// 		SetAccountID(AccountID{Account: 3}).
+// 		Execute(client)
+
+// 	require.NoError(t, err)
+// 	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+// 	require.NoError(t, err)
+// }
+
 func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdInvalidSignature(t *testing.T) {
 	t.Parallel()
 
@@ -290,6 +316,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 	newNodeAccountID := *receipt.AccountID
 
 	// update node account id
+	// 0.0.3 -> 0.0.1003
 	resp, err = NewNodeUpdateTransaction().
 		SetNodeID(0).
 		SetDescription("testUpdated").
@@ -318,6 +345,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 	require.Equal(t, newNodeAccountID.String(), client.network.addressBook[key1].AccountID.String())
 	require.Equal(t, AccountID{Account: 4}.String(), client.network.addressBook[key2].AccountID.String())
 
+	// this transactin should succeed
 	resp, err = NewAccountCreateTransaction().
 		SetKeyWithoutAlias(newAccountKey.PublicKey()).
 		SetNodeAccountIDs([]AccountID{newNodeAccountID}).
@@ -329,6 +357,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 	// revert the node account id
 	resp, err = NewNodeUpdateTransaction().
 		SetNodeID(0).
+		SetNodeAccountIDs([]AccountID{newNodeAccountID}).
 		SetDescription("testUpdated").
 		SetAccountID(AccountID{Account: 3}).
 		Execute(client)
