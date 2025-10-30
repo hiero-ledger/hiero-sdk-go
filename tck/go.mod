@@ -5,7 +5,7 @@ go 1.24.0
 toolchain go1.24.5
 
 require (
-	github.com/creachadair/jrpc2 v1.3.2
+	github.com/creachadair/jrpc2 v1.3.3
 	github.com/hiero-ledger/hiero-sdk-go/v2 v2.66.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
@@ -15,7 +15,7 @@ replace github.com/hiero-ledger/hiero-sdk-go/v2 => ../
 
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.5 // indirect
-	github.com/creachadair/mds v0.25.2 // indirect
+	github.com/creachadair/mds v0.25.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect

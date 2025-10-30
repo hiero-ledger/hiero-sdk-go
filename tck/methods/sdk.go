@@ -14,6 +14,12 @@ type SDKService struct {
 	clients map[string]*hiero.Client
 }
 
+func NewSdkService() *SDKService {
+	return &SDKService{
+		clients: make(map[string]*hiero.Client, 0),
+	}
+}
+
 func (s *SDKService) GetClient(sessionId string) *hiero.Client {
 	return s.clients[sessionId]
 }

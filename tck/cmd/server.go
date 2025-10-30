@@ -26,7 +26,7 @@ func main() {
 	_ = godotenv.Load()
 
 	// Initialize the services
-	sdkService := new(methods.SDKService)
+	sdkService := methods.NewSdkService()
 
 	accountService := new(methods.AccountService)
 	accountService.SetSdkService(sdkService)
