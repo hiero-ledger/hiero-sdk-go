@@ -214,7 +214,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 	} else {
 		requestTimeout = client.GetRequestTimeout()
 	}
-
 	startTime := time.Now()
 	for attempt = int64(0); attempt < int64(maxAttempts); attempt++ {
 		if time.Since(startTime) >= requestTimeout {
@@ -358,9 +357,10 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			txLogger.Trace("finished", "Response Proto", hex.EncodeToString(marshaledResponse))
 			return e.mapResponse(resp, node.accountID, protoRequest)
 		case executionStateRetryWithAnotherNode:
+			errPersistent = statusError
 			e.advanceRequest()
 			txLogger.Trace("received `INVALID_NODE_ACCOUNT`; updating addressbook and marking node as unhealthy", "requestId", e.getLogID(e), "nodeAccountId", node.accountID)
-			client._UpdateAddressBook()
+			defer client._UpdateAddressBook()
 			// mark this node as unhealthy
 			client.network._IncreaseBackoff(node)
 			// continue with other nodes
