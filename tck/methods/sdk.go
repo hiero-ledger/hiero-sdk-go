@@ -11,12 +11,17 @@ import (
 )
 
 type SDKService struct {
-	Client *hiero.Client
+	clients map[string]*hiero.Client
+}
+
+func (s *SDKService) GetClient(sessionId string) *hiero.Client {
+	return s.clients[sessionId]
 }
 
 // Setup function for the SDK
 func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (response.SetupResponse, error) {
 	var clientType string
+	var client *hiero.Client
 
 	if params.NodeIp != nil && params.NodeAccountId != nil && params.MirrorNetworkIp != nil {
 		// Custom client setup
@@ -27,19 +32,20 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 		node := map[string]hiero.AccountID{
 			*params.NodeIp: nodeId,
 		}
-		s.Client = hiero.ClientForNetwork(node)
+		client = hiero.ClientForNetwork(node)
 		clientType = "custom"
-		s.Client.SetMirrorNetwork([]string{*params.MirrorNetworkIp})
+		client.SetMirrorNetwork([]string{*params.MirrorNetworkIp})
 	} else {
 		// Default to testnet
-		s.Client = hiero.ClientForTestnet()
+		client = hiero.ClientForTestnet()
 		clientType = "testnet"
 	}
 
 	// Set operator (adjustments may be needed based on the Hiero SDK)
 	operatorId, _ := hiero.AccountIDFromString(params.OperatorAccountId)
 	operatorKey, _ := hiero.PrivateKeyFromString(params.OperatorPrivateKey)
-	s.Client.SetOperator(operatorId, operatorKey)
+	client.SetOperator(operatorId, operatorKey)
+	s.clients[params.SessionId] = client
 
 	return response.SetupResponse{
 		Message: "Successfully setup " + clientType + " client.",
@@ -48,8 +54,8 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 }
 
 // Reset function for the SDK
-func (s *SDKService) Reset(_ context.Context) response.SetupResponse {
-	s.Client = nil
+func (s *SDKService) Reset(_ context.Context, params param.BaseParams) response.SetupResponse {
+	delete(s.clients, params.SessionId)
 	return response.SetupResponse{
 		Status: "SUCCESS",
 	}

@@ -48,17 +48,17 @@ func (e *EthereumService) CreateEthereumTransaction(ctx context.Context, params 
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, e.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, e.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(e.sdkService.Client)
+	txResponse, err := transaction.Execute(e.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(e.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(e.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
