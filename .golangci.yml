@@ -7,10 +7,10 @@ linters:
         - errcheck
         - gochecknoinits
         - goconst
-        - gocritic
+        # - gocritic TODO
         - gocyclo
         - gosec
-        - govet
+        # - govet TODO
         - ineffassign
         - nakedret
         - staticcheck

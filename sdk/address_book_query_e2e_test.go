@@ -83,11 +83,34 @@ func TestIntegrationAddressBookQueryMainnet(t *testing.T) {
 }
 
 func TestIntegrationAddressBookQueryLocal(t *testing.T) {
-	env := NewIntegrationTestEnv(t)
-	defer CloseIntegrationTestEnv(env, nil)
+	t.Parallel()
 
-	_, err := NewAddressBookQuery().
-		SetFileID(FileIDForAddressBook()).
-		Execute(env.Client)
+	// Set the network
+	network := make(map[string]AccountID)
+	network["localhost:50211"] = AccountID{Account: 3}
+	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
+	defer client.Close()
+	mirror := []string{"localhost:5600"}
+	client.SetMirrorNetwork(mirror)
+
+	// Set the operator to be account 0.0.2
+	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
+	require.NoError(t, err)
+	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
+
+	client._UpdateAddressBook()
+
+	newAccountKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	// submit to node 3
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newAccountKey.PublicKey()).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		Execute(client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
+
 }
