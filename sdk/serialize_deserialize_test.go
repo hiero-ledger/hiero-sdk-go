@@ -258,7 +258,7 @@ Nunc velit turpis, cursus ornare fringilla eu, lacinia posuere leo. Mauris rutru
 	assert.NotNil(t, topicID)
 
 	submitBytes, err := NewTopicMessageSubmitTransaction().
-		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetNodeAccountIDs([]AccountID{{Account: 4}}).
 		SetMessage([]byte(bigContents2)).
 		SetTopicID(topicID).ToBytes()
 	require.NoError(t, err)

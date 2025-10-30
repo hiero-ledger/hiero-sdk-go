@@ -22,7 +22,7 @@ func TestIntegrationClientCanExecuteSerializedTransactionFromAnotherClient(t *te
 	client2.SetOperator(env.OperatorID, env.OperatorKey)
 
 	tx, err := NewTransferTransaction().AddHbarTransfer(env.OperatorID, HbarFromTinybar(-1)).
-		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).SetNodeAccountIDs([]AccountID{{Account: 3}}).FreezeWith(env.Client)
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).SetNodeAccountIDs([]AccountID{{Account: 4}}).FreezeWith(env.Client)
 	require.NoError(t, err)
 	txBytes, err := tx.ToBytes()
 	FromBytes, err := TransactionFromBytes(txBytes)
