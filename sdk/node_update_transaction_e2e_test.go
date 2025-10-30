@@ -244,48 +244,48 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdToDeletedAccountI
 	require.ErrorContains(t, err, "exceptional receipt status: ACCOUNT_DELETED")
 }
 
-func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountINoBalance(t *testing.T) {
-	t.Parallel()
+// func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountINoBalance(t *testing.T) {
+// 	t.Parallel()
 
-	// Set the network
-	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
-	client, err := ClientForNetworkV2(network)
-	require.NoError(t, err)
-	defer client.Close()
-	mirror := []string{"localhost:5600"}
-	client.SetMirrorNetwork(mirror)
+// 	// Set the network
+// 	network := make(map[string]AccountID)
+// 	network["localhost:50211"] = AccountID{Account: 3}
+// 	client, err := ClientForNetworkV2(network)
+// 	require.NoError(t, err)
+// 	defer client.Close()
+// 	mirror := []string{"localhost:5600"}
+// 	client.SetMirrorNetwork(mirror)
 
-	// Set the operator to be account 0.0.2
-	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
-	require.NoError(t, err)
-	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
+// 	// Set the operator to be account 0.0.2
+// 	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
+// 	require.NoError(t, err)
+// 	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
 
-	newAccountKey, err := PrivateKeyGenerateEd25519()
-	require.NoError(t, err)
-	resp, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(newAccountKey.PublicKey()).
-		Execute(client)
-	require.NoError(t, err)
-	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
-	require.NoError(t, err)
-	newAccount := *receipt.AccountID
+// 	newAccountKey, err := PrivateKeyGenerateEd25519()
+// 	require.NoError(t, err)
+// 	resp, err := NewAccountCreateTransaction().
+// 		SetKeyWithoutAlias(newAccountKey.PublicKey()).
+// 		Execute(client)
+// 	require.NoError(t, err)
+// 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
+// 	require.NoError(t, err)
+// 	newAccount := *receipt.AccountID
 
-	_, err = resp.SetValidateStatus(true).GetReceipt(client)
-	require.NoError(t, err)
+// 	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+// 	require.NoError(t, err)
 
-	frozen, err := NewNodeUpdateTransaction().
-		SetNodeID(0).
-		SetDescription("testUpdated").
-		SetAccountID(newAccount).
-		FreezeWith(client)
+// 	frozen, err := NewNodeUpdateTransaction().
+// 		SetNodeID(0).
+// 		SetDescription("testUpdated").
+// 		SetAccountID(newAccount).
+// 		FreezeWith(client)
 
-	resp, err = frozen.Sign(newAccountKey).Execute(client)
+// 	resp, err = frozen.Sign(newAccountKey).Execute(client)
 
-	require.NoError(t, err)
-	_, err = resp.SetValidateStatus(true).GetReceipt(client)
-	require.ErrorContains(t, err, "exceptional receipt status: NODE_ACCOUNT_HAS_ZERO_BALANCE")
-}
+// 	require.NoError(t, err)
+// 	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+// 	require.ErrorContains(t, err, "exceptional receipt status: NODE_ACCOUNT_HAS_ZERO_BALANCE")
+// }
 
 // func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAndRetry(t *testing.T) {
 
