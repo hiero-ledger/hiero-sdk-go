@@ -28,9 +28,20 @@ func TestIntegrationNodeCreateTransactionCanExecute(t *testing.T) {
 	require.NoError(t, err)
 	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
 
-	// The account of the new node
-	accountId, err := AccountIDFromString("0.0.4")
+	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
+	newBalance := NewHbar(1)
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		SetInitialBalance(newBalance).
+		Execute(client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
+
+	accountId := *receipt.AccountID
 
 	// Node description
 	description := "test"
@@ -74,7 +85,7 @@ func TestIntegrationNodeCreateTransactionCanExecute(t *testing.T) {
 		FreezeWith(client)
 
 	require.NoError(t, err)
-	resp, err := tx.Sign(adminKey).Execute(client)
+	resp, err = tx.Sign(adminKey).Execute(client)
 	require.NoError(t, err)
 
 	_, err = resp.GetReceipt(client)

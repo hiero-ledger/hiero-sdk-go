@@ -102,11 +102,12 @@ func NewIntegrationTestEnv(t *testing.T) IntegrationTestEnv {
 
 	env.Client.SetMaxNodeAttempts(1)
 	env.Client.SetMinBackoff(250 * time.Millisecond)
-	env.Client.SetMaxBackoff(8 * time.Second)
+	env.Client.SetMaxBackoff(16 * time.Second)
 	env.Client.SetNodeMinReadmitPeriod(5 * time.Second)
 	env.Client.SetNodeMaxReadmitPeriod(1 * time.Hour)
 	env.Client.SetMaxAttempts(15)
 	env.Client.SetDefaultMaxQueryPayment(NewHbar(50))
+	env.Client.SetRequestTimeout(5 * time.Minute)
 	logLevel := os.Getenv("LOG_LEVEL")
 	if logLevel == "" {
 		logLevel = "ERROR"
