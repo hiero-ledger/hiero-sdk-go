@@ -1,3 +1,19 @@
+## v2.73.0
+
+### Added
+- Grpc deadline and timeout to the client [#1538](https://github.com/hiero-ledger/hiero-sdk-go/pull/1538)
+New APIs for `Client`:
+    - `GetGrpcDeadline` & `SetGrpcDeadline` - the grpc deadline for a single grpc request
+New APIs for transactions and queries:
+    - `GetRequestTimeout` & `SetRequestTimeout` - the total time budget for a complete Transaction or Query execute operation
+
+### Fixed
+- The SDK not switching nodes when it receives bad grpc status code [#1538](https://github.com/hiero-ledger/hiero-sdk-go/pull/1538)
+
+### Changed
+- Internal refactor for `FileAppend` and `MessageSubmit` to share execute logic [#1549](https://github.com/hiero-ledger/hiero-sdk-go/pull/1549)
+- Replace HasSuffix+TrimSuffix with CutSuffix [#1548](https://github.com/hiero-ledger/hiero-sdk-go/pull/1548)
+
 ## v2.72.0
 
 ### Fixed

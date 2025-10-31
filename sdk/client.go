@@ -91,7 +91,8 @@ func ClientForMirrorNetworkWithRealmAndShard(mirrorNetwork []string, realm uint6
 }
 
 // ClientForNetwork constructs a client given a set of nodes.
-// Deprecated: Use ClientForNetworkV2 instead.
+// Deprecated
+// Use ClientForNetworkV2 instead.
 func ClientForNetwork(network map[string]AccountID) *Client {
 	net := _NewNetwork()
 	client := _NewClient(net, []string{}, nil, true, 0, 0)

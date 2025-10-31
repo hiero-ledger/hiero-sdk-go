@@ -139,7 +139,8 @@ func (tx *FileUpdateTransaction) SetFileMemo(memo string) *FileUpdateTransaction
 }
 
 // GeFileMemo
-// Deprecated: use GetFileMemo()
+// Deprecated
+// use GetFileMemo()
 func (tx *FileUpdateTransaction) GeFileMemo() string {
 	return tx.memo
 }

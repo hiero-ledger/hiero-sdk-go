@@ -91,7 +91,8 @@ func AccountIDFromEvmPublicAddress(s string) (AccountID, error) {
 
 // AccountIDFromSolidityAddress constructs an AccountID from a string
 // representation of a _Solidity address
-// Deprecated: Use AccountIDFromEvmAddress instead
+// Deprecated
+// Use AccountIDFromEvmAddress instead
 func AccountIDFromSolidityAddress(s string) (AccountID, error) {
 	shard, realm, account, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -185,7 +186,8 @@ func (id AccountID) GetChecksum() *string {
 
 // ToSolidityAddress returns the string representation of the AccountID as a
 // _Solidity address.
-// Deprecated: Use ToEvmAddress instead
+// Deprecated
+// Use ToEvmAddress instead
 func (id AccountID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Account)
 }

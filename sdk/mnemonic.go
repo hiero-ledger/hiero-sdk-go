@@ -303,8 +303,8 @@ func calculateDerivationPathValues(derivationPath string) ([]uint32, error) {
 
 	values := make([]uint32, 5)
 	for i, match := range matches[1:] {
-		if strings.HasSuffix(match, "'") {
-			match = strings.TrimSuffix(match, "'")
+		if before, ok := strings.CutSuffix(match, "'"); ok {
+			match = before
 			value, err := strconv.Atoi(match)
 			if err != nil {
 				return nil, err
