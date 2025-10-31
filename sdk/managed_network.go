@@ -134,7 +134,7 @@ func (mn *_ManagedNetwork) _GetNumberOfNodesForTransaction() int { // nolint
 		return int(math.Min(float64(*mn.maxNodesPerTransaction), float64(len(mn.network))))
 	}
 
-	return (len(mn.network) + 3 - 1) / 3
+	return len(mn.network)
 }
 
 func (mn *_ManagedNetwork) _SetMaxNodesPerTransaction(max int) {
