@@ -1,5 +1,4 @@
 //go:build all || e2e || testnets
-// +build all e2e testnets
 
 package hiero
 

@@ -107,13 +107,15 @@ func (id *FileID) ValidateChecksum(client *Client) error {
 	return nil
 }
 
-// Deprecated - use ValidateChecksum instead
+// Deprecated
+// use ValidateChecksum instead
 func (id *FileID) Validate(client *Client) error {
 	return id.ValidateChecksum(client)
 }
 
 // FileIDFromSolidityAddress returns a FileID parsed from the given solidity address.
-// Deprecated: use FileIDFromEvmAddress instead
+// Deprecated
+// use FileIDFromEvmAddress instead
 func FileIDFromSolidityAddress(s string) (FileID, error) {
 	shard, realm, file, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -166,7 +168,8 @@ func (id FileID) ToStringWithChecksum(client Client) (string, error) {
 }
 
 // ToSolidityAddress returns the string representation of a FileID in the format used by Solidity.
-// Deprecated: use ToEvmAddress instead
+// Deprecated
+// use ToEvmAddress instead
 func (id FileID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.File)
 }

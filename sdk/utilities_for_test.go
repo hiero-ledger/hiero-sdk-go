@@ -1,5 +1,4 @@
 //go:build all || unit || e2e || testnets || abnet
-// +build all unit e2e testnets abnet
 
 package hiero
 
