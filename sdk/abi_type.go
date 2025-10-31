@@ -560,7 +560,7 @@ func decodeSimpleType(str string) (*Type, error) {
 	case "address":
 		return &Type{kind: KindAddress, t: addressT, size: 20}, nil
 
-	case "function":
+	case "function": //nolint
 		return &Type{kind: KindFunction, size: 24, t: functionT}, nil
 
 	default:

@@ -1,5 +1,4 @@
 //go:build all || testnets
-// +build all testnets
 
 package hiero
 

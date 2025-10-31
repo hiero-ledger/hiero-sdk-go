@@ -1,5 +1,4 @@
 //go:build all || abnet
-// +build all abnet
 
 package hiero
 
