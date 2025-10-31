@@ -1,4 +1,4 @@
-//go:build all || abnet
+//go:build all || DAB
 
 package hiero
 
