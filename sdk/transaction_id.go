@@ -110,7 +110,7 @@ func (id TransactionID) String() string {
 	return returnString
 }
 
-// TransactionIDFromString constructs a TransactionID from a string representation
+// TransactionIdFromString constructs a TransactionID from a string representation
 func TransactionIdFromString(data string) (TransactionID, error) { // nolint
 	parts := strings.SplitN(data, "/", 2)
 
