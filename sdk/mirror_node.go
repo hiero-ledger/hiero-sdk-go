@@ -3,11 +3,15 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
+	"math"
 	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
 	"github.com/pkg/errors"
@@ -19,8 +23,8 @@ import (
 
 type _MirrorNode struct {
 	*_ManagedNode
-	consensusServiceClient *mirror.ConsensusServiceClient
-	networkServiceClient   *mirror.NetworkServiceClient
+	consensusServiceClient mirror.ConsensusServiceClient
+	networkServiceClient   mirror.NetworkServiceClient
 	client                 *grpc.ClientConn
 }
 
@@ -139,12 +143,12 @@ func (node *_MirrorNode) _GetReadmitTime() *time.Time {
 	return node._ManagedNode._GetReadmitTime()
 }
 
-func (node *_MirrorNode) _GetConsensusServiceClient() (*mirror.ConsensusServiceClient, error) {
+func (node *_MirrorNode) _GetConsensusServiceClient() (mirror.ConsensusServiceClient, error) {
 	if node.consensusServiceClient != nil {
 		return node.consensusServiceClient, nil
 	} else if node.client != nil {
 		channel := mirror.NewConsensusServiceClient(node.client)
-		node.consensusServiceClient = &channel
+		node.consensusServiceClient = channel
 		return node.consensusServiceClient, nil
 	}
 
@@ -168,18 +172,18 @@ func (node *_MirrorNode) _GetConsensusServiceClient() (*mirror.ConsensusServiceC
 	}
 
 	channel := mirror.NewConsensusServiceClient(conn)
-	node.consensusServiceClient = &channel
+	node.consensusServiceClient = channel
 	node.client = conn
 
 	return node.consensusServiceClient, nil
 }
 
-func (node *_MirrorNode) _GetNetworkServiceClient() (*mirror.NetworkServiceClient, error) {
+func (node *_MirrorNode) _GetNetworkServiceClient() (mirror.NetworkServiceClient, error) {
 	if node.networkServiceClient != nil {
 		return node.networkServiceClient, nil
 	} else if node.client != nil {
 		channel := mirror.NewNetworkServiceClient(node.client)
-		node.networkServiceClient = &channel
+		node.networkServiceClient = channel
 		return node.networkServiceClient, nil
 	}
 
@@ -203,7 +207,7 @@ func (node *_MirrorNode) _GetNetworkServiceClient() (*mirror.NetworkServiceClien
 	}
 
 	channel := mirror.NewNetworkServiceClient(conn)
-	node.networkServiceClient = &channel
+	node.networkServiceClient = channel
 	node.client = conn
 
 	return node.networkServiceClient, nil
@@ -251,4 +255,55 @@ func (node *_MirrorNode) _Close() error {
 	}
 
 	return nil
+}
+
+// processProtoMessageStream is a generic method that works with any gRPC client stream
+// that implements the RecvStream interface. This allows it to work with any stream type
+// such as mirror.NetworkService_GetNodesClient, mirror.ConsensusService_SubscribeTopicClient, etc.
+func processProtoMessageStream[T any](ctx context.Context, stream RecvStream[T], attempt uint64, maxAttempts uint64) <-chan streamResult[T] {
+	resultStream := make(chan streamResult[T])
+
+	go func() {
+		defer close(resultStream)
+		var err error
+		for {
+			select {
+			case <-ctx.Done():
+				var zero T
+				resultStream <- streamResult[T]{zero, ctx.Err()}
+				return
+			default:
+			}
+			if err != nil {
+				if grpcErr, ok := status.FromError(err); ok { // nolint
+					if attempt < maxAttempts {
+						delay := math.Min(250.0*math.Pow(2.0, float64(attempt)), 8000)
+						time.Sleep(time.Duration(delay) * time.Millisecond)
+						attempt++
+					} else {
+						err = grpcErr.Err()
+						var zero T
+						resultStream <- streamResult[T]{zero, err}
+					}
+				} else if err == io.EOF {
+					return
+				}
+			}
+
+			resp, e := stream.Recv()
+			if e != nil {
+				err = e
+				continue
+			}
+			resultStream <- streamResult[T]{resp, nil}
+		}
+	}()
+
+	return resultStream
+}
+
+// streamResult is a generic type for stream results
+type streamResult[T any] struct {
+	data T
+	err  error
 }

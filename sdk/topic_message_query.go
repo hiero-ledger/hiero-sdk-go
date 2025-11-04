@@ -4,8 +4,6 @@ package hiero
 
 import (
 	"context"
-	"io"
-	"math"
 	"regexp"
 	"sync"
 	"time"
@@ -169,8 +167,6 @@ func (query *TopicMessageQuery) build() *mirror.ConsensusTopicQuery {
 
 // Subscribe subscribes to messages sent to the specific TopicID
 func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessage)) (SubscriptionHandle, error) {
-	var once sync.Once
-	done := make(chan struct{})
 	handle := SubscriptionHandle{}
 
 	err := query.validateNetworkOnIDs(client)
@@ -178,9 +174,7 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 		return SubscriptionHandle{}, err
 	}
 
-	pb := query.build()
-
-	messages := make(map[string][]*mirror.ConsensusTopicResponse)
+	pbBody := query.build()
 
 	mirrorNode, err := client.mirrorNetwork._GetNextMirrorNode()
 	if err != nil {
@@ -192,84 +186,56 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 		return handle, err
 	}
 
-	go func() {
-		query.mu.Lock()
-		defer query.mu.Unlock()
-		var subClient mirror.ConsensusService_SubscribeTopicClient
-		var err error
+	ctx, cancel := context.WithCancel(context.Background())
+	handle.onUnsubscribe = cancel
 
+	stream, err := channel.SubscribeTopic(ctx, pbBody)
+	if err != nil {
+		return SubscriptionHandle{}, err
+	}
+	messages := make(map[string][]*mirror.ConsensusTopicResponse)
+
+	resultStream := processProtoMessageStream(ctx, stream, query.attempt, query.maxAttempts)
+
+	consumerOfMessages := func(ctx context.Context, incomingStream <-chan streamResult[*mirror.ConsensusTopicResponse]) {
 		for {
-			if err != nil {
-				handle.Unsubscribe()
-
-				if grpcErr, ok := status.FromError(err); ok { // nolint
-					if query.attempt < query.maxAttempts && query.retryHandler(err) {
-						subClient = nil
-
-						delay := math.Min(250.0*math.Pow(2.0, float64(query.attempt)), 8000)
-						time.Sleep(time.Duration(delay) * time.Millisecond)
-						query.attempt++
-					} else {
-						query.errorHandler(*grpcErr)
-						break
-					}
-				} else if err == io.EOF {
-					query.completionHandler()
-					break
-				} else {
-					panic(err)
-				}
-			}
-
-			if subClient == nil {
-				ctx, cancel := context.WithCancel(context.TODO())
-				handle.onUnsubscribe = cancel
-				once.Do(func() {
-					close(done)
-				})
-				subClient, err = (*channel).SubscribeTopic(ctx, pb)
-
-				if err != nil {
-					continue
-				}
-			}
-
-			var resp *mirror.ConsensusTopicResponse
-			resp, err = subClient.Recv()
-
-			if err != nil {
-				continue
-			}
-
-			if resp.ConsensusTimestamp != nil {
-				pb.ConsensusStartTime = _TimeToProtobuf(_TimeFromProtobuf(resp.ConsensusTimestamp).Add(1 * time.Nanosecond))
-			}
-
-			if pb.Limit > 0 {
-				pb.Limit--
-			}
-
-			if resp.ChunkInfo == nil || resp.ChunkInfo.Total == 1 {
-				onNext(_TopicMessageOfSingle(resp))
-			} else {
-				txID := _TransactionIDFromProtobuf(resp.ChunkInfo.InitialTransactionID).String()
-				message, ok := messages[txID]
+			select {
+			case <-ctx.Done():
+				return
+			case streamResult, ok := <-incomingStream:
+				// channel closed
 				if !ok {
-					message = make([]*mirror.ConsensusTopicResponse, 0, resp.ChunkInfo.Total)
+					query.completionHandler()
+				}
+				if streamResult.err != nil {
+					// TODO: figure out how to properly propagete the error
+					query.errorHandler(*status.New(codes.Unavailable, "node is UNAVAILABLE"))
 				}
 
-				message = append(message, resp)
-				messages[txID] = message
+				if streamResult.data.ChunkInfo == nil || streamResult.data.ChunkInfo.Total == 1 {
+					onNext(_TopicMessageOfSingle(streamResult.data))
+				} else {
+					txID := _TransactionIDFromProtobuf(streamResult.data.ChunkInfo.InitialTransactionID).String()
+					message, ok := messages[txID]
+					if !ok {
+						message = make([]*mirror.ConsensusTopicResponse, 0, streamResult.data.ChunkInfo.Total)
+					}
 
-				if int32(len(message)) == resp.ChunkInfo.Total {
-					delete(messages, txID)
+					message = append(message, streamResult.data)
+					messages[txID] = message
 
-					onNext(_TopicMessageOfMany(message))
+					if int32(len(message)) == streamResult.data.ChunkInfo.Total {
+						delete(messages, txID)
+
+						onNext(_TopicMessageOfMany(message))
+					}
 				}
+
 			}
 		}
-	}()
-	<-done
+	}
+
+	go consumerOfMessages(ctx, resultStream)
 	return handle, nil
 }
 
