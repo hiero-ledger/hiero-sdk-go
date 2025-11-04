@@ -5,7 +5,6 @@ package hiero
 import (
 	"context"
 	"regexp"
-	"sync"
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
@@ -29,7 +28,6 @@ type TopicMessageQuery struct {
 	startTime         *time.Time
 	endTime           *time.Time
 	limit             uint64
-	mu                sync.Mutex
 }
 
 // NewTopicMessageQuery creates TopicMessageQuery which
