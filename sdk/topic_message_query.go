@@ -199,15 +199,18 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 		for {
 			select {
 			case <-ctx.Done():
+				query.completionHandler()
 				return
 			case streamResult, ok := <-incomingStream:
 				// channel closed
 				if !ok {
 					query.completionHandler()
+					return
 				}
 				if streamResult.err != nil {
 					// TODO: figure out how to properly propagete the error
 					query.errorHandler(*status.New(codes.Unavailable, "node is UNAVAILABLE"))
+					return
 				}
 
 				if streamResult.data.ChunkInfo == nil || streamResult.data.ChunkInfo.Total == 1 {
