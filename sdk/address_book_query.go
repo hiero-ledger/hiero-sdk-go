@@ -114,7 +114,7 @@ func (q *AddressBookQuery) Execute(client *Client) (NodeAddressBook, error) {
 		return NodeAddressBook{}, err
 	}
 
-	resultStream := processProtoMessageStream(ctx, stream, q.attempt, q.maxAttempts)
+	resultStream := processProtoMessageStream(ctx, stream, q.attempt, q.maxAttempts, _DefaultRetryHandler)
 
 	results := make([]NodeAddress, 0)
 

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/status"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
 	"github.com/pkg/errors"
@@ -260,32 +259,34 @@ func (node *_MirrorNode) _Close() error {
 // processProtoMessageStream is a generic method that works with any gRPC client stream
 // that implements the RecvStream interface. This allows it to work with any stream type
 // such as mirror.NetworkService_GetNodesClient, mirror.ConsensusService_SubscribeTopicClient, etc.
-func processProtoMessageStream[T any](ctx context.Context, stream RecvStream[T], attempt uint64, maxAttempts uint64) <-chan streamResult[T] {
+func processProtoMessageStream[T any](ctx context.Context, stream RecvStream[T], attempt uint64, maxAttempts uint64, retryHandler func(err error) bool) <-chan streamResult[T] {
 	resultStream := make(chan streamResult[T])
 
 	go func() {
-		defer close(resultStream)
+		var zero T
 		var err error
+		defer close(resultStream)
 		for {
 			select {
 			case <-ctx.Done():
-				var zero T
 				resultStream <- streamResult[T]{zero, ctx.Err()}
 				return
 			default:
 			}
 			if err != nil {
-				if grpcErr, ok := status.FromError(err); ok { // nolint
-					if attempt < maxAttempts {
-						delay := math.Min(250.0*math.Pow(2.0, float64(attempt)), 8000)
-						time.Sleep(time.Duration(delay) * time.Millisecond)
-						attempt++
-					} else {
-						err = grpcErr.Err()
-						var zero T
-						resultStream <- streamResult[T]{zero, err}
-					}
-				} else if err == io.EOF {
+				if err == io.EOF {
+					return
+				}
+				if !retryHandler(err) { // should we retry?
+					resultStream <- streamResult[T]{zero, err}
+					return
+				}
+				if attempt < maxAttempts { // do we have attempts left?
+					delay := math.Min(250.0*math.Pow(2.0, float64(attempt)), 8000)
+					time.Sleep(time.Duration(delay) * time.Millisecond)
+					attempt++
+				} else { // max attempts reached
+					resultStream <- streamResult[T]{zero, errors.Wrap(err, "max attempts reached")}
 					return
 				}
 			}

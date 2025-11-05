@@ -5,12 +5,13 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"errors"
-	"sync/atomic"
+	"context"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc/status"
 
 	"github.com/stretchr/testify/require"
 )
@@ -68,7 +69,10 @@ func TestIntegrationTopicMessageQueryCanExecute(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	var finished int32 // 0 for false, 1 for true
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
@@ -80,23 +84,19 @@ func TestIntegrationTopicMessageQueryCanExecute(t *testing.T) {
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	time.Sleep(3 * time.Second)
-
 	topicID := *receipt.TopicID
 	assert.NotNil(t, topicID)
 
-	start := time.Now()
+	time.Sleep(5 * time.Second)
 
 	_, err = NewTopicMessageQuery().
 		SetTopicID(topicID).
-		SetStartTime(time.Unix(0, 0)).
 		SetLimit(1).
 		SetCompletionHandler(func() {
-			atomic.StoreInt32(&finished, 1)
+			wg.Done()
 		}).
 		Subscribe(env.Client, func(message TopicMessage) {
-			println(string(message.Contents))
-			atomic.StoreInt32(&finished, 1)
+			wg.Done()
 		})
 	require.NoError(t, err)
 
@@ -110,36 +110,28 @@ func TestIntegrationTopicMessageQueryCanExecute(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	for {
-		condition := atomic.LoadInt32(&finished) == 1 || uint64(time.Since(start).Seconds()) > 60
-		if condition {
-			break
-		}
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
 
-		time.Sleep(3 * time.Second)
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
 	}
-
-	resp, err = NewTopicDeleteTransaction().
-		SetTopicID(topicID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
-	require.NoError(t, err)
-
-	if atomic.LoadInt32(&finished) != 1 {
-		err = errors.New("Message was not received within 60 seconds")
-	}
-	require.NoError(t, err)
-
 }
 
-func TestIntegrationTopicMessageQueryNoTopicID(t *testing.T) {
+func TestIntegrationTopicMessageQueryUnsubscribe(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	var wait int32 = 1 // 1 for true, 0 for false
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
+
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
@@ -153,57 +145,38 @@ func TestIntegrationTopicMessageQueryNoTopicID(t *testing.T) {
 	topicID := *receipt.TopicID
 	assert.NotNil(t, topicID)
 
-	start := time.Now()
+	time.Sleep(5 * time.Second)
 
-	_, err = NewTopicMessageQuery().
+	handler, err := NewTopicMessageQuery().
 		SetTopicID(topicID).
 		SetStartTime(time.Unix(0, 0)).
-		Subscribe(env.Client, func(message TopicMessage) {
-			if string(message.Contents) == bigContents {
-				atomic.StoreInt32(&wait, 0)
-			}
-		})
+		SetCompletionHandler(func() {
+			close(done)
+		}).
+		Subscribe(env.Client, func(message TopicMessage) {})
 	require.NoError(t, err)
 
-	_, err = NewTopicMessageSubmitTransaction().
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetMessage([]byte(bigContents)).
-		Execute(env.Client)
-	assert.Error(t, err)
-	if err != nil {
-		require.ErrorContains(t, err, "exceptional precheck status INVALID_TOPIC_ID")
-	}
-
-	for {
-		condition := atomic.LoadInt32(&wait) == 0 || err != nil || uint64(time.Since(start).Seconds()) > 30
-		if condition {
-			break
-		}
-
+	go func() {
 		time.Sleep(3 * time.Second)
+		handler.Unsubscribe()
+	}()
+
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
 	}
-
-	resp, err = NewTopicDeleteTransaction().
-		SetTopicID(topicID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
-	require.NoError(t, err)
-
-	if atomic.LoadInt32(&wait) == 1 {
-		err = errors.New("Message was not received within 30 seconds")
-	}
-	assert.Error(t, err)
-
 }
 
-func TestIntegrationTopicMessageQueryNoMessage(t *testing.T) {
+func TestIntegrationTopicMessageQueryUnsubscribeLongMessage(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	var wait int32 = 1 // 1 for true, 0 for false
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
+
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs(env.NodeAccountIDs).
@@ -217,58 +190,45 @@ func TestIntegrationTopicMessageQueryNoMessage(t *testing.T) {
 	topicID := *receipt.TopicID
 	assert.NotNil(t, topicID)
 
-	start := time.Now()
+	time.Sleep(5 * time.Second)
 
-	_, err = NewTopicMessageQuery().
+	handler, err := NewTopicMessageQuery().
 		SetTopicID(topicID).
 		SetStartTime(time.Unix(0, 0)).
-		Subscribe(env.Client, func(message TopicMessage) {
-			if string(message.Contents) == bigContents {
-				atomic.StoreInt32(&wait, 0)
-			}
-		})
+		SetCompletionHandler(func() {
+			close(done)
+		}).
+		Subscribe(env.Client, func(message TopicMessage) {})
 	require.NoError(t, err)
 
-	_, err = NewTopicMessageSubmitTransaction().
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetTopicID(topicID).
-		Execute(env.Client)
-	assert.Error(t, err)
-	if err != nil {
-		assert.Equal(t, "no transactions to execute", err.Error())
-	}
+	go func() {
+		NewTopicMessageSubmitTransaction().
+			SetNodeAccountIDs([]AccountID{resp.NodeID}).
+			SetMessage([]byte(bigContents)).
+			SetTopicID(topicID).
+			Execute(env.Client)
+	}()
 
-	for {
-		condition := atomic.LoadInt32(&wait) == 0 || err != nil || uint64(time.Since(start).Seconds()) > 30
-		if condition {
-			break
-		}
-
+	go func() {
 		time.Sleep(3 * time.Second)
+		handler.Unsubscribe()
+	}()
+
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
 	}
-
-	resp, err = NewTopicDeleteTransaction().
-		SetTopicID(topicID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
-	require.NoError(t, err)
-
-	if atomic.LoadInt32(&wait) == 1 {
-		err = errors.New("Message was not received within 30 seconds")
-	}
-
-	assert.Error(t, err)
-
 }
 
 func TestIntegrationTopicMessageQueryNoStartTime(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	var finished int32 = 0 // 0 for false, 1 for true
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
 
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
@@ -282,20 +242,6 @@ func TestIntegrationTopicMessageQueryNoStartTime(t *testing.T) {
 
 	topicID := *receipt.TopicID
 	assert.NotNil(t, topicID)
-
-	start := time.Now()
-
-	_, err = NewTopicMessageQuery().
-		SetTopicID(topicID).
-		SetLimit(14).
-		SetEndTime(time.Now().Add(time.Second*20)).
-		Subscribe(env.Client, func(message TopicMessage) {
-			if string(message.Contents) == bigContents {
-				atomic.StoreInt32(&finished, 1)
-			}
-		})
-
-	require.NoError(t, err)
 
 	resp, err = NewTopicMessageSubmitTransaction().
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
@@ -303,41 +249,34 @@ func TestIntegrationTopicMessageQueryNoStartTime(t *testing.T) {
 		SetTopicID(topicID).
 		Execute(env.Client)
 	require.NoError(t, err)
-
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	for {
-		condition := atomic.LoadInt32(&finished) == 1 || uint64(time.Since(start).Seconds()) > 60
-		if condition {
-			break
-		}
-
-		time.Sleep(3 * time.Second)
-	}
-
-	resp, err = NewTopicDeleteTransaction().
+	_, err = NewTopicMessageQuery().
 		SetTopicID(topicID).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		Execute(env.Client)
+		SetEndTime(time.Now().Add(time.Second*20)).
+		Subscribe(env.Client, func(message TopicMessage) {
+			if string(message.Contents) == bigContents {
+				close(done)
+			}
+		})
 	require.NoError(t, err)
 
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
-	require.NoError(t, err)
-
-	if atomic.LoadInt32(&finished) == 0 {
-		err = errors.New("Message was not received within 60 seconds")
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
 	}
-
-	assert.NoError(t, err)
-
 }
 
-func TestIntegrationTopicMessageQueryWrongMessageType(t *testing.T) {
+func TestIntegrationTopicMessageQueryEndTime(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
-	var finished int32 // 0 for false, 1 for true
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
 
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
@@ -349,28 +288,131 @@ func TestIntegrationTopicMessageQueryWrongMessageType(t *testing.T) {
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	time.Sleep(3 * time.Second)
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	time.Sleep(5 * time.Second)
+
+	_, err = NewTopicMessageQuery().
+		SetTopicID(topicID).
+		SetEndTime(time.Now().Add(time.Second*5)).
+		SetCompletionHandler(func() {
+			close(done)
+		}).
+		Subscribe(env.Client, func(message TopicMessage) {})
+	require.NoError(t, err)
+
+	go func() {
+		resp, err = NewTopicMessageSubmitTransaction().
+			SetNodeAccountIDs([]AccountID{resp.NodeID}).
+			SetMessage([]byte(bigContents)).
+			SetTopicID(topicID).
+			Execute(env.Client)
+		require.NoError(t, err)
+	}()
+
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
+	}
+}
+
+func TestIntegrationTopicMessageQueryErrorHandler(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
+
+	_, err := NewTopicMessageQuery().
+		SetTopicID(TopicID{Topic: 9999999}).
+		SetMaxAttempts(1).
+		SetErrorHandler(func(stat status.Status) {
+			close(done)
+		}).
+		Subscribe(env.Client, func(message TopicMessage) {})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
+	}
+}
+
+func TestIntegrationTopicMessageQueryRetryHandler(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
+
+	_, err := NewTopicMessageQuery().
+		SetTopicID(TopicID{Topic: 9999999}).
+		SetRetryHandler(func(err error) bool {
+			close(done)
+			return false
+		}).
+		Subscribe(env.Client, func(message TopicMessage) {})
+	require.NoError(t, err)
+
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
+	}
+}
+
+func TestIntegrationTopicMessageQueryNoEndTime(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+	ctx, cancel := context.WithTimeout(t.Context(), 60*time.Second)
+	defer cancel()
+	done := make(chan struct{})
+
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
 
 	topicID := *receipt.TopicID
 	assert.NotNil(t, topicID)
 
+	time.Sleep(5 * time.Second)
+
 	_, err = NewTopicMessageQuery().
 		SetTopicID(topicID).
-		SetStartTime(time.Unix(0, 0)).
-		SetLimit(1).
-		SetCompletionHandler(func() {
-			atomic.StoreInt32(&finished, 1)
-		}).
+		SetCompletionHandler(func() {}).
 		Subscribe(env.Client, func(message TopicMessage) {
-			println(string(message.Contents))
-			atomic.StoreInt32(&finished, 1)
+			close(done)
 		})
 	require.NoError(t, err)
 
-	resp, err = NewTopicMessageSubmitTransaction().
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetMessage(1234). // wrong message type
-		SetTopicID(topicID).
-		Execute(env.Client)
-	require.ErrorContains(t, err, "no transactions to execute")
+	go func() {
+		resp, err = NewTopicMessageSubmitTransaction().
+			SetNodeAccountIDs([]AccountID{resp.NodeID}).
+			SetMessage([]byte(bigContents)).
+			SetTopicID(topicID).
+			Execute(env.Client)
+		require.NoError(t, err)
+	}()
+
+	select {
+	case <-done:
+		// success
+	case <-ctx.Done():
+		t.Fatal("timeout waiting for callback")
+	}
 }

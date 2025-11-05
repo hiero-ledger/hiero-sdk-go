@@ -193,7 +193,7 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 	}
 	messages := make(map[string][]*mirror.ConsensusTopicResponse)
 
-	resultStream := processProtoMessageStream(ctx, stream, query.attempt, query.maxAttempts)
+	resultStream := processProtoMessageStream(ctx, stream, query.attempt, query.maxAttempts, query.retryHandler)
 
 	consumerOfMessages := func(ctx context.Context, incomingStream <-chan streamResult[*mirror.ConsensusTopicResponse]) {
 		for {
@@ -208,8 +208,11 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 					return
 				}
 				if streamResult.err != nil {
-					// TODO: figure out how to properly propagete the error
-					query.errorHandler(*status.New(codes.Unavailable, "node is UNAVAILABLE"))
+					if grpcErr, ok := status.FromError(streamResult.err); ok {
+						query.errorHandler(*grpcErr)
+					} else {
+						query.errorHandler(*status.New(codes.Unknown, "Unknown error ocurred"))
+					}
 					return
 				}
 
