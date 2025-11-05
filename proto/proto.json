@@ -122,7 +122,8 @@
       "hints_types.proto",
       "history_types.proto",
       "consensus_service.proto",
-      "mirror_network_service.proto"
+      "mirror_network_service.proto",
+      "fee.proto"
     ]
   }
   
