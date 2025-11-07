@@ -131,10 +131,10 @@ func (mn *_ManagedNetwork) _ReadmitNodes() {
 func (mn *_ManagedNetwork) _GetNumberOfNodesForTransaction() int { // nolint
 	mn._ReadmitNodes()
 	if mn.maxNodesPerTransaction != nil {
-		return int(math.Min(float64(*mn.maxNodesPerTransaction), float64(len(mn.network))))
+		return int(math.Min(float64(*mn.maxNodesPerTransaction), float64(len(mn.healthyNodes))))
 	}
 
-	return len(mn.network)
+	return len(mn.healthyNodes)
 }
 
 func (mn *_ManagedNetwork) _SetMaxNodesPerTransaction(max int) {
