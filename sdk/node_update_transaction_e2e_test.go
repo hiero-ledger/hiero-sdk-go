@@ -334,7 +334,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 		SetNodeAccountIDs([]AccountID{originalNodeAccountId, {Account: 4}}).
 		Execute(client)
 	require.NoError(t, err)
-	receipt, err = resp.SetValidateStatus(true).GetReceipt(client)
+	_, err = resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
 	// verify address book has been updated
@@ -424,7 +424,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountWithoutMirrorNodeSe
 	// verify address book has NOT been updated
 	node1, ok := client.network._GetNodeForAccountID(key1)
 	require.True(t, ok)
-	require.Equal(t, AccountID{Account: 8}.String(), node1.accountID.String())
+	require.Equal(t, originalOperatorKey.String(), node1.accountID.String())
 	node2, ok := client.network._GetNodeForAccountID(key2)
 	require.True(t, ok)
 	require.Equal(t, AccountID{Account: 4}.String(), node2.accountID.String())
