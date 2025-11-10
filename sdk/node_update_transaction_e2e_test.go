@@ -19,7 +19,7 @@ var (
 func TestIntegrationNodeUpdateTransactionCanExecute(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -49,7 +49,7 @@ func TestIntegrationNodeUpdateTransactionDeleteGrpcWebProxyEndpoint(t *testing.T
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -73,7 +73,7 @@ func TestIntegrationNodeUpdateTransactionDeleteGrpcWebProxyEndpoint(t *testing.T
 func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdToTheSameAccount(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	defer client.Close()
@@ -98,7 +98,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdToTheSameAccount(
 func TestIntegrationNodeUpdateTransactionChangeNodeAccountIdMissingAdminSig(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	defer client.Close()
@@ -136,7 +136,7 @@ func TestIntegrationNodeUpdateTransactionChangeNodeAccountIdMissingAdminSig(t *t
 func TestIntegrationNodeUpdateTransactionChangeNodeAccountIdMissingAccountSig(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	defer client.Close()
@@ -172,7 +172,7 @@ func TestIntegrationNodeUpdateTransactionChangeNodeAccountIdMissingAccountSig(t 
 func TestIntegrationNodeUpdateTransactionChangeNodeAccountIdToNonExistentAccountId(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	defer client.Close()
@@ -197,7 +197,7 @@ func TestIntegrationNodeUpdateTransactionChangeNodeAccountIdToNonExistentAccount
 func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdToDeletedAccountId(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	defer client.Close()
@@ -246,7 +246,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountIdToDeletedAccountI
 func TestIntegrationNodeUpdateTransactionChangeNodeAccountINoBalance(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:51211"] = AccountID{Account: 4}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	defer client.Close()
@@ -334,8 +334,10 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 		SetNodeAccountIDs([]AccountID{originalNodeAccountId, {Account: 4}}).
 		Execute(client)
 	require.NoError(t, err)
-	_, err = resp.SetValidateStatus(true).GetReceipt(client)
-	require.NoError(t, err)
+
+	// skip the get receipt since we cannot interact with node 4 after addressbook update because of solo
+	// _, err = resp.SetValidateStatus(true).GetReceipt(client)
+	// require.NoError(t, err)
 
 	// verify address book has been updated
 	key1 := newNodeAccountID
@@ -424,7 +426,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountWithoutMirrorNodeSe
 	// verify address book has NOT been updated
 	node1, ok := client.network._GetNodeForAccountID(key1)
 	require.True(t, ok)
-	require.Equal(t, originalOperatorKey.String(), node1.accountID.String())
+	require.Equal(t, originalNodeAccountId.String(), node1.accountID.String())
 	node2, ok := client.network._GetNodeForAccountID(key2)
 	require.True(t, ok)
 	require.Equal(t, AccountID{Account: 4}.String(), node2.accountID.String())
