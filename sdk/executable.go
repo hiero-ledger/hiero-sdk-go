@@ -24,10 +24,11 @@ const maxAttempts = 10
 type _ExecutionState uint32
 
 const (
-	executionStateRetry    _ExecutionState = 0
-	executionStateFinished _ExecutionState = 1
-	executionStateError    _ExecutionState = 2
-	executionStateExpired  _ExecutionState = 3
+	executionStateRetry                _ExecutionState = 0
+	executionStateFinished             _ExecutionState = 1
+	executionStateError                _ExecutionState = 2
+	executionStateExpired              _ExecutionState = 3
+	executionStateRetryWithAnotherNode _ExecutionState = 4
 )
 
 type Executable interface {
@@ -213,7 +214,6 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 	} else {
 		requestTimeout = client.GetRequestTimeout()
 	}
-
 	startTime := time.Now()
 	for attempt = int64(0); attempt < int64(maxAttempts); attempt++ {
 		if time.Since(startTime) >= requestTimeout {
@@ -296,9 +296,9 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		}
 
 		if err != nil {
+			e.advanceRequest()
 			errPersistent = err
 			if _ExecutableDefaultRetryHandler(e.getLogID(e), err, txLogger) {
-				e.advanceRequest()
 				client.network._IncreaseBackoff(node)
 				continue
 			}
@@ -355,6 +355,15 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		case executionStateFinished:
 			txLogger.Trace("finished", "Response Proto", hex.EncodeToString(marshaledResponse))
 			return e.mapResponse(resp, node.accountID, protoRequest)
+		case executionStateRetryWithAnotherNode:
+			errPersistent = statusError
+			e.advanceRequest()
+			txLogger.Trace("received `INVALID_NODE_ACCOUNT`; updating addressbook and marking node as unhealthy", "requestId", e.getLogID(e), "nodeAccountId", node.accountID)
+			defer client._UpdateAddressBook()
+			// mark this node as unhealthy
+			client.network._IncreaseBackoff(node)
+			// continue with other nodes
+			continue
 		}
 	}
 

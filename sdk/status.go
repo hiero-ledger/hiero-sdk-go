@@ -366,6 +366,7 @@ const (
 	AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN                  Status = 398
 	GRPC_WEB_PROXY_NOT_SUPPORTED                                   Status = 399
 	NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE             Status = 400
+	NODE_ACCOUNT_HAS_ZERO_BALANCE                                  Status = 526
 )
 
 // String() returns a string representation of the status
@@ -1089,6 +1090,8 @@ func (status Status) String() string { // nolint
 		return "GRPC_WEB_PROXY_NOT_SUPPORTED"
 	case NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE:
 		return "NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE"
+	case NODE_ACCOUNT_HAS_ZERO_BALANCE:
+		return "NODE_ACCOUNT_HAS_ZERO_BALANCE"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))
