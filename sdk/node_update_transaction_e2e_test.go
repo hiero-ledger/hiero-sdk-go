@@ -321,6 +321,8 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 	require.NoError(t, err)
 	resp, err = frozen.Sign(newAccountKey).Execute(client)
 	require.NoError(t, err)
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
 
 	// wait for mirror node to import data
 	time.Sleep(time.Second * 5)
@@ -409,6 +411,9 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountWithoutMirrorNodeSe
 	require.NoError(t, err)
 
 	newAccountKey, err = PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
 	// submit to the updated node, retries
