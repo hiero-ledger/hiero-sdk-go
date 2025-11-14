@@ -16,7 +16,7 @@ type SDKService struct {
 
 func NewSdkService() *SDKService {
 	return &SDKService{
-		clients: make(map[string]*hiero.Client, 0),
+		clients: make(map[string]*hiero.Client),
 	}
 }
 
@@ -57,6 +57,16 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 		Message: "Successfully setup " + clientType + " client.",
 		Status:  "SUCCESS",
 	}, nil
+}
+
+func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) response.SetupResponse {
+	client := s.clients[params.SessionId]
+	operatorId, _ := hiero.AccountIDFromString(params.OperatorAccountId)
+	operatorKey, _ := hiero.PrivateKeyFromString(params.OperatorPrivateKey)
+	client.SetOperator(operatorId, operatorKey)
+	return response.SetupResponse{
+		Status: "SUCCESS",
+	}
 }
 
 // Reset function for the SDK

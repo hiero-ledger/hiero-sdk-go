@@ -55,6 +55,7 @@ func main() {
 	// Create a new RPC server
 	assigner := handler.Map{
 		"setup":                     postHandler(HandleError, handler.New(sdkService.Setup)),
+		"setOperator":               postHandler(HandleError, handler.New(sdkService.SetOperator)),
 		"reset":                     postHandler(HandleError, handler.New(sdkService.Reset)),
 		"createAccount":             postHandler(HandleError, handler.New(accountService.CreateAccount)),
 		"updateAccount":             postHandler(HandleError, handler.New(accountService.UpdateAccount)),
