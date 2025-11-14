@@ -82,12 +82,6 @@ func (q *AddressBookQuery) build() *mirror.AddressBookQuery {
 	return body
 }
 
-// RecvStream is a generic interface for any gRPC client stream that has a Recv() method.
-// This allows processProtoMessageStream to work with any stream type, not just specific ones.
-type RecvStream[T any] interface {
-	Recv() (T, error)
-}
-
 // Execute executes the Query with the provided client
 func (q *AddressBookQuery) Execute(client *Client) (NodeAddressBook, error) {
 	err := q.validateNetworkOnIDs(client)

@@ -195,7 +195,7 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 
 	resultStream := processProtoMessageStream(ctx, stream, query.attempt, query.maxAttempts, query.retryHandler)
 
-	consumerOfMessages := func(ctx context.Context, incomingStream <-chan streamResult[*mirror.ConsensusTopicResponse]) {
+	consumeMessages := func(ctx context.Context, incomingStream <-chan streamResult[*mirror.ConsensusTopicResponse]) {
 		for {
 			select {
 			case <-ctx.Done():
@@ -239,7 +239,7 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 		}
 	}
 
-	go consumerOfMessages(ctx, resultStream)
+	go consumeMessages(ctx, resultStream)
 	return handle, nil
 }
 
