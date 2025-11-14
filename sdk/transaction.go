@@ -31,7 +31,7 @@ type TransactionInterface interface {
 	preFreezeWith(*Client, TransactionInterface)                              // utility method to set the transaction fields before freezing
 	validateTransactionFields() error                                         // utility method to validate transaction fields
 	constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) // TODO remove this method if possible
-	// NOTE: Any changes to the baseTransaction retuned by getBaseTransaction()
+	// NOTE: Any changes to the baseTransaction returned by getBaseTransaction()
 	// will be reflected in the transaction object
 	getBaseTransaction() *Transaction[TransactionInterface]
 }
@@ -827,7 +827,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
 	}
 
-	// Bellow are checks whether we need to sign the transaction or we already have the same signed
+	// Below are checks whether we need to sign the transaction or we already have the same signed
 	if bytes.Equal(signedTx.BodyBytes, updatedBody) {
 		sigPairLen := len(signedTx.SigMap.GetSigPair())
 		// For cases where we need more than 1 signature
@@ -1066,7 +1066,7 @@ type SignableNodeTransactionBodyBytes struct {
 
 // GetSignableNodeBodyBytesList returns a list of SignableNodeTransactionBodyBytes objects for each signed transaction in the transaction list.
 // The NodeID represents the node that this transaction is signed for.
-// The TransactionID is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
+// The TransactionID is useful for signing chunked transactions like FileAppendTransaction, since they can have multiple transaction ids.
 func (tx *Transaction[T]) GetSignableNodeBodyBytesList() ([]SignableNodeTransactionBodyBytes, error) {
 	if !tx.IsFrozen() {
 		return nil, errTransactionIsNotFrozen
@@ -1196,7 +1196,7 @@ func (tx *Transaction[T]) Batchify(client *Client, batchKey Key) (T, error) {
 	return tx.SignWithOperator(client)
 }
 
-// ------------ Transaction methdos ---------------
+// ------------ Transaction methods ---------------
 func (tx *Transaction[T]) Sign(privateKey PrivateKey) T {
 	return tx.SignWith(privateKey.PublicKey(), privateKey.Sign)
 }
@@ -1229,7 +1229,7 @@ func (tx *Transaction[T]) SignWith(publicKey PublicKey, signer TransactionSigner
 }
 
 // AddSignatureV2 adds a signature to the transaction for a specific transaction id and node id.
-// This is useful for signing chuncked transactions like FileAppendTransaction, since they can have multiple transaction ids.
+// This is useful for signing chunked transactions like FileAppendTransaction, since they can have multiple transaction ids.
 func (tx *Transaction[T]) AddSignatureV2(publicKey PublicKey, signature []byte, transactionID TransactionID, nodeID AccountID) (T, error) {
 	if tx.signedTransactions._Length() == 0 {
 		return tx.childTransaction, nil

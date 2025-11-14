@@ -248,7 +248,7 @@ func main() {
 	 */
 	accountId2Info, err := hiero.NewAccountInfoQuery().SetAccountID(aliasAccountId2).Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing acount info query", err))
+		panic(fmt.Sprintf("%v : error executing account info query", err))
 	}
 	accountId2 := accountId2Info.AccountID
 	fmt.Println("The normal account ID of the given alias: ", accountId2)
