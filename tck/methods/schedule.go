@@ -67,17 +67,17 @@ func (s *ScheduleService) CreateSchedule(_ context.Context, params param.Schedul
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, s.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, s.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(s.sdkService.Client)
+	txResponse, err := transaction.Execute(s.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -108,17 +108,17 @@ func (s *ScheduleService) SignSchedule(_ context.Context, params param.ScheduleS
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, s.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, s.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(s.sdkService.Client)
+	txResponse, err := transaction.Execute(s.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}

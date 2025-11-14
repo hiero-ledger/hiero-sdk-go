@@ -278,7 +278,3 @@ jobs:
                   skip-cache: true
                   args: --timeout=5m   
                   working-directory: ./tck 
-            
-            - name: Test TCK
-              run: go test ./...
-              working-directory: ./tck

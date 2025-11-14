@@ -54,17 +54,17 @@ func (t *FileService) CreateFile(_ context.Context, params param.CreateFileParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -116,17 +116,17 @@ func (t *FileService) UpdateFile(_ context.Context, params param.UpdateFileParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -149,17 +149,17 @@ func (t *FileService) DeleteFile(_ context.Context, params param.UpdateFileParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -200,17 +200,17 @@ func (t *FileService) AppendFile(_ context.Context, params param.AppendFileParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
