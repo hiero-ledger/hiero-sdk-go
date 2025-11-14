@@ -7,21 +7,22 @@ import (
 
 	"github.com/hiero-ledger/hiero-sdk-go/tck/param"
 	"github.com/hiero-ledger/hiero-sdk-go/tck/response"
+	"github.com/hiero-ledger/hiero-sdk-go/tck/utils"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
 type SDKService struct {
-	clients map[string]*hiero.Client
+	clients *utils.SafeClientMap
 }
 
 func NewSdkService() *SDKService {
 	return &SDKService{
-		clients: make(map[string]*hiero.Client),
+		clients: utils.NewSafeClientMap(),
 	}
 }
 
 func (s *SDKService) GetClient(sessionId string) *hiero.Client {
-	return s.clients[sessionId]
+	return s.clients.Get(sessionId)
 }
 
 // Setup function for the SDK
@@ -51,7 +52,7 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 	operatorId, _ := hiero.AccountIDFromString(params.OperatorAccountId)
 	operatorKey, _ := hiero.PrivateKeyFromString(params.OperatorPrivateKey)
 	client.SetOperator(operatorId, operatorKey)
-	s.clients[params.SessionId] = client
+	s.clients.Set(params.SessionId, client)
 
 	return response.SetupResponse{
 		Message: "Successfully setup " + clientType + " client.",
@@ -60,7 +61,7 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 }
 
 func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) response.SetupResponse {
-	client := s.clients[params.SessionId]
+	client := s.clients.Get(params.SessionId)
 	operatorId, _ := hiero.AccountIDFromString(params.OperatorAccountId)
 	operatorKey, _ := hiero.PrivateKeyFromString(params.OperatorPrivateKey)
 	client.SetOperator(operatorId, operatorKey)
@@ -71,7 +72,7 @@ func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) re
 
 // Reset function for the SDK
 func (s *SDKService) Reset(_ context.Context, params param.BaseParams) response.SetupResponse {
-	delete(s.clients, params.SessionId)
+	s.clients.Delete(params.SessionId)
 	return response.SetupResponse{
 		Status: "SUCCESS",
 	}
