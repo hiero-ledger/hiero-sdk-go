@@ -97,7 +97,8 @@ func DelegatableContractIDFromEvmAddress(shard uint64, realm uint64, aliasEvmAdd
 
 // DelegatableContractIDFromSolidityAddress constructs a DelegatableContractID from a string representation of a _Solidity address
 // Does not populate DelegatableContractID.EvmAddress
-// Deprecated: use DelegatableContractIDFromEvmAddress instead
+// Deprecated
+// use DelegatableContractIDFromEvmAddress instead
 func DelegatableContractIDFromSolidityAddress(s string) (DelegatableContractID, error) {
 	shard, realm, contract, err := _IdFromSolidityAddress(s)
 	if err != nil {
@@ -141,7 +142,8 @@ func (id DelegatableContractID) ToStringWithChecksum(client Client) (string, err
 }
 
 // ToSolidityAddress returns the string representation of the DelegatableContractID as a _Solidity address.
-// Deprecated: Use ToEvmAddress instead
+// Deprecated
+// Use ToEvmAddress instead
 func (id DelegatableContractID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
 }

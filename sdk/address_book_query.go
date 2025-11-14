@@ -3,15 +3,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"context"
-	"io"
-	"math"
-	"time"
-
-	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
-
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
-	"google.golang.org/grpc/status"
 )
 
 // AddressBookQuery query an address book for its list of nodes
@@ -92,17 +84,12 @@ func (q *AddressBookQuery) build() *mirror.AddressBookQuery {
 
 // Execute executes the Query with the provided client
 func (q *AddressBookQuery) Execute(client *Client) (NodeAddressBook, error) {
-	var cancel func()
-	var ctx context.Context
-	var subClientError error
 	err := q.validateNetworkOnIDs(client)
 	if err != nil {
 		return NodeAddressBook{}, err
 	}
 
-	pb := q.build()
-
-	messages := make([]*services.NodeAddress, 0)
+	pbBody := q.build()
 
 	mirrorNode, err := client.mirrorNetwork._GetNextMirrorNode()
 	if err != nil {
@@ -113,68 +100,27 @@ func (q *AddressBookQuery) Execute(client *Client) (NodeAddressBook, error) {
 	if err != nil {
 		return NodeAddressBook{}, err
 	}
-	ch := make(chan byte, 1)
 
-	go func() {
-		var subClient mirror.NetworkService_GetNodesClient
-		var err error
+	ctx := client.networkUpdateContext
 
-		for {
-			if err != nil {
-				cancel()
+	stream, err := channel.GetNodes(ctx, pbBody)
+	if err != nil {
+		return NodeAddressBook{}, err
+	}
 
-				if grpcErr, ok := status.FromError(err); ok { // nolint
-					if q.attempt < q.maxAttempts {
-						subClient = nil
+	resultStream := processProtoMessageStream(ctx, stream, q.attempt, q.maxAttempts, _DefaultRetryHandler)
 
-						delay := math.Min(250.0*math.Pow(2.0, float64(q.attempt)), 8000)
-						time.Sleep(time.Duration(delay) * time.Millisecond)
-						q.attempt++
-					} else {
-						subClientError = grpcErr.Err()
-						break
-					}
-				} else if err == io.EOF {
-					break
-				} else {
-					subClientError = err
-					break
-				}
-			}
+	results := make([]NodeAddress, 0)
 
-			if subClient == nil {
-				ctx, cancel = context.WithCancel(client.networkUpdateContext)
-
-				subClient, err = (*channel).GetNodes(ctx, pb)
-				if err != nil {
-					continue
-				}
-			}
-
-			var resp *services.NodeAddress
-			resp, err = subClient.Recv()
-
-			if err != nil {
-				continue
-			}
-
-			if pb.Limit > 0 {
-				pb.Limit--
-			}
-
-			messages = append(messages, resp)
+	for result := range resultStream {
+		if result.err != nil {
+			return NodeAddressBook{}, result.err
 		}
-		ch <- 1
-	}()
-	<-ch
 
-	result := make([]NodeAddress, 0)
-
-	for _, k := range messages {
-		result = append(result, _NodeAddressFromProtobuf(k))
+		results = append(results, _NodeAddressFromProtobuf(result.data))
 	}
 
 	return NodeAddressBook{
-		NodeAddresses: result,
-	}, subClientError
+		NodeAddresses: results,
+	}, nil
 }

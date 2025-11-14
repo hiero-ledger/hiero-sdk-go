@@ -39,7 +39,8 @@ func (network *_MirrorNetwork) _GetNetwork() []string {
 }
 
 // nolint:unused
-// Deprecated: _SetTransportSecurity is no longer supported, as only secured connections are now allowed.
+// Deprecated
+// _SetTransportSecurity is no longer supported, as only secured connections are now allowed.
 func (network *_MirrorNetwork) _SetTransportSecurity(transportSecurity bool) *_MirrorNetwork {
 	return network
 }

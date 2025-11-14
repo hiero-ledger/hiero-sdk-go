@@ -124,7 +124,7 @@ func (ch *ContractHelper) GetSigners(stepIndex int32) []hiero.PrivateKey {
 
 func (ch *ContractHelper) ExecuteSteps(firstStep int32, lastStep int32, client *hiero.Client) (*ContractHelper, error) {
 	for stepIndex := firstStep; stepIndex <= lastStep; stepIndex++ {
-		println("Attempting to execuite step", stepIndex)
+		println("Attempting to execute step", stepIndex)
 
 		transaction := hiero.NewContractExecuteTransaction().
 			SetContractID(ch.ContractID).

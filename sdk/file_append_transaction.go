@@ -217,74 +217,7 @@ func (tx *FileAppendTransaction) Execute(
 func (tx *FileAppendTransaction) ExecuteAll(
 	client *Client,
 ) ([]TransactionResponse, error) {
-	if client == nil || client.operator == nil {
-		return []TransactionResponse{}, errNoClientProvided
-	}
-
-	if !tx.IsFrozen() {
-		_, err := tx.FreezeWith(client)
-		if err != nil {
-			return []TransactionResponse{}, err
-		}
-	}
-
-	var transactionID TransactionID
-	if tx.transactionIDs._Length() > 0 {
-		transactionID = tx.GetTransactionID()
-	} else {
-		return []TransactionResponse{}, errors.New("transactionID list is empty")
-	}
-
-	if !client.GetOperatorAccountID()._IsZero() && client.GetOperatorAccountID()._Equals(*transactionID.AccountID) {
-		tx.SignWith(
-			client.GetOperatorPublicKey(),
-			client.operator.signer,
-		)
-	}
-
-	size := tx.signedTransactions._Length() / tx.nodeAccountIDs._Length()
-	list := make([]TransactionResponse, size)
-
-	for i := 0; i < size; i++ {
-		resp, err := _Execute(client, tx)
-
-		if err != nil {
-			return list, err
-		}
-
-		list[i] = resp.(TransactionResponse)
-		receipt, err := list[i].GetReceipt(client)
-		if err != nil {
-			return list, err
-		}
-
-		// retry in case of throttle error
-		for receipt.Status == StatusThrottledAtConsensus {
-			tx.regenerateID(client)
-			resp, err := _Execute(client, tx)
-			if err != nil {
-				return list, err
-			}
-			respTx := resp.(TransactionResponse)
-			receipt, err = NewTransactionReceiptQuery().
-				SetTransactionID(respTx.TransactionID).
-				SetNodeAccountIDs([]AccountID{respTx.NodeID}).
-				SetIncludeChildren(respTx.IncludeChildReceipts).
-				Execute(client)
-
-			// if we get a non-throttled receipt, we can break out of the loop
-			if err == nil && receipt.Status != StatusThrottledAtConsensus {
-				list[i] = respTx
-				break
-			}
-		}
-		// validate the receipt status
-		if err = receipt.ValidateStatus(true); err != nil {
-			return list, err
-		}
-	}
-
-	return list, nil
+	return executeAll(tx, client)
 }
 
 func (tx *FileAppendTransaction) Schedule() (*ScheduleCreateTransaction, error) {
