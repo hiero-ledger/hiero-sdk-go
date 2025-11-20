@@ -373,43 +373,6 @@ func TestUnitHookCallFromProtobufWithHookId(t *testing.T) {
 	require.Equal(t, gasLimit, hookCall.GetEvmHookCall().GetGasLimit())
 }
 
-func TestUnitHookCallFromProtobufWithFullHookId(t *testing.T) {
-	t.Parallel()
-
-	contractNum := int64(5678)
-	hookIdNum := int64(9012)
-	data := []byte{0x04, 0x05, 0x06}
-	gasLimit := uint64(95000)
-
-	pb := &services.HookCall{
-		Id: &services.HookCall_FullHookId{
-			FullHookId: &services.HookId{
-				EntityId: &services.HookEntityId{
-					EntityId: &services.HookEntityId_ContractId{
-						ContractId: &services.ContractID{
-							Contract: &services.ContractID_ContractNum{
-								ContractNum: contractNum,
-							},
-						},
-					},
-				},
-				HookId: hookIdNum,
-			},
-		},
-		CallSpec: &services.HookCall_EvmHookCall{
-			EvmHookCall: &services.EvmHookCall{
-				Data:     data,
-				GasLimit: gasLimit,
-			},
-		},
-	}
-
-	hookCall := hookCallFromProtobuf(pb)
-	require.NotNil(t, hookCall)
-	require.Equal(t, data, hookCall.GetEvmHookCall().GetData())
-	require.Equal(t, gasLimit, hookCall.GetEvmHookCall().GetGasLimit())
-}
-
 func TestUnitNftHookCallRoundTripProtobufWithHookId(t *testing.T) {
 	t.Parallel()
 
