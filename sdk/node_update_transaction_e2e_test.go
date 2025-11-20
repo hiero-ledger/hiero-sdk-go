@@ -1,5 +1,4 @@
-//go:build all || e2e
-// +build all e2e
+//go:build all || dab
 
 package hiero
 

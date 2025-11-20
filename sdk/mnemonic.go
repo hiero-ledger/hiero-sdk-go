@@ -131,7 +131,7 @@ func (m Mnemonic) _Indices() ([]int, error) {
 	var check bool
 	temp := strings.Split(m.words, " ")
 	if len(temp) == 22 { // nolint
-		for _, mnemonicString := range strings.Split(m.words, " ") {
+		for mnemonicString := range strings.SplitSeq(m.words, " ") {
 			check = false
 			for i, stringCheck := range legacy {
 				if mnemonicString == stringCheck {
@@ -144,7 +144,7 @@ func (m Mnemonic) _Indices() ([]int, error) {
 			}
 		}
 	} else if len(temp) == 24 {
-		for _, mnemonicString := range strings.Split(m.words, " ") {
+		for mnemonicString := range strings.SplitSeq(m.words, " ") {
 			t, check := GetWordIndex(mnemonicString)
 			if !check {
 				return make([]int, 0), ErrInvalidMnemonic
@@ -303,8 +303,8 @@ func calculateDerivationPathValues(derivationPath string) ([]uint32, error) {
 
 	values := make([]uint32, 5)
 	for i, match := range matches[1:] {
-		if strings.HasSuffix(match, "'") {
-			match = strings.TrimSuffix(match, "'")
+		if before, ok := strings.CutSuffix(match, "'"); ok {
+			match = before
 			value, err := strconv.Atoi(match)
 			if err != nil {
 				return nil, err

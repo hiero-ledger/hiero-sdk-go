@@ -1,5 +1,4 @@
 //go:build all || unit
-// +build all unit
 
 package hiero
 
@@ -130,7 +129,7 @@ func TestUnitNodeCreateTransactionMock(t *testing.T) {
 	tran := TransactionIDGenerate(AccountID{Account: 3})
 
 	resp, err := NewNodeCreateTransaction().
-		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetAdminKey(newKey).
 		SetDescription("test").
 		SetGossipEndpoints(endpoints(0, 1, 2)).

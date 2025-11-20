@@ -82,17 +82,17 @@ func (t *TopicService) CreateTopic(_ context.Context, params param.CreateTopicPa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +163,7 @@ func (t *TopicService) buildCreateTopic(params param.CreateTopicParams) (*hiero.
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -257,17 +257,17 @@ func (t *TopicService) UpdateTopic(_ context.Context, params param.UpdateTopicPa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -290,17 +290,17 @@ func (t *TopicService) DeleteTopic(_ context.Context, params param.DeleteTopicPa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -369,7 +369,7 @@ func (t *TopicService) buildSubmitTopicMessage(params param.SubmitTopicMessagePa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -385,11 +385,11 @@ func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.Submit
 		return nil, err
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}

@@ -1,5 +1,4 @@
 //go:build all || unit || e2e || testnets || abnet
-// +build all unit e2e testnets abnet
 
 package hiero
 
@@ -150,7 +149,7 @@ func CloseIntegrationTestEnv(env IntegrationTestEnv, token *TokenID) error {
 		}
 
 		// This is needed, because we can't delete the account while still having tokens.
-		// This works only, because the token is deleted, otherwise the acount would need to have 0 balance of it before dissociating.
+		// This works only, because the token is deleted, otherwise the account would need to have 0 balance of it before dissociating.
 		dissociateTx, err := NewTokenDissociateTransaction().
 			SetAccountID(env.Client.operator.accountID).
 			SetNodeAccountIDs(env.NodeAccountIDs).

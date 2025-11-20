@@ -1,5 +1,4 @@
 //go:build all || e2e || testnets
-// +build all e2e testnets
 
 package hiero
 
@@ -89,4 +88,32 @@ func TestIntegrationTopicMessageSubmitTransactionInvalidChunkSize(t *testing.T) 
 		SetTopicID(topicID).
 		Execute(env.Client)
 	require.Error(t, err)
+}
+
+func TestIntegrationTopicMessageSubmitTransactinoWrongMessageType(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	resp, err := NewTopicCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	time.Sleep(3 * time.Second)
+
+	topicID := *receipt.TopicID
+	assert.NotNil(t, topicID)
+
+	resp, err = NewTopicMessageSubmitTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetMessage(1234). // wrong message type
+		SetTopicID(topicID).
+		Execute(env.Client)
+	require.ErrorContains(t, err, "no transactions to execute")
 }

@@ -150,7 +150,8 @@ func (id ContractID) ToStringWithChecksum(client Client) (string, error) {
 }
 
 // ToSolidityAddress returns the string representation of the ContractID as a _Solidity address.
-// Deprecated: Use ToEvmAddress instead
+// Deprecated
+// Use ToEvmAddress instead
 func (id ContractID) ToSolidityAddress() string {
 	return _IdToSolidityAddress(id.Shard, id.Realm, id.Contract)
 }
