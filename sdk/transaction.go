@@ -360,6 +360,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _TokenClaimAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenClaimAirdropTransaction](baseTx), first)
 	case *services.TransactionBody_AtomicBatch:
 		childTx = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
+	case *services.TransactionBody_LambdaSstore:
+		childTx = lambdaSStoreTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*LambdaSStoreTransaction](baseTx), first)
 	default:
 		return nil, errFailedToDeserializeBytes
 	}

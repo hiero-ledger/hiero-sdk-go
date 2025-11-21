@@ -38,6 +38,8 @@ type ContractUpdateTransaction struct {
 	stakedAccountID               *AccountID
 	stakedNodeID                  *int64
 	declineReward                 *bool
+	hookCreationDetails           []HookCreationDetails
+	hooksForDeletion              []int64
 }
 
 // NewContractUpdateTransaction creates a ContractUpdateTransaction transaction which can be
@@ -113,6 +115,13 @@ func _ContractUpdateTransactionFromProtobuf(tx Transaction[*ContractUpdateTransa
 		memoWrapper = &memoValue
 	}
 
+	var hookCreationDetails []HookCreationDetails
+	if pb.GetContractUpdateInstance().GetHookCreationDetails() != nil {
+		for _, hookCreationDetail := range pb.GetContractUpdateInstance().GetHookCreationDetails() {
+			hookCreationDetails = append(hookCreationDetails, hookCreationDetailsFromProtobuf(hookCreationDetail))
+		}
+	}
+
 	contractUpdateTransaction := ContractUpdateTransaction{
 		contractID:                    _ContractIDFromProtobuf(pb.GetContractUpdateInstance().GetContractID()),
 		adminKey:                      key,
@@ -124,6 +133,8 @@ func _ContractUpdateTransactionFromProtobuf(tx Transaction[*ContractUpdateTransa
 		stakedAccountID:               stakeNodeAccountID,
 		stakedNodeID:                  stakedNodeID,
 		declineReward:                 declineReward,
+		hookCreationDetails:           hookCreationDetails,
+		hooksForDeletion:              pb.GetContractUpdateInstance().GetHookIdsToDelete(),
 	}
 	tx.childTransaction = &contractUpdateTransaction
 	contractUpdateTransaction.Transaction = &tx
@@ -340,6 +351,44 @@ func (tx *ContractUpdateTransaction) ClearStakedNodeID() *ContractUpdateTransact
 	return tx
 }
 
+// AddHookToCreate adds a hook to create for the contract
+func (tx *ContractUpdateTransaction) AddHookToCreate(hookCreationDetails HookCreationDetails) *ContractUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = append(tx.hookCreationDetails, hookCreationDetails)
+	return tx
+}
+
+// SetHooksToCreate sets a list of hooks to create for the contract
+func (tx *ContractUpdateTransaction) SetHooksToCreate(hookCreationDetails []HookCreationDetails) *ContractUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = hookCreationDetails
+	return tx
+}
+
+// GetHooksToCreate gets the list of hooks to create for the contract
+func (tx ContractUpdateTransaction) GetHooksToCreate() []HookCreationDetails {
+	return tx.hookCreationDetails
+}
+
+// AddHookToDelete adds a hook to delete for the contract
+func (tx *ContractUpdateTransaction) AddHookToDelete(hookId int64) *ContractUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hooksForDeletion = append(tx.hooksForDeletion, hookId)
+	return tx
+}
+
+// SetHooksToDelete sets a list of hooks to delete for the contract
+func (tx *ContractUpdateTransaction) SetHooksToDelete(hookIds []int64) *ContractUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.hooksForDeletion = hookIds
+	return tx
+}
+
+// GetHooksToDelete gets the list of hooks to delete for the contract
+func (tx ContractUpdateTransaction) GetHooksToDelete() []int64 {
+	return tx.hooksForDeletion
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx ContractUpdateTransaction) getName() string {
@@ -441,6 +490,12 @@ func (tx ContractUpdateTransaction) buildProtoBody() *services.ContractUpdateTra
 	} else if tx.stakedNodeID != nil {
 		body.StakedId = &services.ContractUpdateTransactionBody_StakedNodeId{StakedNodeId: *tx.stakedNodeID}
 	}
+
+	for _, hookCreationDetail := range tx.hookCreationDetails {
+		body.HookCreationDetails = append(body.HookCreationDetails, hookCreationDetail.toProtobuf())
+	}
+
+	body.HookIdsToDelete = tx.hooksForDeletion
 
 	return body
 }

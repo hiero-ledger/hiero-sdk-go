@@ -6,8 +6,9 @@ import "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
 type _HbarTransfer struct {
 	accountID  *AccountID
-	Amount     Hbar
-	IsApproved bool
+	amount     Hbar
+	isApproved bool
+	hookCall   *FungibleHookCall
 }
 
 func _HbarTransferFromProtobuf(pb []*services.AccountAmount) []*_HbarTransfer {
@@ -15,8 +16,9 @@ func _HbarTransferFromProtobuf(pb []*services.AccountAmount) []*_HbarTransfer {
 	for _, acc := range pb {
 		result = append(result, &_HbarTransfer{
 			accountID:  _AccountIDFromProtobuf(acc.AccountID),
-			Amount:     HbarFromTinybar(acc.Amount),
-			IsApproved: acc.GetIsApproval(),
+			amount:     HbarFromTinybar(acc.Amount),
+			isApproved: acc.GetIsApproval(),
+			hookCall:   fungibleHookCallFromProtobuf(acc),
 		})
 	}
 
@@ -29,9 +31,24 @@ func (transfer *_HbarTransfer) _ToProtobuf() *services.AccountAmount { //nolint
 		account = transfer.accountID._ToProtobuf()
 	}
 
-	return &services.AccountAmount{
+	pbBody := &services.AccountAmount{
 		AccountID:  account,
-		Amount:     transfer.Amount.AsTinybar(),
-		IsApproval: transfer.IsApproved,
+		Amount:     transfer.amount.AsTinybar(),
+		IsApproval: transfer.isApproved,
 	}
+
+	if transfer.hookCall != nil {
+		switch transfer.hookCall.hookType {
+		case PRE_HOOK:
+			pbBody.HookCall = &services.AccountAmount_PreTxAllowanceHook{
+				PreTxAllowanceHook: transfer.hookCall.toProtobuf(),
+			}
+		case PRE_POST_HOOK:
+			pbBody.HookCall = &services.AccountAmount_PrePostTxAllowanceHook{
+				PrePostTxAllowanceHook: transfer.hookCall.toProtobuf(),
+			}
+		}
+	}
+
+	return pbBody
 }
