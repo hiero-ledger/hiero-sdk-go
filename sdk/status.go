@@ -367,6 +367,7 @@ const (
 	GRPC_WEB_PROXY_NOT_SUPPORTED                                   Status = 399
 	NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE             Status = 400
 	INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM                   Status = 401
+	WRONG_HOOK_ENTITY_TYPE                                         Status = 499
 	EVM_HOOK_GAS_THROTTLED                                         Status = 500
 	HOOK_ID_IN_USE                                                 Status = 501
 	BAD_HOOK_REQUEST                                               Status = 502
@@ -386,6 +387,14 @@ const (
 	INVALID_HOOK_CREATION_SPEC                                     Status = 516
 	HOOK_EXTENSION_EMPTY                                           Status = 517
 	INVALID_HOOK_ADMIN_KEY                                         Status = 518
+	HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS                      Status = 519
+	CANNOT_SET_HOOKS_AND_APPROVAL                                  Status = 520
+	TRANSACTION_REQUIRES_ZERO_HOOKS                                Status = 521
+	INVALID_HOOK_CALL                                              Status = 522
+	HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS                            Status = 523
+	ACCOUNT_IS_LINKED_TO_A_NODE                                    Status = 524
+	HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER             Status = 525
+	NODE_ACCOUNT_HAS_ZERO_BALANCE                                  Status = 526
 )
 
 // String() returns a string representation of the status
@@ -1111,6 +1120,8 @@ func (status Status) String() string { // nolint
 		return "NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE"
 	case INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM:
 		return "INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM"
+	case WRONG_HOOK_ENTITY_TYPE:
+		return "WRONG_HOOK_ENTITY_TYPE"
 	case EVM_HOOK_GAS_THROTTLED:
 		return "EVM_HOOK_GAS_THROTTLED"
 	case HOOK_ID_IN_USE:
@@ -1149,6 +1160,22 @@ func (status Status) String() string { // nolint
 		return "HOOK_EXTENSION_EMPTY"
 	case INVALID_HOOK_ADMIN_KEY:
 		return "INVALID_HOOK_ADMIN_KEY"
+	case HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS:
+		return "HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS"
+	case CANNOT_SET_HOOKS_AND_APPROVAL:
+		return "CANNOT_SET_HOOKS_AND_APPROVAL"
+	case TRANSACTION_REQUIRES_ZERO_HOOKS:
+		return "TRANSACTION_REQUIRES_ZERO_HOOKS"
+	case INVALID_HOOK_CALL:
+		return "INVALID_HOOK_CALL"
+	case HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS:
+		return "HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS"
+	case ACCOUNT_IS_LINKED_TO_A_NODE:
+		return "ACCOUNT_IS_LINKED_TO_A_NODE"
+	case HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER:
+		return "HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER"
+	case NODE_ACCOUNT_HAS_ZERO_BALANCE:
+		return "NODE_ACCOUNT_HAS_ZERO_BALANCE"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))

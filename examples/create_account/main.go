@@ -49,11 +49,14 @@ func main() {
 		// If true, this account's key must sign any transaction depositing into this account (in
 		// addition to all withdrawals)
 		SetReceiverSignatureRequired(false).
-		SetInitialBalance(hiero.HbarFrom(100_000, hiero.HbarUnits.Hbar)).
 		// The maximum number of tokens that an Account can be implicitly associated with. Defaults to 0
 		// and up to a maximum value of 1000.
-		SetMaxAutomaticTokenAssociations(-1).
+		SetMaxAutomaticTokenAssociations(1).
 		// The memo associated with the account
+		SetTransactionMemo("go sdk example create_account/main.go").
+		// The account is charged to extend its expiration date every this many seconds. If it doesn't
+		// have enough balance, it extends as long as possible. If it is empty when it expires, then it
+		// is deleted.
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing account create transaction}", err))

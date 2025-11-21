@@ -280,6 +280,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetGas(400_000).
 		SetBytecodeFileID(fileID).
 		AddHook(*hookDetail).
@@ -317,6 +318,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorage
 			SetContractId(&ContractID{Contract: 1}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetGas(400_000).
 		SetBytecodeFileID(fileID).
 		AddHook(*hookDetail).
@@ -352,6 +354,7 @@ func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContrac
 		SetLambdaEvmHook(*NewLambdaEvmHook())
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetGas(400_000).
 		SetBytecodeFileID(fileID).
 		AddHook(*hookDetail).
@@ -385,6 +388,7 @@ func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetGas(400_000).
 		SetBytecodeFileID(fileID).
 		SetHooks([]HookCreationDetails{*hookDetail, *hookDetail}).
@@ -420,6 +424,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHookAndAdminKey(t *te
 		SetAdminKey(hookAdminKey)
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetGas(400_000).
 		SetBytecodeFileID(fileID).
 		AddHook(*hookDetail).

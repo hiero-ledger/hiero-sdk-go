@@ -35,6 +35,7 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		AddHook(*hookDetails).
 		SetInitialBalance(NewHbar(10)).
@@ -101,6 +102,7 @@ func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		AddHook(*hookDetails).
 		SetInitialBalance(NewHbar(10)).
@@ -192,6 +194,7 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		AddHook(*hookDetails).
 		SetInitialBalance(NewHbar(10)).
@@ -215,6 +218,7 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 	}
 
 	frozenTxn, err := NewLambdaSStoreTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetHookId(*hookId).
 		SetStorageUpdates(updates).
 		FreezeWith(env.Client)

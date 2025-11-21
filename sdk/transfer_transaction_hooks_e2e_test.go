@@ -27,6 +27,7 @@ func TestIntegrationTransferHbarWithPreTransactionAllowanceHookSucceeds(t *testi
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -73,6 +74,7 @@ func TestIntegrationMultipleAccountsHooksMustAllApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	resp1, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(key1).
 		SetInitialBalance(NewHbar(1)).
 		AddHook(*hookDetails1).
@@ -87,6 +89,7 @@ func TestIntegrationMultipleAccountsHooksMustAllApprove(t *testing.T) {
 	require.NoError(t, err)
 
 	resp2, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(key2).
 		SetInitialBalance(NewHbar(1)).
 		AddHook(*hookDetails2).
@@ -132,6 +135,7 @@ func TestIntegrationTransferFungibleTokenWithPreTransactionAllowanceHookSucceeds
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -204,6 +208,7 @@ func TestIntegrationTransferNftWithPreTransactionAllowanceHookSucceeds(t *testin
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -273,6 +278,7 @@ func TestIntegrationTransferNftWithReceiverAllowanceHookSucceeds(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(receiverKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -336,6 +342,7 @@ func TestIntegrationTransferNftWithBothSenderAndReceiverHooksSucceeds(t *testing
 	require.NoError(t, err)
 
 	senderResp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(senderKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -350,6 +357,7 @@ func TestIntegrationTransferNftWithBothSenderAndReceiverHooksSucceeds(t *testing
 	require.NoError(t, err)
 
 	receiverResp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(receiverKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -420,6 +428,7 @@ func TestIntegrationTransferWithInvalidGasHook(t *testing.T) {
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -458,6 +467,7 @@ func TestIntegrationTransferHbarWithPrePostTransactionAllowanceHookSucceeds(t *t
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -500,6 +510,7 @@ func TestIntegrationTransferFungibleTokenWithPrePostTransactionAllowanceHookSucc
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -570,6 +581,7 @@ func TestIntegrationTransferNftWithPrePostSenderAllowanceHookSucceeds(t *testing
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(accountKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -639,6 +651,7 @@ func TestIntegrationTransferNftWithPrePostReceiverAllowanceHookSucceeds(t *testi
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKey(receiverKey).
 		SetInitialBalance(NewHbar(2)).
 		AddHook(*hookDetails).
@@ -672,45 +685,6 @@ func TestIntegrationTransferNftWithPrePostReceiverAllowanceHookSucceeds(t *testi
 	require.NoError(t, err)
 	assert.Equal(t, StatusSuccess, transferReceipt.Status)
 }
-
-// func TestIntegrationTransferWithFullHookId(t *testing.T) {
-// 	t.Parallel()
-// 	env := NewIntegrationTestEnv(t)
-// 	defer CloseIntegrationTestEnv(env, nil)
-
-// 	hookContractId := createHookContractId(t, &env)
-
-// 	hookDetails := NewHookCreationDetails().
-// 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
-// 		SetHookId(2).
-// 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
-
-// 	accountKey, err := PrivateKeyGenerateEd25519()
-// 	require.NoError(t, err)
-
-// 	resp, err := NewAccountCreateTransaction().
-// 		SetKey(accountKey).
-// 		SetInitialBalance(NewHbar(2)).
-// 		AddHook(*hookDetails).
-// 		Execute(env.Client)
-// 	require.NoError(t, err)
-
-// 	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
-// 	require.NoError(t, err)
-// 	accountId := *receipt.AccountID
-
-// 	hookCall := NewFungibleHookCallFull(*NewHookId(*NewHookEntityIdWithAccountId(accountId), 2), *NewEvmHookCall().SetData([]byte{}).SetGasLimit(20000), PRE_HOOK)
-
-// 	transferResponse, err := NewTransferTransaction().
-// 		AddHbarTransfer(env.OperatorID, NewHbar(1)).
-// 		AddHbarTransferWithHook(accountId, NewHbar(-1), *hookCall).
-// 		Execute(env.Client)
-// 	require.NoError(t, err)
-
-// 	transferReceipt, err := transferResponse.SetValidateStatus(true).GetReceipt(env.Client)
-// 	require.NoError(t, err)
-// 	assert.Equal(t, StatusSuccess, transferReceipt.Status)
-// }
 
 // Helper function to create bytecode file
 func createBytecodeFile(t *testing.T, env *IntegrationTestEnv) FileID {

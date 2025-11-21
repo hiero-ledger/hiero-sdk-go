@@ -463,6 +463,7 @@ func TestIntegrationAccountUpdateTransactionCanExecuteWithHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToCreate(*hookDetail).
 		FreezeWith(env.Client)
@@ -503,6 +504,7 @@ func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		SetHooksToCreate([]HookCreationDetails{*hookDetail, *hookDetail}).
 		FreezeWith(env.Client)
@@ -528,6 +530,7 @@ func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey.PublicKey()).
 		AddHook(*hookDetail).
 		Execute(env.Client)
@@ -541,6 +544,7 @@ func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
 	require.NoError(t, err)
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToCreate(*hookDetail).
 		FreezeWith(env.Client)
@@ -583,6 +587,7 @@ func TestIntegrationAccountUpdateTransactionUpdateAddHookWithInitialStorageUpdat
 			SetContractId(&ContractID{}))
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToCreate(*hookDetail).
 		FreezeWith(env.Client)
@@ -611,6 +616,7 @@ func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetHooks([]HookCreationDetails{*hookDetail}).
 		Execute(env.Client)
@@ -624,6 +630,7 @@ func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.
 	require.NoError(t, err)
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToCreate(*hookDetail).
 		FreezeWith(env.Client)
@@ -652,6 +659,7 @@ func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetHooks([]HookCreationDetails{*hookDetail}).
 		Execute(env.Client)
@@ -665,6 +673,7 @@ func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
 	require.NoError(t, err)
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToDelete(1).
 		FreezeWith(env.Client)
@@ -693,6 +702,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testin
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey.PublicKey()).
 		SetHooks([]HookCreationDetails{*hookDetail}).
 		Execute(env.Client)
@@ -706,6 +716,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testin
 	require.NoError(t, err)
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToDelete(123).
 		FreezeWith(env.Client)
@@ -746,6 +757,7 @@ func TestIntegrationAccountUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameT
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAccountID(accountID).
 		AddHookToDelete(1).
 		SetHooksToCreate([]HookCreationDetails{*hookDetail}).
@@ -775,6 +787,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T)
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey.PublicKey()).
 		AddHook(*hookDetail).
 		Execute(env.Client)
@@ -788,6 +801,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T)
 	require.NoError(t, err)
 
 	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToDelete(1).
 		FreezeWith(env.Client)
@@ -802,6 +816,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T)
 	require.NoError(t, err)
 
 	tx, err = NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetAccountID(accountID).
 		AddHookToDelete(1).
 		FreezeWith(env.Client)

@@ -231,6 +231,7 @@ func TestIntegrationContractUpdateTransactionAddHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToCreate(*hookDetail).
 		Execute(env.Client)
@@ -276,6 +277,7 @@ func TestIntegrationContractUpdateTransactionAddDuplicateHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		SetHooksToCreate([]HookCreationDetails{*hookDetail, *hookDetail}).
 		Execute(env.Client)
@@ -306,6 +308,7 @@ func TestIntegrationContractUpdateTransactionAddExisingHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		AddHook(*hookDetail).
 		SetGas(contractDeployGas).
@@ -320,6 +323,7 @@ func TestIntegrationContractUpdateTransactionAddExisingHook(t *testing.T) {
 	contractID := *receipt.ContractID
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToCreate(*hookDetail).
 		Execute(env.Client)
@@ -367,6 +371,7 @@ func TestIntegrationContractUpdateTransactionUpdateAddHookWithInitialStorageUpda
 			SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToCreate(*hookDetail).
 		Execute(env.Client)
@@ -399,6 +404,7 @@ func TestIntegrationContractUpdateTransactionCannotAddHookThatIsInUse(t *testing
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		AddHook(*hookDetail).
 		SetGas(contractDeployGas).
@@ -413,6 +419,7 @@ func TestIntegrationContractUpdateTransactionCannotAddHookThatIsInUse(t *testing
 	contractID := *receipt.ContractID
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToCreate(*hookDetail).
 		Execute(env.Client)
@@ -445,6 +452,7 @@ func TestIntegrationContractUpdateTransactionCanAddHookToDelete(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		AddHook(*hookDetail).
 		SetGas(contractDeployGas).
@@ -459,6 +467,7 @@ func TestIntegrationContractUpdateTransactionCanAddHookToDelete(t *testing.T) {
 	contractID := *receipt.ContractID
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToDelete(1).
 		Execute(env.Client)
@@ -491,6 +500,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteNonExistantHook(t *testi
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		AddHook(*hookDetail).
 		SetGas(contractDeployGas).
@@ -505,6 +515,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteNonExistantHook(t *testi
 	contractID := *receipt.ContractID
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToDelete(123).
 		Execute(env.Client)
@@ -532,6 +543,7 @@ func TestIntegrationContractUpdateTransactionCanotAddAndAddHookToDeleteAtTheSame
 	assert.NotNil(t, fileID)
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetGas(contractDeployGas).
 		SetBytecodeFileID(fileID).
@@ -550,6 +562,7 @@ func TestIntegrationContractUpdateTransactionCanotAddAndAddHookToDeleteAtTheSame
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		SetHooksToCreate([]HookCreationDetails{*hookDetail}).
 		AddHookToDelete(1).
@@ -583,6 +596,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteDeletedHook(t *testing.T
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		AddHook(*hookDetail).
 		SetGas(contractDeployGas).
@@ -597,6 +611,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteDeletedHook(t *testing.T
 	contractID := *receipt.ContractID
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToDelete(1).
 		Execute(env.Client)
@@ -606,6 +621,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteDeletedHook(t *testing.T
 	require.NoError(t, err)
 
 	resp, err = NewContractUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
 		SetContractID(contractID).
 		AddHookToDelete(1).
 		Execute(env.Client)

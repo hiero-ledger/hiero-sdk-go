@@ -876,7 +876,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
 		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	_, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
-		tx.AddHook(*hookDetail)
+		tx.SetMaxTransactionFee(NewHbar(10)).AddHook(*hookDetail)
 	})
 	require.NoError(t, err)
 }
@@ -894,7 +894,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndInitialStorageU
 			SetContractId(&ContractID{Contract: 1}))
 
 	_, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
-		tx.AddHook(*hookDetail)
+		tx.SetMaxTransactionFee(NewHbar(10)).AddHook(*hookDetail)
 	})
 	require.NoError(t, err)
 }
@@ -913,6 +913,7 @@ func TestIntegrationAccountCreateTransactionCannotExecuteWithHookWithoutContract
 	require.NoError(t, err)
 
 	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey).
 		AddHook(*hookDetail).
 		Execute(env.Client)
@@ -936,6 +937,7 @@ func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
 		SetKeyWithoutAlias(newKey).
 		SetHooks([]HookCreationDetails{*hookDetail, *hookDetail}).
 		Execute(env.Client)
@@ -958,7 +960,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *tes
 		SetAdminKey(hookAdminKey)
 
 	_, _, err = createAccount(&env, func(tx *AccountCreateTransaction) {
-		tx.AddHook(*hookDetail)
+		tx.SetMaxTransactionFee(NewHbar(10)).AddHook(*hookDetail)
 	})
 	require.NoError(t, err)
 }
