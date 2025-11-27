@@ -1,3 +1,19 @@
+## v2.74.0
+
+### Added
+- Support for HIP-1299: Enhanced retry mechanism to handle node account ID rotations in the Dynamic Address Book. [#1547](https://github.com/hiero-ledger/hiero-sdk-go/pull/1547)
+  - The SDK now treats `INVALID_NODE_ACCOUNT_ID` as a retryable status code.
+  - When this error is encountered, the affected node is automatically marked as unusable (increased backoff, removed from healthy nodes list).
+  - The client's network configuration is automatically updated with the latest node account IDs via an address book query.
+  - The transaction is automatically retried with another node.
+  - This ensures seamless handling of node account ID changes that occur when nodes update their account IDs in the Dynamic Address Book.
+- Support for hooks, programmable Hiero extension points that let users customize the behavior of their entities. The initial implementation focuses on EVM hooks and account allowance hooks as the first extension point. [#1572](https://github.com/hiero-ledger/hiero-sdk-go/pull/1572)
+
+
+### Changed
+- Refactor and test mirror node grpc stream calls. [#1558](https://github.com/hiero-ledger/hiero-sdk-go/pull/1558)
+
+
 ## v2.73.0
 
 ### Added
