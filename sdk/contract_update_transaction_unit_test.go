@@ -345,3 +345,70 @@ func TestUnitContractUpdateTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(ContractUpdateTransaction).buildProtoBody())
 }
+
+func TestUnitContractUpdateSetHooks(t *testing.T) {
+	tx := NewContractUpdateTransaction()
+
+	hook1 := NewHookCreationDetails()
+	hook2 := NewHookCreationDetails()
+
+	tx.AddHookToCreate(*hook1).AddHookToCreate(*hook2)
+	require.Equal(t, 2, len(tx.GetHooksToCreate()))
+	require.Equal(t, *hook1, tx.GetHooksToCreate()[0])
+	require.Equal(t, *hook2, tx.GetHooksToCreate()[1])
+
+	tx.SetHooksToCreate([]HookCreationDetails{*hook1, *hook2})
+	require.Equal(t, 2, len(tx.GetHooksToCreate()))
+	require.Equal(t, *hook1, tx.GetHooksToCreate()[0])
+	require.Equal(t, *hook2, tx.GetHooksToCreate()[1])
+
+	tx.AddHookToDelete(1)
+	require.Equal(t, []int64{1}, tx.GetHooksToDelete())
+
+	tx.SetHooksToDelete([]int64{1, 2})
+	require.Equal(t, []int64{1, 2}, tx.GetHooksToDelete())
+}
+
+func TestUnitContractUpdateTransactionToProtoHooks(t *testing.T) {
+	tx := NewContractUpdateTransaction()
+	proto := tx.buildProtoBody()
+	require.Equal(t, 0, len(proto.HookCreationDetails))
+	require.Equal(t, 0, len(proto.HookIdsToDelete))
+
+	ed25519PrivateKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ed25519PublicKey := ed25519PrivateKey.PublicKey()
+
+	hook := NewHookCreationDetails().
+		SetHookId(1).
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1})).
+		SetAdminKey(ed25519PublicKey)
+
+	tx.AddHookToCreate(*hook).AddHookToDelete(1)
+	proto = tx.buildProtoBody()
+	require.Equal(t, hook.toProtobuf(), proto.HookCreationDetails[0])
+	require.Equal(t, []int64{1}, proto.HookIdsToDelete)
+}
+
+func TestUnitContractUpdateTransactionBytesHooks(t *testing.T) {
+	tx := NewContractUpdateTransaction()
+	contractID, err := ContractIDFromString("0.0.123")
+	require.NoError(t, err)
+	ed25519PrivateKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ed25519PublicKey := ed25519PrivateKey.PublicKey()
+	hook := NewHookCreationDetails().
+		SetHookId(1).SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&contractID)).
+		SetAdminKey(ed25519PublicKey)
+	tx.AddHookToCreate(*hook)
+	tx.AddHookToDelete(1)
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+	txFromBytes, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+	contractUpdateTx := txFromBytes.(ContractUpdateTransaction)
+	require.Equal(t, *hook, contractUpdateTx.GetHooksToCreate()[0])
+	require.Equal(t, []int64{1}, contractUpdateTx.GetHooksToDelete())
+}

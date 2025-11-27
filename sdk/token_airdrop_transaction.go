@@ -62,7 +62,7 @@ func (tx *TokenAirdropTransaction) SetTokenTransferApproval(tokenID TokenID, acc
 		if token.equals(tokenID) {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
-					transfer.IsApproved = approval
+					transfer.isApproved = approval
 				}
 			}
 		}
@@ -113,8 +113,8 @@ func (tx *TokenAirdropTransaction) GetTokenTransfers() map[TokenID][]TokenTransf
 			}
 			tokenTransfersList = append(tokenTransfersList, TokenTransfer{
 				AccountID:  acc,
-				Amount:     transfer.Amount.AsTinybar(),
-				IsApproved: transfer.IsApproved,
+				Amount:     transfer.amount.AsTinybar(),
+				IsApproved: transfer.isApproved,
 			})
 		}
 
@@ -145,7 +145,7 @@ func (tx *TokenAirdropTransaction) AddTokenTransferWithDecimals(tokenID TokenID,
 		if token.equals(tokenID) {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
+					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 					tokenTransfer.ExpectedDecimals = &decimal
 
 					return tx
@@ -157,8 +157,8 @@ func (tx *TokenAirdropTransaction) AddTokenTransferWithDecimals(tokenID TokenID,
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
 		v.Transfers = append(v.Transfers, &_HbarTransfer{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
+			amount:     HbarFromTinybar(value),
+			isApproved: false,
 		})
 		v.ExpectedDecimals = &decimal
 
@@ -168,8 +168,8 @@ func (tx *TokenAirdropTransaction) AddTokenTransferWithDecimals(tokenID TokenID,
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
 		Transfers: []*_HbarTransfer{{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
+			amount:     HbarFromTinybar(value),
+			isApproved: false,
 		}},
 		ExpectedDecimals: &decimal,
 	}
@@ -186,7 +186,7 @@ func (tx *TokenAirdropTransaction) AddTokenTransfer(tokenID TokenID, accountID A
 		if token.equals(tokenID) {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
+					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 
 					return tx
 				}
@@ -197,8 +197,8 @@ func (tx *TokenAirdropTransaction) AddTokenTransfer(tokenID TokenID, accountID A
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
 		v.Transfers = append(v.Transfers, &_HbarTransfer{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
+			amount:     HbarFromTinybar(value),
+			isApproved: false,
 		})
 
 		return tx
@@ -207,8 +207,8 @@ func (tx *TokenAirdropTransaction) AddTokenTransfer(tokenID TokenID, accountID A
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
 		Transfers: []*_HbarTransfer{{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
+			amount:     HbarFromTinybar(value),
+			isApproved: false,
 		}},
 	}
 
@@ -245,10 +245,10 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransferWithDecimals(tokenID 
 		if token.equals(tokenID) {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
+					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 					tokenTransfer.ExpectedDecimals = &decimal
 					for _, transfer := range tokenTransfer.Transfers {
-						transfer.IsApproved = approve
+						transfer.isApproved = approve
 					}
 
 					return tx
@@ -260,8 +260,8 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransferWithDecimals(tokenID 
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
 		v.Transfers = append(v.Transfers, &_HbarTransfer{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
+			amount:     HbarFromTinybar(value),
+			isApproved: approve,
 		})
 		v.ExpectedDecimals = &decimal
 
@@ -271,8 +271,8 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransferWithDecimals(tokenID 
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
 		Transfers: []*_HbarTransfer{{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
+			amount:     HbarFromTinybar(value),
+			isApproved: approve,
 		}},
 		ExpectedDecimals: &decimal,
 	}
@@ -288,8 +288,8 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransfer(tokenID TokenID, acc
 		if token.equals(tokenID) {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
-					transfer.IsApproved = approve
+					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
+					transfer.isApproved = approve
 
 					return tx
 				}
@@ -300,8 +300,8 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransfer(tokenID TokenID, acc
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
 		v.Transfers = append(v.Transfers, &_HbarTransfer{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
+			amount:     HbarFromTinybar(value),
+			isApproved: approve,
 		})
 
 		return tx
@@ -310,8 +310,8 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransfer(tokenID TokenID, acc
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
 		Transfers: []*_HbarTransfer{{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
+			amount:     HbarFromTinybar(value),
+			isApproved: approve,
 		}},
 	}
 
