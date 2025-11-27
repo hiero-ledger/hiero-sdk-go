@@ -98,17 +98,17 @@ jobs:
             - name: Prepare Hiero Solo
               if: success() && matrix.test-type == 'e2e'
               id: solo
-              uses: hiero-ledger/hiero-solo-action@dd0048139ef1e40fd6067f01bf94eb42a67294f4 # v0.15.0
+              uses: hiero-ledger/hiero-solo-action@fbca3e7a99ce9aa8a250563a81187abe115e0dad # v0.16.0
               with:
                 installMirrorNode: true
                 hieroVersion: v0.69.0-alpha.1
+                mirrorNodeVersion: v0.142.0
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
               run: |
                 echo "OPERATOR_KEY=${{ steps.solo.outputs.ed25519PrivateKey }}" >> $GITHUB_ENV
                 echo "OPERATOR_ID=${{ steps.solo.outputs.ed25519AccountId }}" >> $GITHUB_ENV
-
 
             - name: Tests Unit
               if: success() && matrix.test-type == 'unit'
@@ -170,10 +170,12 @@ jobs:
 
             - name: Prepare Hiero Solo
               id: solo
-              uses: hiero-ledger/hiero-solo-action@dd0048139ef1e40fd6067f01bf94eb42a67294f4 # v0.14.0
+              uses: hiero-ledger/hiero-solo-action@fbca3e7a99ce9aa8a250563a81187abe115e0dad # v0.16.0
               with:
                 installMirrorNode: true
                 hieroVersion: v0.69.0-alpha.1
+                mirrorNodeVersion: v0.142.0
+                dualMode: true
 
             - name: Set Operator Account
               run: |
@@ -230,10 +232,11 @@ jobs:
 
             - name: Prepare Hiero Solo
               id: solo
-              uses: hiero-ledger/hiero-solo-action@dd0048139ef1e40fd6067f01bf94eb42a67294f4 # v0.15.0
+              uses: hiero-ledger/hiero-solo-action@fbca3e7a99ce9aa8a250563a81187abe115e0dad # v0.16.0
               with:
                 installMirrorNode: true
                 hieroVersion: v0.69.0-alpha.1
+                mirrorNodeVersion: v0.142.0
 
             - name: Set Operator Account
               run: |
