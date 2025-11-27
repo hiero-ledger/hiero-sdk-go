@@ -2,8 +2,6 @@ module github.com/hiero-ledger/hiero-sdk-go/tck
 
 go 1.24.0
 
-toolchain go1.24.5
-
 require (
 	github.com/creachadair/jrpc2 v1.3.2
 	github.com/hiero-ledger/hiero-sdk-go/v2 v2.66.0

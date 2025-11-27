@@ -544,7 +544,6 @@ func TestUnitGetNumberOfNodesForTransaction_MaxNodesNotSet(t *testing.T) {
 	require.NoError(t, err)
 
 	numNodes := mn._GetNumberOfNodesForTransaction()
-	// 1/1 of the network size
 	require.Equal(t, 3, numNodes)
 }
 
