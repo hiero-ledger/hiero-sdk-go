@@ -1840,7 +1840,7 @@ func _NewArgument() Argument {
 	}
 }
 
-func _NewIntArgument(value interface{}) Argument {
+func _NewIntArgument(value any) Argument {
 	var val int64
 	switch v := value.(type) {
 	case int64:

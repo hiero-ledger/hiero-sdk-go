@@ -184,7 +184,7 @@ func (id *ContractID) PopulateContract(client *Client) error {
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return err
 	}
