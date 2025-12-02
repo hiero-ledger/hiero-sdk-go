@@ -4,22 +4,23 @@ package hiero
 
 // SPDX-License-Identifier: Apache-2.0
 
+
 import (
 	"context"
 	"net"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/stretchr/testify/require"
 	protobuf "google.golang.org/protobuf/proto"
-
-	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
-	"google.golang.org/grpc"
 )
 
 func TestUnitMockQuery(t *testing.T) {
@@ -844,13 +845,14 @@ type MockTransactionHandlerFunc func(ctx context.Context, request *services.Tran
 type MockQueryHandlerFunc func(ctx context.Context, request *services.Query) *services.Response
 
 func NewMockHandler(responses []interface{}) func(interface{}, context.Context, func(interface{}) error, grpc.UnaryServerInterceptor) (interface{}, error) {
-	index := 0
+	// use atomic operations to avoid data races
+	var index int64 = 0
 	return func(_srv interface{}, _ctx context.Context, dec func(interface{}) error, _interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-		if index >= len(responses) {
+		currentIndex := atomic.AddInt64(&index, 1) - 1
+		if int(currentIndex) >= len(responses) {
 			return nil, status.New(codes.Aborted, "No response found").Err()
 		}
-		response := responses[index]
-		index = index + 1
+		response := responses[currentIndex]
 
 		switch response := response.(type) {
 		case error:
