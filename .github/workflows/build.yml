@@ -40,7 +40,7 @@ jobs:
               id: go
 
             - name: Check out code into the Go module directory
-              uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
             - name: Tidy SDK Modules
               run: go mod tidy
@@ -93,7 +93,7 @@ jobs:
               id: go
 
             - name: Check out code into the Go module directory
-              uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
             - name: Prepare Hiero Solo
               if: success() && matrix.test-type == 'e2e'
@@ -166,7 +166,7 @@ jobs:
               id: go
 
             - name: Check out code into the Go module directory
-              uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
             - name: Prepare Hiero Solo
               id: solo
@@ -225,7 +225,7 @@ jobs:
               id: go
 
             - name: Check out code into the Go module directory
-              uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
             - name: Install Task
               run: go install github.com/go-task/task/v3/cmd/task@v3.17.0
@@ -268,7 +268,7 @@ jobs:
               id: go
 
             - name: Check out code into the Go module directory
-              uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+              uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
             - name: Tidy TCK Modules
               run: go mod tidy
