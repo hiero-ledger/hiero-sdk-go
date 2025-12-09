@@ -17,7 +17,7 @@ var (
 )
 
 // Encode encodes a value
-func Encode(v interface{}, t *Type) ([]byte, error) {
+func Encode(v any, t *Type) ([]byte, error) {
 	return encode(reflect.ValueOf(v), t)
 }
 
@@ -282,7 +282,7 @@ func encodeErr(v reflect.Value, t string) error {
 
 // nolint
 func mapFromStruct(v reflect.Value) (reflect.Value, error) {
-	res := map[string]interface{}{}
+	res := map[string]any{}
 	typ := v.Type()
 	for i := 0; i < v.NumField(); i++ {
 		f := typ.Field(i)

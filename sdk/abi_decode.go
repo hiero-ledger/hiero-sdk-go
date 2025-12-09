@@ -15,7 +15,7 @@ import (
 )
 
 // Decode decodes the input with a given type
-func Decode(t *Type, input []byte) (interface{}, error) {
+func Decode(t *Type, input []byte) (any, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
@@ -24,7 +24,7 @@ func Decode(t *Type, input []byte) (interface{}, error) {
 }
 
 // DecodeStruct decodes the input with a type to a struct
-func DecodeStruct(t *Type, input []byte, out interface{}) error {
+func DecodeStruct(t *Type, input []byte, out any) error {
 	val, err := Decode(t, input)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func DecodeStruct(t *Type, input []byte, out interface{}) error {
 	return nil
 }
 
-func decode(t *Type, input []byte) (interface{}, []byte, error) {
+func decode(t *Type, input []byte) (any, []byte, error) {
 	var data []byte
 	var length int
 	var err error
@@ -75,7 +75,7 @@ func decode(t *Type, input []byte) (interface{}, []byte, error) {
 		return decodeArraySlice(t, input, t.size)
 	}
 
-	var val interface{}
+	var val any
 	switch t.kind {
 	case KindBool:
 		val, err = decodeBool(data)
@@ -201,7 +201,7 @@ func readAddr(b []byte) (Address, error) {
 	return res, nil
 }
 
-func readInteger(t *Type, b []byte) interface{} {
+func readInteger(t *Type, b []byte) any {
 	switch t.t.Kind() {
 	case reflect.Uint8:
 		return b[len(b)-1]
@@ -253,14 +253,14 @@ func readFunctionType(t *Type, word []byte) ([24]byte, error) {
 }
 
 // nolint
-func readFixedBytes(t *Type, word []byte) (interface{}, error) {
+func readFixedBytes(t *Type, word []byte) (any, error) {
 	array := reflect.New(t.t).Elem()
 	reflect.Copy(array, reflect.ValueOf(word[0:t.size]))
 	return array.Interface(), nil
 }
 
-func decodeTuple(t *Type, data []byte) (interface{}, []byte, error) {
-	res := make(map[string]interface{})
+func decodeTuple(t *Type, data []byte) (any, []byte, error) {
+	res := make(map[string]any)
 
 	orig := data
 	origLen := len(orig)
@@ -302,7 +302,7 @@ func decodeTuple(t *Type, data []byte) (interface{}, []byte, error) {
 	return res, data, nil
 }
 
-func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, error) {
+func decodeArraySlice(t *Type, data []byte, size int) (any, []byte, error) {
 	if size < 0 {
 		return nil, nil, fmt.Errorf("size is lower than zero")
 	}
@@ -351,7 +351,7 @@ func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, erro
 	return res.Interface(), data, nil
 }
 
-func decodeBool(data []byte) (interface{}, error) {
+func decodeBool(data []byte) (any, error) {
 	switch data[31] {
 	case 0:
 		return false, nil

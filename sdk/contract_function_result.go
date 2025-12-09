@@ -415,7 +415,7 @@ func (result ContractFunctionResult) AsBytes() []byte {
 // allowing flexibility to handle various types of contract call results.
 // For correct usage, the caller should perform a type assertion on the returned interface{}
 // to convert it into the appropriate go type.
-func (result ContractFunctionResult) GetResult(types string) (interface{}, error) {
+func (result ContractFunctionResult) GetResult(types string) (any, error) {
 	def := fmt.Sprintf(`[{ "name" : "method", "type": "function", "outputs": [{ "type": "%s" }]}]`, types)
 	abi := ABI{}
 	err := abi.UnmarshalJSON([]byte(def))
