@@ -1,8 +1,10 @@
 package hiero
 
-import "strings"
+import (
+	"strings"
 
-import "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+)
 
 // SPDX-License-Identifier: Apache-2.0
 
