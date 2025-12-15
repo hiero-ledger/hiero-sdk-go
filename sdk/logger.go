@@ -105,7 +105,7 @@ func (l *DefaultLogger) Error(msg string, keysAndValues ...interface{}) {
 }
 
 func (l *DefaultLogger) Trace(msg string, keysAndValues ...interface{}) {
-	addFields(l.logger.Trace(), msg, keysAndValues...)
+	// addFields(l.logger.Trace(), msg, keysAndValues...)
 }
 
 func (l *DefaultLogger) Debug(msg string, keysAndValues ...interface{}) {
