@@ -91,7 +91,7 @@ type ErrBadKey struct {
 	message string
 }
 
-func _NewErrBadKeyf(format string, a ...interface{}) ErrBadKey {
+func _NewErrBadKeyf(format string, a ...any) ErrBadKey {
 	return ErrBadKey{fmt.Sprintf(format, a...)}
 }
 

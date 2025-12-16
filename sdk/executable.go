@@ -40,13 +40,13 @@ type Executable interface {
 	GetNodeAccountIDs() []AccountID
 	GetLogLevel() *LogLevel
 
-	shouldRetry(Executable, interface{}) _ExecutionState
-	makeRequest() interface{}
+	shouldRetry(Executable, any) _ExecutionState
+	makeRequest() any
 	advanceRequest()
 	getNodeAccountID() AccountID
 	getMethod(*_Channel) _Method
-	mapStatusError(Executable, interface{}) error
-	mapResponse(interface{}, AccountID, interface{}) (interface{}, error)
+	mapStatusError(Executable, any) error
+	mapResponse(any, AccountID, any) (any, error)
 	getName() string
 	validateNetworkOnIDs(client *Client) error
 	isTransaction() bool
@@ -190,7 +190,7 @@ func (e *executable) getNodeAccountID() AccountID {
 }
 
 // nolint
-func _Execute(client *Client, e Executable) (interface{}, error) {
+func _Execute(client *Client, e Executable) (any, error) {
 	var maxAttempts int
 
 	if client.maxAttempts != nil {
@@ -220,7 +220,7 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 			return TransactionResponse{}, fmt.Errorf("request timed out after %s", requestTimeout)
 		}
 
-		var protoRequest interface{}
+		var protoRequest any
 		var node *_Node
 		var ok bool
 
@@ -269,7 +269,7 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 		method := e.getMethod(channel)
 
-		var resp interface{}
+		var resp any
 
 		var grpcDeadline time.Duration
 		if e.GetGrpcDeadline() != nil {
