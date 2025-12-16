@@ -1329,7 +1329,7 @@ func (tx *Transaction[T]) getLogID(transactionInterface Executable) string {
 }
 
 // ------------ Executable Functions ------------
-func (tx *Transaction[T]) shouldRetry(_ Executable, response interface{}) _ExecutionState {
+func (tx *Transaction[T]) shouldRetry(_ Executable, response any) _ExecutionState {
 	status := Status(response.(*services.TransactionResponse).NodeTransactionPrecheckCode)
 
 	retryableStatuses := map[Status]bool{
@@ -1357,7 +1357,7 @@ func (tx *Transaction[T]) shouldRetry(_ Executable, response interface{}) _Execu
 	return executionStateError
 }
 
-func (tx *Transaction[T]) makeRequest() interface{} {
+func (tx *Transaction[T]) makeRequest() any {
 	index := tx.nodeAccountIDs._Length()*tx.transactionIDs.index + tx.nodeAccountIDs.index
 	built, _ := tx._BuildTransaction(index)
 
@@ -1375,7 +1375,7 @@ func (tx *Transaction[T]) getNodeAccountID() AccountID {
 
 func (tx *Transaction[T]) mapStatusError(
 	_ Executable,
-	response interface{},
+	response any,
 ) error {
 	return ErrHederaPreCheckStatus{
 		Status: Status(response.(*services.TransactionResponse).NodeTransactionPrecheckCode),
@@ -1383,7 +1383,7 @@ func (tx *Transaction[T]) mapStatusError(
 	}
 }
 
-func (tx *Transaction[T]) mapResponse(_ interface{}, nodeID AccountID, protoRequest interface{}) (interface{}, error) {
+func (tx *Transaction[T]) mapResponse(_ any, nodeID AccountID, protoRequest any) (any, error) {
 	hash := sha512.New384()
 	_, err := hash.Write(protoRequest.(*services.Transaction).SignedTransactionBytes)
 	if err != nil {

@@ -170,7 +170,7 @@ func (q *TransactionRecordQuery) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (q *TransactionRecordQuery) mapStatusError(_ Executable, response interface{}) error {
+func (q *TransactionRecordQuery) mapStatusError(_ Executable, response any) error {
 	query := response.(*services.Response)
 	switch Status(query.GetTransactionGetRecord().GetHeader().GetNodeTransactionPrecheckCode()) {
 	case StatusPlatformTransactionNotCreated, StatusBusy, StatusUnknown, StatusReceiptNotFound, StatusRecordNotFound, StatusOk:
@@ -228,7 +228,7 @@ func (q *TransactionRecordQuery) validateNetworkOnIDs(client *Client) error {
 	return nil
 }
 
-func (q *TransactionRecordQuery) shouldRetry(_ Executable, response interface{}) _ExecutionState {
+func (q *TransactionRecordQuery) shouldRetry(_ Executable, response any) _ExecutionState {
 	status := Status(response.(*services.Response).GetTransactionGetRecord().GetHeader().GetNodeTransactionPrecheckCode())
 
 	switch status {

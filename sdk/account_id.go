@@ -339,7 +339,7 @@ const (
 	EvmAddress
 )
 
-func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (map[string]interface{}, error) {
+func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (map[string]any, error) {
 	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
 		return nil, errors.New("mirror node is not set")
 	}
@@ -361,7 +361,7 @@ func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (ma
 	}
 	defer resp.Body.Close()
 
-	var result map[string]interface{}
+	var result map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, err
 	}

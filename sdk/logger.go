@@ -25,11 +25,11 @@ type Logger interface {
 	SetSilent(isSilent bool)
 	SetLevel(level LogLevel)
 	SubLoggerWithLevel(level LogLevel) Logger
-	Error(msg string, keysAndValues ...interface{})
-	Warn(msg string, keysAndValues ...interface{})
-	Info(msg string, keysAndValues ...interface{})
-	Debug(msg string, keysAndValues ...interface{})
-	Trace(msg string, keysAndValues ...interface{})
+	Error(msg string, keysAndValues ...any)
+	Warn(msg string, keysAndValues ...any)
+	Info(msg string, keysAndValues ...any)
+	Debug(msg string, keysAndValues ...any)
+	Trace(msg string, keysAndValues ...any)
 }
 
 type DefaultLogger struct {
@@ -96,35 +96,35 @@ func (l *DefaultLogger) SubLoggerWithLevel(level LogLevel) Logger {
 	}
 }
 
-func (l *DefaultLogger) Warn(msg string, keysAndValues ...interface{}) {
+func (l *DefaultLogger) Warn(msg string, keysAndValues ...any) {
 	addFields(l.logger.Warn(), msg, keysAndValues...)
 }
 
-func (l *DefaultLogger) Error(msg string, keysAndValues ...interface{}) {
+func (l *DefaultLogger) Error(msg string, keysAndValues ...any) {
 	addFields(l.logger.Error(), msg, keysAndValues...)
 }
 
-func (l *DefaultLogger) Trace(msg string, keysAndValues ...interface{}) {
+func (l *DefaultLogger) Trace(msg string, keysAndValues ...any) {
 	addFields(l.logger.Trace(), msg, keysAndValues...)
 }
 
-func (l *DefaultLogger) Debug(msg string, keysAndValues ...interface{}) {
+func (l *DefaultLogger) Debug(msg string, keysAndValues ...any) {
 	addFields(l.logger.Debug(), msg, keysAndValues...)
 }
 
-func (l *DefaultLogger) Info(msg string, keysAndValues ...interface{}) {
+func (l *DefaultLogger) Info(msg string, keysAndValues ...any) {
 	addFields(l.logger.Info(), msg, keysAndValues...)
 }
 
-func argsToFields(keysAndValues ...interface{}) map[string]interface{} {
-	fields := make(map[string]interface{})
+func argsToFields(keysAndValues ...any) map[string]any {
+	fields := make(map[string]any)
 	for i := 0; i < len(keysAndValues); i += 2 {
 		fields[fmt.Sprint(keysAndValues[i])] = keysAndValues[i+1]
 	}
 	return fields
 }
 
-func addFields(event *zerolog.Event, msg string, keysAndValues ...interface{}) {
+func addFields(event *zerolog.Event, msg string, keysAndValues ...any) {
 	for key, value := range argsToFields(keysAndValues...) {
 		switch v := value.(type) {
 		case string:

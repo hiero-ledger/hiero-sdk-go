@@ -3,14 +3,14 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 type _LockableSlice struct {
-	slice  []interface{}
+	slice  []any
 	locked bool
 	index  int
 }
 
 func _NewLockableSlice() *_LockableSlice {
 	return &_LockableSlice{
-		slice: []interface{}{},
+		slice: []any{},
 	}
 }
 
@@ -25,14 +25,14 @@ func (ls *_LockableSlice) _SetLocked(locked bool) *_LockableSlice { // nolint
 	return ls
 }
 
-func (ls *_LockableSlice) _SetSlice(slice []interface{}) *_LockableSlice { //nolint
+func (ls *_LockableSlice) _SetSlice(slice []any) *_LockableSlice { //nolint
 	ls._RequireNotLocked()
 	ls.slice = slice
 	ls.index = 0
 	return ls
 }
 
-func (ls *_LockableSlice) _Push(items ...interface{}) *_LockableSlice {
+func (ls *_LockableSlice) _Push(items ...any) *_LockableSlice {
 	ls._RequireNotLocked()
 	ls.slice = append(ls.slice, items...)
 	return ls
@@ -40,15 +40,15 @@ func (ls *_LockableSlice) _Push(items ...interface{}) *_LockableSlice {
 
 func (ls *_LockableSlice) _Clear() *_LockableSlice { //nolint
 	ls._RequireNotLocked()
-	ls.slice = []interface{}{}
+	ls.slice = []any{}
 	return ls
 }
 
-func (ls *_LockableSlice) _Get(index int) interface{} { //nolint
+func (ls *_LockableSlice) _Get(index int) any { //nolint
 	return ls.slice[index]
 }
 
-func (ls *_LockableSlice) _Set(index int, item interface{}) *_LockableSlice { //nolint
+func (ls *_LockableSlice) _Set(index int, item any) *_LockableSlice { //nolint
 	ls._RequireNotLocked()
 
 	if len(ls.slice) == index {
@@ -60,7 +60,7 @@ func (ls *_LockableSlice) _Set(index int, item interface{}) *_LockableSlice { //
 	return ls
 }
 
-func (ls *_LockableSlice) _SetIfAbsent(index int, item interface{}) *_LockableSlice { //nolint
+func (ls *_LockableSlice) _SetIfAbsent(index int, item any) *_LockableSlice { //nolint
 	ls._RequireNotLocked()
 	if len(ls.slice) == index || ls.slice[index] == nil {
 		ls._Set(index, item)
@@ -68,11 +68,11 @@ func (ls *_LockableSlice) _SetIfAbsent(index int, item interface{}) *_LockableSl
 	return ls
 }
 
-func (ls *_LockableSlice) _GetNext() interface{} { //nolint
+func (ls *_LockableSlice) _GetNext() any { //nolint
 	return ls._Get(ls._Advance())
 }
 
-func (ls *_LockableSlice) _GetCurrent() interface{} { //nolint
+func (ls *_LockableSlice) _GetCurrent() any { //nolint
 	return ls._Get(ls.index)
 }
 

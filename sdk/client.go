@@ -271,8 +271,8 @@ type _ConfigOperator struct {
 
 // TODO: Implement complete spec: https://gitlab.com/launchbadge/hedera/sdk/python/-/issues/45
 type _ClientConfig struct {
-	Network       interface{}      `json:"network"`
-	MirrorNetwork interface{}      `json:"mirrorNetwork"`
+	Network       any              `json:"network"`
+	MirrorNetwork any              `json:"mirrorNetwork"`
 	Shard         uint64           `json:"shard"`
 	Realm         uint64           `json:"realm"`
 	Operator      *_ConfigOperator `json:"operator"`
@@ -305,7 +305,7 @@ func clientFromConfig(jsonBytes []byte, shouldScheduleNetworkUpdate bool) (*Clie
 	networkAddresses := make(map[string]AccountID)
 
 	switch net := clientConfig.Network.(type) {
-	case map[string]interface{}:
+	case map[string]any:
 		for url, inter := range net {
 			switch id := inter.(type) {
 			case string:
@@ -338,7 +338,7 @@ func clientFromConfig(jsonBytes []byte, shouldScheduleNetworkUpdate bool) (*Clie
 	}
 
 	switch mirror := clientConfig.MirrorNetwork.(type) {
-	case []interface{}:
+	case []any:
 		arr := make([]string, len(mirror))
 		for i, inter := range mirror {
 			switch str := inter.(type) {

@@ -423,13 +423,13 @@ func badMnemonicSentences() []vector {
 	}
 }
 
-func assertNil(t *testing.T, object interface{}) {
+func assertNil(t *testing.T, object any) {
 	if object != nil {
 		t.Errorf("Expected nil, got %v", object)
 	}
 }
 
-func assertNotNil(t *testing.T, object interface{}) {
+func assertNotNil(t *testing.T, object any) {
 	if object == nil {
 		t.Error("Expected not nil")
 	}
@@ -447,7 +447,7 @@ func assertFalse(t *testing.T, a bool) {
 	}
 }
 
-func assertEqual(t *testing.T, a, b interface{}) {
+func assertEqual(t *testing.T, a, b any) {
 	if a != b {
 		t.Errorf("Objects not equal, expected `%s` and got `%s`", a, b)
 	}

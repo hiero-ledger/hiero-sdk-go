@@ -71,7 +71,7 @@ func (tx *TopicMessageSubmitTransaction) GetTopicID() TopicID {
 // SetMessage Sets the message to be submitted.
 // The message should be a byte array or a string
 // If other types are provided, it will not set the value
-func (tx *TopicMessageSubmitTransaction) SetMessage(message interface{}) *TopicMessageSubmitTransaction {
+func (tx *TopicMessageSubmitTransaction) SetMessage(message any) *TopicMessageSubmitTransaction {
 	tx._RequireNotFrozen()
 	switch m := message.(type) {
 	case string:

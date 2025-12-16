@@ -26,7 +26,7 @@ var (
 	stringT       = reflect.TypeOf("")
 	dynamicBytesT = reflect.SliceOf(reflect.TypeOf(byte(0)))
 	functionT     = reflect.ArrayOf(24, reflect.TypeOf(byte(0)))
-	tupleT        = reflect.TypeOf(map[string]interface{}{})
+	tupleT        = reflect.TypeOf(map[string]any{})
 	bigIntT       = reflect.TypeOf(new(big.Int))
 )
 
@@ -132,12 +132,12 @@ func NewTupleTypeFromArgs(inputs []*ArgumentStr) (*Type, error) {
 }
 
 // Decode decodes an object using this type
-func (t *Type) Decode(input []byte) (interface{}, error) {
+func (t *Type) Decode(input []byte) (any, error) {
 	return Decode(t, input)
 }
 
 // DecodeStruct decodes an object using this type to the out param
-func (t *Type) DecodeStruct(input []byte, out interface{}) error {
+func (t *Type) DecodeStruct(input []byte, out any) error {
 	return DecodeStruct(t, input, out)
 }
 
@@ -147,7 +147,7 @@ func (t *Type) InternalType() string {
 }
 
 // Encode encodes an object using this type
-func (t *Type) Encode(v interface{}) ([]byte, error) {
+func (t *Type) Encode(v any) ([]byte, error) {
 	return Encode(v, t)
 }
 

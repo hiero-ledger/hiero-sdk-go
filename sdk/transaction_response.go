@@ -28,7 +28,7 @@ type TransactionResponse struct {
 // This should yield the same result in all SDK's.
 func (response TransactionResponse) MarshalJSON() ([]byte, error) {
 	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	obj := make(map[string]interface{})
+	obj := make(map[string]any)
 	obj["nodeID"] = response.NodeID.String()
 	obj["hash"] = hex.EncodeToString(response.Hash)
 	obj["transactionID"] = response.TransactionID.String()

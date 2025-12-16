@@ -236,7 +236,7 @@ func (q *Query) isBatchedAndNotBatchTransaction() bool {
 	return false
 }
 
-func (q *Query) shouldRetry(e Executable, response interface{}) _ExecutionState {
+func (q *Query) shouldRetry(e Executable, response any) _ExecutionState {
 	queryResp := e.(QueryInterface).getQueryResponse(response.(*services.Response))
 
 	status := Status(queryResp.GetHeader().NodeTransactionPrecheckCode)
@@ -281,7 +281,7 @@ func (q *Query) advanceRequest() {
 	q.nodeAccountIDs._Advance()
 }
 
-func (q *Query) makeRequest() interface{} {
+func (q *Query) makeRequest() any {
 	if q.client != nil && q.isPaymentRequired {
 		tx, err := q.generatePayments(q.client, q.queryPayment)
 		if err != nil {
@@ -293,7 +293,7 @@ func (q *Query) makeRequest() interface{} {
 	return q.pb
 }
 
-func (q *Query) mapResponse(response interface{}, _ AccountID, _ interface{}) (interface{}, error) { // nolint
+func (q *Query) mapResponse(response any, _ AccountID, _ any) (any, error) { // nolint
 	return response.(*services.Response), nil
 }
 
@@ -301,7 +301,7 @@ func (q *Query) isTransaction() bool {
 	return false
 }
 
-func (q *Query) mapStatusError(e Executable, response interface{}) error {
+func (q *Query) mapStatusError(e Executable, response any) error {
 	queryResp := e.(QueryInterface).getQueryResponse(response.(*services.Response))
 	return ErrHederaPreCheckStatus{
 		Status: Status(queryResp.GetHeader().NodeTransactionPrecheckCode),
