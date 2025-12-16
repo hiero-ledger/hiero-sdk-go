@@ -1,4 +1,4 @@
-package hedera
+package hiero
 
 /*-
  *
@@ -24,34 +24,13 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-
-	"time"
-
-	"github.com/hashgraph/hedera-protobufs-go/services"
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	protobuf "google.golang.org/protobuf/proto"
 )
 
 // TransactionFromBytes converts Transaction bytes to a related *Transaction.
 func CreateTransferTransactionFromBytes(data []byte) (*TransferTransaction, error) { // nolint
-	duration := 120 * time.Second
-	minBackoff := 250 * time.Millisecond
-	maxBackoff := 8 * time.Second
-
-	tx := Transaction{
-		maxRetry:                 10,
-		transactionValidDuration: &duration,
-		transactionIDs:           _NewLockableSlice(),
-		transactions:             _NewLockableSlice(),
-		signedTransactions:       _NewLockableSlice(),
-		nodeAccountIDs:           _NewLockableSlice(),
-		publicKeys:               make([]PublicKey, 0),
-		transactionSigners:       make([]TransactionSigner, 0),
-		freezeError:              nil,
-		regenerateTransactionID:  true,
-		minBackoff:               &minBackoff,
-		maxBackoff:               &maxBackoff,
-	}
-
+	tx := _NewTransaction[*TransferTransaction](nil)
 	fmt.Println("Parse Single transaction...")
 
 	var first *services.TransactionBody = nil
@@ -65,9 +44,6 @@ func CreateTransferTransactionFromBytes(data []byte) (*TransferTransaction, erro
 
 	fmt.Println("have a signed tx")
 	tx.signedTransactions = tx.signedTransactions._Push(&signedTransaction)
-	if err != nil {
-		return nil, err
-	}
 
 	for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
 		key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
@@ -142,6 +118,6 @@ func CreateTransferTransactionFromBytes(data []byte) (*TransferTransaction, erro
 		return nil, errNoTransactionInBytes
 	}
 
-	return _TransferTransactionFromProtobuf(tx, first), nil
+	ret := _TransferTransactionFromProtobuf(*tx, first)
+	return &ret, nil
 }
-
