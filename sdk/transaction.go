@@ -95,20 +95,35 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 
 // TransactionFromBytes converts transaction bytes to a related *transaction.
 func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
+	var gotSignedTx bool
 	list := sdk.TransactionList{}
 	minBackoff := 250 * time.Millisecond
 	maxBackoff := 8 * time.Second
 	publicKeys := make([]PublicKey, 0)
 	transactionSigners := make([]TransactionSigner, 0)
-	err := protobuf.Unmarshal(data, &list)
-	if err != nil {
-		return nil, errors.Wrap(err, "error deserializing from bytes to transaction List")
-	}
 
 	transactions := _NewLockableSlice()
 
-	for _, transaction := range list.TransactionList {
-		transactions._Push(transaction)
+	var signedTransaction services.SignedTransaction
+	signedBody := &services.TransactionBody{}
+
+	// We could get sent a list, or a single signed transaction. Protobuf will successfully
+	// unmarshal even if the types don't match, so we have to check manually to see if
+	// the data is valid.
+	if err := protobuf.Unmarshal(data, &signedTransaction); err == nil &&
+		protobuf.Unmarshal(signedTransaction.GetBodyBytes(), signedBody) == nil &&
+		signedBody.GetTransactionID() != nil {
+		// If this unmarshals correctly, assume we were supplied a single signed tx rather than a list
+		gotSignedTx = true
+	} else {
+		err := protobuf.Unmarshal(data, &list)
+		if err != nil {
+			return nil, errors.Wrap(err, "error deserializing from bytes to transaction List")
+		}
+
+		for _, transaction := range list.TransactionList {
+			transactions._Push(transaction)
+		}
 	}
 
 	baseTx := Transaction[TransactionInterface]{
@@ -144,7 +159,29 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 	// We introduce a boolean value to distinguish flow for signed tx vs unsigned transactions
 	txIsSigned := true
 
-	if len(list.TransactionList) == 0 {
+	if gotSignedTx {
+		// We were supplied a single signed tx
+		baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
+
+		for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
+			key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
+			if err != nil {
+				return nil, err
+			}
+
+			baseTx.publicKeys = append(baseTx.publicKeys, key)
+			baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
+		}
+
+		body := &services.TransactionBody{}
+		if err := protobuf.Unmarshal(signedTransaction.GetBodyBytes(), body); err != nil {
+			return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+		}
+		first = body
+		if err := setTransactionFields(body, &baseTx); err != nil {
+			return nil, err
+		}
+	} else if len(list.TransactionList) == 0 {
 		// Single transaction case
 		var transaction services.Transaction
 		err = protobuf.Unmarshal(data, &transaction)

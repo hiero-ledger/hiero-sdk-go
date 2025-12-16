@@ -3,6 +3,7 @@ module github.com/Arculus-Holdings-L-L-C/hedera-sdk-go/v2
 go 1.24.0
 
 require (
+    github.com/hiero-ledger/hiero-sdk-go/v2 v2.74.0
 	github.com/btcsuite/btcd/btcec/v2 v2.3.6
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.0
 	github.com/json-iterator/go v1.1.12
@@ -16,6 +17,8 @@ require (
 	google.golang.org/grpc v1.76.0
 	google.golang.org/protobuf v1.36.10
 )
+
+replace github.com/hiero-ledger/hiero-sdk-go/v2 => .
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
