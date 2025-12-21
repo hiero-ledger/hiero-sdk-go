@@ -67,7 +67,7 @@ func (feeData FeeData) _ToProtobuf() *services.FeeData {
 
 // ToBytes returns the byte representation of the FeeData
 func (feeData FeeData) ToBytes() []byte {
-	data, err := protobuf.Marshal(feeData._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(feeData._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

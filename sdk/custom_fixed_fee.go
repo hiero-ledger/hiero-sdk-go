@@ -170,7 +170,7 @@ func (fee *CustomFixedFee) SetAllCollectorsAreExempt(exempt bool) *CustomFixedFe
 
 // ToBytes returns the byte representation of the CustomFixedFee
 func (fee *CustomFixedFee) ToBytes() []byte {
-	data, err := protobuf.Marshal(fee._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(fee._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

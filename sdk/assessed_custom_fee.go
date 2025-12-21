@@ -61,7 +61,7 @@ func (fee *AssessedCustomFee) _ToProtobuf() *services.AssessedCustomFee {
 
 // ToBytes returns the serialized bytes of a AssessedCustomFee
 func (fee *AssessedCustomFee) ToBytes() []byte {
-	data, err := protobuf.Marshal(fee._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(fee._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

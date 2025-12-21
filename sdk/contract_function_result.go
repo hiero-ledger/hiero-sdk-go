@@ -518,7 +518,7 @@ func (result ContractFunctionResult) _ToProtobuf() *services.ContractFunctionRes
 
 // ToBytes returns the protobuf encoded bytes of the ContractFunctionResult
 func (result *ContractFunctionResult) ToBytes() []byte {
-	data, err := protobuf.Marshal(result._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(result._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}

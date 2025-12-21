@@ -42,7 +42,7 @@ func (exchange *ExchangeRate) _ToProtobuf() *services.ExchangeRate {
 
 // ToBytes returns the byte representation of the ExchangeRate
 func (exchange *ExchangeRate) ToBytes() []byte {
-	data, err := protobuf.Marshal(exchange._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(exchange._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}
