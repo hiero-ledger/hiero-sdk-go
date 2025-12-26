@@ -1,3 +1,25 @@
+// Example demonstrating how to create and delete an account using the Hiero Go SDK.
+//
+// This program performs the full lifecycle of creating a temporary account
+// and then deleting it:
+//
+//  1. Initialize a client using environment variables (HEDERA_NETWORK, OPERATOR_ID, OPERATOR_KEY)
+//  2. Generate a new key pair for the temporary account
+//  3. Create a new account with an initial balance of 2 HBAR
+//  4. Build an AccountDeleteTransaction specifying the account to delete
+//     and a transfer account to receive the remaining balance
+//  5. Freeze the transaction to prepare it for signing
+//  6. Sign the transaction with the private key of the account being deleted
+//     (required because only the account owner can authorize its deletion)
+//  7. Execute the transaction and verify successful deletion via the receipt
+//
+// When an account is deleted, any remaining balance must be transferred to another account.
+// The account being deleted must sign the transaction to authorize the deletion.
+//
+// Required environment variables:
+//   - HEDERA_NETWORK: The network to connect to (e.g., "testnet", "mainnet")
+//   - OPERATOR_ID: The operator account ID
+//   - OPERATOR_KEY: The operator private key
 package main
 
 import (
