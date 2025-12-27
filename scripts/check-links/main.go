@@ -152,18 +152,29 @@ func extractLinksFromFile(filePath string) ([]LinkInfo, error) {
 	var links []LinkInfo
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
+	inCodeBlock := false
 
 	for scanner.Scan() {
 		lineNum++
 		line := scanner.Text()
 
-		// Skip code blocks (simple detection)
-		if strings.HasPrefix(strings.TrimSpace(line), "```") {
+		// Track code block state (``` or ~~~)
+		trimmedLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmedLine, "```") || strings.HasPrefix(trimmedLine, "~~~") {
+			inCodeBlock = !inCodeBlock
 			continue
 		}
 
+		// Skip content inside code blocks
+		if inCodeBlock {
+			continue
+		}
+
+		// Skip inline code that might contain URLs
+		lineWithoutInlineCode := removeInlineCode(line)
+
 		// Extract markdown links
-		for _, match := range mdLinkRegex.FindAllStringSubmatch(line, -1) {
+		for _, match := range mdLinkRegex.FindAllStringSubmatch(lineWithoutInlineCode, -1) {
 			if len(match) >= 3 {
 				url := strings.TrimSpace(match[2])
 				// Skip mailto links and empty links
@@ -181,7 +192,7 @@ func extractLinksFromFile(filePath string) ([]LinkInfo, error) {
 		}
 
 		// Extract image links
-		for _, match := range imgLinkRegex.FindAllStringSubmatch(line, -1) {
+		for _, match := range imgLinkRegex.FindAllStringSubmatch(lineWithoutInlineCode, -1) {
 			if len(match) >= 3 {
 				url := strings.TrimSpace(match[2])
 				if url != "" {
@@ -199,6 +210,23 @@ func extractLinksFromFile(filePath string) ([]LinkInfo, error) {
 	}
 
 	return links, scanner.Err()
+}
+
+// removeInlineCode removes inline code segments from a line
+func removeInlineCode(line string) string {
+	// Remove content between backticks (inline code)
+	var result strings.Builder
+	inCode := false
+	for _, ch := range line {
+		if ch == '`' {
+			inCode = !inCode
+			continue
+		}
+		if !inCode {
+			result.WriteRune(ch)
+		}
+	}
+	return result.String()
 }
 
 // checkLinks validates all links and returns broken ones
@@ -334,11 +362,15 @@ func checkRelativePath(rootDir, mdFile, relPath string, verbose bool) string {
 		return ""
 	}
 
-	// Get the directory of the markdown file
-	mdDir := filepath.Dir(mdFile)
-
-	// Resolve the relative path
-	fullPath := filepath.Join(mdDir, cleanPath)
+	var fullPath string
+	if strings.HasPrefix(cleanPath, "/") {
+		// Root-relative path (relative to rootDir)
+		fullPath = filepath.Join(rootDir, cleanPath)
+	} else {
+		// File-relative path (relative to the markdown file's directory)
+		mdDir := filepath.Dir(mdFile)
+		fullPath = filepath.Join(mdDir, cleanPath)
+	}
 
 	// Check if file/directory exists
 	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
