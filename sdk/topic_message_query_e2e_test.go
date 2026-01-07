@@ -280,7 +280,6 @@ func TestIntegrationTopicMessageQueryEndTime(t *testing.T) {
 
 	resp, err := NewTopicCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
-		SetNodeAccountIDs(env.NodeAccountIDs).
 		Execute(env.Client)
 
 	require.NoError(t, err)
@@ -304,8 +303,17 @@ func TestIntegrationTopicMessageQueryEndTime(t *testing.T) {
 
 	go func() {
 		resp, err = NewTopicMessageSubmitTransaction().
-			SetNodeAccountIDs([]AccountID{resp.NodeID}).
-			SetMessage([]byte(bigContents)).
+			SetMessage([]byte("hi")).
+			SetTopicID(topicID).
+			Execute(env.Client)
+		require.NoError(t, err)
+	}()
+
+	time.Sleep(5 * time.Second)
+
+	go func() {
+		resp, err = NewTopicMessageSubmitTransaction().
+			SetMessage([]byte("hi")).
 			SetTopicID(topicID).
 			Execute(env.Client)
 		require.NoError(t, err)

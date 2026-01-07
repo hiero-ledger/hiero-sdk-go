@@ -1151,6 +1151,109 @@ const (
 	// *
 	// An NFT transfers list referenced a token type other than NON_FUNGIBLE_UNIQUE.
 	ResponseCodeEnum_NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE ResponseCodeEnum = 400
+	// *
+	// A HAPI client cannot set the SignedTransaction#use_serialized_tx_message_hash_algorithm field.
+	ResponseCodeEnum_INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM ResponseCodeEnum = 401
+	// *
+	// A LambdaSStore referenced a valid entity number but with the wrong entity type.
+	ResponseCodeEnum_WRONG_HOOK_ENTITY_TYPE ResponseCodeEnum = 499
+	// *
+	// An EVM hook execution was throttled due to high network gas utilization.
+	ResponseCodeEnum_EVM_HOOK_GAS_THROTTLED ResponseCodeEnum = 500
+	// *
+	// A user tried to create a hook with an id already in use.
+	ResponseCodeEnum_HOOK_ID_IN_USE ResponseCodeEnum = 501
+	// *
+	// A transaction tried to execute a hook that did not match the specified
+	// type or was malformed in some other way.
+	ResponseCodeEnum_BAD_HOOK_REQUEST ResponseCodeEnum = 502
+	// *
+	// A CryptoTransfer relying on a ACCOUNT_ALLOWANCE hook was rejected.
+	ResponseCodeEnum_REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK ResponseCodeEnum = 503
+	// *
+	// A hook id was not found.
+	ResponseCodeEnum_HOOK_NOT_FOUND ResponseCodeEnum = 504
+	// *
+	// A lambda mapping slot, storage key, or storage value exceeded 32 bytes.
+	ResponseCodeEnum_LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG ResponseCodeEnum = 505
+	// *
+	// A lambda mapping slot, storage key, or storage value failed to use the
+	// minimal representation (i.e., no leading zeros).
+	ResponseCodeEnum_LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION ResponseCodeEnum = 506
+	// *
+	// A hook id was invalid.
+	ResponseCodeEnum_INVALID_HOOK_ID ResponseCodeEnum = 507
+	// *
+	// A lambda storage update had no contents.
+	ResponseCodeEnum_EMPTY_LAMBDA_STORAGE_UPDATE ResponseCodeEnum = 508
+	// *
+	// A user repeated the same hook id in a creation details list.
+	ResponseCodeEnum_HOOK_ID_REPEATED_IN_CREATION_DETAILS ResponseCodeEnum = 509
+	// *
+	// Hooks are not not enabled on the target Hiero network.
+	ResponseCodeEnum_HOOKS_NOT_ENABLED ResponseCodeEnum = 510
+	// *
+	// The target hook is not a lambda.
+	ResponseCodeEnum_HOOK_IS_NOT_A_LAMBDA ResponseCodeEnum = 511
+	// *
+	// A hook was deleted.
+	ResponseCodeEnum_HOOK_DELETED ResponseCodeEnum = 512
+	// *
+	// The LambdaSStore tried to update too many storage slots in a single transaction.
+	ResponseCodeEnum_TOO_MANY_LAMBDA_STORAGE_UPDATES ResponseCodeEnum = 513
+	// *
+	// A lambda mapping slot, storage key, or storage value failed to use the
+	// minimal representation (i.e., no leading zeros).
+	ResponseCodeEnum_HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION ResponseCodeEnum = 514
+	// *
+	// A lambda mapping slot, storage key, or storage value exceeded 32 bytes.
+	ResponseCodeEnum_HOOK_CREATION_BYTES_TOO_LONG ResponseCodeEnum = 515
+	// *
+	// A hook creation spec was not found.
+	ResponseCodeEnum_INVALID_HOOK_CREATION_SPEC ResponseCodeEnum = 516
+	// *
+	// A hook extension point was empty.
+	ResponseCodeEnum_HOOK_EXTENSION_EMPTY ResponseCodeEnum = 517
+	// *
+	// A hook admin key was invalid.
+	ResponseCodeEnum_INVALID_HOOK_ADMIN_KEY ResponseCodeEnum = 518
+	// *
+	// The hook deletion requires the hook to have zero storage slots.
+	ResponseCodeEnum_HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS ResponseCodeEnum = 519
+	// *
+	// Cannot set both a hook call and an approval on the same AccountAmount or NftTransfer message.
+	ResponseCodeEnum_CANNOT_SET_HOOKS_AND_APPROVAL ResponseCodeEnum = 520
+	// *
+	// The attempted operation is invalid until all the target entity's hooks have been deleted.
+	ResponseCodeEnum_TRANSACTION_REQUIRES_ZERO_HOOKS ResponseCodeEnum = 521
+	// *
+	// The HookCall set in the transaction is invalid
+	ResponseCodeEnum_INVALID_HOOK_CALL ResponseCodeEnum = 522
+	// *
+	//
+	//	Hooks are not supported to be used in TokenAirdrop transactions
+	ResponseCodeEnum_HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS ResponseCodeEnum = 523
+	// *
+	// This operation cannot be completed because the target
+	// account is a "Node Account".<br/>
+	// This account is currently in use as the "Node Account" for a
+	// consensus node, and therefore the requested change is
+	// not permitted. The transaction may be resubmitted once the
+	// account is no longer in use as a "Node Account" for any
+	// consensus node.
+	ResponseCodeEnum_ACCOUNT_IS_LINKED_TO_A_NODE ResponseCodeEnum = 524
+	// *
+	//
+	//	Hooks are not supported to be used in Batch transactions and Scheduled transactions.
+	//
+	// They are only supported in a top level CryptoTransfer transaction.
+	ResponseCodeEnum_HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER ResponseCodeEnum = 525
+	// *
+	// This operation cannot be completed because the target
+	// account has a zero balance.<br/>
+	// Node accounts require a positive balance. The transaction may be
+	// resubmitted once the account has been funded.
+	ResponseCodeEnum_NODE_ACCOUNT_HAS_ZERO_BALANCE ResponseCodeEnum = 526
 )
 
 // Enum value maps for ResponseCodeEnum.
@@ -1515,6 +1618,35 @@ var (
 		398: "AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN",
 		399: "GRPC_WEB_PROXY_NOT_SUPPORTED",
 		400: "NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE",
+		401: "INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM",
+		499: "WRONG_HOOK_ENTITY_TYPE",
+		500: "EVM_HOOK_GAS_THROTTLED",
+		501: "HOOK_ID_IN_USE",
+		502: "BAD_HOOK_REQUEST",
+		503: "REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK",
+		504: "HOOK_NOT_FOUND",
+		505: "LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG",
+		506: "LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION",
+		507: "INVALID_HOOK_ID",
+		508: "EMPTY_LAMBDA_STORAGE_UPDATE",
+		509: "HOOK_ID_REPEATED_IN_CREATION_DETAILS",
+		510: "HOOKS_NOT_ENABLED",
+		511: "HOOK_IS_NOT_A_LAMBDA",
+		512: "HOOK_DELETED",
+		513: "TOO_MANY_LAMBDA_STORAGE_UPDATES",
+		514: "HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION",
+		515: "HOOK_CREATION_BYTES_TOO_LONG",
+		516: "INVALID_HOOK_CREATION_SPEC",
+		517: "HOOK_EXTENSION_EMPTY",
+		518: "INVALID_HOOK_ADMIN_KEY",
+		519: "HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS",
+		520: "CANNOT_SET_HOOKS_AND_APPROVAL",
+		521: "TRANSACTION_REQUIRES_ZERO_HOOKS",
+		522: "INVALID_HOOK_CALL",
+		523: "HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS",
+		524: "ACCOUNT_IS_LINKED_TO_A_NODE",
+		525: "HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER",
+		526: "NODE_ACCOUNT_HAS_ZERO_BALANCE",
 	}
 	ResponseCodeEnum_value = map[string]int32{
 		"OK":                                                             0,
@@ -1876,6 +2008,35 @@ var (
 		"AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN":                  398,
 		"GRPC_WEB_PROXY_NOT_SUPPORTED":                                   399,
 		"NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE":             400,
+		"INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM":                   401,
+		"WRONG_HOOK_ENTITY_TYPE":                                         499,
+		"EVM_HOOK_GAS_THROTTLED":                                         500,
+		"HOOK_ID_IN_USE":                                                 501,
+		"BAD_HOOK_REQUEST":                                               502,
+		"REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK":                             503,
+		"HOOK_NOT_FOUND":                                                 504,
+		"LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG":                           505,
+		"LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION":    506,
+		"INVALID_HOOK_ID":                                                507,
+		"EMPTY_LAMBDA_STORAGE_UPDATE":                                    508,
+		"HOOK_ID_REPEATED_IN_CREATION_DETAILS":                           509,
+		"HOOKS_NOT_ENABLED":                                              510,
+		"HOOK_IS_NOT_A_LAMBDA":                                           511,
+		"HOOK_DELETED":                                                   512,
+		"TOO_MANY_LAMBDA_STORAGE_UPDATES":                                513,
+		"HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION":            514,
+		"HOOK_CREATION_BYTES_TOO_LONG":                                   515,
+		"INVALID_HOOK_CREATION_SPEC":                                     516,
+		"HOOK_EXTENSION_EMPTY":                                           517,
+		"INVALID_HOOK_ADMIN_KEY":                                         518,
+		"HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS":                      519,
+		"CANNOT_SET_HOOKS_AND_APPROVAL":                                  520,
+		"TRANSACTION_REQUIRES_ZERO_HOOKS":                                521,
+		"INVALID_HOOK_CALL":                                              522,
+		"HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS":                            523,
+		"ACCOUNT_IS_LINKED_TO_A_NODE":                                    524,
+		"HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER":             525,
+		"NODE_ACCOUNT_HAS_ZERO_BALANCE":                                  526,
 	}
 )
 
@@ -1910,7 +2071,7 @@ var File_response_code_proto protoreflect.FileDescriptor
 
 const file_response_code_proto_rawDesc = "" +
 	"\n" +
-	"\x13response_code.proto\x12\x05proto*\x9a^\n" +
+	"\x13response_code.proto\x12\x05proto*\x9ef\n" +
 	"\x10ResponseCodeEnum\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x17\n" +
 	"\x13INVALID_TRANSACTION\x10\x01\x12\x1b\n" +
@@ -2271,7 +2432,36 @@ const file_response_code_proto_rawDesc = "" +
 	"\x1bTHROTTLE_GROUP_LCM_OVERFLOW\x10\x8d\x03\x122\n" +
 	"-AIRDROP_CONTAINS_MULTIPLE_SENDERS_FOR_A_TOKEN\x10\x8e\x03\x12!\n" +
 	"\x1cGRPC_WEB_PROXY_NOT_SUPPORTED\x10\x8f\x03\x127\n" +
-	"2NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE\x10\x90\x03B&\n" +
+	"2NFT_TRANSFERS_ONLY_ALLOWED_FOR_NON_FUNGIBLE_UNIQUE\x10\x90\x03\x121\n" +
+	",INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM\x10\x91\x03\x12\x1b\n" +
+	"\x16WRONG_HOOK_ENTITY_TYPE\x10\xf3\x03\x12\x1b\n" +
+	"\x16EVM_HOOK_GAS_THROTTLED\x10\xf4\x03\x12\x13\n" +
+	"\x0eHOOK_ID_IN_USE\x10\xf5\x03\x12\x15\n" +
+	"\x10BAD_HOOK_REQUEST\x10\xf6\x03\x12'\n" +
+	"\"REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK\x10\xf7\x03\x12\x13\n" +
+	"\x0eHOOK_NOT_FOUND\x10\xf8\x03\x12)\n" +
+	"$LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG\x10\xf9\x03\x12@\n" +
+	";LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION\x10\xfa\x03\x12\x14\n" +
+	"\x0fINVALID_HOOK_ID\x10\xfb\x03\x12 \n" +
+	"\x1bEMPTY_LAMBDA_STORAGE_UPDATE\x10\xfc\x03\x12)\n" +
+	"$HOOK_ID_REPEATED_IN_CREATION_DETAILS\x10\xfd\x03\x12\x16\n" +
+	"\x11HOOKS_NOT_ENABLED\x10\xfe\x03\x12\x19\n" +
+	"\x14HOOK_IS_NOT_A_LAMBDA\x10\xff\x03\x12\x11\n" +
+	"\fHOOK_DELETED\x10\x80\x04\x12$\n" +
+	"\x1fTOO_MANY_LAMBDA_STORAGE_UPDATES\x10\x81\x04\x128\n" +
+	"3HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION\x10\x82\x04\x12!\n" +
+	"\x1cHOOK_CREATION_BYTES_TOO_LONG\x10\x83\x04\x12\x1f\n" +
+	"\x1aINVALID_HOOK_CREATION_SPEC\x10\x84\x04\x12\x19\n" +
+	"\x14HOOK_EXTENSION_EMPTY\x10\x85\x04\x12\x1b\n" +
+	"\x16INVALID_HOOK_ADMIN_KEY\x10\x86\x04\x12.\n" +
+	")HOOK_DELETION_REQUIRES_ZERO_STORAGE_SLOTS\x10\x87\x04\x12\"\n" +
+	"\x1dCANNOT_SET_HOOKS_AND_APPROVAL\x10\x88\x04\x12$\n" +
+	"\x1fTRANSACTION_REQUIRES_ZERO_HOOKS\x10\x89\x04\x12\x16\n" +
+	"\x11INVALID_HOOK_CALL\x10\x8a\x04\x12(\n" +
+	"#HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS\x10\x8b\x04\x12 \n" +
+	"\x1bACCOUNT_IS_LINKED_TO_A_NODE\x10\x8c\x04\x127\n" +
+	"2HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER\x10\x8d\x04\x12\"\n" +
+	"\x1dNODE_ACCOUNT_HAS_ZERO_BALANCE\x10\x8e\x04B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

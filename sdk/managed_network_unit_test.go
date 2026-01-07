@@ -495,8 +495,8 @@ func TestUnitGetNumberOfNodesForTransaction_Default(t *testing.T) {
 
 	numNodes := mn._GetNumberOfNodesForTransaction()
 
-	// Default behavior: (len(this.network) + 3 - 1) / 3
-	expectedNumNodes := (len(mockNodes) + 3 - 1) / 3
+	// Default behavior: len(this.network)
+	expectedNumNodes := len(mockNodes)
 	require.Equal(t, expectedNumNodes, numNodes)
 }
 
@@ -544,8 +544,7 @@ func TestUnitGetNumberOfNodesForTransaction_MaxNodesNotSet(t *testing.T) {
 	require.NoError(t, err)
 
 	numNodes := mn._GetNumberOfNodesForTransaction()
-	// 1/3 of the network size
-	require.Equal(t, 1, numNodes)
+	require.Equal(t, 3, numNodes)
 }
 
 func TestUnitGetNode(t *testing.T) {

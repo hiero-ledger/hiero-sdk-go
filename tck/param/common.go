@@ -17,6 +17,12 @@ type CommonTransactionParams struct {
 	Signers                  *[]string `json:"signers"`
 }
 
+// BaseParams is embedded by all param structs to include common transaction parameters
+type BaseParams struct {
+	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+	SessionId               string                   `json:"sessionId"`
+}
+
 func (common *CommonTransactionParams) FillOutTransaction(transactionInterface hiero.TransactionInterface, client *hiero.Client) error {
 	if common.TransactionId != nil {
 		txId, err := hiero.TransactionIdFromString(*common.TransactionId)

@@ -3,8 +3,8 @@ package param
 // SPDX-License-Identifier: Apache-2.0
 
 type TransferCryptoParams struct {
-	Transfers               *[]TransferParams        `json:"transfers,omitempty"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+	BaseParams
+	Transfers *[]TransferParams `json:"transfers,omitempty"`
 }
 
 type TransferParams struct {

@@ -35,6 +35,9 @@ const (
 
 // *
 // Context of an internal call in an EVM transaction that is not otherwise externalized.<br/>
+// This message does not say anything about whether an EVM transaction is itself a logical
+// transaction in a Hiero transactional unit. It simply provides context on an internal
+// message call within an EVM transaction.
 type InternalCallContext struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
@@ -126,8 +129,21 @@ type EvmTransactionResult struct {
 	// If not already externalized in a transaction body, the context of the
 	// internal call producing this result.
 	InternalCallContext *InternalCallContext `protobuf:"bytes,6,opt,name=internal_call_context,json=internalCallContext,proto3" json:"internal_call_context,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// *
+	// If set, the id of the executed hook.
+	ExecutedHookId *HookId `protobuf:"bytes,7,opt,name=executed_hook_id,json=executedHookId,proto3" json:"executed_hook_id,omitempty"`
+	// *
+	// A list of contract account nonce values.<br/>
+	// This list SHALL contain a nonce value for each contract account modified
+	// as a result of this contract call. These nonce values SHALL be the value
+	// after the contract call is completed.
+	ContractNonces []*ContractNonceInfo `protobuf:"bytes,8,rep,name=contract_nonces,json=contractNonces,proto3" json:"contract_nonces,omitempty"`
+	// *
+	// In an EthereumTransaction, the nonce of the signer account at the end of
+	// the transaction.<br/>
+	SignerNonce   *wrapperspb.Int64Value `protobuf:"bytes,9,opt,name=signer_nonce,json=signerNonce,proto3" json:"signer_nonce,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *EvmTransactionResult) Reset() {
@@ -198,6 +214,27 @@ func (x *EvmTransactionResult) GetGasUsed() uint64 {
 func (x *EvmTransactionResult) GetInternalCallContext() *InternalCallContext {
 	if x != nil {
 		return x.InternalCallContext
+	}
+	return nil
+}
+
+func (x *EvmTransactionResult) GetExecutedHookId() *HookId {
+	if x != nil {
+		return x.ExecutedHookId
+	}
+	return nil
+}
+
+func (x *EvmTransactionResult) GetContractNonces() []*ContractNonceInfo {
+	if x != nil {
+		return x.ContractNonces
+	}
+	return nil
+}
+
+func (x *EvmTransactionResult) GetSignerNonce() *wrapperspb.Int64Value {
+	if x != nil {
+		return x.SignerNonce
 	}
 	return nil
 }
@@ -622,7 +659,7 @@ const file_contract_types_proto_rawDesc = "" +
 	"\x13InternalCallContext\x12\x10\n" +
 	"\x03gas\x18\x01 \x01(\x04R\x03gas\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x04R\x05value\x12\x1b\n" +
-	"\tcall_data\x18\x03 \x01(\fR\bcallData\"\xaa\x02\n" +
+	"\tcall_data\x18\x03 \x01(\fR\bcallData\"\xe6\x03\n" +
 	"\x14EvmTransactionResult\x12-\n" +
 	"\tsender_id\x18\x01 \x01(\v2\x10.proto.AccountIDR\bsenderId\x122\n" +
 	"\vcontract_id\x18\x02 \x01(\v2\x11.proto.ContractIDR\n" +
@@ -631,7 +668,10 @@ const file_contract_types_proto_rawDesc = "" +
 	"resultData\x12#\n" +
 	"\rerror_message\x18\x04 \x01(\tR\ferrorMessage\x12\x19\n" +
 	"\bgas_used\x18\x05 \x01(\x04R\agasUsed\x12N\n" +
-	"\x15internal_call_context\x18\x06 \x01(\v2\x1a.proto.InternalCallContextR\x13internalCallContext\"]\n" +
+	"\x15internal_call_context\x18\x06 \x01(\v2\x1a.proto.InternalCallContextR\x13internalCallContext\x127\n" +
+	"\x10executed_hook_id\x18\a \x01(\v2\r.proto.HookIdR\x0eexecutedHookId\x12A\n" +
+	"\x0fcontract_nonces\x18\b \x03(\v2\x18.proto.ContractNonceInfoR\x0econtractNonces\x12>\n" +
+	"\fsigner_nonce\x18\t \x01(\v2\x1b.google.protobuf.Int64ValueR\vsignerNonce\"]\n" +
 	"\x11ContractNonceInfo\x122\n" +
 	"\vcontract_id\x18\x01 \x01(\v2\x11.proto.ContractIDR\n" +
 	"contractId\x12\x14\n" +
@@ -685,27 +725,31 @@ var file_contract_types_proto_goTypes = []any{
 	(*ContractFunctionResult)(nil), // 4: proto.ContractFunctionResult
 	(*AccountID)(nil),              // 5: proto.AccountID
 	(*ContractID)(nil),             // 6: proto.ContractID
-	(*wrapperspb.BytesValue)(nil),  // 7: google.protobuf.BytesValue
+	(*HookId)(nil),                 // 7: proto.HookId
 	(*wrapperspb.Int64Value)(nil),  // 8: google.protobuf.Int64Value
+	(*wrapperspb.BytesValue)(nil),  // 9: google.protobuf.BytesValue
 }
 var file_contract_types_proto_depIdxs = []int32{
 	5,  // 0: proto.EvmTransactionResult.sender_id:type_name -> proto.AccountID
 	6,  // 1: proto.EvmTransactionResult.contract_id:type_name -> proto.ContractID
 	0,  // 2: proto.EvmTransactionResult.internal_call_context:type_name -> proto.InternalCallContext
-	6,  // 3: proto.ContractNonceInfo.contract_id:type_name -> proto.ContractID
-	6,  // 4: proto.ContractLoginfo.contractID:type_name -> proto.ContractID
-	6,  // 5: proto.ContractFunctionResult.contractID:type_name -> proto.ContractID
-	3,  // 6: proto.ContractFunctionResult.logInfo:type_name -> proto.ContractLoginfo
-	6,  // 7: proto.ContractFunctionResult.createdContractIDs:type_name -> proto.ContractID
-	7,  // 8: proto.ContractFunctionResult.evm_address:type_name -> google.protobuf.BytesValue
-	5,  // 9: proto.ContractFunctionResult.sender_id:type_name -> proto.AccountID
-	2,  // 10: proto.ContractFunctionResult.contract_nonces:type_name -> proto.ContractNonceInfo
-	8,  // 11: proto.ContractFunctionResult.signer_nonce:type_name -> google.protobuf.Int64Value
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	7,  // 3: proto.EvmTransactionResult.executed_hook_id:type_name -> proto.HookId
+	2,  // 4: proto.EvmTransactionResult.contract_nonces:type_name -> proto.ContractNonceInfo
+	8,  // 5: proto.EvmTransactionResult.signer_nonce:type_name -> google.protobuf.Int64Value
+	6,  // 6: proto.ContractNonceInfo.contract_id:type_name -> proto.ContractID
+	6,  // 7: proto.ContractLoginfo.contractID:type_name -> proto.ContractID
+	6,  // 8: proto.ContractFunctionResult.contractID:type_name -> proto.ContractID
+	3,  // 9: proto.ContractFunctionResult.logInfo:type_name -> proto.ContractLoginfo
+	6,  // 10: proto.ContractFunctionResult.createdContractIDs:type_name -> proto.ContractID
+	9,  // 11: proto.ContractFunctionResult.evm_address:type_name -> google.protobuf.BytesValue
+	5,  // 12: proto.ContractFunctionResult.sender_id:type_name -> proto.AccountID
+	2,  // 13: proto.ContractFunctionResult.contract_nonces:type_name -> proto.ContractNonceInfo
+	8,  // 14: proto.ContractFunctionResult.signer_nonce:type_name -> google.protobuf.Int64Value
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_contract_types_proto_init() }

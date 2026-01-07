@@ -77,16 +77,16 @@ func (a *AccountService) CreateAccount(_ context.Context, params param.CreateAcc
 		transaction.SetAlias(*params.Alias)
 	}
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
-	txResponse, err := transaction.Execute(a.sdkService.Client)
+	txResponse, err := transaction.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func (a *AccountService) buildCreateAccount(params param.CreateAccountParams) (*
 		transaction.SetAlias(*params.Alias)
 	}
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -215,17 +215,17 @@ func (a *AccountService) UpdateAccount(_ context.Context, params param.UpdateAcc
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(a.sdkService.Client)
+	txResponse, err := transaction.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -246,17 +246,17 @@ func (a *AccountService) DeleteAccount(_ context.Context, params param.DeleteAcc
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(a.sdkService.Client)
+	txResponse, err := transaction.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -361,7 +361,7 @@ func (a *AccountService) buildApproveAllowance(params param.AccountAllowanceAppr
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -376,11 +376,11 @@ func (a *AccountService) ApproveAllowance(_ context.Context, params param.Accoun
 		return nil, err
 	}
 
-	txResponse, err := transaction.Execute(a.sdkService.Client)
+	txResponse, err := transaction.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -426,17 +426,17 @@ func (a *AccountService) DeleteAllowance(_ context.Context, params param.Account
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(a.sdkService.Client)
+	txResponse, err := transaction.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +463,7 @@ func (a *AccountService) buildTransferCrypto(params param.TransferCryptoParams) 
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, a.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -478,12 +478,12 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 		return nil, err
 	}
 
-	txResponse, err := transaction.Execute(a.sdkService.Client)
+	txResponse, err := transaction.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
 
-	receipt, err := txResponse.GetReceipt(a.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -511,7 +511,7 @@ func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAc
 		query.SetContractID(contractID)
 	}
 
-	balance, err := query.Execute(a.sdkService.Client)
+	balance, err := query.Execute(a.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}

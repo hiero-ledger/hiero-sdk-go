@@ -12,17 +12,17 @@ type ScheduledTransaction struct {
 
 // ScheduleCreateParams represents the parameters for creating a schedule
 type ScheduleCreateParams struct {
-	ScheduledTransaction    *ScheduledTransaction    `json:"scheduledTransaction,omitempty"`
-	Memo                    *string                  `json:"memo,omitempty"`
-	AdminKey                *string                  `json:"adminKey,omitempty"`
-	PayerAccountId          *string                  `json:"payerAccountId,omitempty"`
-	ExpirationTime          *string                  `json:"expirationTime,omitempty"`
-	WaitForExpiry           *bool                    `json:"waitForExpiry,omitempty"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+	BaseParams
+	ScheduledTransaction *ScheduledTransaction `json:"scheduledTransaction,omitempty"`
+	Memo                 *string               `json:"memo,omitempty"`
+	AdminKey             *string               `json:"adminKey,omitempty"`
+	PayerAccountId       *string               `json:"payerAccountId,omitempty"`
+	ExpirationTime       *string               `json:"expirationTime,omitempty"`
+	WaitForExpiry        *bool                 `json:"waitForExpiry,omitempty"`
 }
 
 // ScheduleSignParams represents the parameters for signing a schedule
 type ScheduleSignParams struct {
-	ScheduleId              *string                  `json:"scheduleId,omitempty"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams,omitempty"`
+	BaseParams
+	ScheduleId *string `json:"scheduleId,omitempty"`
 }

@@ -85,7 +85,7 @@ func (tx *TransferTransaction) SetTokenTransferApproval(tokenID TokenID, account
 		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID.Compare(accountID) == 0 {
-					transfer.IsApproved = approval
+					transfer.isApproved = approval
 				}
 			}
 		}
@@ -98,7 +98,7 @@ func (tx *TransferTransaction) SetTokenTransferApproval(tokenID TokenID, account
 func (tx *TransferTransaction) SetHbarTransferApproval(spenderAccountID AccountID, approval bool) *TransferTransaction { //nolint
 	for _, k := range tx.hbarTransfers {
 		if k.accountID.String() == spenderAccountID.String() {
-			k.IsApproved = approval
+			k.isApproved = approval
 		}
 	}
 	return tx
@@ -146,8 +146,8 @@ func (tx *TransferTransaction) GetTokenTransfers() map[TokenID][]TokenTransfer {
 			}
 			tokenTransfersList = append(tokenTransfersList, TokenTransfer{
 				AccountID:  acc,
-				Amount:     transfer.Amount.AsTinybar(),
-				IsApproved: transfer.IsApproved,
+				Amount:     transfer.amount.AsTinybar(),
+				IsApproved: transfer.isApproved,
 			})
 		}
 
@@ -163,26 +163,37 @@ func (tx *TransferTransaction) GetTokenTransfers() map[TokenID][]TokenTransfer {
 func (tx *TransferTransaction) GetHbarTransfers() map[AccountID]Hbar {
 	result := make(map[AccountID]Hbar)
 	for _, hbarTransfers := range tx.hbarTransfers {
-		result[*hbarTransfers.accountID] = hbarTransfers.Amount
+		result[*hbarTransfers.accountID] = hbarTransfers.amount
 	}
 	return result
 }
 
 // AddHbarTransfer Sets The desired hbar balance adjustments
 func (tx *TransferTransaction) AddHbarTransfer(accountID AccountID, amount Hbar) *TransferTransaction {
+	return tx.addHbarTransfer(accountID, amount, nil)
+}
+
+// AddHbarTransferWithHook Add an HBAR transfer with a fungible hook.
+func (tx *TransferTransaction) AddHbarTransferWithHook(accountID AccountID, amount Hbar, hookCall FungibleHookCall) *TransferTransaction {
+	return tx.addHbarTransfer(accountID, amount, &hookCall)
+}
+
+func (tx *TransferTransaction) addHbarTransfer(accountID AccountID, amount Hbar, hookCall *FungibleHookCall) *TransferTransaction {
 	tx._RequireNotFrozen()
 
 	for _, transfer := range tx.hbarTransfers {
 		if transfer.accountID.Compare(accountID) == 0 {
-			transfer.Amount = HbarFromTinybar(amount.AsTinybar() + transfer.Amount.AsTinybar())
+			transfer.amount = HbarFromTinybar(amount.AsTinybar() + transfer.amount.AsTinybar())
+			transfer.hookCall = hookCall
 			return tx
 		}
 	}
 
 	tx.hbarTransfers = append(tx.hbarTransfers, &_HbarTransfer{
 		accountID:  &accountID,
-		Amount:     amount,
-		IsApproved: false,
+		amount:     amount,
+		isApproved: false,
+		hookCall:   hookCall,
 	})
 
 	return tx
@@ -207,7 +218,7 @@ func (tx *TransferTransaction) AddTokenTransferWithDecimals(tokenID TokenID, acc
 		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID.Compare(accountID) == 0 {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
+					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 					tokenTransfer.ExpectedDecimals = &decimal
 
 					return tx
@@ -219,8 +230,8 @@ func (tx *TransferTransaction) AddTokenTransferWithDecimals(tokenID TokenID, acc
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
 		v.Transfers = append(v.Transfers, &_HbarTransfer{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
+			amount:     HbarFromTinybar(value),
+			isApproved: false,
 		})
 		v.ExpectedDecimals = &decimal
 
@@ -230,8 +241,8 @@ func (tx *TransferTransaction) AddTokenTransferWithDecimals(tokenID TokenID, acc
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
 		Transfers: []*_HbarTransfer{{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
+			amount:     HbarFromTinybar(value),
+			isApproved: false,
 		}},
 		ExpectedDecimals: &decimal,
 	}
@@ -242,61 +253,23 @@ func (tx *TransferTransaction) AddTokenTransferWithDecimals(tokenID TokenID, acc
 // AddTokenTransfer Sets the desired token unit balance adjustments
 // Applicable to tokens of type FUNGIBLE_COMMON.
 func (tx *TransferTransaction) AddTokenTransfer(tokenID TokenID, accountID AccountID, value int64) *TransferTransaction { //nolint
-	tx._RequireNotFrozen()
+	return tx.addTokenTransfer(tokenID, accountID, value, nil, false, nil)
+}
 
-	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.Compare(tokenID) == 0 {
-			for _, transfer := range tokenTransfer.Transfers {
-				if transfer.accountID.Compare(accountID) == 0 {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
-
-					return tx
-				}
-			}
-		}
-	}
-
-	if v, ok := tx.tokenTransfers[tokenID]; ok {
-		v.Transfers = append(v.Transfers, &_HbarTransfer{
-			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
-		})
-
-		return tx
-	}
-
-	tx.tokenTransfers[tokenID] = &_TokenTransfer{
-		Transfers: []*_HbarTransfer{{
-			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: false,
-		}},
-	}
-
-	return tx
+// AddTokenTransferWithHook Add an token transfer with hook call
+func (tx *TransferTransaction) AddTokenTransferWithHook(tokenID TokenID, accountID AccountID, value int64, hookCall FungibleHookCall) *TransferTransaction {
+	return tx.addTokenTransfer(tokenID, accountID, value, nil, false, &hookCall)
 }
 
 // AddNftTransfer Sets the desired nft token unit balance adjustments
 // Applicable to tokens of type NON_FUNGIBLE_UNIQUE.
 func (tx *TransferTransaction) AddNftTransfer(nftID NftID, sender AccountID, receiver AccountID) *TransferTransaction {
-	tx._RequireNotFrozen()
+	return tx.addNftTransfer(nftID, sender, receiver, false, nil, nil)
+}
 
-	if tx.nftTransfers == nil {
-		tx.nftTransfers = make(map[TokenID][]*_TokenNftTransfer)
-	}
-
-	if tx.nftTransfers[nftID.TokenID] == nil {
-		tx.nftTransfers[nftID.TokenID] = make([]*_TokenNftTransfer, 0)
-	}
-
-	tx.nftTransfers[nftID.TokenID] = append(tx.nftTransfers[nftID.TokenID], &_TokenNftTransfer{
-		SenderAccountID:   sender,
-		ReceiverAccountID: receiver,
-		SerialNumber:      nftID.SerialNumber,
-	})
-
-	return tx
+// Add an NFT transfer with optional sender/receiver allowance hooks.
+func (tx *TransferTransaction) AddNftTransferWitHook(nftID NftID, sender AccountID, receiver AccountID, senderHookCall *NftHookCall, receiverHookCall *NftHookCall) *TransferTransaction {
+	return tx.addNftTransfer(nftID, sender, receiver, false, senderHookCall, receiverHookCall)
 }
 
 // AddApprovedHbarTransfer adds an approved hbar transfer
@@ -305,16 +278,16 @@ func (tx *TransferTransaction) AddApprovedHbarTransfer(accountID AccountID, amou
 
 	for _, transfer := range tx.hbarTransfers {
 		if transfer.accountID.Compare(accountID) == 0 {
-			transfer.Amount = HbarFromTinybar(amount.AsTinybar() + transfer.Amount.AsTinybar())
-			transfer.IsApproved = approve
+			transfer.amount = HbarFromTinybar(amount.AsTinybar() + transfer.amount.AsTinybar())
+			transfer.isApproved = approve
 			return tx
 		}
 	}
 
 	tx.hbarTransfers = append(tx.hbarTransfers, &_HbarTransfer{
 		accountID:  &accountID,
-		Amount:     amount,
-		IsApproved: approve,
+		amount:     amount,
+		isApproved: approve,
 	})
 
 	return tx
@@ -322,16 +295,21 @@ func (tx *TransferTransaction) AddApprovedHbarTransfer(accountID AccountID, amou
 
 // AddApprovedTokenTransferWithDecimals adds an approved hbar transfer with decimals
 func (tx *TransferTransaction) AddApprovedTokenTransferWithDecimals(tokenID TokenID, accountID AccountID, value int64, decimal uint32, approve bool) *TransferTransaction { //nolint
+	return tx.addTokenTransfer(tokenID, accountID, value, &decimal, approve, nil)
+}
+
+func (tx *TransferTransaction) addTokenTransfer(tokenID TokenID, accountID AccountID, value int64, decimal *uint32, approve bool, hookCall *FungibleHookCall) *TransferTransaction { //nolint
 	tx._RequireNotFrozen()
 
 	for token, tokenTransfer := range tx.tokenTransfers {
 		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID.Compare(accountID) == 0 {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
-					tokenTransfer.ExpectedDecimals = &decimal
+					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
+					tokenTransfer.ExpectedDecimals = decimal
+					transfer.hookCall = hookCall
 					for _, transfer := range tokenTransfer.Transfers {
-						transfer.IsApproved = approve
+						transfer.isApproved = approve
 					}
 
 					return tx
@@ -343,10 +321,11 @@ func (tx *TransferTransaction) AddApprovedTokenTransferWithDecimals(tokenID Toke
 	if v, ok := tx.tokenTransfers[tokenID]; ok {
 		v.Transfers = append(v.Transfers, &_HbarTransfer{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
+			amount:     HbarFromTinybar(value),
+			isApproved: approve,
+			hookCall:   hookCall,
 		})
-		v.ExpectedDecimals = &decimal
+		v.ExpectedDecimals = decimal
 
 		return tx
 	}
@@ -354,55 +333,28 @@ func (tx *TransferTransaction) AddApprovedTokenTransferWithDecimals(tokenID Toke
 	tx.tokenTransfers[tokenID] = &_TokenTransfer{
 		Transfers: []*_HbarTransfer{{
 			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
+			amount:     HbarFromTinybar(value),
+			isApproved: approve,
+			hookCall:   hookCall,
 		}},
-		ExpectedDecimals: &decimal,
+		ExpectedDecimals: decimal,
 	}
 
 	return tx
+
 }
 
 // AddApprovedTokenTransfer adds an approved hbar transfer
 func (tx *TransferTransaction) AddApprovedTokenTransfer(tokenID TokenID, accountID AccountID, value int64, approve bool) *TransferTransaction { //nolint
-	tx._RequireNotFrozen()
-
-	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.Compare(tokenID) == 0 {
-			for _, transfer := range tokenTransfer.Transfers {
-				if transfer.accountID.Compare(accountID) == 0 {
-					transfer.Amount = HbarFromTinybar(transfer.Amount.AsTinybar() + value)
-					transfer.IsApproved = approve
-
-					return tx
-				}
-			}
-		}
-	}
-
-	if v, ok := tx.tokenTransfers[tokenID]; ok {
-		v.Transfers = append(v.Transfers, &_HbarTransfer{
-			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
-		})
-
-		return tx
-	}
-
-	tx.tokenTransfers[tokenID] = &_TokenTransfer{
-		Transfers: []*_HbarTransfer{{
-			accountID:  &accountID,
-			Amount:     HbarFromTinybar(value),
-			IsApproved: approve,
-		}},
-	}
-
-	return tx
+	return tx.addTokenTransfer(tokenID, accountID, value, nil, approve, nil)
 }
 
 // AddApprovedNftTransfer adds an approved nft transfer
 func (tx *TransferTransaction) AddApprovedNftTransfer(nftID NftID, sender AccountID, receiver AccountID, approve bool) *TransferTransaction {
+	return tx.addNftTransfer(nftID, sender, receiver, approve, nil, nil)
+}
+
+func (tx *TransferTransaction) addNftTransfer(nftID NftID, sender AccountID, receiver AccountID, approve bool, senderHookCall *NftHookCall, receiverHookCall *NftHookCall) *TransferTransaction {
 	tx._RequireNotFrozen()
 
 	if tx.nftTransfers == nil {
@@ -418,6 +370,8 @@ func (tx *TransferTransaction) AddApprovedNftTransfer(nftID NftID, sender Accoun
 		ReceiverAccountID: receiver,
 		SerialNumber:      nftID.SerialNumber,
 		IsApproved:        approve,
+		SenderHookCall:    senderHookCall,
+		ReceiverHookCall:  receiverHookCall,
 	})
 
 	return tx
@@ -508,11 +462,8 @@ func (tx TransferTransaction) buildProtoBody() *services.CryptoTransferTransacti
 	if len(tx.hbarTransfers) > 0 {
 		body.Transfers.AccountAmounts = make([]*services.AccountAmount, 0)
 		for _, hbarTransfer := range tx.hbarTransfers {
-			body.Transfers.AccountAmounts = append(body.Transfers.AccountAmounts, &services.AccountAmount{
-				AccountID:  hbarTransfer.accountID._ToProtobuf(),
-				Amount:     hbarTransfer.Amount.AsTinybar(),
-				IsApproval: hbarTransfer.IsApproved,
-			})
+			protoHbarTransfer := hbarTransfer._ToProtobuf()
+			body.Transfers.AccountAmounts = append(body.Transfers.AccountAmounts, protoHbarTransfer)
 		}
 	}
 

@@ -29,6 +29,7 @@ type ContractCreateTransaction struct {
 	stakedAccountID               *AccountID
 	stakedNodeID                  *int64
 	declineReward                 bool
+	hookCreationDetails           []HookCreationDetails
 }
 
 // NewContractCreateTransaction creates ContractCreateTransaction which is used to start a new smart contract instance.
@@ -72,6 +73,13 @@ func _ContractCreateTransactionFromProtobuf(tx Transaction[*ContractCreateTransa
 		autoRenewAccountID = _AccountIDFromProtobuf(pb.GetContractCreateInstance().GetAutoRenewAccountId())
 	}
 
+	var hookCreationDetails []HookCreationDetails
+	if pb.GetContractCreateInstance().GetHookCreationDetails() != nil {
+		for _, hookCreationDetail := range pb.GetContractCreateInstance().GetHookCreationDetails() {
+			hookCreationDetails = append(hookCreationDetails, hookCreationDetailsFromProtobuf(hookCreationDetail))
+		}
+	}
+
 	contractCreateTransaction := ContractCreateTransaction{
 		byteCodeFileID:                _FileIDFromProtobuf(pb.GetContractCreateInstance().GetFileID()),
 		adminKey:                      key,
@@ -86,6 +94,7 @@ func _ContractCreateTransactionFromProtobuf(tx Transaction[*ContractCreateTransa
 		stakedAccountID:               stakeNodeAccountID,
 		stakedNodeID:                  stakedNodeID,
 		declineReward:                 pb.GetContractCreateInstance().GetDeclineReward(),
+		hookCreationDetails:           hookCreationDetails,
 	}
 	tx.childTransaction = &contractCreateTransaction
 	contractCreateTransaction.Transaction = &tx
@@ -327,6 +336,25 @@ func (tx *ContractCreateTransaction) GetDeclineStakingReward() bool {
 	return tx.declineReward
 }
 
+// AddHook adds hook to the account
+func (tx *ContractCreateTransaction) AddHook(hookCreationDetails HookCreationDetails) *ContractCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = append(tx.hookCreationDetails, hookCreationDetails)
+	return tx
+}
+
+// SetHooks sets a list of hooks to the account
+func (tx *ContractCreateTransaction) SetHooks(hookCreationDetails []HookCreationDetails) *ContractCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.hookCreationDetails = hookCreationDetails
+	return tx
+}
+
+// GetHooks returns the hooks list
+func (tx ContractCreateTransaction) GetHooks() []HookCreationDetails {
+	return tx.hookCreationDetails
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx ContractCreateTransaction) getName() string {
@@ -414,6 +442,10 @@ func (tx ContractCreateTransaction) buildProtoBody() *services.ContractCreateTra
 		body.StakedId = &services.ContractCreateTransactionBody_StakedAccountId{StakedAccountId: tx.stakedAccountID._ToProtobuf()}
 	} else if tx.stakedNodeID != nil {
 		body.StakedId = &services.ContractCreateTransactionBody_StakedNodeId{StakedNodeId: *tx.stakedNodeID}
+	}
+
+	for _, hookCreationDetail := range tx.hookCreationDetails {
+		body.HookCreationDetails = append(body.HookCreationDetails, hookCreationDetail.toProtobuf())
 	}
 
 	return body
