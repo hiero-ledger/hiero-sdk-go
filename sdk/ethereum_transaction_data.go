@@ -10,6 +10,7 @@ import (
 type EthereumTransactionData struct {
 	eip1559 *EthereumEIP1559Transaction
 	eip2930 *EthereumEIP2930Transaction
+	eip7702 *EthereumEIP7702Transaction
 	legacy  *EthereumLegacyTransaction
 }
 
@@ -36,6 +37,13 @@ func EthereumTransactionDataFromBytes(b []byte) (*EthereumTransactionData, error
 		}
 		transactionData.eip2930 = eip2930
 		return &transactionData, nil
+	case 0x04:
+		eip7702, err := EthereumEIP7702TransactionFromBytes(b)
+		if err != nil {
+			return nil, err
+		}
+		transactionData.eip7702 = eip7702
+		return &transactionData, nil
 	default:
 		legacy, err := EthereumLegacyTransactionFromBytes(b)
 		if err != nil {
@@ -56,6 +64,10 @@ func (ethereumTxData *EthereumTransactionData) ToBytes() ([]byte, error) {
 		return ethereumTxData.eip2930.ToBytes()
 	}
 
+	if ethereumTxData.eip7702 != nil {
+		return ethereumTxData.eip7702.ToBytes()
+	}
+
 	if ethereumTxData.legacy != nil {
 		return ethereumTxData.legacy.ToBytes()
 	}
@@ -71,6 +83,9 @@ func (ethereumTxData *EthereumTransactionData) GetData() []byte {
 	if ethereumTxData.eip2930 != nil {
 		return ethereumTxData.eip2930.CallData
 	}
+	if ethereumTxData.eip7702 != nil {
+		return ethereumTxData.eip7702.CallData
+	}
 	return ethereumTxData.legacy.CallData
 }
 
@@ -84,6 +99,11 @@ func (ethereumTxData *EthereumTransactionData) SetData(data []byte) *EthereumTra
 		ethereumTxData.eip2930.CallData = data
 		return ethereumTxData
 	}
+	if ethereumTxData.eip7702 != nil {
+		ethereumTxData.eip7702.CallData = data
+		return ethereumTxData
+	}
+
 	ethereumTxData.legacy.CallData = data
 	return ethereumTxData
 }
