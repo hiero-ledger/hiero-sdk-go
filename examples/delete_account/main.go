@@ -1,3 +1,21 @@
+/*
+Account Deletion Example
+
+This example demonstrates the complete lifecycle of account creation and deletion using the Hiero SDK:
+
+Step 1: Initialize the client by loading environment variables (HEDERA_NETWORK, OPERATOR_ID, OPERATOR_KEY)
+Step 2: Configure the client with operator credentials
+Step 3: Generate a new keypair for the account to be created (and later deleted)
+Step 4: Create a new account using the generated public key
+Step 5: Build an account delete transaction specifying:
+  - The account ID to delete
+  - A transfer account ID to receive the remaining balance
+
+Step 6: Freeze the transaction to prepare it for signing
+Step 7: Manually sign the transaction with the private key of the account being deleted
+Step 8: Execute the delete transaction
+Step 9: Verify the deletion by checking the transaction receipt status
+*/
 package main
 
 import (
