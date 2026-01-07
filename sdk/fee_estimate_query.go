@@ -3,14 +3,17 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"bytes"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"io"
+	"net/http"
 	"time"
 
-	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/pkg/errors"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	protobuf "google.golang.org/protobuf/proto"
 )
 
 // FeeEstimateQuery allows users to query expected transaction fees without submitting transactions to the network
@@ -167,42 +170,70 @@ func (q *FeeEstimateQuery) estimateSingleTransaction(client *Client, tx Transact
 	return q.callGetFeeEstimate(client, protoTx)
 }
 
-// callGetFeeEstimate calls the GetFeeEstimate gRPC method
+// callGetFeeEstimate calls the fee estimate REST API endpoint
 func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.Transaction) (FeeEstimateResponse, error) {
-	// Get mirror node client
-	mirrorNode, err := client.mirrorNetwork._GetNextMirrorNode()
+	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
+		return FeeEstimateResponse{}, errors.New("mirror node is not set")
+	}
+
+	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
 	if err != nil {
-		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get mirror node")
+		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get mirror REST API base URL")
 	}
 
-	channel, err := mirrorNode._GetNetworkServiceClient()
+	// Serialize transaction to protobuf bytes
+	txBytes, err := protobuf.Marshal(protoTx)
 	if err != nil {
-		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get network service client")
+		return FeeEstimateResponse{}, errors.Wrap(err, "failed to marshal transaction")
 	}
 
-	ctx := client.networkUpdateContext
+	// Encode transaction bytes to base64
+	txBase64 := base64.StdEncoding.EncodeToString(txBytes)
 
-	// Build the fee estimate query
-	query := &mirror.FeeEstimateQuery{
-		Mode:        q.mode.toProto(),
-		Transaction: protoTx,
+	// Build request payload
+	payload := map[string]interface{}{
+		"transaction": txBase64,
+		"mode":        q.mode.String(),
 	}
 
-	// Call the mirror node gRPC endpoint with retry logic
-	var resp *mirror.FeeEstimateResponse
+	jsonPayload, err := json.Marshal(payload)
+	if err != nil {
+		return FeeEstimateResponse{}, errors.Wrap(err, "failed to marshal request payload")
+	}
+
+	// Construct URL
+	url := fmt.Sprintf("%s/network/fees", mirrorUrl)
+
+	// Call the REST API endpoint with retry logic
 	var lastErr error
+	var resp *http.Response
 
 	for q.attempt < q.maxAttempts {
-		resp, err = channel.GetFeeEstimate(ctx, query)
-		if err == nil {
+		resp, err = http.Post(url, "application/json", bytes.NewBuffer(jsonPayload)) // #nosec
+		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
+			// Success - break out of retry loop
 			break
 		}
 
-		lastErr = err
+		// Handle error or non-200 response
+		if err != nil {
+			lastErr = err
+		} else if resp != nil {
+			// Read error response body before closing
+			body, readErr := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if readErr == nil {
+				lastErr = fmt.Errorf("received non-200 response: %d, details: %s", resp.StatusCode, body)
+			} else {
+				lastErr = fmt.Errorf("received non-200 response: %d", resp.StatusCode)
+			}
+		} else {
+			lastErr = fmt.Errorf("received nil response")
+		}
 
 		// Check if we should retry
-		if !q.shouldRetry(err) {
-			return FeeEstimateResponse{}, errors.Wrap(err, "failed to call GetFeeEstimate")
+		if !q.shouldRetry(err, resp) {
+			return FeeEstimateResponse{}, errors.Wrap(lastErr, "failed to call fee estimate API")
 		}
 
 		// Calculate delay with exponential backoff
@@ -213,49 +244,51 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 
 		// Wait before retry
 		select {
-		case <-ctx.Done():
-			return FeeEstimateResponse{}, ctx.Err()
+		case <-client.networkUpdateContext.Done():
+			return FeeEstimateResponse{}, client.networkUpdateContext.Err()
 		case <-time.After(time.Duration(delayMs) * time.Millisecond):
 		}
 
 		q.attempt++
 	}
 
-	if lastErr != nil {
-		return FeeEstimateResponse{}, errors.Wrapf(lastErr, "failed to call GetFeeEstimate after %d attempts", q.maxAttempts)
+	// Check if we have a successful response
+	if resp == nil {
+		return FeeEstimateResponse{}, errors.Wrapf(lastErr, "failed to call fee estimate API after %d attempts", q.maxAttempts)
 	}
 
-	// Convert proto response to SDK response
-	return feeEstimateResponseFromProto(resp), nil
+	defer resp.Body.Close()
+
+	// Read response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return FeeEstimateResponse{}, errors.Wrap(err, "failed to read response body")
+	}
+
+	// Parse JSON response
+	return feeEstimateResponseFromREST(body)
 }
 
 // shouldRetry determines if an error should be retried
-func (q *FeeEstimateQuery) shouldRetry(err error) bool {
+func (q *FeeEstimateQuery) shouldRetry(err error, resp *http.Response) bool {
+	if err == nil && resp != nil {
+		// Retry on 5xx server errors and 429 (rate limit)
+		if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
+			return true
+		}
+		// Do not retry on 4xx client errors (except 429)
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+			return false
+		}
+	}
+
 	if err == nil {
 		return false
 	}
 
-	if err == io.EOF {
-		return false
-	}
-
-	grpcStatus, ok := status.FromError(err)
-	if !ok {
-		return false
-	}
-
-	code := grpcStatus.Code()
-
-	// Retry on transient transport errors
-	switch code {
-	case codes.Unavailable, codes.DeadlineExceeded:
-		return true
-	case codes.InvalidArgument:
-		// Do not retry on malformed transaction
-		return false
-	default:
-		return false
-	}
+	// Retry on network errors (connection refused, timeout, etc.)
+	// These are typically temporary and worth retrying
+	return true
 }
 
 // validateNetworkOnIDs validates network and IDs on the query
