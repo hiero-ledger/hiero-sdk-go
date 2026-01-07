@@ -53,11 +53,11 @@ type TransactionRecord struct {
 // MarshalJSON returns the JSON representation of the TransactionRecord
 func (record TransactionRecord) MarshalJSON() ([]byte, error) {
 	var json = jsoniter.ConfigCompatibleWithStandardLibrary
-	m := make(map[string]interface{})
+	m := make(map[string]any)
 	type TransferJSON struct {
-		AccountID  string      `json:"accountId"`
-		Amount     interface{} `json:"amount"`
-		IsApproved bool        `json:"isApproved"`
+		AccountID  string `json:"accountId"`
+		Amount     any    `json:"amount"`
+		IsApproved bool   `json:"isApproved"`
 	}
 	var transfersJSON []TransferJSON
 	for _, t := range record.Transfers {
@@ -225,7 +225,7 @@ func (record TransactionRecord) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	var receiptInterface interface{}
+	var receiptInterface any
 	err = json.Unmarshal(receiptBytes, &receiptInterface)
 	if err != nil {
 		return nil, err

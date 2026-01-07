@@ -36,8 +36,8 @@ type TransactionReceipt struct {
 	TransactionID           *TransactionID
 }
 
-func (receipt *TransactionReceipt) _ToMap() map[string]interface{} {
-	m := map[string]interface{}{
+func (receipt *TransactionReceipt) _ToMap() map[string]any {
+	m := map[string]any{
 		"status":                  receipt.Status.String(),
 		"topicSequenceNumber":     receipt.TopicSequenceNumber,
 		"topicRunningHash":        hex.EncodeToString(receipt.TopicRunningHash),
@@ -77,7 +77,7 @@ func (receipt *TransactionReceipt) _ToMap() map[string]interface{} {
 	}
 
 	// Handling fields with possible nil values
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"topicId":                receipt.TopicID,
 		"fileId":                 receipt.FileID,
 		"contractId":             receipt.ContractID,

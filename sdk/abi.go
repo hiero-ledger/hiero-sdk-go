@@ -235,7 +235,7 @@ func (m *Method) ID() []byte {
 }
 
 // Encode encodes the inputs with this function
-func (m *Method) Encode(args interface{}) ([]byte, error) {
+func (m *Method) Encode(args any) ([]byte, error) {
 	data, err := Encode(args, m.Inputs)
 	if err != nil {
 		return nil, err
@@ -245,7 +245,7 @@ func (m *Method) Encode(args interface{}) ([]byte, error) {
 }
 
 // Decode decodes the output with this function
-func (m *Method) Decode(data []byte) (map[string]interface{}, error) {
+func (m *Method) Decode(data []byte) (map[string]any, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty response")
 	}
@@ -253,7 +253,7 @@ func (m *Method) Decode(data []byte) (map[string]interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp := respInterface.(map[string]interface{})
+	resp := respInterface.(map[string]any)
 	return resp, nil
 }
 
@@ -317,7 +317,7 @@ type ArgumentStr struct {
 }
 
 var keccakPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return sha3.NewLegacyKeccak256()
 	},
 }
