@@ -434,3 +434,399 @@ func TestIntegrationAccountUpdateSelectiveFieldChanges(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 }
+
+// HIP-1195 hooks
+
+func TestIntegrationAccountUpdateTransactionCanExecuteWithHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToCreate(*hookDetail).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		SetHooksToCreate([]HookCreationDetails{*hookDetail, *hookDetail}).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.ErrorContains(t, err, "exceptional precheck status HOOK_ID_REPEATED_IN_CREATION_DETAILS")
+}
+
+func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToCreate(*hookDetail).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_ID_IN_USE")
+}
+
+func TestIntegrationAccountUpdateTransactionUpdateAddHookWithInitialStorageUpdates(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().
+			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
+			SetContractId(&ContractID{}))
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToCreate(*hookDetail).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetHooks([]HookCreationDetails{*hookDetail}).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToCreate(*hookDetail).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_ID_IN_USE")
+}
+
+func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetHooks([]HookCreationDetails{*hookDetail}).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToDelete(1).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetHooks([]HookCreationDetails{*hookDetail}).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToDelete(123).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_NOT_FOUND")
+}
+
+func TestIntegrationAccountUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameTime(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(20)).
+		SetAccountID(accountID).
+		AddHookToDelete(1).
+		SetHooksToCreate([]HookCreationDetails{*hookDetail}).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_NOT_FOUND")
+}
+
+func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	hookDetail := NewHookCreationDetails().
+		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
+		SetHookId(1).
+		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+
+	resp, err := NewAccountCreateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		AddHook(*hookDetail).
+		Execute(env.Client)
+
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+	require.NoError(t, err)
+
+	tx, err := NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToDelete(1).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err = NewAccountUpdateTransaction().
+		SetMaxTransactionFee(NewHbar(10)).
+		SetAccountID(accountID).
+		AddHookToDelete(1).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "exceptional receipt status: HOOK_NOT_FOUND")
+}

@@ -117,17 +117,17 @@ func (c *ContractService) CreateContract(_ context.Context, params param.Contrac
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(c.sdkService.Client)
+	txResponse, err := transaction.Execute(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -209,17 +209,17 @@ func (c *ContractService) UpdateContract(_ context.Context, params param.Contrac
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(c.sdkService.Client)
+	txResponse, err := transaction.Execute(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -264,17 +264,17 @@ func (c *ContractService) DeleteContract(_ context.Context, params param.Contrac
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(c.sdkService.Client)
+	txResponse, err := transaction.Execute(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -319,17 +319,17 @@ func (c *ContractService) ExecuteContract(_ context.Context, params param.Contra
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, c.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(c.sdkService.Client)
+	txResponse, err := transaction.Execute(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(c.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}

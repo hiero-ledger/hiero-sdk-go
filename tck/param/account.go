@@ -7,49 +7,50 @@ import (
 )
 
 type CreateAccountParams struct {
-	Key                           *string                  `json:"key"`
-	InitialBalance                *string                  `json:"initialBalance"`
-	ReceiverSignatureRequired     *bool                    `json:"receiverSignatureRequired"`
-	AutoRenewPeriod               *string                  `json:"autoRenewPeriod"`
-	Memo                          *string                  `json:"memo"`
-	MaxAutomaticTokenAssociations *int32                   `json:"maxAutoTokenAssociations"`
-	StakedAccountId               *string                  `json:"stakedAccountId"`
-	StakedNodeId                  *json.Number             `json:"stakedNodeId"`
-	DeclineStakingReward          *bool                    `json:"declineStakingReward"`
-	Alias                         *string                  `json:"alias"`
-	CommonTransactionParams       *CommonTransactionParams `json:"commonTransactionParams"`
+	BaseParams
+	Key                           *string      `json:"key"`
+	InitialBalance                *string      `json:"initialBalance"`
+	ReceiverSignatureRequired     *bool        `json:"receiverSignatureRequired"`
+	AutoRenewPeriod               *string      `json:"autoRenewPeriod"`
+	Memo                          *string      `json:"memo"`
+	MaxAutomaticTokenAssociations *int32       `json:"maxAutoTokenAssociations"`
+	StakedAccountId               *string      `json:"stakedAccountId"`
+	StakedNodeId                  *json.Number `json:"stakedNodeId"`
+	DeclineStakingReward          *bool        `json:"declineStakingReward"`
+	Alias                         *string      `json:"alias"`
 }
 
 type UpdateAccountParams struct {
-	AccountId                     *string                  `json:"accountId"`
-	Key                           *string                  `json:"key"`
-	ReceiverSignatureRequired     *bool                    `json:"receiverSignatureRequired"`
-	AutoRenewPeriod               *string                  `json:"autoRenewPeriod"`
-	ExpirationTime                *string                  `json:"expirationTime"`
-	Memo                          *string                  `json:"memo"`
-	MaxAutomaticTokenAssociations *int32                   `json:"maxAutoTokenAssociations"`
-	StakedAccountId               *string                  `json:"stakedAccountId"`
-	StakedNodeId                  *json.Number             `json:"stakedNodeId"`
-	DeclineStakingReward          *bool                    `json:"declineStakingReward"`
-	CommonTransactionParams       *CommonTransactionParams `json:"commonTransactionParams"`
+	BaseParams
+	AccountId                     *string      `json:"accountId"`
+	Key                           *string      `json:"key"`
+	ReceiverSignatureRequired     *bool        `json:"receiverSignatureRequired"`
+	AutoRenewPeriod               *string      `json:"autoRenewPeriod"`
+	ExpirationTime                *string      `json:"expirationTime"`
+	Memo                          *string      `json:"memo"`
+	MaxAutomaticTokenAssociations *int32       `json:"maxAutoTokenAssociations"`
+	StakedAccountId               *string      `json:"stakedAccountId"`
+	StakedNodeId                  *json.Number `json:"stakedNodeId"`
+	DeclineStakingReward          *bool        `json:"declineStakingReward"`
 }
 type DeleteAccountParams struct {
-	DeleteAccountId         *string                  `json:"deleteAccountId"`
-	TransferAccountId       *string                  `json:"transferAccountId"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+	BaseParams
+	DeleteAccountId   *string `json:"deleteAccountId"`
+	TransferAccountId *string `json:"transferAccountId"`
 }
 
 type AccountAllowanceApproveParams struct {
-	Allowances              *[]AllowanceParams       `json:"allowances,omitempty"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+	BaseParams
+	Allowances *[]AllowanceParams `json:"allowances,omitempty"`
 }
 
 type AccountAllowanceDeleteParams struct {
-	Allowances              *[]DeleteAllowanceParams `json:"allowances,omitempty"`
-	CommonTransactionParams *CommonTransactionParams `json:"commonTransactionParams"`
+	BaseParams
+	Allowances *[]DeleteAllowanceParams `json:"allowances,omitempty"`
 }
 
 type GetAccountBalanceParams struct {
+	BaseParams
 	AccountId  *string `json:"accountId"`
 	ContractId *string `json:"contractId"`
 }

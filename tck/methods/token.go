@@ -115,7 +115,7 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -129,11 +129,11 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 		transaction.SetCustomFees(customFees)
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -224,17 +224,17 @@ func (t *TokenService) UpdateToken(_ context.Context, params param.UpdateTokenPa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -253,16 +253,16 @@ func (t *TokenService) DeleteToken(_ context.Context, params param.DeleteTokenPa
 		transaction.SetTokenID(tokenId)
 	}
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -290,17 +290,17 @@ func (t *TokenService) UpdateTokenFeeSchedule(_ context.Context, params param.Up
 		transaction.SetCustomFees(customFees)
 	}
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -340,17 +340,17 @@ func (t *TokenService) AssociateToken(_ context.Context, params param.AssociateD
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -385,17 +385,17 @@ func (t *TokenService) DisassociateToken(_ context.Context, params param.Associa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -417,17 +417,17 @@ func (t *TokenService) PauseToken(_ context.Context, params param.PauseUnPauseTo
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -449,17 +449,17 @@ func (t *TokenService) UnpauseToken(_ context.Context, params param.PauseUnPause
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -486,17 +486,17 @@ func (t *TokenService) FreezeToken(_ context.Context, params param.FreezeUnFreez
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -523,17 +523,17 @@ func (t *TokenService) UnfreezeToken(_ context.Context, params param.FreezeUnFre
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -560,17 +560,17 @@ func (t *TokenService) GrantTokenKyc(_ context.Context, params param.GrantRevoke
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -597,17 +597,17 @@ func (t *TokenService) RevokeTokenKyc(_ context.Context, params param.GrantRevok
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -651,7 +651,7 @@ func (t *TokenService) buildMintToken(params param.MintTokenParams) (*hiero.Toke
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -667,11 +667,11 @@ func (t *TokenService) MintToken(_ context.Context, params param.MintTokenParams
 		return nil, err
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -725,7 +725,7 @@ func (t *TokenService) buildBurnToken(params param.BurnTokenParams) (*hiero.Toke
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
@@ -741,11 +741,11 @@ func (t *TokenService) BurnToken(_ context.Context, params param.BurnTokenParams
 		return nil, err
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -803,17 +803,17 @@ func (t *TokenService) WipeToken(_ context.Context, params param.WipeTokenParams
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -846,17 +846,17 @@ func (t *TokenService) AirdropToken(_ context.Context, params param.AirdropParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -918,17 +918,17 @@ func (t *TokenService) ClaimToken(_ context.Context, params param.ClaimTokenPara
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -996,17 +996,17 @@ func (t *TokenService) CancelAirdrop(_ context.Context, params param.AirdropCanc
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -1064,17 +1064,17 @@ func (t *TokenService) RejectToken(_ context.Context, params param.RejectTokenPa
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(t.sdkService.Client)
+	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := txResponse.GetReceipt(t.sdkService.Client)
+	receipt, err := txResponse.GetReceipt(t.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}

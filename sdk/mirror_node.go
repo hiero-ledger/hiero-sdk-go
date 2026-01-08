@@ -256,10 +256,16 @@ func (node *_MirrorNode) _Close() error {
 	return nil
 }
 
+// RecvStream is a generic interface for any gRPC client stream that has a Recv() method.
+// This allows processProtoMessageStream to work with any stream type, not just specific ones.
+type recvStream[T any] interface {
+	Recv() (T, error)
+}
+
 // processProtoMessageStream is a generic method that works with any gRPC client stream
 // that implements the RecvStream interface. This allows it to work with any stream type
 // such as mirror.NetworkService_GetNodesClient, mirror.ConsensusService_SubscribeTopicClient, etc.
-func processProtoMessageStream[T any](ctx context.Context, stream RecvStream[T], attempt uint64, maxAttempts uint64, retryHandler func(err error) bool) <-chan streamResult[T] {
+func processProtoMessageStream[T any](ctx context.Context, stream recvStream[T], attempt uint64, maxAttempts uint64, retryHandler func(err error) bool) <-chan streamResult[T] {
 	resultStream := make(chan streamResult[T])
 
 	go func() {

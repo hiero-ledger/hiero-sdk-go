@@ -87,18 +87,18 @@ func (n *NodeService) CreateNode(_ context.Context, params param.CreateNodeParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(n.sdkService.Client)
+	txResponse, err := transaction.Execute(n.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
 
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -186,18 +186,18 @@ func (n *NodeService) UpdateNode(_ context.Context, params param.UpdateNodeParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(n.sdkService.Client)
+	txResponse, err := transaction.Execute(n.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
 
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
@@ -219,18 +219,18 @@ func (n *NodeService) DeleteNode(_ context.Context, params param.DeleteNodeParam
 	}
 
 	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.Client)
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, n.sdkService.GetClient(params.SessionId))
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	txResponse, err := transaction.Execute(n.sdkService.Client)
+	txResponse, err := transaction.Execute(n.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
 
-	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.Client)
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(n.sdkService.GetClient(params.SessionId))
 	if err != nil {
 		return nil, err
 	}
