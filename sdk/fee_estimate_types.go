@@ -4,8 +4,6 @@ package hiero
 
 import (
 	"encoding/json"
-
-	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/mirror"
 )
 
 // FeeEstimateMode represents the mode of fee estimation
@@ -30,30 +28,6 @@ func (m FeeEstimateMode) String() string {
 	}
 }
 
-// toProto converts SDK FeeEstimateMode to proto EstimateMode
-func (m FeeEstimateMode) toProto() mirror.EstimateMode {
-	switch m {
-	case FeeEstimateModeState:
-		return mirror.EstimateMode_STATE
-	case FeeEstimateModeIntrinsic:
-		return mirror.EstimateMode_INTRINSIC
-	default:
-		return mirror.EstimateMode_STATE
-	}
-}
-
-// feeEstimateModeFromProto converts proto EstimateMode to SDK FeeEstimateMode
-func feeEstimateModeFromProto(m mirror.EstimateMode) FeeEstimateMode {
-	switch m {
-	case mirror.EstimateMode_STATE:
-		return FeeEstimateModeState
-	case mirror.EstimateMode_INTRINSIC:
-		return FeeEstimateModeIntrinsic
-	default:
-		return FeeEstimateModeState
-	}
-}
-
 // FeeExtra represents an extra fee charged for the transaction
 type FeeExtra struct {
 	Name       string `json:"name"`       // The unique name of this extra fee as defined in the fee schedule
@@ -62,21 +36,6 @@ type FeeExtra struct {
 	Charged    uint32 `json:"charged"`    // The charged count of items as calculated by max(0, count - included)
 	FeePerUnit uint64 `json:"feePerUnit"` // The fee price per unit in tinycents
 	Subtotal   uint64 `json:"subtotal"`   // The subtotal in tinycents for this extra fee
-}
-
-// feeExtraFromProto converts proto FeeExtra to SDK FeeExtra
-func feeExtraFromProto(pb *mirror.FeeExtra) FeeExtra {
-	if pb == nil {
-		return FeeExtra{}
-	}
-	return FeeExtra{
-		Name:       pb.GetName(),
-		Included:   pb.GetIncluded(),
-		Count:      pb.GetCount(),
-		Charged:    pb.GetCharged(),
-		FeePerUnit: pb.GetFeePerUnit(),
-		Subtotal:   pb.GetSubtotal(),
-	}
 }
 
 // FeeEstimate represents the fee estimate for a component
@@ -94,36 +53,10 @@ func (fe *FeeEstimate) Subtotal() uint64 {
 	return total
 }
 
-// feeEstimateFromProto converts proto FeeEstimate to SDK FeeEstimate
-func feeEstimateFromProto(pb *mirror.FeeEstimate) FeeEstimate {
-	if pb == nil {
-		return FeeEstimate{}
-	}
-	extras := make([]FeeExtra, 0, len(pb.GetExtras()))
-	for _, extra := range pb.GetExtras() {
-		extras = append(extras, feeExtraFromProto(extra))
-	}
-	return FeeEstimate{
-		Base:   pb.GetBase(),
-		Extras: extras,
-	}
-}
-
 // NetworkFee represents the network fee component
 type NetworkFee struct {
 	Multiplier uint32 `json:"multiplier"` // Multiplied by the node fee to determine the total network fee
 	Subtotal   uint64 `json:"subtotal"`   // The subtotal in tinycents for the network fee component
-}
-
-// networkFeeFromProto converts proto NetworkFee to SDK NetworkFee
-func networkFeeFromProto(pb *mirror.NetworkFee) NetworkFee {
-	if pb == nil {
-		return NetworkFee{}
-	}
-	return NetworkFee{
-		Multiplier: pb.GetMultiplier(),
-		Subtotal:   pb.GetSubtotal(),
-	}
 }
 
 // FeeEstimateResponse represents the response containing the estimated transaction fees
@@ -134,23 +67,6 @@ type FeeEstimateResponse struct {
 	ServiceFee FeeEstimate     `json:"service"`         // The service fee component
 	Notes      []string        `json:"notes,omitempty"` // An array of strings for any caveats
 	Total      uint64          `json:"total"`           // The sum of the network, node, and service subtotals in tinycents
-}
-
-// feeEstimateResponseFromProto converts proto FeeEstimateResponse to SDK FeeEstimateResponse
-func feeEstimateResponseFromProto(pb *mirror.FeeEstimateResponse) FeeEstimateResponse {
-	if pb == nil {
-		return FeeEstimateResponse{}
-	}
-	notes := make([]string, len(pb.GetNotes()))
-	copy(notes, pb.GetNotes())
-	return FeeEstimateResponse{
-		Mode:       feeEstimateModeFromProto(pb.GetMode()),
-		NetworkFee: networkFeeFromProto(pb.GetNetwork()),
-		NodeFee:    feeEstimateFromProto(pb.GetNode()),
-		ServiceFee: feeEstimateFromProto(pb.GetService()),
-		Notes:      notes,
-		Total:      pb.GetTotal(),
-	}
 }
 
 // feeEstimateModeFromString converts string mode to SDK FeeEstimateMode

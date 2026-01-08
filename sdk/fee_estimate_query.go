@@ -216,9 +216,10 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		}
 
 		// Handle error or non-200 response
-		if err != nil {
+		switch {
+		case err != nil:
 			lastErr = err
-		} else if resp != nil {
+		case resp != nil:
 			// Read error response body before closing
 			body, readErr := io.ReadAll(resp.Body)
 			resp.Body.Close()
@@ -227,7 +228,7 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 			} else {
 				lastErr = fmt.Errorf("received non-200 response: %d", resp.StatusCode)
 			}
-		} else {
+		default:
 			lastErr = fmt.Errorf("received nil response")
 		}
 
