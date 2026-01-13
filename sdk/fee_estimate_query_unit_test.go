@@ -6,7 +6,9 @@ import (
 	"errors"
 	"net/http"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -27,15 +29,12 @@ func TestUnitFeeEstimateQueryCoverage(t *testing.T) {
 	require.Equal(t, FeeEstimateModeState, query.GetMode())
 	require.Equal(t, uint64(5), query.GetMaxAttempts())
 
-	// Test default mode
 	query2 := NewFeeEstimateQuery()
 	require.Equal(t, FeeEstimateModeState, query2.GetMode())
 
-	// Test mode setting
 	query.SetMode(FeeEstimateModeIntrinsic)
 	require.Equal(t, FeeEstimateModeIntrinsic, query.GetMode())
 
-	// Test mode string representation
 	require.Equal(t, "STATE", FeeEstimateModeState.String())
 	require.Equal(t, "INTRINSIC", FeeEstimateModeIntrinsic.String())
 	require.Equal(t, "UNKNOWN", FeeEstimateMode(99).String())
@@ -65,7 +64,6 @@ func TestUnitFeeEstimateQueryValidateNetworkOnIDs(t *testing.T) {
 	err = query.validateNetworkOnIDs(client)
 	require.NoError(t, err)
 
-	// Test with transaction
 	tx := NewTransferTransaction()
 	query.SetTransaction(tx)
 	err = query.validateNetworkOnIDs(client)
@@ -101,38 +99,29 @@ func TestUnitFeeEstimateQueryShouldRetry(t *testing.T) {
 
 	query := NewFeeEstimateQuery()
 
-	// Test nil error and nil response
 	require.False(t, query.shouldRetry(nil, nil))
 
-	// Test nil error with 200 response (should not retry)
 	resp200 := &http.Response{StatusCode: http.StatusOK}
 	require.False(t, query.shouldRetry(nil, resp200))
 
-	// Test nil error with 500 response (should retry)
 	resp500 := &http.Response{StatusCode: http.StatusInternalServerError}
 	require.True(t, query.shouldRetry(nil, resp500))
 
-	// Test nil error with 503 response (should retry)
 	resp503 := &http.Response{StatusCode: http.StatusServiceUnavailable}
 	require.True(t, query.shouldRetry(nil, resp503))
 
-	// Test nil error with 429 response (should retry)
 	resp429 := &http.Response{StatusCode: http.StatusTooManyRequests}
 	require.True(t, query.shouldRetry(nil, resp429))
 
-	// Test nil error with 400 response (should not retry)
 	resp400 := &http.Response{StatusCode: http.StatusBadRequest}
 	require.False(t, query.shouldRetry(nil, resp400))
 
-	// Test nil error with 404 response (should not retry)
 	resp404 := &http.Response{StatusCode: http.StatusNotFound}
 	require.False(t, query.shouldRetry(nil, resp404))
 
-	// Test network error (should retry)
 	err := errors.New("connection refused")
 	require.True(t, query.shouldRetry(err, nil))
 
-	// Test any error (should retry)
 	err = errors.New("timeout")
 	require.True(t, query.shouldRetry(err, nil))
 }
@@ -142,14 +131,13 @@ func TestUnitFeeEstimateModeFromString(t *testing.T) {
 
 	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString("STATE"))
 	require.Equal(t, FeeEstimateModeIntrinsic, feeEstimateModeFromString("INTRINSIC"))
-	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString("UNKNOWN")) // Unknown defaults to STATE
-	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString(""))        // Empty defaults to STATE
+	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString("UNKNOWN"))
+	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString(""))
 }
 
 func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	t.Parallel()
 
-	// Test valid JSON response
 	jsonData := `{
 		"mode": "STATE",
 		"network": {
@@ -190,7 +178,6 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	require.Equal(t, "note2", response.Notes[1])
 	require.Equal(t, uint64(4600), response.Total)
 
-	// Test INTRINSIC mode
 	jsonData2 := `{
 		"mode": "INTRINSIC",
 		"network": {
@@ -210,9 +197,89 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, FeeEstimateModeIntrinsic, response2.Mode)
 	require.Equal(t, uint32(2), response2.NetworkFee.Multiplier)
-	require.Empty(t, response2.Notes) // Empty notes should be empty slice
-
-	// Test invalid JSON
+	require.Empty(t, response2.Notes)
 	_, err = feeEstimateResponseFromREST([]byte("invalid json"))
 	require.Error(t, err)
+}
+
+func TestUnitFeeEstimateQueryRetriesOnUnavailableErrors(t *testing.T) {
+	// Note: Not using t.Parallel() because these tests need to bind to port 5551
+	// which is hardcoded for localhost in the mirror node code
+
+	stub := newStubMirrorRestServer(t)
+	defer stub.stop()
+
+	client := newMockClientForREST(stub.getMirrorNetworkAddress())
+	client.SetMaxBackoff(500 * time.Millisecond)
+
+	tx := NewTransferTransaction()
+
+	query := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMaxAttempts(3)
+
+	stub.enqueue(stubResponse{status: 503, body: "transient error"})
+	stub.enqueue(stubResponse{status: 200, body: newSuccessResponse(FeeEstimateModeState, 2, 6, 8)})
+
+	response, err := query.Execute(client)
+	require.NoError(t, err)
+
+	assert.Equal(t, FeeEstimateModeState, response.Mode)
+	assert.Equal(t, uint64(26), response.Total)
+	assert.Equal(t, 2, stub.requestCount())
+	stub.verify(t)
+}
+
+func TestUnitFeeEstimateQueryRetriesOnDeadlineExceededErrors(t *testing.T) {
+	// Note: Not using t.Parallel() because these tests need to bind to port 5551
+	// which is hardcoded for localhost in the mirror node code
+
+	stub := newStubMirrorRestServer(t)
+	defer stub.stop()
+
+	client := newMockClientForREST(stub.getMirrorNetworkAddress())
+	client.SetMaxBackoff(500 * time.Millisecond)
+
+	tx := NewTransferTransaction()
+
+	query := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMaxAttempts(3)
+
+	stub.enqueue(stubResponse{status: 504, body: "gateway timeout"})
+	stub.enqueue(stubResponse{status: 200, body: newSuccessResponse(FeeEstimateModeState, 4, 8, 20)})
+
+	response, err := query.Execute(client)
+	require.NoError(t, err)
+
+	assert.Equal(t, FeeEstimateModeState, response.Mode)
+	assert.Equal(t, uint64(60), response.Total)
+	assert.Equal(t, 2, stub.requestCount())
+	stub.verify(t)
+}
+
+func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
+	// Note: Not using t.Parallel() because these tests need to bind to port 5551
+	// which is hardcoded for localhost in the mirror node code
+
+	stub := newStubMirrorRestServer(t)
+	defer stub.stop()
+
+	client := newMockClientForREST(stub.getMirrorNetworkAddress())
+
+	tx := NewTransferTransaction()
+
+	query := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMode(FeeEstimateModeIntrinsic)
+
+	stub.enqueue(stubResponse{status: 200, body: newSuccessResponse(FeeEstimateModeIntrinsic, 3, 10, 20)})
+
+	response, err := query.Execute(client)
+	require.NoError(t, err)
+
+	assert.Equal(t, FeeEstimateModeIntrinsic, response.Mode)
+	assert.Equal(t, uint64(60), response.Total)
+	assert.Equal(t, 1, stub.requestCount())
+	stub.verify(t)
 }

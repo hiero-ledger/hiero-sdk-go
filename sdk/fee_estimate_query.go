@@ -80,7 +80,6 @@ func (q *FeeEstimateQuery) Execute(client *Client) (FeeEstimateResponse, error) 
 		return FeeEstimateResponse{}, err
 	}
 
-	// Automatically freeze the transaction if not already frozen
 	baseTx := q.transaction.getBaseTransaction()
 	if !baseTx.IsFrozen() {
 		_, err := baseTx.FreezeWith(client)
@@ -89,7 +88,6 @@ func (q *FeeEstimateQuery) Execute(client *Client) (FeeEstimateResponse, error) 
 		}
 	}
 
-	// Check if this is a chunked transaction
 	if fileAppendTx, ok := q.transaction.(*FileAppendTransaction); ok {
 		return q.executeChunkedTransaction(client, fileAppendTx)
 	}
@@ -98,7 +96,6 @@ func (q *FeeEstimateQuery) Execute(client *Client) (FeeEstimateResponse, error) 
 		return q.executeChunkedTransaction(client, topicMessageTx)
 	}
 
-	// For non-chunked transactions, estimate fees directly
 	return q.estimateSingleTransaction(client, q.transaction)
 }
 
@@ -110,7 +107,6 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 		return FeeEstimateResponse{}, errors.New("transaction has no chunks")
 	}
 
-	// Aggregate responses from all chunks
 	var aggregatedResponse FeeEstimateResponse
 	aggregatedResponse.Mode = q.mode
 	aggregatedResponse.NodeFee = FeeEstimate{Base: 0, Extras: []FeeExtra{}}
@@ -123,32 +119,26 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 
 	// Estimate fees for each chunk
 	for i := 0; i < numChunks; i++ {
-		// Build the transaction for this specific chunk
 		chunkTx, err := baseTx._BuildTransaction(i)
 		if err != nil {
 			return FeeEstimateResponse{}, errors.Wrapf(err, "failed to build chunk %d", i)
 		}
 
-		// Create a temporary transaction list with just this chunk
 		chunkResponse, err := q.callGetFeeEstimate(client, chunkTx)
 		if err != nil {
 			return FeeEstimateResponse{}, errors.Wrapf(err, "failed to estimate chunk %d", i)
 		}
 
-		// Aggregate fees
 		totalNodeSubtotal += chunkResponse.NodeFee.Subtotal()
 		totalServiceSubtotal += chunkResponse.ServiceFee.Subtotal()
 
-		// Store network multiplier from first chunk (should be same for all)
 		if i == 0 {
 			aggregatedResponse.NetworkFee.Multiplier = chunkResponse.NetworkFee.Multiplier
 		}
 
-		// Aggregate notes
 		aggregatedResponse.Notes = append(aggregatedResponse.Notes, chunkResponse.Notes...)
 	}
 
-	// Calculate aggregated totals
 	aggregatedResponse.NodeFee.Base = totalNodeSubtotal
 	aggregatedResponse.ServiceFee.Base = totalServiceSubtotal
 	aggregatedResponse.NetworkFee.Subtotal = totalNodeSubtotal * uint64(aggregatedResponse.NetworkFee.Multiplier)
@@ -161,7 +151,6 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 func (q *FeeEstimateQuery) estimateSingleTransaction(client *Client, tx TransactionInterface) (FeeEstimateResponse, error) {
 	baseTx := tx.getBaseTransaction()
 
-	// Build the transaction (use first chunk if multiple exist)
 	protoTx, err := baseTx._BuildTransaction(0)
 	if err != nil {
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to build transaction")
@@ -181,16 +170,13 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get mirror REST API base URL")
 	}
 
-	// Serialize transaction to protobuf bytes
 	txBytes, err := protobuf.Marshal(protoTx)
 	if err != nil {
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to marshal transaction")
 	}
 
-	// Encode transaction bytes to base64
 	txBase64 := base64.StdEncoding.EncodeToString(txBytes)
 
-	// Build request payload
 	payload := map[string]interface{}{
 		"transaction": txBase64,
 		"mode":        q.mode.String(),
@@ -201,26 +187,21 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to marshal request payload")
 	}
 
-	// Construct URL
 	url := fmt.Sprintf("%s/network/fees", mirrorUrl)
 
-	// Call the REST API endpoint with retry logic
 	var lastErr error
 	var resp *http.Response
 
 	for q.attempt < q.maxAttempts {
 		resp, err = http.Post(url, "application/json", bytes.NewBuffer(jsonPayload)) // #nosec
 		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
-			// Success - break out of retry loop
 			break
 		}
 
-		// Handle error or non-200 response
 		switch {
 		case err != nil:
 			lastErr = err
 		case resp != nil:
-			// Read error response body before closing
 			body, readErr := io.ReadAll(resp.Body)
 			resp.Body.Close()
 			if readErr == nil {
@@ -253,31 +234,26 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		q.attempt++
 	}
 
-	// Check if we have a successful response
 	if resp == nil {
 		return FeeEstimateResponse{}, errors.Wrapf(lastErr, "failed to call fee estimate API after %d attempts", q.maxAttempts)
 	}
 
 	defer resp.Body.Close()
 
-	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to read response body")
 	}
 
-	// Parse JSON response
 	return feeEstimateResponseFromREST(body)
 }
 
 // shouldRetry determines if an error should be retried
 func (q *FeeEstimateQuery) shouldRetry(err error, resp *http.Response) bool {
 	if err == nil && resp != nil {
-		// Retry on 5xx server errors and 429 (rate limit)
 		if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
 			return true
 		}
-		// Do not retry on 4xx client errors (except 429)
 		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
 			return false
 		}
@@ -287,8 +263,6 @@ func (q *FeeEstimateQuery) shouldRetry(err error, resp *http.Response) bool {
 		return false
 	}
 
-	// Retry on network errors (connection refused, timeout, etc.)
-	// These are typically temporary and worth retrying
 	return true
 }
 
