@@ -293,7 +293,7 @@ func (receipt TransactionReceipt) ValidateStatus(shouldValidate bool) error {
 
 // ToBytes returns the byte representation of the receipt
 func (receipt TransactionReceipt) ToBytes() []byte {
-	data, err := protobuf.Marshal(receipt._ToProtobuf())
+	data, err := protobuf.MarshalOptions{Deterministic: true}.Marshal(receipt._ToProtobuf())
 	if err != nil {
 		return make([]byte, 0)
 	}
