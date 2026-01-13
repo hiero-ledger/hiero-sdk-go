@@ -7,27 +7,27 @@ import (
 
 // SPDX-License-Identifier: Apache-2.0
 
-type LambdaSStoreTransaction struct {
-	*Transaction[*LambdaSStoreTransaction]
+type HookStoreTransaction struct {
+	*Transaction[*HookStoreTransaction]
 	hookId         HookId
-	storageUpdates []LambdaStorageUpdate
+	storageUpdates []EvmHookStorageUpdate
 }
 
 // Adds or removes key/value pairs in the storage of a lambda.
-func NewLambdaSStoreTransaction() *LambdaSStoreTransaction {
-	tx := &LambdaSStoreTransaction{}
+func NewHookStoreTransaction() *HookStoreTransaction {
+	tx := &HookStoreTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
 	return tx
 }
 
-func lambdaSStoreTransactionFromProtobuf(tx Transaction[*LambdaSStoreTransaction], pb *services.TransactionBody) LambdaSStoreTransaction {
+func lambdaSStoreTransactionFromProtobuf(tx Transaction[*HookStoreTransaction], pb *services.TransactionBody) HookStoreTransaction {
 	protoBody := pb.GetLambdaSstore()
-	storageUpdates := make([]LambdaStorageUpdate, 0)
+	storageUpdates := make([]EvmHookStorageUpdate, 0)
 	for _, storageUpdate := range protoBody.GetStorageUpdates() {
 		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
 	}
-	lambdaSStoreTransaction := LambdaSStoreTransaction{
+	lambdaSStoreTransaction := HookStoreTransaction{
 		hookId:         hookIdFromProtobuf(protoBody.GetHookId()),
 		storageUpdates: storageUpdates,
 	}
@@ -38,43 +38,43 @@ func lambdaSStoreTransactionFromProtobuf(tx Transaction[*LambdaSStoreTransaction
 }
 
 // SetHookId sets the hook ID for the LambdaSStoreTransaction.
-func (tx *LambdaSStoreTransaction) SetHookId(hookId HookId) *LambdaSStoreTransaction {
+func (tx *HookStoreTransaction) SetHookId(hookId HookId) *HookStoreTransaction {
 	tx._RequireNotFrozen()
 	tx.hookId = hookId
 	return tx
 }
 
 // GetHookId returns the hook ID for the LambdaSStoreTransaction.
-func (tx LambdaSStoreTransaction) GetHookId() HookId {
+func (tx HookStoreTransaction) GetHookId() HookId {
 	return tx.hookId
 }
 
 // AddStorageUpdate adds a storage update to the LambdaSStoreTransaction.
-func (tx *LambdaSStoreTransaction) AddStorageUpdate(storageUpdate LambdaStorageUpdate) *LambdaSStoreTransaction {
+func (tx *HookStoreTransaction) AddStorageUpdate(storageUpdate EvmHookStorageUpdate) *HookStoreTransaction {
 	tx._RequireNotFrozen()
 	tx.storageUpdates = append(tx.storageUpdates, storageUpdate)
 	return tx
 }
 
 // SetStorageUpdates sets the storage updates for the LambdaSStoreTransaction.
-func (tx *LambdaSStoreTransaction) SetStorageUpdates(storageUpdates []LambdaStorageUpdate) *LambdaSStoreTransaction {
+func (tx *HookStoreTransaction) SetStorageUpdates(storageUpdates []EvmHookStorageUpdate) *HookStoreTransaction {
 	tx._RequireNotFrozen()
 	tx.storageUpdates = storageUpdates
 	return tx
 }
 
 // GetStorageUpdates returns the storage updates for the LambdaSStoreTransaction.
-func (tx LambdaSStoreTransaction) GetStorageUpdates() []LambdaStorageUpdate {
+func (tx HookStoreTransaction) GetStorageUpdates() []EvmHookStorageUpdate {
 	return tx.storageUpdates
 }
 
 // ----------- Overridden functions ----------------
 
-func (tx LambdaSStoreTransaction) getName() string {
+func (tx HookStoreTransaction) getName() string {
 	return "LambdaSStoreTransaction"
 }
 
-func (tx LambdaSStoreTransaction) validateNetworkOnIDs(client *Client) error {
+func (tx HookStoreTransaction) validateNetworkOnIDs(client *Client) error {
 	if client == nil || !client.autoValidateChecksums {
 		return nil
 	}
@@ -86,7 +86,7 @@ func (tx LambdaSStoreTransaction) validateNetworkOnIDs(client *Client) error {
 	return nil
 }
 
-func (tx LambdaSStoreTransaction) build() *services.TransactionBody {
+func (tx HookStoreTransaction) build() *services.TransactionBody {
 	return &services.TransactionBody{
 		TransactionFee:           tx.transactionFee,
 		Memo:                     tx.Transaction.memo,
@@ -98,11 +98,11 @@ func (tx LambdaSStoreTransaction) build() *services.TransactionBody {
 	}
 }
 
-func (tx LambdaSStoreTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
+func (tx HookStoreTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
 	return nil, errors.New("cannot schedule `LambdaSStoreTransaction`")
 }
 
-func (tx LambdaSStoreTransaction) buildProtoBody() *services.LambdaSStoreTransactionBody {
+func (tx HookStoreTransaction) buildProtoBody() *services.LambdaSStoreTransactionBody {
 	body := &services.LambdaSStoreTransactionBody{
 		HookId: tx.hookId.toProtobuf(),
 	}
@@ -114,16 +114,16 @@ func (tx LambdaSStoreTransaction) buildProtoBody() *services.LambdaSStoreTransac
 	return body
 }
 
-func (tx LambdaSStoreTransaction) getMethod(channel *_Channel) _Method {
+func (tx HookStoreTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetContract().LambdaSStore,
 	}
 }
 
-func (tx LambdaSStoreTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
+func (tx HookStoreTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
 	return tx.buildScheduled()
 }
 
-func (tx LambdaSStoreTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
+func (tx HookStoreTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

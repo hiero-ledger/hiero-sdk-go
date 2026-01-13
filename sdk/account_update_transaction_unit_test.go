@@ -376,7 +376,7 @@ func TestUnitAccountUpdateTransactionToProtoHooks(t *testing.T) {
 	hook := NewHookCreationDetails().
 		SetHookId(1).
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1})).
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Contract: 1})).
 		SetAdminKey(ed25519PublicKey)
 
 	tx.AddHookToCreate(*hook).AddHookToDelete(1)
@@ -394,7 +394,7 @@ func TestUnitAccountUpdateTransactionBytesHooks(t *testing.T) {
 	ed25519PublicKey := ed25519PrivateKey.PublicKey()
 	hook := NewHookCreationDetails().
 		SetHookId(1).SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&contractID)).
+		SetEvmHook(*NewEvmHook().SetContractId(&contractID)).
 		SetAdminKey(ed25519PublicKey)
 	tx.AddHookToCreate(*hook)
 	tx.AddHookToDelete(1)

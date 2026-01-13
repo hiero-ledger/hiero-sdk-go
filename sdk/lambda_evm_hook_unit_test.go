@@ -15,7 +15,7 @@ import (
 func TestUnitLambdaEvmHookContractId(t *testing.T) {
 	t.Parallel()
 
-	leh := NewLambdaEvmHook()
+	leh := NewEvmHook()
 
 	// Test default value
 	assert.Nil(t, leh.GetContractId())
@@ -34,26 +34,26 @@ func TestUnitLambdaEvmHookContractId(t *testing.T) {
 func TestUnitLambdaEvmHookStorageUpdates(t *testing.T) {
 	t.Parallel()
 
-	leh := NewLambdaEvmHook()
+	leh := NewEvmHook()
 
 	// Test default value
-	assert.Equal(t, []LambdaStorageUpdate(nil), leh.GetStorageUpdates())
+	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 
 	// Test setting storage updates
-	storageSlot1 := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
-	storageSlot2 := NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
-	storageUpdates := []LambdaStorageUpdate{storageSlot1, storageSlot2}
+	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
+	storageUpdates := []EvmHookStorageUpdate{storageSlot1, storageSlot2}
 
 	leh.SetStorageUpdates(storageUpdates)
 	assert.Equal(t, storageUpdates, leh.GetStorageUpdates())
 
 	// Test setting empty storage updates
-	leh.SetStorageUpdates([]LambdaStorageUpdate{})
-	assert.Equal(t, []LambdaStorageUpdate{}, leh.GetStorageUpdates())
+	leh.SetStorageUpdates([]EvmHookStorageUpdate{})
+	assert.Equal(t, []EvmHookStorageUpdate{}, leh.GetStorageUpdates())
 
 	// Test setting nil storage updates
 	leh.SetStorageUpdates(nil)
-	assert.Equal(t, []LambdaStorageUpdate(nil), leh.GetStorageUpdates())
+	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 	pb := leh.toProtobuf()
 	lambdaEvmHookFromProtobuf(pb)
 }
@@ -61,16 +61,16 @@ func TestUnitLambdaEvmHookStorageUpdates(t *testing.T) {
 func TestUnitLambdaEvmHookAddStorageUpdate(t *testing.T) {
 	t.Parallel()
 
-	leh := NewLambdaEvmHook()
+	leh := NewEvmHook()
 
 	// Test adding to empty slice
-	storageSlot1 := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
 	leh.AddStorageUpdate(storageSlot1)
 	assert.Len(t, leh.GetStorageUpdates(), 1)
 	assert.Equal(t, storageSlot1, leh.GetStorageUpdates()[0])
 
 	// Test adding to existing slice
-	storageSlot2 := NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
+	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
 	leh.AddStorageUpdate(storageSlot2)
 	assert.Len(t, leh.GetStorageUpdates(), 2)
 	assert.Equal(t, storageSlot1, leh.GetStorageUpdates()[0])
@@ -83,13 +83,13 @@ func TestUnitLambdaEvmHookMethodChaining(t *testing.T) {
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	storageSlot1 := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
-	storageSlot2 := NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
+	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
 
 	// Test method chaining
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
-		SetStorageUpdates([]LambdaStorageUpdate{storageSlot1}).
+		SetStorageUpdates([]EvmHookStorageUpdate{storageSlot1}).
 		AddStorageUpdate(storageSlot2)
 
 	assert.Equal(t, &contractID, leh.GetContractId())
@@ -105,12 +105,12 @@ func TestUnitLambdaEvmHookToProtobuf(t *testing.T) {
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	storageSlot1 := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
-	storageSlot2 := NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
+	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
 
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
-		SetStorageUpdates([]LambdaStorageUpdate{storageSlot1, storageSlot2})
+		SetStorageUpdates([]EvmHookStorageUpdate{storageSlot1, storageSlot2})
 
 	pb := leh.toProtobuf()
 	require.NotNil(t, pb)
@@ -123,9 +123,9 @@ func TestUnitLambdaEvmHookToProtobufWithNilContractId(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil contract ID - this should cause a panic
-	leh := NewLambdaEvmHook()
-	storageSlot := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
-	leh.SetStorageUpdates([]LambdaStorageUpdate{storageSlot})
+	leh := NewEvmHook()
+	storageSlot := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	leh.SetStorageUpdates([]EvmHookStorageUpdate{storageSlot})
 
 	pb := leh.toProtobuf()
 	assert.Nil(t, pb.GetSpec().GetContractId())
@@ -139,7 +139,7 @@ func TestUnitLambdaEvmHookToProtobufWithEmptyStorageUpdates(t *testing.T) {
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	leh := NewLambdaEvmHook().SetContractId(&contractID)
+	leh := NewEvmHook().SetContractId(&contractID)
 
 	pb := leh.toProtobuf()
 	lambdaEvmHookFromProtobuf(pb)
@@ -156,8 +156,8 @@ func TestUnitLambdaEvmHookFromProtobuf(t *testing.T) {
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	storageSlot1 := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
-	storageSlot2 := NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
+	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
 
 	pb := &services.LambdaEvmHook{
 		Spec: &services.EvmHookSpec{
@@ -204,12 +204,12 @@ func TestUnitLambdaEvmHookRoundTrip(t *testing.T) {
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	storageSlot1 := NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
-	storageSlot2 := NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
+	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
+	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
 
-	original := NewLambdaEvmHook().
+	original := NewEvmHook().
 		SetContractId(&contractID).
-		SetStorageUpdates([]LambdaStorageUpdate{storageSlot1, storageSlot2})
+		SetStorageUpdates([]EvmHookStorageUpdate{storageSlot1, storageSlot2})
 
 	// Convert to protobuf and back
 	pb := original.toProtobuf()
@@ -230,8 +230,8 @@ func TestUnitLambdaEvmHookWithDifferentContractIds(t *testing.T) {
 	contractID2, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	leh1 := NewLambdaEvmHook().SetContractId(&contractID1)
-	leh2 := NewLambdaEvmHook().SetContractId(&contractID2)
+	leh1 := NewEvmHook().SetContractId(&contractID1)
+	leh2 := NewEvmHook().SetContractId(&contractID2)
 
 	assert.Equal(t, &contractID1, leh1.GetContractId())
 	assert.Equal(t, &contractID2, leh2.GetContractId())
@@ -251,14 +251,14 @@ func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	// Test with zero values
-	leh := NewLambdaEvmHook()
+	leh := NewEvmHook()
 	assert.Nil(t, leh.GetContractId())
-	assert.Equal(t, []LambdaStorageUpdate(nil), leh.GetStorageUpdates())
+	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 	pb := leh.toProtobuf()
 	lambdaEvmHookFromProtobuf(pb)
 
 	// Test with empty storage slot
-	emptyStorageSlot := NewLambdaStorageSlot()
+	emptyStorageSlot := NewEvmHookStorageSlot()
 	leh.AddStorageUpdate(emptyStorageSlot)
 	assert.Len(t, leh.GetStorageUpdates(), 1)
 	assert.Equal(t, emptyStorageSlot, leh.GetStorageUpdates()[0])
@@ -266,9 +266,9 @@ func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
 	lambdaEvmHookFromProtobuf(pb)
 
 	// Test with large storage updates
-	largeStorageUpdates := make([]LambdaStorageUpdate, 100)
+	largeStorageUpdates := make([]EvmHookStorageUpdate, 100)
 	for i := 0; i < 100; i++ {
-		storageSlot := NewLambdaStorageSlot().
+		storageSlot := NewEvmHookStorageSlot().
 			SetKey([]byte("key" + string(rune(i)))).
 			SetValue([]byte("value" + string(rune(i))))
 		largeStorageUpdates[i] = storageSlot
@@ -278,7 +278,7 @@ func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
 	assert.Len(t, leh.GetStorageUpdates(), 100)
 
 	// Test with storage slot with nil key/value
-	storageSlot := NewLambdaStorageSlot().SetKey(nil).SetValue(nil)
+	storageSlot := NewEvmHookStorageSlot().SetKey(nil).SetValue(nil)
 	leh.AddStorageUpdate(storageSlot)
 	assert.Len(t, leh.GetStorageUpdates(), 101)
 	assert.Equal(t, storageSlot, leh.GetStorageUpdates()[100])
@@ -294,14 +294,14 @@ func TestUnitLambdaEvmHookStorageSlotIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create storage slots with different key/value combinations
-	storageSlots := []*LambdaStorageSlot{
-		NewLambdaStorageSlot().SetKey([]byte("")).SetValue([]byte("")), // Empty key/value
-		NewLambdaStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1")),
-		NewLambdaStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2")),
-		NewLambdaStorageSlot().SetKey([]byte("very_long_key_123456789")).SetValue([]byte("very_long_value_987654321")),
+	storageSlots := []*EvmHookStorageSlot{
+		NewEvmHookStorageSlot().SetKey([]byte("")).SetValue([]byte("")), // Empty key/value
+		NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1")),
+		NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2")),
+		NewEvmHookStorageSlot().SetKey([]byte("very_long_key_123456789")).SetValue([]byte("very_long_value_987654321")),
 	}
 
-	leh := NewLambdaEvmHook().SetContractId(&contractID)
+	leh := NewEvmHook().SetContractId(&contractID)
 
 	// Add each storage slot
 	for _, slot := range storageSlots {
@@ -323,13 +323,13 @@ func TestUnitLambdaEvmHookNilHandling(t *testing.T) {
 	t.Parallel()
 
 	// Test setting nil contract ID
-	leh := NewLambdaEvmHook()
+	leh := NewEvmHook()
 	leh.SetContractId(nil)
 	assert.Nil(t, leh.GetContractId())
 
 	// Test setting nil storage updates
 	leh.SetStorageUpdates(nil)
-	assert.Equal(t, []LambdaStorageUpdate(nil), leh.GetStorageUpdates())
+	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 	pb := leh.toProtobuf()
 	lambdaEvmHookFromProtobuf(pb)
 
@@ -360,7 +360,7 @@ func TestUnitLambdaEvmHookWithMappingEntries(t *testing.T) {
 		AddMappingEntry(*mappingEntry2).
 		AddMappingEntry(*mappingEntry3)
 
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
 		AddStorageUpdate(mappingEntries)
 
@@ -387,7 +387,7 @@ func TestUnitLambdaEvmHookWithMixedStorageUpdates(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create storage slot
-	storageSlot := NewLambdaStorageSlot().SetKey([]byte("slot_key")).SetValue([]byte("slot_value"))
+	storageSlot := NewEvmHookStorageSlot().SetKey([]byte("slot_key")).SetValue([]byte("slot_value"))
 
 	// Create mapping entries
 	mappingEntry := NewLambdaMappingEntryWithKey([]byte("mapping_key"), []byte("mapping_value"))
@@ -395,7 +395,7 @@ func TestUnitLambdaEvmHookWithMixedStorageUpdates(t *testing.T) {
 		SetMappingSlot([]byte("mapping_slot")).
 		AddMappingEntry(*mappingEntry)
 
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
 		AddStorageUpdate(storageSlot).
 		AddStorageUpdate(mappingEntries)
@@ -424,7 +424,7 @@ func TestUnitLambdaEvmHookWithEmptyMappingEntries(t *testing.T) {
 
 	emptyMappingEntries := NewLambdaMappingEntries().SetMappingSlot([]byte("empty_slot"))
 
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
 		AddStorageUpdate(emptyMappingEntries)
 
@@ -464,7 +464,7 @@ func TestUnitLambdaEvmHookWithComplexMappingEntries(t *testing.T) {
 		mappingEntries.AddMappingEntry(*entry)
 	}
 
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
 		AddStorageUpdate(mappingEntries)
 
@@ -498,7 +498,7 @@ func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
 		AddMappingEntry(*mappingEntry1).
 		AddMappingEntry(*mappingEntry2)
 
-	original := NewLambdaEvmHook().
+	original := NewEvmHook().
 		SetContractId(&contractID).
 		AddStorageUpdate(mappingEntries)
 
@@ -511,7 +511,7 @@ func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
 	assert.Len(t, converted.GetStorageUpdates(), 1)
 
 	// Verify the mapping entries are preserved
-	convertedMappingEntries := converted.GetStorageUpdates()[0].(LambdaMappingEntries)
+	convertedMappingEntries := converted.GetStorageUpdates()[0].(EvmHookMappingEntries)
 	assert.Equal(t, mappingEntries.GetMappingSlot(), convertedMappingEntries.GetMappingSlot())
 	assert.Len(t, convertedMappingEntries.GetMappingEntries(), 2)
 }
@@ -528,7 +528,7 @@ func TestUnitLambdaEvmHookMappingEntriesEdgeCases(t *testing.T) {
 		SetMappingSlot(nil).
 		AddMappingEntry(*mappingEntry)
 
-	leh := NewLambdaEvmHook().
+	leh := NewEvmHook().
 		SetContractId(&contractID).
 		AddStorageUpdate(mappingEntries)
 

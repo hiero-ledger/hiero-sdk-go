@@ -16,7 +16,7 @@ const (
 type HookCreationDetails struct {
 	extensionPoint HookExtensionPoint
 	hookId         int64
-	lambdaEvmHook  LambdaEvmHook
+	lambdaEvmHook  EvmHook
 	adminKey       Key
 }
 
@@ -48,12 +48,12 @@ func (hcd *HookCreationDetails) SetHookId(hookId int64) *HookCreationDetails {
 }
 
 // GetLambdaEvmHook returns the lambda EVM hook
-func (hcd HookCreationDetails) GetLambdaEvmHook() LambdaEvmHook {
+func (hcd HookCreationDetails) GetLambdaEvmHook() EvmHook {
 	return hcd.lambdaEvmHook
 }
 
-// SetLambdaEvmHook sets the lambda EVM hook
-func (hcd *HookCreationDetails) SetLambdaEvmHook(lambdaEvmHook LambdaEvmHook) *HookCreationDetails {
+// SetEvmHook sets the lambda EVM hook
+func (hcd *HookCreationDetails) SetEvmHook(lambdaEvmHook EvmHook) *HookCreationDetails {
 	hcd.lambdaEvmHook = lambdaEvmHook
 	return hcd
 }

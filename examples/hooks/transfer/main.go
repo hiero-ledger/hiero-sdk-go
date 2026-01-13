@@ -208,7 +208,7 @@ func createAccountWithHook(client *hiero.Client, hookContractId *hiero.ContractI
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Generate account private key
 	fmt.Println("Generating account private key...")

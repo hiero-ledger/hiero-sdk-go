@@ -58,7 +58,7 @@ func createAccountWithHook(client *hiero.Client, hookContractId *hiero.ContractI
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Generate account private key
 	fmt.Println("Generating account private key...")
@@ -116,7 +116,7 @@ func addHookToAccount(client *hiero.Client, hookContractId *hiero.ContractID) {
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Create account update transaction to add hook
 	fmt.Println("Adding hook to account via update transaction...")
@@ -146,7 +146,7 @@ func deleteHookFromAccount(client *hiero.Client, hookContractId *hiero.ContractI
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Generate account private key
 	fmt.Println("Generating account private key...")
