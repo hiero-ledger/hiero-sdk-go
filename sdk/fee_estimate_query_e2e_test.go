@@ -5,7 +5,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -14,16 +13,6 @@ import (
 )
 
 const mirrorSyncDelayMillis = 2 * time.Second
-
-func createFeeEstimateTestEnv(t *testing.T) IntegrationTestEnv {
-	env := NewIntegrationTestEnv(t)
-
-	if os.Getenv("HEDERA_NETWORK") == "localhost" {
-		env.Client.SetMirrorNetwork([]string{"127.0.0.1:8084"})
-	}
-
-	return env
-}
 
 func waitForMirrorNodeSync() {
 	time.Sleep(mirrorSyncDelayMillis)
@@ -70,7 +59,7 @@ func assertComponentTotalsConsistent(t *testing.T, response FeeEstimateResponse)
 
 func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTokenCreateTransaction().
@@ -101,7 +90,7 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 
 func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTransferTransaction().
@@ -128,7 +117,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 
 func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTransferTransaction().
@@ -152,7 +141,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.
 
 func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTransferTransaction().
@@ -178,7 +167,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *tes
 
 func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTokenMintTransaction().
@@ -202,7 +191,7 @@ func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
 
 func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTopicCreateTransaction().
@@ -227,7 +216,7 @@ func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
 
 func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewContractCreateTransaction().
@@ -254,7 +243,7 @@ func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
 
 func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewFileCreateTransaction().
@@ -280,7 +269,7 @@ func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
 
 func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewFileAppendTransaction().
@@ -303,7 +292,7 @@ func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *tes
 
 func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTopicMessageSubmitTransaction().
@@ -326,7 +315,7 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) 
 
 func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	transaction, err := NewTopicMessageSubmitTransaction().
@@ -349,7 +338,7 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T
 
 func TestIntegrationFeeEstimateQueryWithoutTransactionThrowsError(t *testing.T) {
 	t.Parallel()
-	env := createFeeEstimateTestEnv(t)
+	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
 	_, err := NewFeeEstimateQuery().

@@ -2,10 +2,6 @@ package hiero
 
 // SPDX-License-Identifier: Apache-2.0
 
-import (
-	"encoding/json"
-)
-
 // FeeEstimateMode represents the mode of fee estimation
 type FeeEstimateMode int32
 
@@ -40,8 +36,8 @@ type FeeExtra struct {
 
 // FeeEstimate represents the fee estimate for a component
 type FeeEstimate struct {
-	Base   uint64     `json:"base"`             // The base fee price, in tinycents
-	Extras []FeeExtra `json:"extras,omitempty"` // The extra fees that apply for this fee component
+	Base   uint64     `json:"base"`             // The base fee price, in tinycents (required)
+	Extras []FeeExtra `json:"extras,omitempty"` // The extra fees that apply for this fee component (optional, can be empty array)
 }
 
 // Subtotal returns the total subtotal for this fee estimate (base + sum of all extras)
@@ -53,7 +49,8 @@ func (fe *FeeEstimate) Subtotal() uint64 {
 	return total
 }
 
-// NetworkFee represents the network fee component
+// NetworkFee represents the network fee component which covers the cost of gossip, consensus,
+// signature verifications, fee payment, and storage.
 type NetworkFee struct {
 	Multiplier uint32 `json:"multiplier"` // Multiplied by the node fee to determine the total network fee
 	Subtotal   uint64 `json:"subtotal"`   // The subtotal in tinycents for the network fee component
@@ -61,12 +58,12 @@ type NetworkFee struct {
 
 // FeeEstimateResponse represents the response containing the estimated transaction fees
 type FeeEstimateResponse struct {
-	Mode       FeeEstimateMode `json:"mode"`            // The mode that was used to calculate the fees
-	NetworkFee NetworkFee      `json:"network"`         // The network fee component
-	NodeFee    FeeEstimate     `json:"node"`            // The node fee component
-	ServiceFee FeeEstimate     `json:"service"`         // The service fee component
-	Notes      []string        `json:"notes,omitempty"` // An array of strings for any caveats
-	Total      uint64          `json:"total"`           // The sum of the network, node, and service subtotals in tinycents
+	Mode       FeeEstimateMode `json:"mode"`    // The mode that was used to calculate the fees
+	NetworkFee NetworkFee      `json:"network"` // The network fee component
+	NodeFee    FeeEstimate     `json:"node"`    // The node fee component which is to be paid to the node that submitted the transaction to the network. This fee exists to compensate the node for the work it performed to pre-check the transaction before submitting it, and incentivizes the node to accept new transactions from users (required)
+	ServiceFee FeeEstimate     `json:"service"` // The service fee component which covers execution costs, state saved in the Merkle tree, and additional costs to the blockchain storage
+	Notes      []string        `json:"notes"`   // An array of strings for any caveats
+	Total      uint64          `json:"total"`   // The sum of the network, node, and service subtotals in tinycents
 }
 
 // feeEstimateModeFromString converts string mode to SDK FeeEstimateMode
@@ -79,35 +76,4 @@ func feeEstimateModeFromString(mode string) FeeEstimateMode {
 	default:
 		return FeeEstimateModeState
 	}
-}
-
-// feeEstimateResponseFromREST converts REST API JSON response to SDK FeeEstimateResponse
-// The mode field comes as a string in JSON, so we need to handle it specially
-func feeEstimateResponseFromREST(data []byte) (FeeEstimateResponse, error) {
-	// Temporary struct to handle mode as string during unmarshaling
-	type tempResponse struct {
-		Mode       string      `json:"mode"`
-		NetworkFee NetworkFee  `json:"network"`
-		NodeFee    FeeEstimate `json:"node"`
-		ServiceFee FeeEstimate `json:"service"`
-		Notes      []string    `json:"notes,omitempty"`
-		Total      uint64      `json:"total"`
-	}
-
-	var temp tempResponse
-	if err := json.Unmarshal(data, &temp); err != nil {
-		return FeeEstimateResponse{}, err
-	}
-
-	notes := make([]string, len(temp.Notes))
-	copy(notes, temp.Notes)
-
-	return FeeEstimateResponse{
-		Mode:       feeEstimateModeFromString(temp.Mode),
-		NetworkFee: temp.NetworkFee,
-		NodeFee:    temp.NodeFee,
-		ServiceFee: temp.ServiceFee,
-		Notes:      notes,
-		Total:      temp.Total,
-	}, nil
 }

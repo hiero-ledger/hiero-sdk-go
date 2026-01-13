@@ -4,11 +4,11 @@ package hiero
 
 import (
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
@@ -143,6 +143,7 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 	aggregatedResponse.ServiceFee.Base = totalServiceSubtotal
 	aggregatedResponse.NetworkFee.Subtotal = totalNodeSubtotal * uint64(aggregatedResponse.NetworkFee.Multiplier)
 	aggregatedResponse.Total = aggregatedResponse.NetworkFee.Subtotal + totalNodeSubtotal + totalServiceSubtotal
+	aggregatedResponse.Mode = q.mode
 
 	return aggregatedResponse, nil
 }
@@ -170,30 +171,22 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get mirror REST API base URL")
 	}
 
+	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
+		mirrorUrl = "http://localhost:8084/api/v1"
+	}
+
 	txBytes, err := protobuf.Marshal(protoTx)
 	if err != nil {
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to marshal transaction")
 	}
 
-	txBase64 := base64.StdEncoding.EncodeToString(txBytes)
-
-	payload := map[string]interface{}{
-		"transaction": txBase64,
-		"mode":        q.mode.String(),
-	}
-
-	jsonPayload, err := json.Marshal(payload)
-	if err != nil {
-		return FeeEstimateResponse{}, errors.Wrap(err, "failed to marshal request payload")
-	}
-
-	url := fmt.Sprintf("%s/network/fees", mirrorUrl)
+	url := fmt.Sprintf("%s/network/fees?mode=%s", mirrorUrl, q.mode.String())
 
 	var lastErr error
 	var resp *http.Response
 
 	for q.attempt < q.maxAttempts {
-		resp, err = http.Post(url, "application/json", bytes.NewBuffer(jsonPayload)) // #nosec
+		resp, err = http.Post(url, "application/protobuf", bytes.NewBuffer(txBytes)) // #nosec
 		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
 			break
 		}
@@ -245,7 +238,15 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to read response body")
 	}
 
-	return feeEstimateResponseFromREST(body)
+	var response FeeEstimateResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return FeeEstimateResponse{}, errors.Wrap(err, "failed to unmarshal response")
+	}
+
+	// Set the mode from the query parameter (API doesn't return it)
+	response.Mode = q.mode
+
+	return response, nil
 }
 
 // shouldRetry determines if an error should be retried

@@ -5,7 +5,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -46,17 +45,14 @@ func newStubMirrorRestServer(t *testing.T) *stubMirrorRestServer {
 		assert.Equal(t, "/api/v1/network/fees", r.URL.Path, "request path should be /api/v1/network/fees")
 
 		contentType := r.Header.Get("Content-Type")
-		assert.Equal(t, "application/json", contentType, "Content-Type should be application/json")
+		assert.Equal(t, "application/protobuf", contentType, "Content-Type should be application/protobuf")
 
 		body, err := io.ReadAll(r.Body)
 		require.NoError(t, err)
 		assert.Greater(t, len(body), 0, "request body should not be empty")
 
-		var payload map[string]interface{}
-		err = json.Unmarshal(body, &payload)
-		require.NoError(t, err)
-		assert.Contains(t, payload, "transaction", "request should contain transaction field")
-		assert.Contains(t, payload, "mode", "request should contain mode field")
+		queryParams := r.URL.Query()
+		assert.Contains(t, queryParams, "mode", "request should contain mode query parameter")
 
 		if len(stub.responses) == 0 {
 			http.Error(w, "no response queued", http.StatusInternalServerError)
@@ -137,11 +133,10 @@ func newSuccessResponse(mode FeeEstimateMode, networkMultiplier int, nodeBase, s
 	networkSubtotal := nodeBase * uint64(networkMultiplier)
 	total := networkSubtotal + nodeBase + serviceBase
 	return fmt.Sprintf(`{
-  "mode": "%s",
   "network": {"multiplier": %d, "subtotal": %d},
   "node": {"base": %d, "extras": []},
   "service": {"base": %d, "extras": []},
   "notes": [],
   "total": %d
-}`, mode.String(), networkMultiplier, networkSubtotal, nodeBase, serviceBase, total)
+}`, networkMultiplier, networkSubtotal, nodeBase, serviceBase, total)
 }

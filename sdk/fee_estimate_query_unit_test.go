@@ -3,6 +3,7 @@
 package hiero
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"testing"
@@ -139,7 +140,6 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	t.Parallel()
 
 	jsonData := `{
-		"mode": "STATE",
 		"network": {
 			"multiplier": 3,
 			"subtotal": 3000
@@ -164,9 +164,9 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 		"total": 4600
 	}`
 
-	response, err := feeEstimateResponseFromREST([]byte(jsonData))
+	var response FeeEstimateResponse
+	err := json.Unmarshal([]byte(jsonData), &response)
 	require.NoError(t, err)
-	require.Equal(t, FeeEstimateModeState, response.Mode)
 	require.Equal(t, uint32(3), response.NetworkFee.Multiplier)
 	require.Equal(t, uint64(3000), response.NetworkFee.Subtotal)
 	require.Equal(t, uint64(1000), response.NodeFee.Base)
@@ -179,7 +179,6 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	require.Equal(t, uint64(4600), response.Total)
 
 	jsonData2 := `{
-		"mode": "INTRINSIC",
 		"network": {
 			"multiplier": 2,
 			"subtotal": 2000
@@ -193,12 +192,14 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 		"total": 2750
 	}`
 
-	response2, err := feeEstimateResponseFromREST([]byte(jsonData2))
+	var response2 FeeEstimateResponse
+	err = json.Unmarshal([]byte(jsonData2), &response2)
 	require.NoError(t, err)
-	require.Equal(t, FeeEstimateModeIntrinsic, response2.Mode)
 	require.Equal(t, uint32(2), response2.NetworkFee.Multiplier)
 	require.Empty(t, response2.Notes)
-	_, err = feeEstimateResponseFromREST([]byte("invalid json"))
+
+	var response3 FeeEstimateResponse
+	err = json.Unmarshal([]byte("invalid json"), &response3)
 	require.Error(t, err)
 }
 
