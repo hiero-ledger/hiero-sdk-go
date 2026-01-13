@@ -65,15 +65,3 @@ type FeeEstimateResponse struct {
 	Notes      []string        `json:"notes"`   // An array of strings for any caveats
 	Total      uint64          `json:"total"`   // The sum of the network, node, and service subtotals in tinycents
 }
-
-// feeEstimateModeFromString converts string mode to SDK FeeEstimateMode
-func feeEstimateModeFromString(mode string) FeeEstimateMode {
-	switch mode {
-	case "STATE":
-		return FeeEstimateModeState
-	case "INTRINSIC":
-		return FeeEstimateModeIntrinsic
-	default:
-		return FeeEstimateModeState
-	}
-}

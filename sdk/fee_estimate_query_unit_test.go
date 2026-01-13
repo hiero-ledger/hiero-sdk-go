@@ -125,15 +125,6 @@ func TestUnitFeeEstimateQueryShouldRetry(t *testing.T) {
 	require.True(t, query.shouldRetry(err, nil))
 }
 
-func TestUnitFeeEstimateModeFromString(t *testing.T) {
-	t.Parallel()
-
-	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString("STATE"))
-	require.Equal(t, FeeEstimateModeIntrinsic, feeEstimateModeFromString("INTRINSIC"))
-	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString("UNKNOWN"))
-	require.Equal(t, FeeEstimateModeState, feeEstimateModeFromString(""))
-}
-
 func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	t.Parallel()
 
