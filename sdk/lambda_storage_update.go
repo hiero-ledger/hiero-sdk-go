@@ -166,16 +166,16 @@ type EvmHookMappingEntry struct {
 	value    []byte
 }
 
-// NewLambdaMappingEntryWithKey creates a new LambdaMappingEntry with key
-func NewLambdaMappingEntryWithKey(key []byte, value []byte) *EvmHookMappingEntry {
+// NewEvmHookMappingEntryWithKey creates a new LambdaMappingEntry with key
+func NewEvmHookMappingEntryWithKey(key []byte, value []byte) *EvmHookMappingEntry {
 	return &EvmHookMappingEntry{
 		key:   key,
 		value: value,
 	}
 }
 
-// NewLambdaMappingEntryWithPreImage creates a new LambdaMappingEntry with preimage
-func NewLambdaMappingEntryWithPreImage(preImage []byte, value []byte) *EvmHookMappingEntry {
+// NewEvmHookMappingEntryWithPreImage creates a new LambdaMappingEntry with preimage
+func NewEvmHookMappingEntryWithPreImage(preImage []byte, value []byte) *EvmHookMappingEntry {
 	return &EvmHookMappingEntry{
 		preImage: preImage,
 		value:    value,

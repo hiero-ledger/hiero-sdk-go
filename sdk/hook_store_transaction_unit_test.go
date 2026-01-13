@@ -137,7 +137,7 @@ func TestUnitLambdaSStoreTransactionAddMappingEntries(t *testing.T) {
 
 	tx := NewHookStoreTransaction()
 
-	mappingEntry := NewLambdaMappingEntryWithKey([]byte{0x01}, []byte{0x02})
+	mappingEntry := NewEvmHookMappingEntryWithKey([]byte{0x01}, []byte{0x02})
 	mappingEntries := NewLambdaMappingEntries().
 		SetMappingSlot([]byte{0x03}).
 		AddMappingEntry(*mappingEntry)
@@ -154,7 +154,7 @@ func TestUnitLambdaSStoreTransactionGetName(t *testing.T) {
 
 	tx := NewHookStoreTransaction()
 
-	assert.Equal(t, "LambdaSStoreTransaction", tx.getName())
+	assert.Equal(t, "HookStoreTransaction", tx.getName())
 }
 
 func TestUnitLambdaSStoreTransactionValidateNetworkOnIDs(t *testing.T) {
@@ -272,7 +272,7 @@ func TestUnitLambdaSStoreTransactionBuildProtoBodyWithMappingEntries(t *testing.
 	entityId := NewHookEntityIdWithContractId(contractID)
 	hookId := NewHookId(*entityId, 456)
 
-	mappingEntry := NewLambdaMappingEntryWithKey([]byte{0x01}, []byte{0x02})
+	mappingEntry := NewEvmHookMappingEntryWithKey([]byte{0x01}, []byte{0x02})
 	mappingEntries := NewLambdaMappingEntries().
 		SetMappingSlot([]byte{0x03}).
 		AddMappingEntry(*mappingEntry)
@@ -339,7 +339,7 @@ func TestUnitLambdaSStoreTransactionBuildScheduled(t *testing.T) {
 
 	assert.Nil(t, scheduled)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot schedule `LambdaSStoreTransaction`")
+	assert.Contains(t, err.Error(), "cannot schedule `HookStoreTransaction`")
 }
 
 func TestUnitLambdaSStoreTransactionConstructScheduleProtobuf(t *testing.T) {
@@ -351,7 +351,7 @@ func TestUnitLambdaSStoreTransactionConstructScheduleProtobuf(t *testing.T) {
 
 	assert.Nil(t, scheduled)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot schedule `LambdaSStoreTransaction`")
+	assert.Contains(t, err.Error(), "cannot schedule `HookStoreTransaction`")
 }
 
 func TestUnitLambdaSStoreTransactionFromProtobuf(t *testing.T) {

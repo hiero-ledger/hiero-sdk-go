@@ -350,9 +350,9 @@ func TestUnitLambdaEvmHookWithMappingEntries(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create mapping entries
-	mappingEntry1 := NewLambdaMappingEntryWithKey([]byte("key1"), []byte("value1"))
-	mappingEntry2 := NewLambdaMappingEntryWithPreImage([]byte("preimage2"), []byte("value2"))
-	mappingEntry3 := NewLambdaMappingEntryWithKey([]byte("key3"), []byte("value3"))
+	mappingEntry1 := NewEvmHookMappingEntryWithKey([]byte("key1"), []byte("value1"))
+	mappingEntry2 := NewEvmHookMappingEntryWithPreImage([]byte("preimage2"), []byte("value2"))
+	mappingEntry3 := NewEvmHookMappingEntryWithKey([]byte("key3"), []byte("value3"))
 
 	mappingEntries := NewLambdaMappingEntries().
 		SetMappingSlot([]byte("mapping_slot_123")).
@@ -390,7 +390,7 @@ func TestUnitLambdaEvmHookWithMixedStorageUpdates(t *testing.T) {
 	storageSlot := NewEvmHookStorageSlot().SetKey([]byte("slot_key")).SetValue([]byte("slot_value"))
 
 	// Create mapping entries
-	mappingEntry := NewLambdaMappingEntryWithKey([]byte("mapping_key"), []byte("mapping_value"))
+	mappingEntry := NewEvmHookMappingEntryWithKey([]byte("mapping_key"), []byte("mapping_value"))
 	mappingEntries := NewLambdaMappingEntries().
 		SetMappingSlot([]byte("mapping_slot")).
 		AddMappingEntry(*mappingEntry)
@@ -454,13 +454,13 @@ func TestUnitLambdaEvmHookWithComplexMappingEntries(t *testing.T) {
 
 	// Add entries with keys
 	for i := 0; i < 5; i++ {
-		entry := NewLambdaMappingEntryWithKey([]byte("key"+string(rune(i))), []byte("value"+string(rune(i))))
+		entry := NewEvmHookMappingEntryWithKey([]byte("key"+string(rune(i))), []byte("value"+string(rune(i))))
 		mappingEntries.AddMappingEntry(*entry)
 	}
 
 	// Add entries with preimages
 	for i := 0; i < 3; i++ {
-		entry := NewLambdaMappingEntryWithPreImage([]byte("preimage"+string(rune(i))), []byte("prevalue"+string(rune(i))))
+		entry := NewEvmHookMappingEntryWithPreImage([]byte("preimage"+string(rune(i))), []byte("prevalue"+string(rune(i))))
 		mappingEntries.AddMappingEntry(*entry)
 	}
 
@@ -490,8 +490,8 @@ func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create mapping entries
-	mappingEntry1 := NewLambdaMappingEntryWithKey([]byte("roundtrip_key1"), []byte("roundtrip_value1"))
-	mappingEntry2 := NewLambdaMappingEntryWithPreImage([]byte("roundtrip_preimage"), []byte("roundtrip_value2"))
+	mappingEntry1 := NewEvmHookMappingEntryWithKey([]byte("roundtrip_key1"), []byte("roundtrip_value1"))
+	mappingEntry2 := NewEvmHookMappingEntryWithPreImage([]byte("roundtrip_preimage"), []byte("roundtrip_value2"))
 
 	mappingEntries := NewLambdaMappingEntries().
 		SetMappingSlot([]byte("roundtrip_slot")).
@@ -523,7 +523,7 @@ func TestUnitLambdaEvmHookMappingEntriesEdgeCases(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test with mapping entries with nil key/value
-	mappingEntry := NewLambdaMappingEntryWithKey(nil, nil)
+	mappingEntry := NewEvmHookMappingEntryWithKey(nil, nil)
 	mappingEntries := NewLambdaMappingEntries().
 		SetMappingSlot(nil).
 		AddMappingEntry(*mappingEntry)
