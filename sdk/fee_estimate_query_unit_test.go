@@ -7,9 +7,7 @@ import (
 	"errors"
 	"net/http"
 	"testing"
-	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -201,86 +199,4 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	var response3 FeeEstimateResponse
 	err = json.Unmarshal([]byte("invalid json"), &response3)
 	require.Error(t, err)
-}
-
-func TestUnitFeeEstimateQueryRetriesOnUnavailableErrors(t *testing.T) {
-	// Note: Not using t.Parallel() because these tests need to bind to port 5551
-	// which is hardcoded for localhost in the mirror node code
-
-	stub := newStubMirrorRestServer(t)
-	defer stub.stop()
-
-	client := newMockClientForREST(stub.getMirrorNetworkAddress())
-	client.SetMaxBackoff(500 * time.Millisecond)
-
-	tx := NewTransferTransaction()
-
-	query := NewFeeEstimateQuery().
-		SetTransaction(tx).
-		SetMaxAttempts(3)
-
-	stub.enqueue(stubResponse{status: 503, body: "transient error"})
-	stub.enqueue(stubResponse{status: 200, body: newSuccessResponse(FeeEstimateModeState, 2, 6, 8)})
-
-	response, err := query.Execute(client)
-	require.NoError(t, err)
-
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
-	assert.Equal(t, uint64(26), response.Total)
-	assert.Equal(t, 2, stub.requestCount())
-	stub.verify(t)
-}
-
-func TestUnitFeeEstimateQueryRetriesOnDeadlineExceededErrors(t *testing.T) {
-	// Note: Not using t.Parallel() because these tests need to bind to port 5551
-	// which is hardcoded for localhost in the mirror node code
-
-	stub := newStubMirrorRestServer(t)
-	defer stub.stop()
-
-	client := newMockClientForREST(stub.getMirrorNetworkAddress())
-	client.SetMaxBackoff(500 * time.Millisecond)
-
-	tx := NewTransferTransaction()
-
-	query := NewFeeEstimateQuery().
-		SetTransaction(tx).
-		SetMaxAttempts(3)
-
-	stub.enqueue(stubResponse{status: 504, body: "gateway timeout"})
-	stub.enqueue(stubResponse{status: 200, body: newSuccessResponse(FeeEstimateModeState, 4, 8, 20)})
-
-	response, err := query.Execute(client)
-	require.NoError(t, err)
-
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
-	assert.Equal(t, uint64(60), response.Total)
-	assert.Equal(t, 2, stub.requestCount())
-	stub.verify(t)
-}
-
-func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
-	// Note: Not using t.Parallel() because these tests need to bind to port 5551
-	// which is hardcoded for localhost in the mirror node code
-
-	stub := newStubMirrorRestServer(t)
-	defer stub.stop()
-
-	client := newMockClientForREST(stub.getMirrorNetworkAddress())
-
-	tx := NewTransferTransaction()
-
-	query := NewFeeEstimateQuery().
-		SetTransaction(tx).
-		SetMode(FeeEstimateModeIntrinsic)
-
-	stub.enqueue(stubResponse{status: 200, body: newSuccessResponse(FeeEstimateModeIntrinsic, 3, 10, 20)})
-
-	response, err := query.Execute(client)
-	require.NoError(t, err)
-
-	assert.Equal(t, FeeEstimateModeIntrinsic, response.Mode)
-	assert.Equal(t, uint64(60), response.Total)
-	assert.Equal(t, 1, stub.requestCount())
-	stub.verify(t)
 }

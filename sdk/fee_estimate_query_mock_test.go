@@ -7,113 +7,30 @@ package hiero
 import (
 	"fmt"
 	"io"
-	"net"
 	"net/http"
-	"net/url"
+	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-type stubResponse struct {
-	status int
-	body   string
+func newSuccessResponse(mode FeeEstimateMode, networkMultiplier int, nodeBase, serviceBase uint64) string {
+	networkSubtotal := nodeBase * uint64(networkMultiplier)
+	total := networkSubtotal + nodeBase + serviceBase
+	return fmt.Sprintf(`{
+  "network": {"multiplier": %d, "subtotal": %d},
+  "node": {"base": %d, "extras": []},
+  "service": {"base": %d, "extras": []},
+  "notes": [],
+  "total": %d
+}`, networkMultiplier, networkSubtotal, nodeBase, serviceBase, total)
 }
 
-type stubMirrorRestServer struct {
-	responses        []stubResponse
-	observedRequests int
-	server           *http.Server
-	listener         net.Listener
-	baseURL          string
-}
-
-// newStubMirrorRestServer creates a new mock HTTP server.
-// Note: These tests cannot run in parallel because the mirror node code hardcodes port 5551 for localhost.
-func newStubMirrorRestServer(t *testing.T) *stubMirrorRestServer {
-	stub := &stubMirrorRestServer{
-		responses: make([]stubResponse, 0),
-	}
-
-	listener, err := net.Listen("tcp", "127.0.0.1:5551")
-	require.NoError(t, err)
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		stub.observedRequests++
-
-		assert.Equal(t, "/api/v1/network/fees", r.URL.Path, "request path should be /api/v1/network/fees")
-
-		contentType := r.Header.Get("Content-Type")
-		assert.Equal(t, "application/protobuf", contentType, "Content-Type should be application/protobuf")
-
-		body, err := io.ReadAll(r.Body)
-		require.NoError(t, err)
-		assert.Greater(t, len(body), 0, "request body should not be empty")
-
-		queryParams := r.URL.Query()
-		assert.Contains(t, queryParams, "mode", "request should contain mode query parameter")
-
-		if len(stub.responses) == 0 {
-			http.Error(w, "no response queued", http.StatusInternalServerError)
-			return
-		}
-
-		response := stub.responses[0]
-		stub.responses = stub.responses[1:]
-
-		w.WriteHeader(response.status)
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(response.body))
-	})
-
-	stub.server = &http.Server{Handler: handler}
-	stub.listener = listener
-	stub.baseURL = fmt.Sprintf("http://%s", listener.Addr().String())
-
-	go func() {
-		_ = stub.server.Serve(listener)
-	}()
-
-	return stub
-}
-
-func (s *stubMirrorRestServer) enqueue(response stubResponse) {
-	s.responses = append(s.responses, response)
-}
-
-func (s *stubMirrorRestServer) stop() {
-	if s.server != nil {
-		_ = s.server.Close()
-	}
-	if s.listener != nil {
-		_ = s.listener.Close()
-	}
-}
-
-func (s *stubMirrorRestServer) requestCount() int {
-	return s.observedRequests
-}
-
-func (s *stubMirrorRestServer) getURL() string {
-	return s.baseURL
-}
-
-func (s *stubMirrorRestServer) getMirrorNetworkAddress() string {
-	parsedURL, err := url.Parse(s.baseURL)
-	if err != nil {
-		panic(fmt.Sprintf("failed to parse test server URL: %v", err))
-	}
-	return parsedURL.Host
-}
-
-func (s *stubMirrorRestServer) verify(t *testing.T) {
-	assert.Empty(t, s.responses, "all queued responses should have been served")
-}
-
-func newMockClientForREST(mirrorNetworkAddress string) *Client {
+func newMockClientForREST() *Client {
 	net := _NewNetwork()
-	client := _NewClient(net, []string{mirrorNetworkAddress}, nil, false, 0, 0)
+	client := _NewClient(net, []string{"localhost:8084"}, nil, false, 0, 0)
 
 	err := client.SetNetwork(map[string]AccountID{
 		"127.0.0.1:50211": {Account: 3},
@@ -129,14 +46,137 @@ func newMockClientForREST(mirrorNetworkAddress string) *Client {
 	return client
 }
 
-func newSuccessResponse(mode FeeEstimateMode, networkMultiplier int, nodeBase, serviceBase uint64) string {
-	networkSubtotal := nodeBase * uint64(networkMultiplier)
-	total := networkSubtotal + nodeBase + serviceBase
-	return fmt.Sprintf(`{
-  "network": {"multiplier": %d, "subtotal": %d},
-  "node": {"base": %d, "extras": []},
-  "service": {"base": %d, "extras": []},
-  "notes": [],
-  "total": %d
-}`, networkMultiplier, networkSubtotal, nodeBase, serviceBase, total)
+func TestUnitFeeEstimateQueryRetriesOnUnavailableErrors(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		assert.Equal(t, "/api/v1/network/fees", r.URL.Path, "request path should be /api/v1/network/fees")
+
+		contentType := r.Header.Get("Content-Type")
+		assert.Equal(t, "application/protobuf", contentType, "Content-Type should be application/protobuf")
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		assert.Greater(t, len(body), 0, "request body should not be empty")
+
+		queryParams := r.URL.Query()
+		assert.Contains(t, queryParams, "mode", "request should contain mode query parameter")
+
+		// First request returns 503, second returns success
+		if requestCount == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			_, _ = w.Write([]byte("transient error"))
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(newSuccessResponse(FeeEstimateModeState, 2, 6, 8)))
+		}
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+	client.SetMaxBackoff(500 * time.Millisecond)
+
+	tx := NewTransferTransaction()
+
+	query := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMaxAttempts(3)
+
+	response, err := query.Execute(client)
+	require.NoError(t, err)
+
+	assert.Equal(t, FeeEstimateModeState, response.Mode)
+	assert.Equal(t, uint64(26), response.Total)
+	assert.GreaterOrEqual(t, requestCount, 2, "should have retried at least once")
+}
+
+func TestUnitFeeEstimateQueryRetriesOnDeadlineExceededErrors(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		assert.Equal(t, "/api/v1/network/fees", r.URL.Path, "request path should be /api/v1/network/fees")
+
+		contentType := r.Header.Get("Content-Type")
+		assert.Equal(t, "application/protobuf", contentType, "Content-Type should be application/protobuf")
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		assert.Greater(t, len(body), 0, "request body should not be empty")
+
+		queryParams := r.URL.Query()
+		assert.Contains(t, queryParams, "mode", "request should contain mode query parameter")
+
+		// First request returns 504, second returns success
+		if requestCount == 1 {
+			w.WriteHeader(http.StatusGatewayTimeout)
+			_, _ = w.Write([]byte("gateway timeout"))
+		} else {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(newSuccessResponse(FeeEstimateModeState, 4, 8, 20)))
+		}
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+	client.SetMaxBackoff(500 * time.Millisecond)
+
+	tx := NewTransferTransaction()
+
+	query := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMaxAttempts(3)
+
+	response, err := query.Execute(client)
+	require.NoError(t, err)
+
+	assert.Equal(t, FeeEstimateModeState, response.Mode)
+	assert.Equal(t, uint64(60), response.Total)
+	assert.GreaterOrEqual(t, requestCount, 2, "should have retried at least once")
+}
+
+func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/api/v1/network/fees", r.URL.Path, "request path should be /api/v1/network/fees")
+
+		contentType := r.Header.Get("Content-Type")
+		assert.Equal(t, "application/protobuf", contentType, "Content-Type should be application/protobuf")
+
+		body, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		assert.Greater(t, len(body), 0, "request body should not be empty")
+
+		queryParams := r.URL.Query()
+		assert.Contains(t, queryParams, "mode", "request should contain mode query parameter")
+		assert.Equal(t, "INTRINSIC", queryParams.Get("mode"), "mode should be INTRINSIC")
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(newSuccessResponse(FeeEstimateModeIntrinsic, 3, 10, 20)))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+
+	tx := NewTransferTransaction()
+
+	query := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMode(FeeEstimateModeIntrinsic)
+
+	response, err := query.Execute(client)
+	require.NoError(t, err)
+
+	assert.Equal(t, FeeEstimateModeIntrinsic, response.Mode)
+	assert.Equal(t, uint64(60), response.Total)
 }

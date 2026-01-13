@@ -171,7 +171,8 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get mirror REST API base URL")
 	}
 
-	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
+	isLocalHost := strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1")
+	if isLocalHost {
 		mirrorUrl = "http://localhost:8084/api/v1"
 	}
 
