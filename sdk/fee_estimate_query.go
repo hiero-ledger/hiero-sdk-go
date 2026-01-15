@@ -108,7 +108,6 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 	}
 
 	var aggregatedResponse FeeEstimateResponse
-	aggregatedResponse.Mode = q.mode
 	aggregatedResponse.NodeFee = FeeEstimate{Base: 0, Extras: []FeeExtra{}}
 	aggregatedResponse.ServiceFee = FeeEstimate{Base: 0, Extras: []FeeExtra{}}
 	aggregatedResponse.NetworkFee = NetworkFee{Multiplier: 0, Subtotal: 0}
@@ -143,7 +142,6 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 	aggregatedResponse.ServiceFee.Base = totalServiceSubtotal
 	aggregatedResponse.NetworkFee.Subtotal = totalNodeSubtotal * uint64(aggregatedResponse.NetworkFee.Multiplier)
 	aggregatedResponse.Total = aggregatedResponse.NetworkFee.Subtotal + totalNodeSubtotal + totalServiceSubtotal
-	aggregatedResponse.Mode = q.mode
 
 	return aggregatedResponse, nil
 }
@@ -243,9 +241,6 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 	if err := json.Unmarshal(body, &response); err != nil {
 		return FeeEstimateResponse{}, errors.Wrap(err, "failed to unmarshal response")
 	}
-
-	// Set the mode from the query parameter (API doesn't return it)
-	response.Mode = q.mode
 
 	return response, nil
 }

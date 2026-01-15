@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func newSuccessResponse(mode FeeEstimateMode, networkMultiplier int, nodeBase, serviceBase uint64) string {
+func newSuccessResponse(networkMultiplier int, nodeBase, serviceBase uint64) string {
 	networkSubtotal := nodeBase * uint64(networkMultiplier)
 	total := networkSubtotal + nodeBase + serviceBase
 	return fmt.Sprintf(`{
@@ -39,7 +39,6 @@ func newMockClientForREST() *Client {
 		// Continue even if SetNetwork fails
 	}
 
-	// Set a dummy operator so transactions can be frozen (required by FreezeWith)
 	dummyKey, _ := PrivateKeyGenerateEd25519()
 	client.SetOperator(AccountID{Account: 1}, dummyKey)
 
@@ -69,7 +68,7 @@ func TestUnitFeeEstimateQueryRetriesOnUnavailableErrors(t *testing.T) {
 		} else {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(newSuccessResponse(FeeEstimateModeState, 2, 6, 8)))
+			_, _ = w.Write([]byte(newSuccessResponse(2, 6, 8)))
 		}
 	}))
 	defer server.Close()
@@ -89,7 +88,6 @@ func TestUnitFeeEstimateQueryRetriesOnUnavailableErrors(t *testing.T) {
 	response, err := query.Execute(client)
 	require.NoError(t, err)
 
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
 	assert.Equal(t, uint64(26), response.Total)
 	assert.GreaterOrEqual(t, requestCount, 2, "should have retried at least once")
 }
@@ -117,7 +115,7 @@ func TestUnitFeeEstimateQueryRetriesOnDeadlineExceededErrors(t *testing.T) {
 		} else {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte(newSuccessResponse(FeeEstimateModeState, 4, 8, 20)))
+			_, _ = w.Write([]byte(newSuccessResponse(4, 8, 20)))
 		}
 	}))
 	defer server.Close()
@@ -137,7 +135,6 @@ func TestUnitFeeEstimateQueryRetriesOnDeadlineExceededErrors(t *testing.T) {
 	response, err := query.Execute(client)
 	require.NoError(t, err)
 
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
 	assert.Equal(t, uint64(60), response.Total)
 	assert.GreaterOrEqual(t, requestCount, 2, "should have retried at least once")
 }
@@ -159,7 +156,7 @@ func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(newSuccessResponse(FeeEstimateModeIntrinsic, 3, 10, 20)))
+		_, _ = w.Write([]byte(newSuccessResponse(3, 10, 20)))
 	}))
 	defer server.Close()
 
@@ -177,6 +174,5 @@ func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
 	response, err := query.Execute(client)
 	require.NoError(t, err)
 
-	assert.Equal(t, FeeEstimateModeIntrinsic, response.Mode)
 	assert.Equal(t, uint64(60), response.Total)
 }

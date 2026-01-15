@@ -84,7 +84,6 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	assertFeeComponentsPresent(t, response)
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
 	assertComponentTotalsConsistent(t, response)
 }
 
@@ -111,7 +110,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 	require.NoError(t, err)
 
 	assertFeeComponentsPresent(t, response)
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
 	assertComponentTotalsConsistent(t, response)
 }
 
@@ -135,7 +133,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.
 	require.NoError(t, err)
 
 	assertFeeComponentsPresent(t, response)
-	assert.Equal(t, FeeEstimateModeIntrinsic, response.Mode)
 	assertComponentTotalsConsistent(t, response)
 }
 
@@ -161,7 +158,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *tes
 	require.NoError(t, err)
 
 	assertFeeComponentsPresent(t, response)
-	assert.Equal(t, FeeEstimateModeState, response.Mode)
 	assertComponentTotalsConsistent(t, response)
 }
 

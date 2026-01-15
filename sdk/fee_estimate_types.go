@@ -58,10 +58,9 @@ type NetworkFee struct {
 
 // FeeEstimateResponse represents the response containing the estimated transaction fees
 type FeeEstimateResponse struct {
-	Mode       FeeEstimateMode `json:"mode"`    // The mode that was used to calculate the fees
-	NetworkFee NetworkFee      `json:"network"` // The network fee component
-	NodeFee    FeeEstimate     `json:"node"`    // The node fee component which is to be paid to the node that submitted the transaction to the network. This fee exists to compensate the node for the work it performed to pre-check the transaction before submitting it, and incentivizes the node to accept new transactions from users (required)
-	ServiceFee FeeEstimate     `json:"service"` // The service fee component which covers execution costs, state saved in the Merkle tree, and additional costs to the blockchain storage
-	Notes      []string        `json:"notes"`   // An array of strings for any caveats
-	Total      uint64          `json:"total"`   // The sum of the network, node, and service subtotals in tinycents
+	NetworkFee NetworkFee  `json:"network"` // The network fee component
+	NodeFee    FeeEstimate `json:"node"`    // The node fee component which is to be paid to the node that submitted the transaction to the network. This fee exists to compensate the node for the work it performed to pre-check the transaction before submitting it, and incentivizes the node to accept new transactions from users (required)
+	ServiceFee FeeEstimate `json:"service"` // The service fee component which covers execution costs, state saved in the Merkle tree, and additional costs to the blockchain storage
+	Notes      []string    `json:"notes"`
+	Total      uint64      `json:"total"` // The sum of the network, node, and service subtotals in tinycents
 }
