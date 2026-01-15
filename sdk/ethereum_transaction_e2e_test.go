@@ -220,6 +220,7 @@ func getCallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contract
 }
 
 func TestIntegrationEthereumEIP7702Transaction(t *testing.T) {
+	t.Skip("Enable when pectra rolls out")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
