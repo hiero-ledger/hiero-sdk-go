@@ -21,7 +21,7 @@ func TestIntegrationTransferHbarWithPreTransactionAllowanceHookSucceeds(t *testi
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
@@ -62,12 +62,12 @@ func TestIntegrationMultipleAccountsHooksMustAllApprove(t *testing.T) {
 	hookDetails1 := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	hookDetails2 := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	// Create two recipient accounts, each with its own hook
 	key1, err := PrivateKeyGenerateEd25519()
@@ -126,7 +126,7 @@ func TestIntegrationTransferFungibleTokenWithPreTransactionAllowanceHookSucceeds
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createFungibleToken(&env)
 	require.NoError(t, err)
@@ -189,7 +189,7 @@ func TestIntegrationTransferNftWithPreTransactionAllowanceHookSucceeds(t *testin
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createNft(&env)
 	require.NoError(t, err)
@@ -259,7 +259,7 @@ func TestIntegrationTransferNftWithReceiverAllowanceHookSucceeds(t *testing.T) {
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createNft(&env)
 	require.NoError(t, err)
@@ -323,7 +323,7 @@ func TestIntegrationTransferNftWithBothSenderAndReceiverHooksSucceeds(t *testing
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createNft(&env)
 	require.NoError(t, err)
@@ -422,7 +422,7 @@ func TestIntegrationTransferWithInvalidGasHook(t *testing.T) {
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
@@ -461,7 +461,7 @@ func TestIntegrationTransferHbarWithPrePostTransactionAllowanceHookSucceeds(t *t
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
@@ -501,7 +501,7 @@ func TestIntegrationTransferFungibleTokenWithPrePostTransactionAllowanceHookSucc
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createFungibleToken(&env)
 	require.NoError(t, err)
@@ -563,7 +563,7 @@ func TestIntegrationTransferNftWithPrePostSenderAllowanceHookSucceeds(t *testing
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createNft(&env)
 	require.NoError(t, err)
@@ -633,7 +633,7 @@ func TestIntegrationTransferNftWithPrePostReceiverAllowanceHookSucceeds(t *testi
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(2).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*NewEvmHook().SetContractId(hookContractId))
 
 	tokenId, err := createNft(&env)
 	require.NoError(t, err)

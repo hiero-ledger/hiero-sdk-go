@@ -873,7 +873,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	_, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
 		tx.SetMaxTransactionFee(NewHbar(10)).AddHook(*hookDetail)
@@ -889,8 +889,8 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndInitialStorageU
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().
-			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
+		SetEvmHook(*NewEvmHook().
+			SetStorageUpdates([]EvmHookStorageUpdate{*NewEvmHookStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
 			SetContractId(&ContractID{Contract: 1}))
 
 	_, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
@@ -907,7 +907,7 @@ func TestIntegrationAccountCreateTransactionCannotExecuteWithHookWithoutContract
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook())
+		SetEvmHook(*NewEvmHook())
 
 	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
@@ -931,7 +931,7 @@ func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
 
 	hookDetail := NewHookCreationDetails().
 		SetHookId(-1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
@@ -956,7 +956,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *tes
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Shard: 0, Realm: 0, Contract: 1})).
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Shard: 0, Realm: 0, Contract: 1})).
 		SetAdminKey(hookAdminKey)
 
 	_, _, err = createAccount(&env, func(tx *AccountCreateTransaction) {
