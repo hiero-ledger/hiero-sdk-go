@@ -10,7 +10,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// EthereumEIP7702Transaction represents the EIP-1559 Ethereum transaction data.
+// AuthorizationTuple represents a single authorization entry: [chainId, contractAddress, nonce, yParity, r, s]
+type AuthorizationTuple [6][]byte
+
+// EthereumEIP7702Transaction represents the EIP-7702 Ethereum transaction data.
 type EthereumEIP7702Transaction struct {
 	ChainId           []byte
 	Nonce             []byte
@@ -21,7 +24,7 @@ type EthereumEIP7702Transaction struct {
 	Value             []byte
 	CallData          []byte
 	AccessList        [][]byte
-	AuthorizationList [][]byte
+	AuthorizationList []AuthorizationTuple
 	RecoveryId        []byte
 	R                 []byte
 	S                 []byte
@@ -30,7 +33,7 @@ type EthereumEIP7702Transaction struct {
 // nolint
 // NewEthereumEIP7702Transaction creates a new EthereumEIP7702Transaction with the provided fields.
 func NewEthereumEIP7702Transaction(
-	chainId, nonce, maxPriorityGas, maxGas, gasLimit, to, value, callData, recoveryId, r, s []byte, accessList [][]byte, authorizationList [][]byte) *EthereumEIP7702Transaction {
+	chainId, nonce, maxPriorityGas, maxGas, gasLimit, to, value, callData, recoveryId, r, s []byte, accessList [][]byte, authorizationList []AuthorizationTuple) *EthereumEIP7702Transaction {
 	return &EthereumEIP7702Transaction{
 		ChainId:           chainId,
 		Nonce:             nonce,
@@ -51,7 +54,7 @@ func NewEthereumEIP7702Transaction(
 // FromBytes decodes the RLP encoded bytes into an EthereumEIP7702Transaction.
 func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transaction, error) {
 	if len(bytes) == 0 || bytes[0] != 0x04 {
-		return nil, errors.New("input byte array is malformed; it should start with 0x02 followed by 12 RLP-encoded elements")
+		return nil, errors.New("input byte array is malformed; it should start with 0x04 followed by 13 RLP-encoded elements")
 	}
 
 	// Remove the prefix byte (0x04)
@@ -60,8 +63,8 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 		return nil, errors.Wrap(err, "failed to read RLP data")
 	}
 
-	if item.itemType != LIST_TYPE || len(item.childItems) != 12 {
-		return nil, errors.New("input byte array is malformed; it should be a list of 12 RLP-encoded elements")
+	if item.itemType != LIST_TYPE || len(item.childItems) != 13 {
+		return nil, errors.New("input byte array is malformed; it should be a list of 13 RLP-encoded elements")
 	}
 
 	// Handle the access list
@@ -70,10 +73,23 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 		accessListValues = append(accessListValues, child.itemValue)
 	}
 
-	// Handle the authorization list
-	var authorizationListValues [][]byte
-	for _, child := range item.childItems[9].childItems {
-		authorizationListValues = append(authorizationListValues, child.itemValue)
+	// Handle the authorization list: array of [chainId, contractAddress, nonce, yParity, r, s] tuples
+	var authorizationListValues []AuthorizationTuple
+	if item.childItems[9].itemType != LIST_TYPE {
+		return nil, errors.New("authorization list must be an array")
+	}
+	for _, authTupleItem := range item.childItems[9].childItems {
+		if authTupleItem.itemType != LIST_TYPE {
+			return nil, errors.New("invalid authorization list entry: must be a list")
+		}
+		if len(authTupleItem.childItems) != 6 {
+			return nil, errors.New("invalid authorization list entry: must be [chainId, contractAddress, nonce, yParity, r, s]")
+		}
+		var tuple AuthorizationTuple
+		for i := 0; i < 6; i++ {
+			tuple[i] = authTupleItem.childItems[i].itemValue
+		}
+		authorizationListValues = append(authorizationListValues, tuple)
 	}
 
 	// Extract values from the RLP item
@@ -86,9 +102,9 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 		item.childItems[5].itemValue,
 		item.childItems[6].itemValue,
 		item.childItems[7].itemValue,
-		item.childItems[9].itemValue,
 		item.childItems[10].itemValue,
 		item.childItems[11].itemValue,
+		item.childItems[12].itemValue,
 		accessListValues,
 		authorizationListValues,
 	), nil
@@ -111,8 +127,13 @@ func (txn *EthereumEIP7702Transaction) ToBytes() ([]byte, error) {
 	}
 	item.PushBack(accessListItem)
 	authorizationListItem := NewRLPItem(LIST_TYPE)
-	for _, itemBytes := range txn.AuthorizationList {
-		authorizationListItem.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(itemBytes))
+	for _, authTuple := range txn.AuthorizationList {
+		// Each authorization entry is a tuple: [chainId, contractAddress, nonce, yParity, r, s]
+		authTupleItem := NewRLPItem(LIST_TYPE)
+		for i := 0; i < 6; i++ {
+			authTupleItem.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(authTuple[i]))
+		}
+		authorizationListItem.PushBack(authTupleItem)
 	}
 	item.PushBack(authorizationListItem)
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.RecoveryId))
@@ -139,10 +160,14 @@ func (txn *EthereumEIP7702Transaction) String() string {
 
 	accessListStr := "[" + strings.Join(encodedAccessList, ", ") + "]"
 
-	// Encode each element in the AuthorizationList slice individually
+	// Encode each authorization tuple in the AuthorizationList
 	var encodedAuthorizationList []string
-	for _, entry := range txn.AuthorizationList {
-		encodedAuthorizationList = append(encodedAuthorizationList, hex.EncodeToString(entry))
+	for _, authTuple := range txn.AuthorizationList {
+		var tupleParts []string
+		for i := 0; i < 6; i++ {
+			tupleParts = append(tupleParts, hex.EncodeToString(authTuple[i]))
+		}
+		encodedAuthorizationList = append(encodedAuthorizationList, "["+strings.Join(tupleParts, ", ")+"]")
 	}
 
 	authorizationListStr := "[" + strings.Join(encodedAuthorizationList, ", ") + "]"
