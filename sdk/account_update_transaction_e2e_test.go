@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -829,4 +830,168 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T)
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.ErrorContains(t, err, "exceptional receipt status: HOOK_NOT_FOUND")
+}
+
+// HIP-1340: EOA Code Delegation
+
+func TestIntegrationAccountUpdateTransactionWithDelegationAddress(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	delegationAddr := "0x2222222222222222222222222222222222222222"
+	delegationAddrBytes, err := hex.DecodeString("2222222222222222222222222222222222222222")
+	require.NoError(t, err)
+
+	tx, err := NewAccountUpdateTransaction().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetDelegationAddress(delegationAddr).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, info.DelegationAddress)
+	assert.Equal(t, delegationAddrBytes, info.DelegationAddress)
+}
+
+func TestIntegrationAccountUpdateTransactionClearDelegationAddressWithZeroBytes(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	// Create account with delegation address
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetDelegationAddress("0x3333333333333333333333333333333333333333").
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	// Verify delegation address is set
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info.DelegationAddress)
+	assert.NotEqual(t, 0, len(info.DelegationAddress))
+
+	// Clear delegation address with zero bytes
+	zeroAddress := "0x0000000000000000000000000000000000000000"
+	tx, err := NewAccountUpdateTransaction().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetDelegationAddress(zeroAddress).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	// Verify delegation address is cleared
+	info, err = NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.True(t, len(info.DelegationAddress) == 0)
+}
+
+func TestIntegrationAccountUpdateTransactionClearDelegationAddressWithNil(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	// Create account with delegation address
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetDelegationAddress("0x4444444444444444444444444444444444444444").
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	// Verify delegation address is set
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.NotNil(t, info.DelegationAddress)
+	assert.NotEqual(t, 0, len(info.DelegationAddress))
+
+	// Clear delegation address with nil
+	tx, err := NewAccountUpdateTransaction().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetDelegationAddress(nil).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(newKey)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	// Verify delegation address is cleared
+	info, err = NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		Execute(env.Client)
+	require.NoError(t, err)
+	assert.True(t, len(info.DelegationAddress) == 0)
 }

@@ -964,3 +964,109 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *tes
 	})
 	require.NoError(t, err)
 }
+
+// HIP-1340: EOA Code Delegation
+
+func TestIntegrationAccountCreateTransactionWithDelegationAddressAsHexString(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	delegationAddr := "0x1111111111111111111111111111111111111111"
+	delegationAddrBytes, err := hex.DecodeString("1111111111111111111111111111111111111111")
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetDelegationAddress(delegationAddr).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, info.DelegationAddress)
+	assert.Equal(t, delegationAddrBytes, info.DelegationAddress)
+}
+
+func TestIntegrationAccountCreateTransactionWithDelegationAddressAsHexStringWithoutPrefix(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	delegationAddr := "2222222222222222222222222222222222222222"
+	delegationAddrBytes, err := hex.DecodeString(delegationAddr)
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetDelegationAddress(delegationAddr).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, info.DelegationAddress)
+	assert.Equal(t, delegationAddrBytes, info.DelegationAddress)
+}
+
+func TestIntegrationAccountCreateTransactionWithDelegationAddressAsBytes(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	delegationAddrBytes := []byte{0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33,
+		0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33}
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetDelegationAddress(delegationAddrBytes).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.NotNil(t, info.DelegationAddress)
+	assert.Equal(t, delegationAddrBytes, info.DelegationAddress)
+}
