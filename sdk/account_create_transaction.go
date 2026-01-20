@@ -32,6 +32,7 @@ type AccountCreateTransaction struct {
 	declineReward                 bool
 	alias                         []byte
 	hookCreationDetails           []HookCreationDetails
+	delegationAddress             []byte
 }
 
 // NewAccountCreateTransaction creates an AccountCreateTransaction transaction which can be used to construct and
@@ -90,6 +91,10 @@ func _AccountCreateTransactionFromProtobuf(tx Transaction[*AccountCreateTransact
 
 	if pb.GetCryptoCreateAccount().GetAlias() != nil {
 		accountCreateTransaction.alias = pb.GetCryptoCreateAccount().GetAlias()
+	}
+
+	if pb.GetCryptoCreateAccount().GetDelegationAddress() != nil {
+		accountCreateTransaction.delegationAddress = pb.GetCryptoCreateAccount().GetDelegationAddress()
 	}
 
 	tx.childTransaction = &accountCreateTransaction
@@ -382,6 +387,53 @@ func (tx AccountCreateTransaction) GetHooks() []HookCreationDetails {
 	return tx.hookCreationDetails
 }
 
+// SetDelegationAddress sets the delegated contract address for the account.
+// If this field is set, a call to the account's address within a smart contract will
+// result in the code of the authorized contract being executed.
+// The address must be exactly 20 bytes. It can be provided as:
+// - A hex string (with or without 0x prefix)
+// - A byte slice (must be exactly 20 bytes)
+// Returns an error if the address format is invalid.
+func (tx *AccountCreateTransaction) SetDelegationAddress(address interface{}) *AccountCreateTransaction {
+	tx._RequireNotFrozen()
+
+	var addressBytes []byte
+	var err error
+
+	switch v := address.(type) {
+	case string:
+		addressBytes, err = decodeEvmAddress(v)
+		if err != nil {
+			tx.freezeError = _NewErrBadKeyf("Invalid delegation address format: %v", err)
+			return tx
+		}
+	case []byte:
+		if len(v) != 20 {
+			tx.freezeError = _NewErrBadKeyf("Delegation address must be exactly 20 bytes, got %d bytes", len(v))
+			return tx
+		}
+		addressBytes = make([]byte, 20)
+		copy(addressBytes, v)
+	default:
+		tx.freezeError = _NewErrBadKeyf("Delegation address must be a string or []byte, got %T", v)
+		return tx
+	}
+
+	tx.delegationAddress = addressBytes
+	return tx
+}
+
+// GetDelegationAddress returns the delegated contract address for the account, if set.
+// Returns nil if no delegation address is set.
+func (tx *AccountCreateTransaction) GetDelegationAddress() []byte {
+	if tx.delegationAddress == nil {
+		return nil
+	}
+	result := make([]byte, len(tx.delegationAddress))
+	copy(result, tx.delegationAddress)
+	return result
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx AccountCreateTransaction) getName() string {
@@ -433,6 +485,7 @@ func (tx AccountCreateTransaction) buildProtoBody() *services.CryptoCreateTransa
 		MaxAutomaticTokenAssociations: tx.maxAutomaticTokenAssociations,
 		DeclineReward:                 tx.declineReward,
 		Alias:                         tx.alias,
+		DelegationAddress:             tx.delegationAddress,
 	}
 
 	if tx.key != nil {

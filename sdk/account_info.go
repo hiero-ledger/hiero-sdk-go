@@ -36,9 +36,10 @@ type AccountInfo struct {
 	// Deprecated
 	NftAllowances []TokenNftAllowance
 	// Deprecated
-	TokenAllowances []TokenAllowance
-	EthereumNonce   int64
-	StakingInfo     *StakingInfo
+	TokenAllowances   []TokenAllowance
+	EthereumNonce     int64
+	StakingInfo       *StakingInfo
+	DelegationAddress []byte
 }
 
 func _AccountInfoFromProtobuf(pb *services.CryptoGetInfoResponse_AccountInfo) (AccountInfo, error) {
@@ -88,6 +89,12 @@ func _AccountInfoFromProtobuf(pb *services.CryptoGetInfoResponse_AccountInfo) (A
 		tokenRelationships = _TokenRelationshipsFromProtobuf(pb.TokenRelationships) // nolint
 	}
 
+	var delegationAddress []byte
+	if pb.GetDelegationAddress() != nil {
+		delegationAddress = make([]byte, len(pb.GetDelegationAddress()))
+		copy(delegationAddress, pb.GetDelegationAddress())
+	}
+
 	return AccountInfo{
 		AccountID:                      accountID,
 		ContractAccountID:              pb.ContractAccountID,
@@ -109,6 +116,7 @@ func _AccountInfoFromProtobuf(pb *services.CryptoGetInfoResponse_AccountInfo) (A
 		LedgerID:                       LedgerID{pb.LedgerId},
 		EthereumNonce:                  pb.EthereumNonce,
 		StakingInfo:                    &stakingInfo,
+		DelegationAddress:              delegationAddress,
 	}, nil
 }
 
@@ -144,6 +152,7 @@ func (info AccountInfo) _ToProtobuf() *services.CryptoGetInfoResponse_AccountInf
 		Alias:                          alias,
 		LedgerId:                       info.LedgerID.ToBytes(),
 		EthereumNonce:                  info.EthereumNonce,
+		DelegationAddress:              info.DelegationAddress,
 	}
 
 	if info.StakingInfo != nil {
