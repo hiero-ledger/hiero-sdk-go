@@ -20,18 +20,18 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
-	initialSlot := NewLambdaStorageSlot().
+	initialSlot := NewEvmHookStorageSlot().
 		SetKey([]byte{0x01}).
 		SetValue([]byte{0x01})
 
-	lambdaHook := NewLambdaEvmHook().
+	lambdaHook := NewEvmHook().
 		SetContractId(hookContractId).
 		AddStorageUpdate(initialSlot)
 
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(3).
-		SetLambdaEvmHook(*lambdaHook).
+		SetEvmHook(*lambdaHook).
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
@@ -49,11 +49,11 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 	entityId := NewHookEntityIdWithAccountId(ownerId)
 	hookId := NewHookId(*entityId, 3)
 
-	update := NewLambdaStorageSlot().
+	update := NewEvmHookStorageSlot().
 		SetKey([]byte{0x01}).
 		SetValue([]byte{0x02})
 
-	frozenTxn, err := NewLambdaSStoreTransaction().
+	frozenTxn, err := NewHookStoreTransaction().
 		SetHookId(*hookId).
 		AddStorageUpdate(update).
 		FreezeWith(env.Client)
@@ -66,7 +66,7 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 
 	newFrozenTxn, err := TransactionFromBytes(toBytes)
 	require.NoError(t, err)
-	lambdaSStoreTxn, ok := newFrozenTxn.(LambdaSStoreTransaction)
+	lambdaSStoreTxn, ok := newFrozenTxn.(HookStoreTransaction)
 	require.True(t, ok)
 	require.NoError(t, err)
 	resp, err = lambdaSStoreTxn.Execute(env.Client)
@@ -87,18 +87,18 @@ func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	initialSlot := NewLambdaStorageSlot().
+	initialSlot := NewEvmHookStorageSlot().
 		SetKey([]byte{0x01}).
 		SetValue([]byte{0x01})
 
-	lambdaHook := NewLambdaEvmHook().
+	lambdaHook := NewEvmHook().
 		SetContractId(hookContractId).
 		AddStorageUpdate(initialSlot)
 
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(3).
-		SetLambdaEvmHook(*lambdaHook).
+		SetEvmHook(*lambdaHook).
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
@@ -116,14 +116,14 @@ func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 	entityId := NewHookEntityIdWithAccountId(ownerId)
 	hookId := NewHookId(*entityId, 3)
 
-	update := NewLambdaStorageSlot().
+	update := NewEvmHookStorageSlot().
 		SetKey([]byte{0x01}).
 		SetValue([]byte{0x02})
 
 	unauthorizedKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	frozenTxn, err := NewLambdaSStoreTransaction().
+	frozenTxn, err := NewHookStoreTransaction().
 		SetHookId(*hookId).
 		AddStorageUpdate(update).
 		FreezeWith(env.Client)
@@ -157,11 +157,11 @@ func TestIntegrationLambdaSStoreFailsWithNonExistentHookId(t *testing.T) {
 	entityId := NewHookEntityIdWithAccountId(signerId)
 	hookId := NewHookId(*entityId, 9999)
 
-	update := NewLambdaStorageSlot().
+	update := NewEvmHookStorageSlot().
 		SetKey([]byte{0x0A}).
 		SetValue([]byte{0x0B})
 
-	frozenTxn, err := NewLambdaSStoreTransaction().
+	frozenTxn, err := NewHookStoreTransaction().
 		SetHookId(*hookId).
 		AddStorageUpdate(update).
 		FreezeWith(env.Client)
@@ -184,13 +184,13 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	lambdaHook := NewLambdaEvmHook().
+	lambdaHook := NewEvmHook().
 		SetContractId(hookContractId)
 
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*lambdaHook).
+		SetEvmHook(*lambdaHook).
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
@@ -208,16 +208,16 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 	entityId := NewHookEntityIdWithAccountId(ownerId)
 	hookId := NewHookId(*entityId, 1)
 
-	slot := NewLambdaStorageSlot().
+	slot := NewEvmHookStorageSlot().
 		SetKey([]byte{0x01, 0x02, 0x03, 0x04}).
 		SetValue([]byte{0x05, 0x06, 0x07, 0x08})
 
-	var updates []LambdaStorageUpdate
+	var updates []EvmHookStorageUpdate
 	for i := 0; i < 256; i++ {
 		updates = append(updates, slot)
 	}
 
-	frozenTxn, err := NewLambdaSStoreTransaction().
+	frozenTxn, err := NewHookStoreTransaction().
 		SetMaxTransactionFee(NewHbar(10)).
 		SetHookId(*hookId).
 		SetStorageUpdates(updates).

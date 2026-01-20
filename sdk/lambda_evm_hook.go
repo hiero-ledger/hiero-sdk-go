@@ -7,50 +7,50 @@ import (
 // SPDX-License-Identifier: Apache-2.0
 
 // Definition of a lambda EVM hook.
-type LambdaEvmHook struct {
+type EvmHook struct {
 	evmHookSpec
-	storageUpdates []LambdaStorageUpdate
+	storageUpdates []EvmHookStorageUpdate
 }
 
-// NewLambdaEvmHook creates a new LambdaEvmHook
-func NewLambdaEvmHook() *LambdaEvmHook {
-	return &LambdaEvmHook{}
+// NewEvmHook creates a new EvmHook
+func NewEvmHook() *EvmHook {
+	return &EvmHook{}
 }
 
 // GetContractId returns the contract ID
-func (leh LambdaEvmHook) GetContractId() *ContractID {
+func (leh EvmHook) GetContractId() *ContractID {
 	return leh.evmHookSpec.contractId
 }
 
 // SetContractId sets the contract ID
-func (leh *LambdaEvmHook) SetContractId(contractId *ContractID) *LambdaEvmHook {
+func (leh *EvmHook) SetContractId(contractId *ContractID) *EvmHook {
 	leh.evmHookSpec.contractId = contractId
 	return leh
 }
 
 // GetStorageUpdates returns the storage updates
-func (leh LambdaEvmHook) GetStorageUpdates() []LambdaStorageUpdate {
+func (leh EvmHook) GetStorageUpdates() []EvmHookStorageUpdate {
 	return leh.storageUpdates
 }
 
 // SetStorageUpdates sets the storage updates
-func (leh *LambdaEvmHook) SetStorageUpdates(storageUpdates []LambdaStorageUpdate) *LambdaEvmHook {
+func (leh *EvmHook) SetStorageUpdates(storageUpdates []EvmHookStorageUpdate) *EvmHook {
 	leh.storageUpdates = storageUpdates
 	return leh
 }
 
 // AddStorageUpdate adds a storage update to the slice
-func (leh *LambdaEvmHook) AddStorageUpdate(storageUpdate LambdaStorageUpdate) *LambdaEvmHook {
+func (leh *EvmHook) AddStorageUpdate(storageUpdate EvmHookStorageUpdate) *EvmHook {
 	leh.storageUpdates = append(leh.storageUpdates, storageUpdate)
 	return leh
 }
 
-func lambdaEvmHookFromProtobuf(pb *services.LambdaEvmHook) LambdaEvmHook {
-	body := LambdaEvmHook{
+func lambdaEvmHookFromProtobuf(pb *services.LambdaEvmHook) EvmHook {
+	body := EvmHook{
 		evmHookSpec: evmHookSpecFromProtobuf(pb.GetSpec()),
 	}
 
-	var storageUpdates []LambdaStorageUpdate
+	var storageUpdates []EvmHookStorageUpdate
 	for _, storageUpdate := range pb.GetStorageUpdates() {
 		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
 	}
@@ -58,7 +58,7 @@ func lambdaEvmHookFromProtobuf(pb *services.LambdaEvmHook) LambdaEvmHook {
 	return body
 }
 
-func (leh LambdaEvmHook) toProtobuf() *services.LambdaEvmHook {
+func (leh EvmHook) toProtobuf() *services.LambdaEvmHook {
 	protoBody := &services.LambdaEvmHook{
 		Spec: leh.evmHookSpec.toProtobuf(),
 	}

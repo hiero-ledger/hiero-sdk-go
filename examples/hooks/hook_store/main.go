@@ -8,7 +8,7 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
-// HIP-1195 example for LambdaSStoreTransaction
+// HIP-1195 example for HookStoreTransaction
 func main() {
 	var client *hiero.Client
 	var err error
@@ -44,8 +44,8 @@ func main() {
 	fmt.Printf("Account created: %v\n", accountId)
 	fmt.Printf("Account private key: %v\n", accountPrivateKey.String())
 
-	fmt.Println("Updating lambda storage")
-	updateLambdaStorage(client, accountId, accountPrivateKey)
+	fmt.Println("Updating hook storage")
+	updateHookStorage(client, accountId, accountPrivateKey)
 
 	fmt.Println("Example completed")
 }
@@ -57,7 +57,7 @@ func createAccountWithHook(client *hiero.Client, hookContractId *hiero.ContractI
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Generate account private key
 	fmt.Println("Generating account private key...")
@@ -85,8 +85,8 @@ func createAccountWithHook(client *hiero.Client, hookContractId *hiero.ContractI
 	return receipt.AccountID, accountPrivateKey
 }
 
-func updateLambdaStorage(client *hiero.Client, accountId *hiero.AccountID, accountPrivateKey hiero.PrivateKey) {
-	fmt.Println("Updating lambda storage...")
+func updateHookStorage(client *hiero.Client, accountId *hiero.AccountID, accountPrivateKey hiero.PrivateKey) {
+	fmt.Println("Updating hook storage...")
 
 	// Create hook entity ID and hook ID
 	fmt.Println("Creating hook entity ID and hook ID...")
@@ -95,31 +95,31 @@ func updateLambdaStorage(client *hiero.Client, accountId *hiero.AccountID, accou
 
 	// Create storage slot update
 	fmt.Println("Creating storage slot update...")
-	storageSlot := hiero.NewLambdaStorageSlot().
+	storageSlot := hiero.NewEvmHookStorageSlot().
 		SetKey([]byte{0x01, 0x02}).
 		SetValue([]byte{0x03, 0x04})
 
-	// Create LambdaSStore transaction
-	fmt.Println("Creating and freezing LambdaSStore transaction...")
-	frozenTxn, err := hiero.NewLambdaSStoreTransaction().
+	// Create HookStore transaction
+	fmt.Println("Creating and freezing HookStore transaction...")
+	frozenTxn, err := hiero.NewHookStoreTransaction().
 		SetHookId(*hookId).
 		AddStorageUpdate(storageSlot).
 		SetMaxTransactionFee(hiero.NewHbar(5)).
 		FreezeWith(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error freezing LambdaSStore transaction", err))
+		panic(fmt.Sprintf("%v : error freezing HookStore transaction", err))
 	}
 
-	fmt.Println("Signing and executing LambdaSStore transaction...")
+	fmt.Println("Signing and executing HookStore transaction...")
 	response, err := frozenTxn.Sign(accountPrivateKey).Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing LambdaSStore transaction", err))
+		panic(fmt.Sprintf("%v : error executing HookStore transaction", err))
 	}
 
 	receipt, err := response.SetValidateStatus(true).GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error getting LambdaSStore transaction receipt", err))
+		panic(fmt.Sprintf("%v : error getting HookStore transaction receipt", err))
 	}
 
-	fmt.Printf("Lambda storage updated successfully! Status: %v\n", receipt.Status)
+	fmt.Printf("Hook storage updated successfully! Status: %v\n", receipt.Status)
 }

@@ -102,7 +102,7 @@ jobs:
               with:
                 installMirrorNode: true
                 hieroVersion: v0.69.0-alpha.1
-                mirrorNodeVersion: v0.142.0
+                mirrorNodeVersion: v0.146.0
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
@@ -174,7 +174,7 @@ jobs:
               with:
                 installMirrorNode: true
                 hieroVersion: v0.69.0-alpha.1
-                mirrorNodeVersion: v0.142.0
+                mirrorNodeVersion: v0.146.0
                 dualMode: true
 
             - name: Set Operator Account
@@ -236,7 +236,7 @@ jobs:
               with:
                 installMirrorNode: true
                 hieroVersion: v0.69.0-alpha.1
-                mirrorNodeVersion: v0.142.0
+                mirrorNodeVersion: v0.146.0
 
             - name: Set Operator Account
               run: |

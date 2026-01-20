@@ -228,7 +228,7 @@ func TestIntegrationContractUpdateTransactionAddHook(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -274,7 +274,7 @@ func TestIntegrationContractUpdateTransactionAddDuplicateHook(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -305,7 +305,7 @@ func TestIntegrationContractUpdateTransactionAddExisingHook(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -366,8 +366,8 @@ func TestIntegrationContractUpdateTransactionUpdateAddHookWithInitialStorageUpda
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().
-			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
+		SetEvmHook(*NewEvmHook().
+			SetStorageUpdates([]EvmHookStorageUpdate{*NewEvmHookStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
 			SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
@@ -401,7 +401,7 @@ func TestIntegrationContractUpdateTransactionCannotAddHookThatIsInUse(t *testing
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -449,7 +449,7 @@ func TestIntegrationContractUpdateTransactionCanAddHookToDelete(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -497,7 +497,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteNonExistantHook(t *testi
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -559,7 +559,7 @@ func TestIntegrationContractUpdateTransactionCanotAddAndAddHookToDeleteAtTheSame
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractUpdateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -593,7 +593,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteDeletedHook(t *testing.T
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).

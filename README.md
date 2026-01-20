@@ -23,6 +23,9 @@ $ go get github.com/hiero-ledger/hiero-sdk-go/v2@latest
 
 # Integration
 
+Integration tests require a running Hiero network. You can use [Solo](https://solo.hiero.org) to spin up a local development network.
+Solo is a CLI tool for running a local Hiero network for development and testing. For setup instructions, see the [Solo documentation](https://solo.hiero.org) or the [solo repository](https://github.com/hiero-ledger/solo).
+
 ```bash
 $ env CONFIG_FILE="<your_config_file>" go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
