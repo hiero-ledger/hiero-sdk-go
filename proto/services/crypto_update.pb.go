@@ -155,8 +155,13 @@ type CryptoUpdateTransactionBody struct {
 	// *
 	// The hooks to create for the account.
 	HookCreationDetails []*HookCreationDetails `protobuf:"bytes,20,rep,name=hook_creation_details,json=hookCreationDetails,proto3" json:"hook_creation_details,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// *
+	// The delegated contract address for the account.
+	// If this field is set, a call to the account's address within a smart contract will
+	// result in the code of the authorized contract being executed.
+	DelegationAddress []byte `protobuf:"bytes,21,opt,name=delegation_address,json=delegationAddress,proto3" json:"delegation_address,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CryptoUpdateTransactionBody) Reset() {
@@ -373,6 +378,13 @@ func (x *CryptoUpdateTransactionBody) GetHookCreationDetails() []*HookCreationDe
 	return nil
 }
 
+func (x *CryptoUpdateTransactionBody) GetDelegationAddress() []byte {
+	if x != nil {
+		return x.DelegationAddress
+	}
+	return nil
+}
+
 type isCryptoUpdateTransactionBody_SendRecordThresholdField interface {
 	isCryptoUpdateTransactionBody_SendRecordThresholdField()
 }
@@ -502,8 +514,7 @@ var File_crypto_update_proto protoreflect.FileDescriptor
 
 const file_crypto_update_proto_rawDesc = "" +
 	"\n" +
-	"\x13crypto_update.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x0eduration.proto\x1a\x10hook_types.proto\x1a\x0ftimestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xeb\n" +
-	"\n" +
+	"\x13crypto_update.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x0eduration.proto\x1a\x10hook_types.proto\x1a\x0ftimestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\x9a\v\n" +
 	"\x1bCryptoUpdateTransactionBody\x12>\n" +
 	"\x11accountIDToUpdate\x18\x02 \x01(\v2\x10.proto.AccountIDR\x11accountIDToUpdate\x12\x1c\n" +
 	"\x03key\x18\x03 \x01(\v2\n" +
@@ -525,7 +536,8 @@ const file_crypto_update_proto_rawDesc = "" +
 	"\x0estaked_node_id\x18\x11 \x01(\x03H\x03R\fstakedNodeId\x12A\n" +
 	"\x0edecline_reward\x18\x12 \x01(\v2\x1a.google.protobuf.BoolValueR\rdeclineReward\x12+\n" +
 	"\x12hook_ids_to_delete\x18\x13 \x03(\x03R\x0fhookIdsToDelete\x12c\n" +
-	"\x15hook_creation_details\x18\x14 \x03(\v2/.com.hedera.hapi.node.hooks.HookCreationDetailsR\x13hookCreationDetailsB\x1a\n" +
+	"\x15hook_creation_details\x18\x14 \x03(\v2/.com.hedera.hapi.node.hooks.HookCreationDetailsR\x13hookCreationDetails\x12-\n" +
+	"\x12delegation_address\x18\x15 \x01(\fR\x11delegationAddressB\x1a\n" +
 	"\x18sendRecordThresholdFieldB\x1d\n" +
 	"\x1breceiveRecordThresholdFieldB\x1a\n" +
 	"\x18receiverSigRequiredFieldB\v\n" +

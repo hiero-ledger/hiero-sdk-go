@@ -1254,6 +1254,14 @@ const (
 	// Node accounts require a positive balance. The transaction may be
 	// resubmitted once the account has been funded.
 	ResponseCodeEnum_NODE_ACCOUNT_HAS_ZERO_BALANCE ResponseCodeEnum = 526
+	// *
+	// This operation cannot be completed because the target
+	// account is a "Fee Collection Account".<br/>
+	// Any attempt to transfer to a fee collection account is not permitted.
+	ResponseCodeEnum_TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED ResponseCodeEnum = 527
+	// *
+	// The number of hook invocations exceeds the maximum allowed per transaction.
+	ResponseCodeEnum_TOO_MANY_HOOK_INVOCATIONS ResponseCodeEnum = 528
 )
 
 // Enum value maps for ResponseCodeEnum.
@@ -1647,6 +1655,8 @@ var (
 		524: "ACCOUNT_IS_LINKED_TO_A_NODE",
 		525: "HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER",
 		526: "NODE_ACCOUNT_HAS_ZERO_BALANCE",
+		527: "TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED",
+		528: "TOO_MANY_HOOK_INVOCATIONS",
 	}
 	ResponseCodeEnum_value = map[string]int32{
 		"OK":                                                             0,
@@ -2037,6 +2047,8 @@ var (
 		"ACCOUNT_IS_LINKED_TO_A_NODE":                                    524,
 		"HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER":             525,
 		"NODE_ACCOUNT_HAS_ZERO_BALANCE":                                  526,
+		"TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED":                 527,
+		"TOO_MANY_HOOK_INVOCATIONS":                                      528,
 	}
 )
 
@@ -2071,7 +2083,7 @@ var File_response_code_proto protoreflect.FileDescriptor
 
 const file_response_code_proto_rawDesc = "" +
 	"\n" +
-	"\x13response_code.proto\x12\x05proto*\x9ef\n" +
+	"\x13response_code.proto\x12\x05proto*\xf3f\n" +
 	"\x10ResponseCodeEnum\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x17\n" +
 	"\x13INVALID_TRANSACTION\x10\x01\x12\x1b\n" +
@@ -2461,7 +2473,9 @@ const file_response_code_proto_rawDesc = "" +
 	"#HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS\x10\x8b\x04\x12 \n" +
 	"\x1bACCOUNT_IS_LINKED_TO_A_NODE\x10\x8c\x04\x127\n" +
 	"2HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER\x10\x8d\x04\x12\"\n" +
-	"\x1dNODE_ACCOUNT_HAS_ZERO_BALANCE\x10\x8e\x04B&\n" +
+	"\x1dNODE_ACCOUNT_HAS_ZERO_BALANCE\x10\x8e\x04\x123\n" +
+	".TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED\x10\x8f\x04\x12\x1e\n" +
+	"\x19TOO_MANY_HOOK_INVOCATIONS\x10\x90\x04B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

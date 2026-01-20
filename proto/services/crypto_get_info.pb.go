@@ -334,9 +334,12 @@ type CryptoGetInfoResponse_AccountInfo struct {
 	EthereumNonce int64 `protobuf:"varint,21,opt,name=ethereum_nonce,json=ethereumNonce,proto3" json:"ethereum_nonce,omitempty"`
 	// *
 	// Staking information for this account.
-	StakingInfo   *StakingInfo `protobuf:"bytes,22,opt,name=staking_info,json=stakingInfo,proto3" json:"staking_info,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	StakingInfo *StakingInfo `protobuf:"bytes,22,opt,name=staking_info,json=stakingInfo,proto3" json:"staking_info,omitempty"`
+	// *
+	// Delegation address if a EIP-7702 code delegation is set for the account.
+	DelegationAddress []byte `protobuf:"bytes,23,opt,name=delegation_address,json=delegationAddress,proto3" json:"delegation_address,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CryptoGetInfoResponse_AccountInfo) Reset() {
@@ -521,6 +524,13 @@ func (x *CryptoGetInfoResponse_AccountInfo) GetStakingInfo() *StakingInfo {
 	return nil
 }
 
+func (x *CryptoGetInfoResponse_AccountInfo) GetDelegationAddress() []byte {
+	if x != nil {
+		return x.DelegationAddress
+	}
+	return nil
+}
+
 var File_crypto_get_info_proto protoreflect.FileDescriptor
 
 const file_crypto_get_info_proto_rawDesc = "" +
@@ -528,10 +538,10 @@ const file_crypto_get_info_proto_rawDesc = "" +
 	"\x15crypto_get_info.proto\x12\x05proto\x1a\x0ftimestamp.proto\x1a\x0eduration.proto\x1a\x11basic_types.proto\x1a\x12query_header.proto\x1a\x15response_header.proto\x1a\x1acrypto_add_live_hash.proto\"p\n" +
 	"\x12CryptoGetInfoQuery\x12*\n" +
 	"\x06header\x18\x01 \x01(\v2\x12.proto.QueryHeaderR\x06header\x12.\n" +
-	"\taccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\taccountID\"\x84\t\n" +
+	"\taccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\taccountID\"\xb3\t\n" +
 	"\x15CryptoGetInfoResponse\x12-\n" +
 	"\x06header\x18\x01 \x01(\v2\x15.proto.ResponseHeaderR\x06header\x12J\n" +
-	"\vaccountInfo\x18\x02 \x01(\v2(.proto.CryptoGetInfoResponse.AccountInfoR\vaccountInfo\x1a\xef\a\n" +
+	"\vaccountInfo\x18\x02 \x01(\v2(.proto.CryptoGetInfoResponse.AccountInfoR\vaccountInfo\x1a\x9e\b\n" +
 	"\vAccountInfo\x12.\n" +
 	"\taccountID\x18\x01 \x01(\v2\x10.proto.AccountIDR\taccountID\x12,\n" +
 	"\x11contractAccountID\x18\x02 \x01(\tR\x11contractAccountID\x12\x18\n" +
@@ -557,7 +567,8 @@ const file_crypto_get_info_proto_rawDesc = "" +
 	"\x05alias\x18\x13 \x01(\fR\x05alias\x12\x1b\n" +
 	"\tledger_id\x18\x14 \x01(\fR\bledgerId\x12%\n" +
 	"\x0eethereum_nonce\x18\x15 \x01(\x03R\rethereumNonce\x125\n" +
-	"\fstaking_info\x18\x16 \x01(\v2\x12.proto.StakingInfoR\vstakingInfoJ\x04\b\x05\x10\x06B&\n" +
+	"\fstaking_info\x18\x16 \x01(\v2\x12.proto.StakingInfoR\vstakingInfo\x12-\n" +
+	"\x12delegation_address\x18\x17 \x01(\fR\x11delegationAddressJ\x04\b\x05\x10\x06B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (
