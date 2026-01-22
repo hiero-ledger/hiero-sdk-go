@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/hex"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -533,4 +534,43 @@ func TestIntegrationAccountInfoQueryTokenRelationshipsLength(t *testing.T) {
 
 	assert.Equal(t, accountID, info.AccountID)
 	assert.Equal(t, 0, len(info.TokenRelationships))
+}
+
+// HIP-1340: EOA Code Delegation
+
+func TestIntegrationAccountInfoQueryWithDelegationAddress(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	delegationAddr := "0x5555555555555555555555555555555555555555"
+	delegationAddrBytes, err := hex.DecodeString("5555555555555555555555555555555555555555")
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetInitialBalance(NewHbar(2)).
+		SetDelegationAddress(delegationAddr).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	accountID := *receipt.AccountID
+
+	info, err := NewAccountInfoQuery().
+		SetAccountID(accountID).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetMaxQueryPayment(NewHbar(1)).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assert.Equal(t, accountID, info.AccountID)
+	assert.NotNil(t, info.DelegationAddress)
+	assert.Equal(t, delegationAddrBytes, info.DelegationAddress)
 }

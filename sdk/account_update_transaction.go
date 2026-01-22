@@ -32,6 +32,7 @@ type AccountUpdateTransaction struct {
 	declineReward                 *bool
 	hookCreationDetails           []HookCreationDetails
 	hooksForDeletion              []int64
+	delegationAddress             *[]byte
 }
 
 // NewAccountUpdateTransaction
@@ -113,6 +114,12 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 		}
 	}
 
+	var delegationAddress *[]byte
+	if pb.GetCryptoUpdateAccount().GetDelegationAddress() != nil {
+		addrBytes := pb.GetCryptoUpdateAccount().GetDelegationAddress()
+		delegationAddress = &addrBytes
+	}
+
 	accountUpdateTransaction := AccountUpdateTransaction{
 		accountID:                     _AccountIDFromProtobuf(pb.GetCryptoUpdateAccount().GetAccountIDToUpdate()),
 		key:                           key,
@@ -126,6 +133,7 @@ func _AccountUpdateTransactionFromProtobuf(tx Transaction[*AccountUpdateTransact
 		declineReward:                 declineReward,
 		hookCreationDetails:           hookCreationDetails,
 		hooksForDeletion:              pb.GetCryptoUpdateAccount().GetHookIdsToDelete(),
+		delegationAddress:             delegationAddress,
 	}
 
 	tx.childTransaction = &accountUpdateTransaction
@@ -361,6 +369,85 @@ func (tx AccountUpdateTransaction) GetHooksToDelete() []int64 {
 	return tx.hooksForDeletion
 }
 
+// SetDelegationAddress sets the delegated contract address for the account.
+// If this field is set, a call to the account's address within a smart contract will
+// result in the code of the authorized contract being executed.
+// The address must be exactly 20 bytes. It can be provided as:
+// - A hex string (with or without 0x prefix)
+// - A byte slice (must be exactly 20 bytes)
+// - nil to clear any existing delegation
+// Setting to 20 zero-bytes also clears any existing delegation.
+// Returns an error if the address format is invalid.
+func (tx *AccountUpdateTransaction) SetDelegationAddress(address interface{}) *AccountUpdateTransaction {
+	tx._RequireNotFrozen()
+
+	// Handle nil to clear delegation
+	if address == nil {
+		tx.delegationAddress = nil
+		return tx
+	}
+
+	var addressBytes []byte
+	var err error
+
+	switch v := address.(type) {
+	case string:
+		addressBytes, err = decodeEvmAddress(v)
+		if err != nil {
+			tx.freezeError = _NewErrBadKeyf("Invalid delegation address format: %v", err)
+			return tx
+		}
+		// Check if it's zero address (clears delegation)
+		isZero := true
+		for _, b := range addressBytes {
+			if b != 0 {
+				isZero = false
+				break
+			}
+		}
+		if isZero {
+			tx.delegationAddress = nil
+			return tx
+		}
+	case []byte:
+		if len(v) != 20 {
+			tx.freezeError = _NewErrBadKeyf("Delegation address must be exactly 20 bytes, got %d bytes", len(v))
+			return tx
+		}
+		// Check if it's zero address (clears delegation)
+		isZero := true
+		for _, b := range v {
+			if b != 0 {
+				isZero = false
+				break
+			}
+		}
+		if isZero {
+			tx.delegationAddress = nil
+			return tx
+		}
+		addressBytes = make([]byte, 20)
+		copy(addressBytes, v)
+	default:
+		tx.freezeError = _NewErrBadKeyf("Delegation address must be a string, []byte, or nil, got %T", v)
+		return tx
+	}
+
+	tx.delegationAddress = &addressBytes
+	return tx
+}
+
+// GetDelegationAddress returns the delegated contract address for the account, if set.
+// Returns nil if no delegation address is set.
+func (tx *AccountUpdateTransaction) GetDelegationAddress() []byte {
+	if tx.delegationAddress == nil {
+		return nil
+	}
+	result := make([]byte, len(*tx.delegationAddress))
+	copy(result, *tx.delegationAddress)
+	return result
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx AccountUpdateTransaction) getName() string {
@@ -457,6 +544,13 @@ func (tx AccountUpdateTransaction) buildProtoBody() *services.CryptoUpdateTransa
 	}
 
 	body.HookIdsToDelete = tx.hooksForDeletion
+
+	if tx.delegationAddress != nil {
+		body.DelegationAddress = *tx.delegationAddress
+	} else {
+		// Setting to empty slice clears the delegation (protobuf will treat empty as clearing)
+		body.DelegationAddress = []byte{}
+	}
 
 	return body
 }
