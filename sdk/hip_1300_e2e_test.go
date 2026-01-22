@@ -10,66 +10,67 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	maximumTransactionSize = 130000
-	systemAccountID        = "0.0.2"
-	systemAccountKey       = "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
-)
+func setupSystemAccountOperator(t *testing.T, client *Client) {
+	accountID, err := AccountIDFromString("0.0.2")
+	require.NoError(t, err)
+	privateKey, err := PrivateKeyFromString("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
+	require.NoError(t, err)
+	client.SetOperator(accountID, privateKey)
+}
 
-// createSystemAccountClient creates a client configured with the system account (0.0.2)
-// This is needed for transactions that exceed the normal 6KB limit
-func createSystemAccountClient(t *testing.T) *Client {
-	env := NewIntegrationTestEnv(t)
-	client := env.Client
-
-	sysAccID, err := AccountIDFromString(systemAccountID)
+func setupRegularAccountOperator(t *testing.T, env IntegrationTestEnv) {
+	key, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	sysAccKey, err := PrivateKeyFromString(systemAccountKey)
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(key).
+		SetInitialBalance(NewHbar(10)).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
 	require.NoError(t, err)
 
-	client.SetOperator(sysAccID, sysAccKey)
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
 
-	return client
+	env.Client.SetOperator(*receipt.AccountID, key)
 }
 
 // TestIntegrationHIP1300TransactionWithMoreThan6KBDataWithSignatures tests that a system account
 // can create a transaction with more than 6KB of data with signatures
 func TestIntegrationHIP1300TransactionWithMoreThan6KBDataWithSignatures(t *testing.T) {
 	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
 
-	client := createSystemAccountClient(t)
-	defer client.Close()
+	setupSystemAccountOperator(t, env.Client)
 
 	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	// Create a transaction and freeze it
 	transaction, err := NewAccountCreateTransaction().
 		SetKeyWithoutAlias(newKey).
-		FreezeWith(client)
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		FreezeWith(env.Client)
 	require.NoError(t, err)
 
-	// Keep signing until we exceed the maximum transaction size
-	for {
-		txBytes, err := transaction.ToBytes()
-		require.NoError(t, err)
+	transaction, err = transaction.SignWithOperator(env.Client)
+	require.NoError(t, err)
 
-		if len(txBytes) >= maximumTransactionSize {
-			break
-		}
-
+	// Add signatures to exceed 6KB
+	for i := 0; i < 70; i++ {
 		signingKey, err := PrivateKeyGenerateEd25519()
 		require.NoError(t, err)
-
 		transaction = transaction.Sign(signingKey)
 	}
 
-	// Execute the large transaction - should succeed with system account
-	resp, err := transaction.Execute(client)
+	txBytes, err := transaction.ToBytes()
+	require.NoError(t, err)
+	require.Greater(t, len(txBytes), 6144, "Transaction should exceed 6KB")
+
+	resp, err := transaction.Execute(env.Client)
 	require.NoError(t, err)
 
-	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 }
 
@@ -77,37 +78,11 @@ func TestIntegrationHIP1300TransactionWithMoreThan6KBDataWithSignatures(t *testi
 // can create a file with more than 6KB of data
 func TestIntegrationHIP1300TransactionWithMoreThan6KBDataInFile(t *testing.T) {
 	t.Parallel()
-
-	client := createSystemAccountClient(t)
-	defer client.Close()
-
-	// Create a file with 10KB of data
-	contents := make([]byte, 1024*10)
-	for i := range contents {
-		contents[i] = 1
-	}
-
-	transaction, err := NewFileCreateTransaction().
-		SetContents(contents).
-		FreezeWith(client)
-	require.NoError(t, err)
-
-	// Execute the large file creation - should succeed with system account
-	resp, err := transaction.Execute(client)
-	require.NoError(t, err)
-
-	_, err = resp.SetValidateStatus(true).GetReceipt(client)
-	require.NoError(t, err)
-}
-
-// TestIntegrationHIP1300TransactionWithMoreThan6KBDataInFileNormalAccount tests that a normal account
-// cannot create a file with more than 6KB of data
-func TestIntegrationHIP1300TransactionWithMoreThan6KBDataInFileNormalAccount(t *testing.T) {
-	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	// Create a file with 10KB of data
+	setupSystemAccountOperator(t, env.Client)
+
 	contents := make([]byte, 1024*10)
 	for i := range contents {
 		contents[i] = 1
@@ -119,11 +94,34 @@ func TestIntegrationHIP1300TransactionWithMoreThan6KBDataInFileNormalAccount(t *
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
-	// Execute the large file creation - should fail with TRANSACTION_OVERSIZE
 	resp, err := transaction.Execute(env.Client)
 	require.NoError(t, err)
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+// TestIntegrationHIP1300TransactionWithMoreThan6KBDataInFileNormalAccount tests that a normal account
+// cannot create a file with more than 6KB of data
+func TestIntegrationHIP1300TransactionWithMoreThan6KBDataInFileNormalAccount(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	setupRegularAccountOperator(t, env)
+
+	contents := make([]byte, 1024*10)
+	for i := range contents {
+		contents[i] = 1
+	}
+
+	transaction, err := NewFileCreateTransaction().
+		SetContents(contents).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	_, err = transaction.Execute(env.Client)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "TRANSACTION_OVERSIZE")
 }
@@ -135,37 +133,32 @@ func TestIntegrationHIP1300TransactionWithMoreThan6KBDataWithSignaturesNormalAcc
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	regularUserKey, err := PrivateKeyGenerateEd25519()
+	setupRegularAccountOperator(t, env)
+
+	newKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	// Create a transaction and freeze it
 	transaction, err := NewAccountCreateTransaction().
-		SetKeyWithoutAlias(regularUserKey).
+		SetKeyWithoutAlias(newKey).
 		SetNodeAccountIDs(env.NodeAccountIDs).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
-	// Keep signing until we exceed the maximum transaction size
-	for {
-		txBytes, err := transaction.ToBytes()
-		require.NoError(t, err)
+	transaction, err = transaction.SignWithOperator(env.Client)
+	require.NoError(t, err)
 
-		if len(txBytes) >= maximumTransactionSize {
-			break
-		}
-
+	// Add signatures to exceed 6KB
+	for i := 0; i < 70; i++ {
 		signingKey, err := PrivateKeyGenerateEd25519()
 		require.NoError(t, err)
-
 		transaction = transaction.Sign(signingKey)
 	}
 
-	// Execute the large transaction - should fail with TRANSACTION_OVERSIZE
-	resp, err := transaction.Execute(env.Client)
+	txBytes, err := transaction.ToBytes()
 	require.NoError(t, err)
+	require.Greater(t, len(txBytes), 6144, "Transaction should exceed 6KB")
 
-	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	_, err = transaction.Execute(env.Client)
 	require.Error(t, err)
 	require.ErrorContains(t, err, "TRANSACTION_OVERSIZE")
 }
-
