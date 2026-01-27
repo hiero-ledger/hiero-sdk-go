@@ -45,7 +45,7 @@ func (leh *EvmHook) AddStorageUpdate(storageUpdate EvmHookStorageUpdate) *EvmHoo
 	return leh
 }
 
-func lambdaEvmHookFromProtobuf(pb *services.LambdaEvmHook) EvmHook {
+func lambdaEvmHookFromProtobuf(pb *services.EvmHook) EvmHook {
 	body := EvmHook{
 		evmHookSpec: evmHookSpecFromProtobuf(pb.GetSpec()),
 	}
@@ -58,8 +58,8 @@ func lambdaEvmHookFromProtobuf(pb *services.LambdaEvmHook) EvmHook {
 	return body
 }
 
-func (leh EvmHook) toProtobuf() *services.LambdaEvmHook {
-	protoBody := &services.LambdaEvmHook{
+func (leh EvmHook) toProtobuf() *services.EvmHook {
+	protoBody := &services.EvmHook{
 		Spec: leh.evmHookSpec.toProtobuf(),
 	}
 
