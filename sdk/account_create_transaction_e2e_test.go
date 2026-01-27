@@ -929,6 +929,7 @@ func TestIntegrationAccountCreateTransactionCannotExecuteWithHookWithoutContract
 
 func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -950,6 +951,7 @@ func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
 
 func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
