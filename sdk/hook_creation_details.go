@@ -77,7 +77,7 @@ func hookCreationDetailsFromProtobuf(pb *services.HookCreationDetails) HookCreat
 	return HookCreationDetails{
 		extensionPoint: HookExtensionPoint(pb.GetExtensionPoint()),
 		hookId:         pb.GetHookId(),
-		lambdaEvmHook:  lambdaEvmHookFromProtobuf(pb.GetLambdaEvmHook()),
+		lambdaEvmHook:  lambdaEvmHookFromProtobuf(pb.GetEvmHook()),
 		adminKey:       key,
 	}
 }
@@ -91,8 +91,8 @@ func (hcd HookCreationDetails) toProtobuf() *services.HookCreationDetails {
 	protoBody := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(hcd.extensionPoint),
 		HookId:         hcd.hookId,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: hcd.lambdaEvmHook.toProtobuf(),
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: hcd.lambdaEvmHook.toProtobuf(),
 		},
 		AdminKey: adminKey,
 	}

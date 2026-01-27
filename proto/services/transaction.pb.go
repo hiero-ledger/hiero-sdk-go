@@ -296,8 +296,9 @@ type TransactionBody struct {
 	//	*TransactionBody_HistoryProofVote
 	//	*TransactionBody_CrsPublication
 	//	*TransactionBody_AtomicBatch
-	//	*TransactionBody_LambdaSstore
+	//	*TransactionBody_HookStore
 	//	*TransactionBody_HookDispatch
+	//	*TransactionBody_LedgerIdPublication
 	Data isTransactionBody_Data `protobuf_oneof:"data"`
 	// *
 	// A list of maximum custom fees that the users are willing to pay.
@@ -306,6 +307,11 @@ type TransactionBody struct {
 	// If left empty, the users are accepting to pay any custom fee.<br/>
 	// If used with a transaction type that does not support custom fee limits, the transaction will fail.
 	MaxCustomFees []*CustomFeeLimit `protobuf:"bytes,1001,rep,name=max_custom_fees,json=maxCustomFees,proto3" json:"max_custom_fees,omitempty"`
+	// *
+	// If set to true, this transaction uses high-volume throttles and pricing
+	// for entity creation. It only affects supported transaction types; otherwise,
+	// it is ignored.
+	HighVolume    bool `protobuf:"varint,1002,opt,name=high_volume,json=highVolume,proto3" json:"high_volume,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -957,10 +963,10 @@ func (x *TransactionBody) GetAtomicBatch() *AtomicBatchTransactionBody {
 	return nil
 }
 
-func (x *TransactionBody) GetLambdaSstore() *LambdaSStoreTransactionBody {
+func (x *TransactionBody) GetHookStore() *HookStoreTransactionBody {
 	if x != nil {
-		if x, ok := x.Data.(*TransactionBody_LambdaSstore); ok {
-			return x.LambdaSstore
+		if x, ok := x.Data.(*TransactionBody_HookStore); ok {
+			return x.HookStore
 		}
 	}
 	return nil
@@ -975,11 +981,27 @@ func (x *TransactionBody) GetHookDispatch() *HookDispatchTransactionBody {
 	return nil
 }
 
+func (x *TransactionBody) GetLedgerIdPublication() *LedgerIdPublicationTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_LedgerIdPublication); ok {
+			return x.LedgerIdPublication
+		}
+	}
+	return nil
+}
+
 func (x *TransactionBody) GetMaxCustomFees() []*CustomFeeLimit {
 	if x != nil {
 		return x.MaxCustomFees
 	}
 	return nil
+}
+
+func (x *TransactionBody) GetHighVolume() bool {
+	if x != nil {
+		return x.HighVolume
+	}
+	return false
 }
 
 type isTransactionBody_Data interface {
@@ -1458,16 +1480,22 @@ type TransactionBody_AtomicBatch struct {
 	AtomicBatch *AtomicBatchTransactionBody `protobuf:"bytes,74,opt,name=atomic_batch,json=atomicBatch,proto3,oneof"`
 }
 
-type TransactionBody_LambdaSstore struct {
+type TransactionBody_HookStore struct {
 	// *
-	// A transaction body for updating the storage of a EVM lambda hook.
-	LambdaSstore *LambdaSStoreTransactionBody `protobuf:"bytes,75,opt,name=lambda_sstore,json=lambdaSstore,proto3,oneof"`
+	// A transaction body for updating the storage of an EVM hook.
+	HookStore *HookStoreTransactionBody `protobuf:"bytes,75,opt,name=hook_store,json=hookStore,proto3,oneof"`
 }
 
 type TransactionBody_HookDispatch struct {
 	// *
 	// An internal-only transaction body for dispatching a hook CRUD operation.
 	HookDispatch *HookDispatchTransactionBody `protobuf:"bytes,76,opt,name=hook_dispatch,json=hookDispatch,proto3,oneof"`
+}
+
+type TransactionBody_LedgerIdPublication struct {
+	// *
+	// An internal-only transaction body for publishing the ledger id.
+	LedgerIdPublication *LedgerIdPublicationTransactionBody `protobuf:"bytes,77,opt,name=ledger_id_publication,json=ledgerIdPublication,proto3,oneof"`
 }
 
 func (*TransactionBody_ContractCall) isTransactionBody_Data() {}
@@ -1594,9 +1622,11 @@ func (*TransactionBody_CrsPublication) isTransactionBody_Data() {}
 
 func (*TransactionBody_AtomicBatch) isTransactionBody_Data() {}
 
-func (*TransactionBody_LambdaSstore) isTransactionBody_Data() {}
+func (*TransactionBody_HookStore) isTransactionBody_Data() {}
 
 func (*TransactionBody_HookDispatch) isTransactionBody_Data() {}
+
+func (*TransactionBody_LedgerIdPublication) isTransactionBody_Data() {}
 
 // *
 // A transaction body for handling a set of transactions atomically.
@@ -1650,13 +1680,13 @@ var File_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_proto_rawDesc = "" +
 	"\n" +
-	"\x11transaction.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13system_delete.proto\x1a\x15system_undelete.proto\x1a\ffreeze.proto\x1a\x13contract_call.proto\x1a\x15contract_create.proto\x1a\x15contract_update.proto\x1a\x1acrypto_add_live_hash.proto\x1a\x13crypto_create.proto\x1a\x13crypto_delete.proto\x1a\x1dcrypto_delete_live_hash.proto\x1a\x15crypto_transfer.proto\x1a\x13crypto_update.proto\x1a\x1ecrypto_approve_allowance.proto\x1a\x1dcrypto_delete_allowance.proto\x1a\x1aethereum_transaction.proto\x1a\x11file_append.proto\x1a\x11file_create.proto\x1a\x11file_delete.proto\x1a\x11file_update.proto\x1a\x0eduration.proto\x1a\x15contract_delete.proto\x1a\x1cconsensus_create_topic.proto\x1a\x1cconsensus_update_topic.proto\x1a\x1cconsensus_delete_topic.proto\x1a\x1econsensus_submit_message.proto\x1a\x16unchecked_submit.proto\x1a\x12token_create.proto\x1a\x1atoken_freeze_account.proto\x1a\x1ctoken_unfreeze_account.proto\x1a\x15token_grant_kyc.proto\x1a\x16token_revoke_kyc.proto\x1a\x12token_delete.proto\x1a\x12token_update.proto\x1a\x10token_mint.proto\x1a\x10token_burn.proto\x1a\x18token_wipe_account.proto\x1a\x15token_associate.proto\x1a\x16token_dissociate.proto\x1a\x1ftoken_fee_schedule_update.proto\x1a\x11token_pause.proto\x1a\x13token_unpause.proto\x1a\x17token_update_nfts.proto\x1a\x12token_reject.proto\x1a\x13token_airdrop.proto\x1a\x1atoken_cancel_airdrop.proto\x1a\x19token_claim_airdrop.proto\x1a\x15schedule_create.proto\x1a\x15schedule_delete.proto\x1a\x13schedule_sign.proto\x1a\x17node_stake_update.proto\x1a\x0futil_prng.proto\x1a\x11node_create.proto\x1a\x11node_update.proto\x1a\x11node_delete.proto\x1a\x11custom_fees.proto\x1a!state_signature_transaction.proto\x1a\x1bhints_key_publication.proto\x1a\x1ehints_preprocessing_vote.proto\x1a\x1dhints_partial_signature.proto\x1a\x15crs_publication.proto\x1a\x1dhistory_proof_signature.proto\x1a#history_proof_key_publication.proto\x1a\x18history_proof_vote.proto\x1a\x13lambda_sstore.proto\x1a\x13hook_dispatch.proto\"\xf6\x01\n" +
+	"\x11transaction.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13system_delete.proto\x1a\x15system_undelete.proto\x1a\ffreeze.proto\x1a\x13contract_call.proto\x1a\x15contract_create.proto\x1a\x15contract_update.proto\x1a\x1acrypto_add_live_hash.proto\x1a\x13crypto_create.proto\x1a\x13crypto_delete.proto\x1a\x1dcrypto_delete_live_hash.proto\x1a\x15crypto_transfer.proto\x1a\x13crypto_update.proto\x1a\x1ecrypto_approve_allowance.proto\x1a\x1dcrypto_delete_allowance.proto\x1a\x1aethereum_transaction.proto\x1a\x11file_append.proto\x1a\x11file_create.proto\x1a\x11file_delete.proto\x1a\x11file_update.proto\x1a\x0eduration.proto\x1a\x15contract_delete.proto\x1a\x1cconsensus_create_topic.proto\x1a\x1cconsensus_update_topic.proto\x1a\x1cconsensus_delete_topic.proto\x1a\x1econsensus_submit_message.proto\x1a\x16unchecked_submit.proto\x1a\x12token_create.proto\x1a\x1atoken_freeze_account.proto\x1a\x1ctoken_unfreeze_account.proto\x1a\x15token_grant_kyc.proto\x1a\x16token_revoke_kyc.proto\x1a\x12token_delete.proto\x1a\x12token_update.proto\x1a\x10token_mint.proto\x1a\x10token_burn.proto\x1a\x18token_wipe_account.proto\x1a\x15token_associate.proto\x1a\x16token_dissociate.proto\x1a\x1ftoken_fee_schedule_update.proto\x1a\x11token_pause.proto\x1a\x13token_unpause.proto\x1a\x17token_update_nfts.proto\x1a\x12token_reject.proto\x1a\x13token_airdrop.proto\x1a\x1atoken_cancel_airdrop.proto\x1a\x19token_claim_airdrop.proto\x1a\x15schedule_create.proto\x1a\x15schedule_delete.proto\x1a\x13schedule_sign.proto\x1a\x17node_stake_update.proto\x1a\x0futil_prng.proto\x1a\x11node_create.proto\x1a\x11node_update.proto\x1a\x11node_delete.proto\x1a\x11custom_fees.proto\x1a!state_signature_transaction.proto\x1a\x1bhints_key_publication.proto\x1a\x1ehints_preprocessing_vote.proto\x1a\x1dhints_partial_signature.proto\x1a\x15crs_publication.proto\x1a\x1dhistory_proof_signature.proto\x1a#history_proof_key_publication.proto\x1a\x18history_proof_vote.proto\x1a\x1bledger_id_publication.proto\x1a\x10hook_store.proto\x1a\x13hook_dispatch.proto\"\xf6\x01\n" +
 	"\vTransaction\x12.\n" +
 	"\x04body\x18\x01 \x01(\v2\x16.proto.TransactionBodyB\x02\x18\x01R\x04body\x12,\n" +
 	"\x04sigs\x18\x02 \x01(\v2\x14.proto.SignatureListB\x02\x18\x01R\x04sigs\x12/\n" +
 	"\x06sigMap\x18\x03 \x01(\v2\x13.proto.SignatureMapB\x02\x18\x01R\x06sigMap\x12 \n" +
 	"\tbodyBytes\x18\x04 \x01(\fB\x02\x18\x01R\tbodyBytes\x126\n" +
-	"\x16signedTransactionBytes\x18\x05 \x01(\fR\x16signedTransactionBytes\"\xcb0\n" +
+	"\x16signedTransactionBytes\x18\x05 \x01(\fR\x16signedTransactionBytes\"\xd81\n" +
 	"\x0fTransactionBody\x12:\n" +
 	"\rtransactionID\x18\x01 \x01(\v2\x14.proto.TransactionIDR\rtransactionID\x126\n" +
 	"\rnodeAccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\rnodeAccountID\x12&\n" +
@@ -1743,10 +1773,14 @@ const file_transaction_proto_rawDesc = "" +
 	"\x1dhistory_proof_key_publication\x18F \x01(\v2U.com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBodyH\x00R\x1ahistoryProofKeyPublication\x12{\n" +
 	"\x12history_proof_vote\x18G \x01(\v2K.com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBodyH\x00R\x10historyProofVote\x12r\n" +
 	"\x0fcrs_publication\x18H \x01(\v2G.com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBodyH\x00R\x0ecrsPublication\x12F\n" +
-	"\fatomic_batch\x18J \x01(\v2!.proto.AtomicBatchTransactionBodyH\x00R\vatomicBatch\x12^\n" +
-	"\rlambda_sstore\x18K \x01(\v27.com.hedera.hapi.node.hooks.LambdaSStoreTransactionBodyH\x00R\flambdaSstore\x12^\n" +
-	"\rhook_dispatch\x18L \x01(\v27.com.hedera.hapi.node.hooks.HookDispatchTransactionBodyH\x00R\fhookDispatch\x12>\n" +
-	"\x0fmax_custom_fees\x18\xe9\a \x03(\v2\x15.proto.CustomFeeLimitR\rmaxCustomFeesB\x06\n" +
+	"\fatomic_batch\x18J \x01(\v2!.proto.AtomicBatchTransactionBodyH\x00R\vatomicBatch\x12U\n" +
+	"\n" +
+	"hook_store\x18K \x01(\v24.com.hedera.hapi.node.hooks.HookStoreTransactionBodyH\x00R\thookStore\x12^\n" +
+	"\rhook_dispatch\x18L \x01(\v27.com.hedera.hapi.node.hooks.HookDispatchTransactionBodyH\x00R\fhookDispatch\x12r\n" +
+	"\x15ledger_id_publication\x18M \x01(\v2<.com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBodyH\x00R\x13ledgerIdPublication\x12>\n" +
+	"\x0fmax_custom_fees\x18\xe9\a \x03(\v2\x15.proto.CustomFeeLimitR\rmaxCustomFees\x12 \n" +
+	"\vhigh_volume\x18\xea\a \x01(\bR\n" +
+	"highVolumeB\x06\n" +
 	"\x04dataJ\x04\b\x1e\x10\x1fJ\x04\b=\x10>J\x04\b>\x10?J\x04\b?\x10@J\x04\b@\x10AR\n" +
 	"tssMessageR\atssVoteR\x11tssShareSignatureR\x10tssEncryptionKey\"@\n" +
 	"\x1aAtomicBatchTransactionBody\x12\"\n" +
@@ -1837,9 +1871,10 @@ var file_transaction_proto_goTypes = []any{
 	(*HistoryProofKeyPublicationTransactionBody)(nil), // 67: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody
 	(*HistoryProofVoteTransactionBody)(nil),           // 68: com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody
 	(*CrsPublicationTransactionBody)(nil),             // 69: com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody
-	(*LambdaSStoreTransactionBody)(nil),               // 70: com.hedera.hapi.node.hooks.LambdaSStoreTransactionBody
+	(*HookStoreTransactionBody)(nil),                  // 70: com.hedera.hapi.node.hooks.HookStoreTransactionBody
 	(*HookDispatchTransactionBody)(nil),               // 71: com.hedera.hapi.node.hooks.HookDispatchTransactionBody
-	(*CustomFeeLimit)(nil),                            // 72: proto.CustomFeeLimit
+	(*LedgerIdPublicationTransactionBody)(nil),        // 72: com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBody
+	(*CustomFeeLimit)(nil),                            // 73: proto.CustomFeeLimit
 }
 var file_transaction_proto_depIdxs = []int32{
 	1,  // 0: proto.Transaction.body:type_name -> proto.TransactionBody
@@ -1911,14 +1946,15 @@ var file_transaction_proto_depIdxs = []int32{
 	68, // 66: proto.TransactionBody.history_proof_vote:type_name -> com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody
 	69, // 67: proto.TransactionBody.crs_publication:type_name -> com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody
 	2,  // 68: proto.TransactionBody.atomic_batch:type_name -> proto.AtomicBatchTransactionBody
-	70, // 69: proto.TransactionBody.lambda_sstore:type_name -> com.hedera.hapi.node.hooks.LambdaSStoreTransactionBody
+	70, // 69: proto.TransactionBody.hook_store:type_name -> com.hedera.hapi.node.hooks.HookStoreTransactionBody
 	71, // 70: proto.TransactionBody.hook_dispatch:type_name -> com.hedera.hapi.node.hooks.HookDispatchTransactionBody
-	72, // 71: proto.TransactionBody.max_custom_fees:type_name -> proto.CustomFeeLimit
-	72, // [72:72] is the sub-list for method output_type
-	72, // [72:72] is the sub-list for method input_type
-	72, // [72:72] is the sub-list for extension type_name
-	72, // [72:72] is the sub-list for extension extendee
-	0,  // [0:72] is the sub-list for field type_name
+	72, // 71: proto.TransactionBody.ledger_id_publication:type_name -> com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBody
+	73, // 72: proto.TransactionBody.max_custom_fees:type_name -> proto.CustomFeeLimit
+	73, // [73:73] is the sub-list for method output_type
+	73, // [73:73] is the sub-list for method input_type
+	73, // [73:73] is the sub-list for extension type_name
+	73, // [73:73] is the sub-list for extension extendee
+	0,  // [0:73] is the sub-list for field type_name
 }
 
 func init() { file_transaction_proto_init() }
@@ -1990,7 +2026,8 @@ func file_transaction_proto_init() {
 	file_history_proof_signature_proto_init()
 	file_history_proof_key_publication_proto_init()
 	file_history_proof_vote_proto_init()
-	file_lambda_sstore_proto_init()
+	file_ledger_id_publication_proto_init()
+	file_hook_store_proto_init()
 	file_hook_dispatch_proto_init()
 	file_transaction_proto_msgTypes[1].OneofWrappers = []any{
 		(*TransactionBody_ContractCall)(nil),
@@ -2055,8 +2092,9 @@ func file_transaction_proto_init() {
 		(*TransactionBody_HistoryProofVote)(nil),
 		(*TransactionBody_CrsPublication)(nil),
 		(*TransactionBody_AtomicBatch)(nil),
-		(*TransactionBody_LambdaSstore)(nil),
+		(*TransactionBody_HookStore)(nil),
 		(*TransactionBody_HookDispatch)(nil),
+		(*TransactionBody_LedgerIdPublication)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

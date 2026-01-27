@@ -159,13 +159,13 @@ func TestUnitLambdaEvmHookFromProtobuf(t *testing.T) {
 	storageSlot1 := NewEvmHookStorageSlot().SetKey([]byte("key1")).SetValue([]byte("value1"))
 	storageSlot2 := NewEvmHookStorageSlot().SetKey([]byte("key2")).SetValue([]byte("value2"))
 
-	pb := &services.LambdaEvmHook{
+	pb := &services.EvmHook{
 		Spec: &services.EvmHookSpec{
 			BytecodeSource: &services.EvmHookSpec_ContractId{
 				ContractId: contractID._ToProtobuf(),
 			},
 		},
-		StorageUpdates: []*services.LambdaStorageUpdate{
+		StorageUpdates: []*services.EvmHookStorageUpdate{
 			storageSlot1.toProtobuf(),
 			storageSlot2.toProtobuf(),
 		},
@@ -183,13 +183,13 @@ func TestUnitLambdaEvmHookFromProtobufWithEmptyStorageUpdates(t *testing.T) {
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
-	pb := &services.LambdaEvmHook{
+	pb := &services.EvmHook{
 		Spec: &services.EvmHookSpec{
 			BytecodeSource: &services.EvmHookSpec_ContractId{
 				ContractId: contractID._ToProtobuf(),
 			},
 		},
-		StorageUpdates: []*services.LambdaStorageUpdate{},
+		StorageUpdates: []*services.EvmHookStorageUpdate{},
 	}
 
 	leh := lambdaEvmHookFromProtobuf(pb)

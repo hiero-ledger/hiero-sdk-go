@@ -10,10 +10,10 @@ import (
 // slot contents; or by a combination of a Solidity mapping's slot key and the key into
 // that mapping.
 type EvmHookStorageUpdate interface {
-	toProtobuf() *services.LambdaStorageUpdate
+	toProtobuf() *services.EvmHookStorageUpdate
 }
 
-func lambdaStorageUpdateFromProtobuf(pb *services.LambdaStorageUpdate) EvmHookStorageUpdate {
+func lambdaStorageUpdateFromProtobuf(pb *services.EvmHookStorageUpdate) EvmHookStorageUpdate {
 	if pb.GetStorageSlot() != nil {
 		return lambdaStorageSlotFromProtobuf(pb.GetStorageSlot())
 	}
@@ -58,10 +58,10 @@ func (ls *EvmHookStorageSlot) SetValue(value []byte) *EvmHookStorageSlot {
 	return ls
 }
 
-func (ls EvmHookStorageSlot) toProtobuf() *services.LambdaStorageUpdate {
-	return &services.LambdaStorageUpdate{
-		Update: &services.LambdaStorageUpdate_StorageSlot{
-			StorageSlot: &services.LambdaStorageSlot{
+func (ls EvmHookStorageSlot) toProtobuf() *services.EvmHookStorageUpdate {
+	return &services.EvmHookStorageUpdate{
+		Update: &services.EvmHookStorageUpdate_StorageSlot{
+			StorageSlot: &services.EvmHookStorageSlot{
 				Key:   ls.key,
 				Value: ls.value,
 			},
@@ -69,7 +69,7 @@ func (ls EvmHookStorageSlot) toProtobuf() *services.LambdaStorageUpdate {
 	}
 }
 
-func lambdaStorageSlotFromProtobuf(pb *services.LambdaStorageSlot) EvmHookStorageSlot {
+func lambdaStorageSlotFromProtobuf(pb *services.EvmHookStorageSlot) EvmHookStorageSlot {
 	return EvmHookStorageSlot{
 		key:   pb.GetKey(),
 		value: pb.GetValue(),
@@ -124,8 +124,8 @@ func (le *EvmHookMappingEntries) AddMappingEntry(entry EvmHookMappingEntry) *Evm
 	return le
 }
 
-func (le EvmHookMappingEntries) toProtobuf() *services.LambdaStorageUpdate {
-	mappingEntries := &services.LambdaMappingEntries{
+func (le EvmHookMappingEntries) toProtobuf() *services.EvmHookStorageUpdate {
+	mappingEntries := &services.EvmHookMappingEntries{
 		MappingSlot: le.mappingSlot,
 	}
 
@@ -133,14 +133,14 @@ func (le EvmHookMappingEntries) toProtobuf() *services.LambdaStorageUpdate {
 		mappingEntries.Entries = append(mappingEntries.Entries, entry.toProtobuf())
 	}
 
-	return &services.LambdaStorageUpdate{
-		Update: &services.LambdaStorageUpdate_MappingEntries{
+	return &services.EvmHookStorageUpdate{
+		Update: &services.EvmHookStorageUpdate_MappingEntries{
 			MappingEntries: mappingEntries,
 		},
 	}
 }
 
-func lambdaMappingEntriesFromProtobuf(pb *services.LambdaMappingEntries) EvmHookMappingEntries {
+func lambdaMappingEntriesFromProtobuf(pb *services.EvmHookMappingEntries) EvmHookMappingEntries {
 	mappingEntries := EvmHookMappingEntries{
 		mappingSlot: pb.GetMappingSlot(),
 	}
@@ -217,18 +217,18 @@ func (le *EvmHookMappingEntry) SetValue(value []byte) *EvmHookMappingEntry {
 	return le
 }
 
-func (le EvmHookMappingEntry) toProtobuf() *services.LambdaMappingEntry {
-	pbBody := &services.LambdaMappingEntry{
+func (le EvmHookMappingEntry) toProtobuf() *services.EvmHookMappingEntry {
+	pbBody := &services.EvmHookMappingEntry{
 		Value: le.value,
 	}
 
 	if len(le.key) > 0 {
-		pbBody.EntryKey = &services.LambdaMappingEntry_Key{
+		pbBody.EntryKey = &services.EvmHookMappingEntry_Key{
 			Key: le.key,
 		}
 	}
 	if len(le.preImage) > 0 {
-		pbBody.EntryKey = &services.LambdaMappingEntry_Preimage{
+		pbBody.EntryKey = &services.EvmHookMappingEntry_Preimage{
 			Preimage: le.preImage,
 		}
 	}
@@ -236,7 +236,7 @@ func (le EvmHookMappingEntry) toProtobuf() *services.LambdaMappingEntry {
 	return pbBody
 }
 
-func lambdaMappingEntryFromProtobuf(pb *services.LambdaMappingEntry) EvmHookMappingEntry {
+func lambdaMappingEntryFromProtobuf(pb *services.EvmHookMappingEntry) EvmHookMappingEntry {
 	return EvmHookMappingEntry{
 		key:      pb.GetKey(),
 		preImage: pb.GetPreimage(),

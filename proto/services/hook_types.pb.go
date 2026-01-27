@@ -153,12 +153,11 @@ type HookCreationDetails struct {
 	//
 	// Types that are valid to be assigned to Hook:
 	//
-	//	*HookCreationDetails_LambdaEvmHook
+	//	*HookCreationDetails_EvmHook
 	Hook isHookCreationDetails_Hook `protobuf_oneof:"hook"`
 	// *
 	// If set, a key that that can be used to remove or replace the hook; or (if
-	// applicable, as with a lambda EVM hook) perform transactions that customize
-	// the hook.
+	// applicable, as with an EVM hook) do transactions that customize the hook.
 	AdminKey      *Key `protobuf:"bytes,4,opt,name=admin_key,json=adminKey,proto3" json:"admin_key,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -215,10 +214,10 @@ func (x *HookCreationDetails) GetHook() isHookCreationDetails_Hook {
 	return nil
 }
 
-func (x *HookCreationDetails) GetLambdaEvmHook() *LambdaEvmHook {
+func (x *HookCreationDetails) GetEvmHook() *EvmHook {
 	if x != nil {
-		if x, ok := x.Hook.(*HookCreationDetails_LambdaEvmHook); ok {
-			return x.LambdaEvmHook
+		if x, ok := x.Hook.(*HookCreationDetails_EvmHook); ok {
+			return x.EvmHook
 		}
 	}
 	return nil
@@ -235,43 +234,43 @@ type isHookCreationDetails_Hook interface {
 	isHookCreationDetails_Hook()
 }
 
-type HookCreationDetails_LambdaEvmHook struct {
+type HookCreationDetails_EvmHook struct {
 	// *
-	// A hook programmed in EVM bytecode that may access state or interact with
-	// external contracts.
-	LambdaEvmHook *LambdaEvmHook `protobuf:"bytes,3,opt,name=lambda_evm_hook,json=lambdaEvmHook,proto3,oneof"`
+	// A general-purpose hook programmed in EVM bytecode that may access state
+	// or interact with external contracts.
+	EvmHook *EvmHook `protobuf:"bytes,3,opt,name=evm_hook,json=evmHook,proto3,oneof"`
 }
 
-func (*HookCreationDetails_LambdaEvmHook) isHookCreationDetails_Hook() {}
+func (*HookCreationDetails_EvmHook) isHookCreationDetails_Hook() {}
 
 // *
-// Definition of a lambda EVM hook.
-type LambdaEvmHook struct {
+// Definition of a general-purpose EVM hook.
+type EvmHook struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
 	// The specification for the hook.
 	Spec *EvmHookSpec `protobuf:"bytes,1,opt,name=spec,proto3" json:"spec,omitempty"`
 	// *
-	// Initial storage updates for the lambda, if any.
-	StorageUpdates []*LambdaStorageUpdate `protobuf:"bytes,2,rep,name=storage_updates,json=storageUpdates,proto3" json:"storage_updates,omitempty"`
+	// Initial storage updates for the hook, if any.
+	StorageUpdates []*EvmHookStorageUpdate `protobuf:"bytes,2,rep,name=storage_updates,json=storageUpdates,proto3" json:"storage_updates,omitempty"`
 	unknownFields  protoimpl.UnknownFields
 	sizeCache      protoimpl.SizeCache
 }
 
-func (x *LambdaEvmHook) Reset() {
-	*x = LambdaEvmHook{}
+func (x *EvmHook) Reset() {
+	*x = EvmHook{}
 	mi := &file_hook_types_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LambdaEvmHook) String() string {
+func (x *EvmHook) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LambdaEvmHook) ProtoMessage() {}
+func (*EvmHook) ProtoMessage() {}
 
-func (x *LambdaEvmHook) ProtoReflect() protoreflect.Message {
+func (x *EvmHook) ProtoReflect() protoreflect.Message {
 	mi := &file_hook_types_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -283,19 +282,19 @@ func (x *LambdaEvmHook) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LambdaEvmHook.ProtoReflect.Descriptor instead.
-func (*LambdaEvmHook) Descriptor() ([]byte, []int) {
+// Deprecated: Use EvmHook.ProtoReflect.Descriptor instead.
+func (*EvmHook) Descriptor() ([]byte, []int) {
 	return file_hook_types_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *LambdaEvmHook) GetSpec() *EvmHookSpec {
+func (x *EvmHook) GetSpec() *EvmHookSpec {
 	if x != nil {
 		return x.Spec
 	}
 	return nil
 }
 
-func (x *LambdaEvmHook) GetStorageUpdates() []*LambdaStorageUpdate {
+func (x *EvmHook) GetStorageUpdates() []*EvmHookStorageUpdate {
 	if x != nil {
 		return x.StorageUpdates
 	}
@@ -376,34 +375,34 @@ type EvmHookSpec_ContractId struct {
 func (*EvmHookSpec_ContractId) isEvmHookSpec_BytecodeSource() {}
 
 // *
-// Specifies a key/value pair in the storage of a lambda, either by the explicit storage
+// Specifies a key/value pair in the storage of an EVM hook, either by the explicit storage
 // slot contents; or by a combination of a Solidity mapping's slot key and the key into
 // that mapping.
-type LambdaStorageUpdate struct {
+type EvmHookStorageUpdate struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to Update:
 	//
-	//	*LambdaStorageUpdate_StorageSlot
-	//	*LambdaStorageUpdate_MappingEntries
-	Update        isLambdaStorageUpdate_Update `protobuf_oneof:"update"`
+	//	*EvmHookStorageUpdate_StorageSlot
+	//	*EvmHookStorageUpdate_MappingEntries
+	Update        isEvmHookStorageUpdate_Update `protobuf_oneof:"update"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LambdaStorageUpdate) Reset() {
-	*x = LambdaStorageUpdate{}
+func (x *EvmHookStorageUpdate) Reset() {
+	*x = EvmHookStorageUpdate{}
 	mi := &file_hook_types_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LambdaStorageUpdate) String() string {
+func (x *EvmHookStorageUpdate) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LambdaStorageUpdate) ProtoMessage() {}
+func (*EvmHookStorageUpdate) ProtoMessage() {}
 
-func (x *LambdaStorageUpdate) ProtoReflect() protoreflect.Message {
+func (x *EvmHookStorageUpdate) ProtoReflect() protoreflect.Message {
 	mi := &file_hook_types_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -415,55 +414,55 @@ func (x *LambdaStorageUpdate) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LambdaStorageUpdate.ProtoReflect.Descriptor instead.
-func (*LambdaStorageUpdate) Descriptor() ([]byte, []int) {
+// Deprecated: Use EvmHookStorageUpdate.ProtoReflect.Descriptor instead.
+func (*EvmHookStorageUpdate) Descriptor() ([]byte, []int) {
 	return file_hook_types_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *LambdaStorageUpdate) GetUpdate() isLambdaStorageUpdate_Update {
+func (x *EvmHookStorageUpdate) GetUpdate() isEvmHookStorageUpdate_Update {
 	if x != nil {
 		return x.Update
 	}
 	return nil
 }
 
-func (x *LambdaStorageUpdate) GetStorageSlot() *LambdaStorageSlot {
+func (x *EvmHookStorageUpdate) GetStorageSlot() *EvmHookStorageSlot {
 	if x != nil {
-		if x, ok := x.Update.(*LambdaStorageUpdate_StorageSlot); ok {
+		if x, ok := x.Update.(*EvmHookStorageUpdate_StorageSlot); ok {
 			return x.StorageSlot
 		}
 	}
 	return nil
 }
 
-func (x *LambdaStorageUpdate) GetMappingEntries() *LambdaMappingEntries {
+func (x *EvmHookStorageUpdate) GetMappingEntries() *EvmHookMappingEntries {
 	if x != nil {
-		if x, ok := x.Update.(*LambdaStorageUpdate_MappingEntries); ok {
+		if x, ok := x.Update.(*EvmHookStorageUpdate_MappingEntries); ok {
 			return x.MappingEntries
 		}
 	}
 	return nil
 }
 
-type isLambdaStorageUpdate_Update interface {
-	isLambdaStorageUpdate_Update()
+type isEvmHookStorageUpdate_Update interface {
+	isEvmHookStorageUpdate_Update()
 }
 
-type LambdaStorageUpdate_StorageSlot struct {
+type EvmHookStorageUpdate_StorageSlot struct {
 	// *
 	// An explicit storage slot update.
-	StorageSlot *LambdaStorageSlot `protobuf:"bytes,1,opt,name=storage_slot,json=storageSlot,proto3,oneof"`
+	StorageSlot *EvmHookStorageSlot `protobuf:"bytes,1,opt,name=storage_slot,json=storageSlot,proto3,oneof"`
 }
 
-type LambdaStorageUpdate_MappingEntries struct {
+type EvmHookStorageUpdate_MappingEntries struct {
 	// *
 	// Implicit storage slot updates specified as Solidity mapping entries.
-	MappingEntries *LambdaMappingEntries `protobuf:"bytes,2,opt,name=mapping_entries,json=mappingEntries,proto3,oneof"`
+	MappingEntries *EvmHookMappingEntries `protobuf:"bytes,2,opt,name=mapping_entries,json=mappingEntries,proto3,oneof"`
 }
 
-func (*LambdaStorageUpdate_StorageSlot) isLambdaStorageUpdate_Update() {}
+func (*EvmHookStorageUpdate_StorageSlot) isEvmHookStorageUpdate_Update() {}
 
-func (*LambdaStorageUpdate_MappingEntries) isLambdaStorageUpdate_Update() {}
+func (*EvmHookStorageUpdate_MappingEntries) isEvmHookStorageUpdate_Update() {}
 
 // *
 // Specifies storage slot updates via indirection into a Solidity mapping.
@@ -476,7 +475,7 @@ func (*LambdaStorageUpdate_MappingEntries) isLambdaStorageUpdate_Update() {}
 // Solidity mapping's entries. If only raw slots could be updated, then a block
 // stream consumer following the metaprotocol would have to invert the Keccak256
 // hash to determine which mapping entry was being updated, which is not possible.
-type LambdaMappingEntries struct {
+type EvmHookMappingEntries struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
 	// The slot that corresponds to the Solidity mapping itself. Must use a
@@ -484,25 +483,25 @@ type LambdaMappingEntries struct {
 	MappingSlot []byte `protobuf:"bytes,1,opt,name=mapping_slot,json=mappingSlot,proto3" json:"mapping_slot,omitempty"`
 	// *
 	// The entries in the mapping at the given slot.
-	Entries       []*LambdaMappingEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
+	Entries       []*EvmHookMappingEntry `protobuf:"bytes,2,rep,name=entries,proto3" json:"entries,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LambdaMappingEntries) Reset() {
-	*x = LambdaMappingEntries{}
+func (x *EvmHookMappingEntries) Reset() {
+	*x = EvmHookMappingEntries{}
 	mi := &file_hook_types_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LambdaMappingEntries) String() string {
+func (x *EvmHookMappingEntries) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LambdaMappingEntries) ProtoMessage() {}
+func (*EvmHookMappingEntries) ProtoMessage() {}
 
-func (x *LambdaMappingEntries) ProtoReflect() protoreflect.Message {
+func (x *EvmHookMappingEntries) ProtoReflect() protoreflect.Message {
 	mi := &file_hook_types_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -514,19 +513,19 @@ func (x *LambdaMappingEntries) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LambdaMappingEntries.ProtoReflect.Descriptor instead.
-func (*LambdaMappingEntries) Descriptor() ([]byte, []int) {
+// Deprecated: Use EvmHookMappingEntries.ProtoReflect.Descriptor instead.
+func (*EvmHookMappingEntries) Descriptor() ([]byte, []int) {
 	return file_hook_types_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *LambdaMappingEntries) GetMappingSlot() []byte {
+func (x *EvmHookMappingEntries) GetMappingSlot() []byte {
 	if x != nil {
 		return x.MappingSlot
 	}
 	return nil
 }
 
-func (x *LambdaMappingEntries) GetEntries() []*LambdaMappingEntry {
+func (x *EvmHookMappingEntries) GetEntries() []*EvmHookMappingEntry {
 	if x != nil {
 		return x.Entries
 	}
@@ -535,20 +534,20 @@ func (x *LambdaMappingEntries) GetEntries() []*LambdaMappingEntry {
 
 // *
 // An entry in a Solidity mapping. Very helpful for protocols that apply
-// `LambdaSStore` to manage the entries of a hook contract's mapping instead
+// `HookStore` to manage the entries of a hook contract's mapping instead
 // its raw storage slots.
 // <p>
 // This is especially attractive when the mapping value itself fits in a single
 // word; for more complicated value storage layouts it becomes necessary to
-// combine the mapping update with additional `LambdaStorageSlot` updates that
+// combine the mapping update with additional `EvmHookStorageSlot` updates that
 // specify the complete storage slots of the value type.
-type LambdaMappingEntry struct {
+type EvmHookMappingEntry struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Types that are valid to be assigned to EntryKey:
 	//
-	//	*LambdaMappingEntry_Key
-	//	*LambdaMappingEntry_Preimage
-	EntryKey isLambdaMappingEntry_EntryKey `protobuf_oneof:"entry_key"`
+	//	*EvmHookMappingEntry_Key
+	//	*EvmHookMappingEntry_Preimage
+	EntryKey isEvmHookMappingEntry_EntryKey `protobuf_oneof:"entry_key"`
 	// *
 	// If the mapping entry is present and non-zero, its value. May not be longer than
 	// 32 bytes in length; must use a minimal byte representation (no leading zeros).
@@ -558,20 +557,20 @@ type LambdaMappingEntry struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LambdaMappingEntry) Reset() {
-	*x = LambdaMappingEntry{}
+func (x *EvmHookMappingEntry) Reset() {
+	*x = EvmHookMappingEntry{}
 	mi := &file_hook_types_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LambdaMappingEntry) String() string {
+func (x *EvmHookMappingEntry) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LambdaMappingEntry) ProtoMessage() {}
+func (*EvmHookMappingEntry) ProtoMessage() {}
 
-func (x *LambdaMappingEntry) ProtoReflect() protoreflect.Message {
+func (x *EvmHookMappingEntry) ProtoReflect() protoreflect.Message {
 	mi := &file_hook_types_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -583,55 +582,55 @@ func (x *LambdaMappingEntry) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LambdaMappingEntry.ProtoReflect.Descriptor instead.
-func (*LambdaMappingEntry) Descriptor() ([]byte, []int) {
+// Deprecated: Use EvmHookMappingEntry.ProtoReflect.Descriptor instead.
+func (*EvmHookMappingEntry) Descriptor() ([]byte, []int) {
 	return file_hook_types_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *LambdaMappingEntry) GetEntryKey() isLambdaMappingEntry_EntryKey {
+func (x *EvmHookMappingEntry) GetEntryKey() isEvmHookMappingEntry_EntryKey {
 	if x != nil {
 		return x.EntryKey
 	}
 	return nil
 }
 
-func (x *LambdaMappingEntry) GetKey() []byte {
+func (x *EvmHookMappingEntry) GetKey() []byte {
 	if x != nil {
-		if x, ok := x.EntryKey.(*LambdaMappingEntry_Key); ok {
+		if x, ok := x.EntryKey.(*EvmHookMappingEntry_Key); ok {
 			return x.Key
 		}
 	}
 	return nil
 }
 
-func (x *LambdaMappingEntry) GetPreimage() []byte {
+func (x *EvmHookMappingEntry) GetPreimage() []byte {
 	if x != nil {
-		if x, ok := x.EntryKey.(*LambdaMappingEntry_Preimage); ok {
+		if x, ok := x.EntryKey.(*EvmHookMappingEntry_Preimage); ok {
 			return x.Preimage
 		}
 	}
 	return nil
 }
 
-func (x *LambdaMappingEntry) GetValue() []byte {
+func (x *EvmHookMappingEntry) GetValue() []byte {
 	if x != nil {
 		return x.Value
 	}
 	return nil
 }
 
-type isLambdaMappingEntry_EntryKey interface {
-	isLambdaMappingEntry_EntryKey()
+type isEvmHookMappingEntry_EntryKey interface {
+	isEvmHookMappingEntry_EntryKey()
 }
 
-type LambdaMappingEntry_Key struct {
+type EvmHookMappingEntry_Key struct {
 	// *
 	// The explicit bytes of the mapping entry. Must use a minimal byte representation;
 	// may not exceed 32 bytes in length.
 	Key []byte `protobuf:"bytes,1,opt,name=key,proto3,oneof"`
 }
 
-type LambdaMappingEntry_Preimage struct {
+type EvmHookMappingEntry_Preimage struct {
 	// *
 	// The bytes that are the preimage of the Keccak256 hash that forms the mapping key.
 	// May be longer or shorter than 32 bytes and may have leading zeros, since Solidity
@@ -639,13 +638,13 @@ type LambdaMappingEntry_Preimage struct {
 	Preimage []byte `protobuf:"bytes,2,opt,name=preimage,proto3,oneof"`
 }
 
-func (*LambdaMappingEntry_Key) isLambdaMappingEntry_EntryKey() {}
+func (*EvmHookMappingEntry_Key) isEvmHookMappingEntry_EntryKey() {}
 
-func (*LambdaMappingEntry_Preimage) isLambdaMappingEntry_EntryKey() {}
+func (*EvmHookMappingEntry_Preimage) isEvmHookMappingEntry_EntryKey() {}
 
 // *
-// A slot in the storage of a lambda EVM hook.
-type LambdaStorageSlot struct {
+// A slot in the storage of an EVM hook.
+type EvmHookStorageSlot struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
 	// The key of the slot. Must use a minimal byte representation (no
@@ -661,20 +660,20 @@ type LambdaStorageSlot struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *LambdaStorageSlot) Reset() {
-	*x = LambdaStorageSlot{}
+func (x *EvmHookStorageSlot) Reset() {
+	*x = EvmHookStorageSlot{}
 	mi := &file_hook_types_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *LambdaStorageSlot) String() string {
+func (x *EvmHookStorageSlot) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*LambdaStorageSlot) ProtoMessage() {}
+func (*EvmHookStorageSlot) ProtoMessage() {}
 
-func (x *LambdaStorageSlot) ProtoReflect() protoreflect.Message {
+func (x *EvmHookStorageSlot) ProtoReflect() protoreflect.Message {
 	mi := &file_hook_types_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -686,19 +685,19 @@ func (x *LambdaStorageSlot) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use LambdaStorageSlot.ProtoReflect.Descriptor instead.
-func (*LambdaStorageSlot) Descriptor() ([]byte, []int) {
+// Deprecated: Use EvmHookStorageSlot.ProtoReflect.Descriptor instead.
+func (*EvmHookStorageSlot) Descriptor() ([]byte, []int) {
 	return file_hook_types_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *LambdaStorageSlot) GetKey() []byte {
+func (x *EvmHookStorageSlot) GetKey() []byte {
 	if x != nil {
 		return x.Key
 	}
 	return nil
 }
 
-func (x *LambdaStorageSlot) GetValue() []byte {
+func (x *EvmHookStorageSlot) GetValue() []byte {
 	if x != nil {
 		return x.Value
 	}
@@ -714,34 +713,34 @@ const file_hook_types_proto_rawDesc = "" +
 	"\tentity_id\x18\x01 \x01(\v2\x13.proto.HookEntityIdR\bentityId\x12I\n" +
 	"\adetails\x18\x02 \x01(\v2/.com.hedera.hapi.node.hooks.HookCreationDetailsR\adetails\x12=\n" +
 	"\fnext_hook_id\x18\t \x01(\v2\x1b.google.protobuf.Int64ValueR\n" +
-	"nextHookId\"\x8d\x02\n" +
+	"nextHookId\"\xfa\x01\n" +
 	"\x13HookCreationDetails\x12W\n" +
 	"\x0fextension_point\x18\x01 \x01(\x0e2..com.hedera.hapi.node.hooks.HookExtensionPointR\x0eextensionPoint\x12\x17\n" +
-	"\ahook_id\x18\x02 \x01(\x03R\x06hookId\x12S\n" +
-	"\x0flambda_evm_hook\x18\x03 \x01(\v2).com.hedera.hapi.node.hooks.LambdaEvmHookH\x00R\rlambdaEvmHook\x12'\n" +
+	"\ahook_id\x18\x02 \x01(\x03R\x06hookId\x12@\n" +
+	"\bevm_hook\x18\x03 \x01(\v2#.com.hedera.hapi.node.hooks.EvmHookH\x00R\aevmHook\x12'\n" +
 	"\tadmin_key\x18\x04 \x01(\v2\n" +
 	".proto.KeyR\badminKeyB\x06\n" +
-	"\x04hook\"\xa6\x01\n" +
-	"\rLambdaEvmHook\x12;\n" +
-	"\x04spec\x18\x01 \x01(\v2'.com.hedera.hapi.node.hooks.EvmHookSpecR\x04spec\x12X\n" +
-	"\x0fstorage_updates\x18\x02 \x03(\v2/.com.hedera.hapi.node.hooks.LambdaStorageUpdateR\x0estorageUpdates\"V\n" +
+	"\x04hook\"\xa1\x01\n" +
+	"\aEvmHook\x12;\n" +
+	"\x04spec\x18\x01 \x01(\v2'.com.hedera.hapi.node.hooks.EvmHookSpecR\x04spec\x12Y\n" +
+	"\x0fstorage_updates\x18\x02 \x03(\v20.com.hedera.hapi.node.hooks.EvmHookStorageUpdateR\x0estorageUpdates\"V\n" +
 	"\vEvmHookSpec\x124\n" +
 	"\vcontract_id\x18\x01 \x01(\v2\x11.proto.ContractIDH\x00R\n" +
 	"contractIdB\x11\n" +
-	"\x0fbytecode_source\"\xd0\x01\n" +
-	"\x13LambdaStorageUpdate\x12R\n" +
-	"\fstorage_slot\x18\x01 \x01(\v2-.com.hedera.hapi.node.hooks.LambdaStorageSlotH\x00R\vstorageSlot\x12[\n" +
-	"\x0fmapping_entries\x18\x02 \x01(\v20.com.hedera.hapi.node.hooks.LambdaMappingEntriesH\x00R\x0emappingEntriesB\b\n" +
-	"\x06update\"\x83\x01\n" +
-	"\x14LambdaMappingEntries\x12!\n" +
-	"\fmapping_slot\x18\x01 \x01(\fR\vmappingSlot\x12H\n" +
-	"\aentries\x18\x02 \x03(\v2..com.hedera.hapi.node.hooks.LambdaMappingEntryR\aentries\"i\n" +
-	"\x12LambdaMappingEntry\x12\x12\n" +
+	"\x0fbytecode_source\"\xd3\x01\n" +
+	"\x14EvmHookStorageUpdate\x12S\n" +
+	"\fstorage_slot\x18\x01 \x01(\v2..com.hedera.hapi.node.hooks.EvmHookStorageSlotH\x00R\vstorageSlot\x12\\\n" +
+	"\x0fmapping_entries\x18\x02 \x01(\v21.com.hedera.hapi.node.hooks.EvmHookMappingEntriesH\x00R\x0emappingEntriesB\b\n" +
+	"\x06update\"\x85\x01\n" +
+	"\x15EvmHookMappingEntries\x12!\n" +
+	"\fmapping_slot\x18\x01 \x01(\fR\vmappingSlot\x12I\n" +
+	"\aentries\x18\x02 \x03(\v2/.com.hedera.hapi.node.hooks.EvmHookMappingEntryR\aentries\"j\n" +
+	"\x13EvmHookMappingEntry\x12\x12\n" +
 	"\x03key\x18\x01 \x01(\fH\x00R\x03key\x12\x1c\n" +
 	"\bpreimage\x18\x02 \x01(\fH\x00R\bpreimage\x12\x14\n" +
 	"\x05value\x18\x03 \x01(\fR\x05valueB\v\n" +
-	"\tentry_key\";\n" +
-	"\x11LambdaStorageSlot\x12\x10\n" +
+	"\tentry_key\"<\n" +
+	"\x12EvmHookStorageSlot\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\fR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\fR\x05value*0\n" +
 	"\x12HookExtensionPoint\x12\x1a\n" +
@@ -766,12 +765,12 @@ var file_hook_types_proto_goTypes = []any{
 	(HookExtensionPoint)(0),       // 0: com.hedera.hapi.node.hooks.HookExtensionPoint
 	(*HookCreation)(nil),          // 1: com.hedera.hapi.node.hooks.HookCreation
 	(*HookCreationDetails)(nil),   // 2: com.hedera.hapi.node.hooks.HookCreationDetails
-	(*LambdaEvmHook)(nil),         // 3: com.hedera.hapi.node.hooks.LambdaEvmHook
+	(*EvmHook)(nil),               // 3: com.hedera.hapi.node.hooks.EvmHook
 	(*EvmHookSpec)(nil),           // 4: com.hedera.hapi.node.hooks.EvmHookSpec
-	(*LambdaStorageUpdate)(nil),   // 5: com.hedera.hapi.node.hooks.LambdaStorageUpdate
-	(*LambdaMappingEntries)(nil),  // 6: com.hedera.hapi.node.hooks.LambdaMappingEntries
-	(*LambdaMappingEntry)(nil),    // 7: com.hedera.hapi.node.hooks.LambdaMappingEntry
-	(*LambdaStorageSlot)(nil),     // 8: com.hedera.hapi.node.hooks.LambdaStorageSlot
+	(*EvmHookStorageUpdate)(nil),  // 5: com.hedera.hapi.node.hooks.EvmHookStorageUpdate
+	(*EvmHookMappingEntries)(nil), // 6: com.hedera.hapi.node.hooks.EvmHookMappingEntries
+	(*EvmHookMappingEntry)(nil),   // 7: com.hedera.hapi.node.hooks.EvmHookMappingEntry
+	(*EvmHookStorageSlot)(nil),    // 8: com.hedera.hapi.node.hooks.EvmHookStorageSlot
 	(*HookEntityId)(nil),          // 9: proto.HookEntityId
 	(*wrapperspb.Int64Value)(nil), // 10: google.protobuf.Int64Value
 	(*Key)(nil),                   // 11: proto.Key
@@ -782,14 +781,14 @@ var file_hook_types_proto_depIdxs = []int32{
 	2,  // 1: com.hedera.hapi.node.hooks.HookCreation.details:type_name -> com.hedera.hapi.node.hooks.HookCreationDetails
 	10, // 2: com.hedera.hapi.node.hooks.HookCreation.next_hook_id:type_name -> google.protobuf.Int64Value
 	0,  // 3: com.hedera.hapi.node.hooks.HookCreationDetails.extension_point:type_name -> com.hedera.hapi.node.hooks.HookExtensionPoint
-	3,  // 4: com.hedera.hapi.node.hooks.HookCreationDetails.lambda_evm_hook:type_name -> com.hedera.hapi.node.hooks.LambdaEvmHook
+	3,  // 4: com.hedera.hapi.node.hooks.HookCreationDetails.evm_hook:type_name -> com.hedera.hapi.node.hooks.EvmHook
 	11, // 5: com.hedera.hapi.node.hooks.HookCreationDetails.admin_key:type_name -> proto.Key
-	4,  // 6: com.hedera.hapi.node.hooks.LambdaEvmHook.spec:type_name -> com.hedera.hapi.node.hooks.EvmHookSpec
-	5,  // 7: com.hedera.hapi.node.hooks.LambdaEvmHook.storage_updates:type_name -> com.hedera.hapi.node.hooks.LambdaStorageUpdate
+	4,  // 6: com.hedera.hapi.node.hooks.EvmHook.spec:type_name -> com.hedera.hapi.node.hooks.EvmHookSpec
+	5,  // 7: com.hedera.hapi.node.hooks.EvmHook.storage_updates:type_name -> com.hedera.hapi.node.hooks.EvmHookStorageUpdate
 	12, // 8: com.hedera.hapi.node.hooks.EvmHookSpec.contract_id:type_name -> proto.ContractID
-	8,  // 9: com.hedera.hapi.node.hooks.LambdaStorageUpdate.storage_slot:type_name -> com.hedera.hapi.node.hooks.LambdaStorageSlot
-	6,  // 10: com.hedera.hapi.node.hooks.LambdaStorageUpdate.mapping_entries:type_name -> com.hedera.hapi.node.hooks.LambdaMappingEntries
-	7,  // 11: com.hedera.hapi.node.hooks.LambdaMappingEntries.entries:type_name -> com.hedera.hapi.node.hooks.LambdaMappingEntry
+	8,  // 9: com.hedera.hapi.node.hooks.EvmHookStorageUpdate.storage_slot:type_name -> com.hedera.hapi.node.hooks.EvmHookStorageSlot
+	6,  // 10: com.hedera.hapi.node.hooks.EvmHookStorageUpdate.mapping_entries:type_name -> com.hedera.hapi.node.hooks.EvmHookMappingEntries
+	7,  // 11: com.hedera.hapi.node.hooks.EvmHookMappingEntries.entries:type_name -> com.hedera.hapi.node.hooks.EvmHookMappingEntry
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
@@ -804,18 +803,18 @@ func file_hook_types_proto_init() {
 	}
 	file_basic_types_proto_init()
 	file_hook_types_proto_msgTypes[1].OneofWrappers = []any{
-		(*HookCreationDetails_LambdaEvmHook)(nil),
+		(*HookCreationDetails_EvmHook)(nil),
 	}
 	file_hook_types_proto_msgTypes[3].OneofWrappers = []any{
 		(*EvmHookSpec_ContractId)(nil),
 	}
 	file_hook_types_proto_msgTypes[4].OneofWrappers = []any{
-		(*LambdaStorageUpdate_StorageSlot)(nil),
-		(*LambdaStorageUpdate_MappingEntries)(nil),
+		(*EvmHookStorageUpdate_StorageSlot)(nil),
+		(*EvmHookStorageUpdate_MappingEntries)(nil),
 	}
 	file_hook_types_proto_msgTypes[6].OneofWrappers = []any{
-		(*LambdaMappingEntry_Key)(nil),
-		(*LambdaMappingEntry_Preimage)(nil),
+		(*EvmHookMappingEntry_Key)(nil),
+		(*EvmHookMappingEntry_Preimage)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

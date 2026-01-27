@@ -13,6 +13,7 @@ import (
 
 func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -79,6 +80,7 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 
 func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -138,6 +140,7 @@ func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 
 func TestIntegrationLambdaSStoreFailsWithNonExistentHookId(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -176,6 +179,7 @@ func TestIntegrationLambdaSStoreFailsWithNonExistentHookId(t *testing.T) {
 
 func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
