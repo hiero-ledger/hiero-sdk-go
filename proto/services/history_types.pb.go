@@ -22,6 +22,68 @@ const (
 )
 
 // *
+// The phase of a WRAPS proof construction.
+type WrapsPhase int32
+
+const (
+	// *
+	// Nodes are publishing their proof keys and R1 messages.
+	WrapsPhase_R1 WrapsPhase = 0
+	// *
+	// Nodes are publishing their R2 messages.
+	WrapsPhase_R2 WrapsPhase = 1
+	// *
+	// Nodes are publishing their R3 messages.
+	WrapsPhase_R3 WrapsPhase = 2
+	// *
+	// Nodes are aggregating all messages to produce a final signature.
+	WrapsPhase_AGGREGATE WrapsPhase = 3
+)
+
+// Enum value maps for WrapsPhase.
+var (
+	WrapsPhase_name = map[int32]string{
+		0: "R1",
+		1: "R2",
+		2: "R3",
+		3: "AGGREGATE",
+	}
+	WrapsPhase_value = map[string]int32{
+		"R1":        0,
+		"R2":        1,
+		"R3":        2,
+		"AGGREGATE": 3,
+	}
+)
+
+func (x WrapsPhase) Enum() *WrapsPhase {
+	p := new(WrapsPhase)
+	*p = x
+	return p
+}
+
+func (x WrapsPhase) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WrapsPhase) Descriptor() protoreflect.EnumDescriptor {
+	return file_history_types_proto_enumTypes[0].Descriptor()
+}
+
+func (WrapsPhase) Type() protoreflect.EnumType {
+	return &file_history_types_proto_enumTypes[0]
+}
+
+func (x WrapsPhase) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WrapsPhase.Descriptor instead.
+func (WrapsPhase) EnumDescriptor() ([]byte, []int) {
+	return file_history_types_proto_rawDescGZIP(), []int{0}
+}
+
+// *
 // A set of proof keys for a node; that is, the key the node is
 // currently using and the key it wants to use in assembling the
 // next address book in the ledger id's chain of trust.
@@ -230,11 +292,16 @@ type HistoryProof struct {
 	TargetHistory *History `protobuf:"bytes,2,opt,name=target_history,json=targetHistory,proto3" json:"target_history,omitempty"`
 	// *
 	// The proof of chain of trust from the ledger id to the target
-	// history's metadata. Maybe replaced from a NodeSignatures list
-	// with a recursive proof when one becomes available.
+	// history's metadata. May be switched from AggregatedNodeSignatures
+	// to a recursive proof when one becomes available.
 	ChainOfTrustProof *ChainOfTrustProof `protobuf:"bytes,3,opt,name=chain_of_trust_proof,json=chainOfTrustProof,proto3" json:"chain_of_trust_proof,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	// *
+	// If set, the uncompressed proof of chain of trust from the ledger id to
+	// the target address book; the uncompressed version of the WRAPS proof is
+	// required to keep extending the chain of trust.
+	UncompressedWrapsProof []byte `protobuf:"bytes,4,opt,name=uncompressed_wraps_proof,json=uncompressedWrapsProof,proto3" json:"uncompressed_wraps_proof,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *HistoryProof) Reset() {
@@ -288,6 +355,13 @@ func (x *HistoryProof) GetChainOfTrustProof() *ChainOfTrustProof {
 	return nil
 }
 
+func (x *HistoryProof) GetUncompressedWrapsProof() []byte {
+	if x != nil {
+		return x.UncompressedWrapsProof
+	}
+	return nil
+}
+
 // *
 // Summary of the status of constructing a metadata proof, necessary to
 // ensure deterministic construction ending in a roster with sufficient
@@ -302,11 +376,6 @@ type HistoryProofConstruction struct {
 	// certain thresholds are during construction.
 	SourceRosterHash []byte `protobuf:"bytes,2,opt,name=source_roster_hash,json=sourceRosterHash,proto3" json:"source_roster_hash,omitempty"`
 	// *
-	// If set, the proof that the address book of the source roster belongs
-	// to the the ledger id's chain of trust; if not set, the source roster's
-	// address book must *be* the ledger id.
-	SourceProof *HistoryProof `protobuf:"bytes,3,opt,name=source_proof,json=sourceProof,proto3" json:"source_proof,omitempty"`
-	// *
 	// The hash of the roster whose weights are used to assess progress
 	// toward obtaining proof keys for parties that hold at least a
 	// strong minority of the stake in that roster.
@@ -317,6 +386,7 @@ type HistoryProofConstruction struct {
 	//	*HistoryProofConstruction_AssemblyStartTime
 	//	*HistoryProofConstruction_TargetProof
 	//	*HistoryProofConstruction_FailureReason
+	//	*HistoryProofConstruction_WrapsSigningState
 	ProofState    isHistoryProofConstruction_ProofState `protobuf_oneof:"proof_state"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -362,13 +432,6 @@ func (x *HistoryProofConstruction) GetConstructionId() uint64 {
 func (x *HistoryProofConstruction) GetSourceRosterHash() []byte {
 	if x != nil {
 		return x.SourceRosterHash
-	}
-	return nil
-}
-
-func (x *HistoryProofConstruction) GetSourceProof() *HistoryProof {
-	if x != nil {
-		return x.SourceProof
 	}
 	return nil
 }
@@ -423,6 +486,15 @@ func (x *HistoryProofConstruction) GetFailureReason() string {
 	return ""
 }
 
+func (x *HistoryProofConstruction) GetWrapsSigningState() *WrapsSigningState {
+	if x != nil {
+		if x, ok := x.ProofState.(*HistoryProofConstruction_WrapsSigningState); ok {
+			return x.WrapsSigningState
+		}
+	}
+	return nil
+}
+
 type isHistoryProofConstruction_ProofState interface {
 	isHistoryProofConstruction_ProofState()
 }
@@ -431,7 +503,7 @@ type HistoryProofConstruction_GracePeriodEndTime struct {
 	// *
 	// If the network is still gathering proof keys for this
 	// construction, the next time at which nodes should stop waiting
-	// for tardy proof keys and assembly the history to be proven as
+	// for tardy proof keys and assemble the history to be proven as
 	// soon as it has the associated metadata and proof keys for nodes
 	// with >2/3 weight in the target roster.
 	GracePeriodEndTime *Timestamp `protobuf:"bytes,5,opt,name=grace_period_end_time,json=gracePeriodEndTime,proto3,oneof"`
@@ -447,9 +519,9 @@ type HistoryProofConstruction_AssemblyStartTime struct {
 
 type HistoryProofConstruction_TargetProof struct {
 	// *
-	// When this construction is complete, the recursive proof that
-	// the target roster's address book and associated metadata belong
-	// to the ledger id's chain of trust.
+	// When this construction is complete, the proof that the target
+	// roster's address book and associated metadata belong to the
+	// ledger id's chain of trust.
 	TargetProof *HistoryProof `protobuf:"bytes,7,opt,name=target_proof,json=targetProof,proto3,oneof"`
 }
 
@@ -459,6 +531,12 @@ type HistoryProofConstruction_FailureReason struct {
 	FailureReason string `protobuf:"bytes,8,opt,name=failure_reason,json=failureReason,proto3,oneof"`
 }
 
+type HistoryProofConstruction_WrapsSigningState struct {
+	// *
+	// If set, the state of the WRAPS signing protocol for this construction.
+	WrapsSigningState *WrapsSigningState `protobuf:"bytes,9,opt,name=wraps_signing_state,json=wrapsSigningState,proto3,oneof"`
+}
+
 func (*HistoryProofConstruction_GracePeriodEndTime) isHistoryProofConstruction_ProofState() {}
 
 func (*HistoryProofConstruction_AssemblyStartTime) isHistoryProofConstruction_ProofState() {}
@@ -466,6 +544,70 @@ func (*HistoryProofConstruction_AssemblyStartTime) isHistoryProofConstruction_Pr
 func (*HistoryProofConstruction_TargetProof) isHistoryProofConstruction_ProofState() {}
 
 func (*HistoryProofConstruction_FailureReason) isHistoryProofConstruction_ProofState() {}
+
+func (*HistoryProofConstruction_WrapsSigningState) isHistoryProofConstruction_ProofState() {}
+
+// *
+// The state of an ongoing WRAPS signature protocol.
+type WrapsSigningState struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// *
+	// The phase of the WRAPS protocol.
+	Phase WrapsPhase `protobuf:"varint,1,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
+	// *
+	// If the network is still gathering WRAPS messages for the R2 or R3
+	// protocol phase, the next time at which nodes should stop waiting
+	// for tardy messages from R1 participants and start over.
+	// soon as it has WRAPS messages from nodes with >2/3 weight in the
+	// target roster.
+	GracePeriodEndTime *Timestamp `protobuf:"bytes,2,opt,name=grace_period_end_time,json=gracePeriodEndTime,proto3" json:"grace_period_end_time,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *WrapsSigningState) Reset() {
+	*x = WrapsSigningState{}
+	mi := &file_history_types_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WrapsSigningState) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WrapsSigningState) ProtoMessage() {}
+
+func (x *WrapsSigningState) ProtoReflect() protoreflect.Message {
+	mi := &file_history_types_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WrapsSigningState.ProtoReflect.Descriptor instead.
+func (*WrapsSigningState) Descriptor() ([]byte, []int) {
+	return file_history_types_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *WrapsSigningState) GetPhase() WrapsPhase {
+	if x != nil {
+		return x.Phase
+	}
+	return WrapsPhase_R1
+}
+
+func (x *WrapsSigningState) GetGracePeriodEndTime() *Timestamp {
+	if x != nil {
+		return x.GracePeriodEndTime
+	}
+	return nil
+}
 
 // *
 // A construction-scoped node id.
@@ -483,7 +625,7 @@ type ConstructionNodeId struct {
 
 func (x *ConstructionNodeId) Reset() {
 	*x = ConstructionNodeId{}
-	mi := &file_history_types_proto_msgTypes[5]
+	mi := &file_history_types_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -495,7 +637,7 @@ func (x *ConstructionNodeId) String() string {
 func (*ConstructionNodeId) ProtoMessage() {}
 
 func (x *ConstructionNodeId) ProtoReflect() protoreflect.Message {
-	mi := &file_history_types_proto_msgTypes[5]
+	mi := &file_history_types_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -508,7 +650,7 @@ func (x *ConstructionNodeId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConstructionNodeId.ProtoReflect.Descriptor instead.
 func (*ConstructionNodeId) Descriptor() ([]byte, []int) {
-	return file_history_types_proto_rawDescGZIP(), []int{5}
+	return file_history_types_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ConstructionNodeId) GetConstructionId() uint64 {
@@ -541,7 +683,7 @@ type HistoryProofVote struct {
 
 func (x *HistoryProofVote) Reset() {
 	*x = HistoryProofVote{}
-	mi := &file_history_types_proto_msgTypes[6]
+	mi := &file_history_types_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -553,7 +695,7 @@ func (x *HistoryProofVote) String() string {
 func (*HistoryProofVote) ProtoMessage() {}
 
 func (x *HistoryProofVote) ProtoReflect() protoreflect.Message {
-	mi := &file_history_types_proto_msgTypes[6]
+	mi := &file_history_types_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -566,7 +708,7 @@ func (x *HistoryProofVote) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistoryProofVote.ProtoReflect.Descriptor instead.
 func (*HistoryProofVote) Descriptor() ([]byte, []int) {
-	return file_history_types_proto_rawDescGZIP(), []int{6}
+	return file_history_types_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *HistoryProofVote) GetVote() isHistoryProofVote_Vote {
@@ -632,7 +774,7 @@ type HistorySignature struct {
 
 func (x *HistorySignature) Reset() {
 	*x = HistorySignature{}
-	mi := &file_history_types_proto_msgTypes[7]
+	mi := &file_history_types_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -644,7 +786,7 @@ func (x *HistorySignature) String() string {
 func (*HistorySignature) ProtoMessage() {}
 
 func (x *HistorySignature) ProtoReflect() protoreflect.Message {
-	mi := &file_history_types_proto_msgTypes[7]
+	mi := &file_history_types_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -657,7 +799,7 @@ func (x *HistorySignature) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HistorySignature.ProtoReflect.Descriptor instead.
 func (*HistorySignature) Descriptor() ([]byte, []int) {
-	return file_history_types_proto_rawDescGZIP(), []int{7}
+	return file_history_types_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *HistorySignature) GetHistory() *History {
@@ -690,7 +832,7 @@ type RecordedHistorySignature struct {
 
 func (x *RecordedHistorySignature) Reset() {
 	*x = RecordedHistorySignature{}
-	mi := &file_history_types_proto_msgTypes[8]
+	mi := &file_history_types_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -702,7 +844,7 @@ func (x *RecordedHistorySignature) String() string {
 func (*RecordedHistorySignature) ProtoMessage() {}
 
 func (x *RecordedHistorySignature) ProtoReflect() protoreflect.Message {
-	mi := &file_history_types_proto_msgTypes[8]
+	mi := &file_history_types_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -715,7 +857,7 @@ func (x *RecordedHistorySignature) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RecordedHistorySignature.ProtoReflect.Descriptor instead.
 func (*RecordedHistorySignature) Descriptor() ([]byte, []int) {
-	return file_history_types_proto_rawDescGZIP(), []int{8}
+	return file_history_types_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *RecordedHistorySignature) GetSigningTime() *Timestamp {
@@ -728,6 +870,121 @@ func (x *RecordedHistorySignature) GetSigningTime() *Timestamp {
 func (x *RecordedHistorySignature) GetHistorySignature() *HistorySignature {
 	if x != nil {
 		return x.HistorySignature
+	}
+	return nil
+}
+
+// *
+// A message published by a node during a WRAPS proof construction.
+type WrapsMessageDetails struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// *
+	// The time at which the message was published.
+	PublicationTime *Timestamp `protobuf:"bytes,1,opt,name=publication_time,json=publicationTime,proto3" json:"publication_time,omitempty"`
+	// *
+	// The phase of the construction the message applies to.
+	Phase WrapsPhase `protobuf:"varint,2,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
+	// *
+	// The message itself.
+	Message       []byte `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WrapsMessageDetails) Reset() {
+	*x = WrapsMessageDetails{}
+	mi := &file_history_types_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WrapsMessageDetails) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WrapsMessageDetails) ProtoMessage() {}
+
+func (x *WrapsMessageDetails) ProtoReflect() protoreflect.Message {
+	mi := &file_history_types_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WrapsMessageDetails.ProtoReflect.Descriptor instead.
+func (*WrapsMessageDetails) Descriptor() ([]byte, []int) {
+	return file_history_types_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *WrapsMessageDetails) GetPublicationTime() *Timestamp {
+	if x != nil {
+		return x.PublicationTime
+	}
+	return nil
+}
+
+func (x *WrapsMessageDetails) GetPhase() WrapsPhase {
+	if x != nil {
+		return x.Phase
+	}
+	return WrapsPhase_R1
+}
+
+func (x *WrapsMessageDetails) GetMessage() []byte {
+	if x != nil {
+		return x.Message
+	}
+	return nil
+}
+
+// *
+// A history of messages published during a WRAPS proof construction.
+type WrapsMessageHistory struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The published messages.
+	Messages      []*WrapsMessageDetails `protobuf:"bytes,1,rep,name=messages,proto3" json:"messages,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *WrapsMessageHistory) Reset() {
+	*x = WrapsMessageHistory{}
+	mi := &file_history_types_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *WrapsMessageHistory) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*WrapsMessageHistory) ProtoMessage() {}
+
+func (x *WrapsMessageHistory) ProtoReflect() protoreflect.Message {
+	mi := &file_history_types_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use WrapsMessageHistory.ProtoReflect.Descriptor instead.
+func (*WrapsMessageHistory) Descriptor() ([]byte, []int) {
+	return file_history_types_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *WrapsMessageHistory) GetMessages() []*WrapsMessageDetails {
+	if x != nil {
+		return x.Messages
 	}
 	return nil
 }
@@ -746,21 +1003,25 @@ const file_history_types_proto_rawDesc = "" +
 	"\x03key\x18\x02 \x01(\fR\x03key\"Q\n" +
 	"\aHistory\x12*\n" +
 	"\x11address_book_hash\x18\x01 \x01(\fR\x0faddressBookHash\x12\x1a\n" +
-	"\bmetadata\x18\x02 \x01(\fR\bmetadata\"\x9e\x02\n" +
+	"\bmetadata\x18\x02 \x01(\fR\bmetadata\"\xd8\x02\n" +
 	"\fHistoryProof\x12X\n" +
 	"\x11target_proof_keys\x18\x01 \x03(\v2,.com.hedera.hapi.node.state.history.ProofKeyR\x0ftargetProofKeys\x12R\n" +
 	"\x0etarget_history\x18\x02 \x01(\v2+.com.hedera.hapi.node.state.history.HistoryR\rtargetHistory\x12`\n" +
-	"\x14chain_of_trust_proof\x18\x03 \x01(\v2/.com.hedera.hapi.block.stream.ChainOfTrustProofR\x11chainOfTrustProof\"\x8e\x04\n" +
+	"\x14chain_of_trust_proof\x18\x03 \x01(\v2/.com.hedera.hapi.block.stream.ChainOfTrustProofR\x11chainOfTrustProof\x128\n" +
+	"\x18uncompressed_wraps_proof\x18\x04 \x01(\fR\x16uncompressedWrapsProof\"\xa8\x04\n" +
 	"\x18HistoryProofConstruction\x12'\n" +
 	"\x0fconstruction_id\x18\x01 \x01(\x04R\x0econstructionId\x12,\n" +
-	"\x12source_roster_hash\x18\x02 \x01(\fR\x10sourceRosterHash\x12S\n" +
-	"\fsource_proof\x18\x03 \x01(\v20.com.hedera.hapi.node.state.history.HistoryProofR\vsourceProof\x12,\n" +
+	"\x12source_roster_hash\x18\x02 \x01(\fR\x10sourceRosterHash\x12,\n" +
 	"\x12target_roster_hash\x18\x04 \x01(\fR\x10targetRosterHash\x12E\n" +
 	"\x15grace_period_end_time\x18\x05 \x01(\v2\x10.proto.TimestampH\x00R\x12gracePeriodEndTime\x12B\n" +
 	"\x13assembly_start_time\x18\x06 \x01(\v2\x10.proto.TimestampH\x00R\x11assemblyStartTime\x12U\n" +
 	"\ftarget_proof\x18\a \x01(\v20.com.hedera.hapi.node.state.history.HistoryProofH\x00R\vtargetProof\x12'\n" +
-	"\x0efailure_reason\x18\b \x01(\tH\x00R\rfailureReasonB\r\n" +
-	"\vproof_state\"V\n" +
+	"\x0efailure_reason\x18\b \x01(\tH\x00R\rfailureReason\x12g\n" +
+	"\x13wraps_signing_state\x18\t \x01(\v25.com.hedera.hapi.node.state.history.WrapsSigningStateH\x00R\x11wrapsSigningStateB\r\n" +
+	"\vproof_stateJ\x04\b\x03\x10\x04\"\x9e\x01\n" +
+	"\x11WrapsSigningState\x12D\n" +
+	"\x05phase\x18\x01 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phase\x12C\n" +
+	"\x15grace_period_end_time\x18\x02 \x01(\v2\x10.proto.TimestampR\x12gracePeriodEndTime\"V\n" +
 	"\x12ConstructionNodeId\x12'\n" +
 	"\x0fconstruction_id\x18\x01 \x01(\x04R\x0econstructionId\x12\x17\n" +
 	"\anode_id\x18\x02 \x01(\x04R\x06nodeId\"\x92\x01\n" +
@@ -773,7 +1034,19 @@ const file_history_types_proto_rawDesc = "" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\"\xb2\x01\n" +
 	"\x18RecordedHistorySignature\x123\n" +
 	"\fsigning_time\x18\x01 \x01(\v2\x10.proto.TimestampR\vsigningTime\x12a\n" +
-	"\x11history_signature\x18\x02 \x01(\v24.com.hedera.hapi.node.state.history.HistorySignatureR\x10historySignatureB&\n" +
+	"\x11history_signature\x18\x02 \x01(\v24.com.hedera.hapi.node.state.history.HistorySignatureR\x10historySignature\"\xb2\x01\n" +
+	"\x13WrapsMessageDetails\x12;\n" +
+	"\x10publication_time\x18\x01 \x01(\v2\x10.proto.TimestampR\x0fpublicationTime\x12D\n" +
+	"\x05phase\x18\x02 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phase\x12\x18\n" +
+	"\amessage\x18\x03 \x01(\fR\amessage\"j\n" +
+	"\x13WrapsMessageHistory\x12S\n" +
+	"\bmessages\x18\x01 \x03(\v27.com.hedera.hapi.node.state.history.WrapsMessageDetailsR\bmessages*3\n" +
+	"\n" +
+	"WrapsPhase\x12\x06\n" +
+	"\x02R1\x10\x00\x12\x06\n" +
+	"\x02R2\x10\x01\x12\x06\n" +
+	"\x02R3\x10\x02\x12\r\n" +
+	"\tAGGREGATE\x10\x03B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (
@@ -788,38 +1061,48 @@ func file_history_types_proto_rawDescGZIP() []byte {
 	return file_history_types_proto_rawDescData
 }
 
-var file_history_types_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_history_types_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_history_types_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_history_types_proto_goTypes = []any{
-	(*ProofKeySet)(nil),              // 0: com.hedera.hapi.node.state.history.ProofKeySet
-	(*ProofKey)(nil),                 // 1: com.hedera.hapi.node.state.history.ProofKey
-	(*History)(nil),                  // 2: com.hedera.hapi.node.state.history.History
-	(*HistoryProof)(nil),             // 3: com.hedera.hapi.node.state.history.HistoryProof
-	(*HistoryProofConstruction)(nil), // 4: com.hedera.hapi.node.state.history.HistoryProofConstruction
-	(*ConstructionNodeId)(nil),       // 5: com.hedera.hapi.node.state.history.ConstructionNodeId
-	(*HistoryProofVote)(nil),         // 6: com.hedera.hapi.node.state.history.HistoryProofVote
-	(*HistorySignature)(nil),         // 7: com.hedera.hapi.node.state.history.HistorySignature
-	(*RecordedHistorySignature)(nil), // 8: com.hedera.hapi.node.state.history.RecordedHistorySignature
-	(*Timestamp)(nil),                // 9: proto.Timestamp
-	(*ChainOfTrustProof)(nil),        // 10: com.hedera.hapi.block.stream.ChainOfTrustProof
+	(WrapsPhase)(0),                  // 0: com.hedera.hapi.node.state.history.WrapsPhase
+	(*ProofKeySet)(nil),              // 1: com.hedera.hapi.node.state.history.ProofKeySet
+	(*ProofKey)(nil),                 // 2: com.hedera.hapi.node.state.history.ProofKey
+	(*History)(nil),                  // 3: com.hedera.hapi.node.state.history.History
+	(*HistoryProof)(nil),             // 4: com.hedera.hapi.node.state.history.HistoryProof
+	(*HistoryProofConstruction)(nil), // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction
+	(*WrapsSigningState)(nil),        // 6: com.hedera.hapi.node.state.history.WrapsSigningState
+	(*ConstructionNodeId)(nil),       // 7: com.hedera.hapi.node.state.history.ConstructionNodeId
+	(*HistoryProofVote)(nil),         // 8: com.hedera.hapi.node.state.history.HistoryProofVote
+	(*HistorySignature)(nil),         // 9: com.hedera.hapi.node.state.history.HistorySignature
+	(*RecordedHistorySignature)(nil), // 10: com.hedera.hapi.node.state.history.RecordedHistorySignature
+	(*WrapsMessageDetails)(nil),      // 11: com.hedera.hapi.node.state.history.WrapsMessageDetails
+	(*WrapsMessageHistory)(nil),      // 12: com.hedera.hapi.node.state.history.WrapsMessageHistory
+	(*Timestamp)(nil),                // 13: proto.Timestamp
+	(*ChainOfTrustProof)(nil),        // 14: com.hedera.hapi.block.stream.ChainOfTrustProof
 }
 var file_history_types_proto_depIdxs = []int32{
-	9,  // 0: com.hedera.hapi.node.state.history.ProofKeySet.adoption_time:type_name -> proto.Timestamp
-	1,  // 1: com.hedera.hapi.node.state.history.HistoryProof.target_proof_keys:type_name -> com.hedera.hapi.node.state.history.ProofKey
-	2,  // 2: com.hedera.hapi.node.state.history.HistoryProof.target_history:type_name -> com.hedera.hapi.node.state.history.History
-	10, // 3: com.hedera.hapi.node.state.history.HistoryProof.chain_of_trust_proof:type_name -> com.hedera.hapi.block.stream.ChainOfTrustProof
-	3,  // 4: com.hedera.hapi.node.state.history.HistoryProofConstruction.source_proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
-	9,  // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction.grace_period_end_time:type_name -> proto.Timestamp
-	9,  // 6: com.hedera.hapi.node.state.history.HistoryProofConstruction.assembly_start_time:type_name -> proto.Timestamp
-	3,  // 7: com.hedera.hapi.node.state.history.HistoryProofConstruction.target_proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
-	3,  // 8: com.hedera.hapi.node.state.history.HistoryProofVote.proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
-	2,  // 9: com.hedera.hapi.node.state.history.HistorySignature.history:type_name -> com.hedera.hapi.node.state.history.History
-	9,  // 10: com.hedera.hapi.node.state.history.RecordedHistorySignature.signing_time:type_name -> proto.Timestamp
-	7,  // 11: com.hedera.hapi.node.state.history.RecordedHistorySignature.history_signature:type_name -> com.hedera.hapi.node.state.history.HistorySignature
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	13, // 0: com.hedera.hapi.node.state.history.ProofKeySet.adoption_time:type_name -> proto.Timestamp
+	2,  // 1: com.hedera.hapi.node.state.history.HistoryProof.target_proof_keys:type_name -> com.hedera.hapi.node.state.history.ProofKey
+	3,  // 2: com.hedera.hapi.node.state.history.HistoryProof.target_history:type_name -> com.hedera.hapi.node.state.history.History
+	14, // 3: com.hedera.hapi.node.state.history.HistoryProof.chain_of_trust_proof:type_name -> com.hedera.hapi.block.stream.ChainOfTrustProof
+	13, // 4: com.hedera.hapi.node.state.history.HistoryProofConstruction.grace_period_end_time:type_name -> proto.Timestamp
+	13, // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction.assembly_start_time:type_name -> proto.Timestamp
+	4,  // 6: com.hedera.hapi.node.state.history.HistoryProofConstruction.target_proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
+	6,  // 7: com.hedera.hapi.node.state.history.HistoryProofConstruction.wraps_signing_state:type_name -> com.hedera.hapi.node.state.history.WrapsSigningState
+	0,  // 8: com.hedera.hapi.node.state.history.WrapsSigningState.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
+	13, // 9: com.hedera.hapi.node.state.history.WrapsSigningState.grace_period_end_time:type_name -> proto.Timestamp
+	4,  // 10: com.hedera.hapi.node.state.history.HistoryProofVote.proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
+	3,  // 11: com.hedera.hapi.node.state.history.HistorySignature.history:type_name -> com.hedera.hapi.node.state.history.History
+	13, // 12: com.hedera.hapi.node.state.history.RecordedHistorySignature.signing_time:type_name -> proto.Timestamp
+	9,  // 13: com.hedera.hapi.node.state.history.RecordedHistorySignature.history_signature:type_name -> com.hedera.hapi.node.state.history.HistorySignature
+	13, // 14: com.hedera.hapi.node.state.history.WrapsMessageDetails.publication_time:type_name -> proto.Timestamp
+	0,  // 15: com.hedera.hapi.node.state.history.WrapsMessageDetails.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
+	11, // 16: com.hedera.hapi.node.state.history.WrapsMessageHistory.messages:type_name -> com.hedera.hapi.node.state.history.WrapsMessageDetails
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_history_types_proto_init() }
@@ -834,8 +1117,9 @@ func file_history_types_proto_init() {
 		(*HistoryProofConstruction_AssemblyStartTime)(nil),
 		(*HistoryProofConstruction_TargetProof)(nil),
 		(*HistoryProofConstruction_FailureReason)(nil),
+		(*HistoryProofConstruction_WrapsSigningState)(nil),
 	}
-	file_history_types_proto_msgTypes[6].OneofWrappers = []any{
+	file_history_types_proto_msgTypes[7].OneofWrappers = []any{
 		(*HistoryProofVote_Proof)(nil),
 		(*HistoryProofVote_CongruentNodeId)(nil),
 	}
@@ -844,13 +1128,14 @@ func file_history_types_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_history_types_proto_rawDesc), len(file_history_types_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   9,
+			NumEnums:      1,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_history_types_proto_goTypes,
 		DependencyIndexes: file_history_types_proto_depIdxs,
+		EnumInfos:         file_history_types_proto_enumTypes,
 		MessageInfos:      file_history_types_proto_msgTypes,
 	}.Build()
 	File_history_types_proto = out.File

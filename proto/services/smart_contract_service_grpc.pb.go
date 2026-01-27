@@ -43,7 +43,7 @@ const (
 	SmartContractService_SystemDelete_FullMethodName            = "/proto.SmartContractService/systemDelete"
 	SmartContractService_SystemUndelete_FullMethodName          = "/proto.SmartContractService/systemUndelete"
 	SmartContractService_CallEthereum_FullMethodName            = "/proto.SmartContractService/callEthereum"
-	SmartContractService_LambdaSStore_FullMethodName            = "/proto.SmartContractService/lambdaSStore"
+	SmartContractService_HookStore_FullMethodName               = "/proto.SmartContractService/hookStore"
 )
 
 // SmartContractServiceClient is the client API for SmartContractService service.
@@ -179,8 +179,8 @@ type SmartContractServiceClient interface {
 	// is less than this "floor" amount.
 	CallEthereum(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error)
 	// *
-	// Update zero or more slots of a lambda.
-	LambdaSStore(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error)
+	// Update zero or more slots of an EVM hook's storage.
+	HookStore(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error)
 }
 
 type smartContractServiceClient struct {
@@ -315,10 +315,10 @@ func (c *smartContractServiceClient) CallEthereum(ctx context.Context, in *Trans
 	return out, nil
 }
 
-func (c *smartContractServiceClient) LambdaSStore(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error) {
+func (c *smartContractServiceClient) HookStore(ctx context.Context, in *Transaction, opts ...grpc.CallOption) (*TransactionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TransactionResponse)
-	err := c.cc.Invoke(ctx, SmartContractService_LambdaSStore_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, SmartContractService_HookStore_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -458,8 +458,8 @@ type SmartContractServiceServer interface {
 	// is less than this "floor" amount.
 	CallEthereum(context.Context, *Transaction) (*TransactionResponse, error)
 	// *
-	// Update zero or more slots of a lambda.
-	LambdaSStore(context.Context, *Transaction) (*TransactionResponse, error)
+	// Update zero or more slots of an EVM hook's storage.
+	HookStore(context.Context, *Transaction) (*TransactionResponse, error)
 	mustEmbedUnimplementedSmartContractServiceServer()
 }
 
@@ -506,8 +506,8 @@ func (UnimplementedSmartContractServiceServer) SystemUndelete(context.Context, *
 func (UnimplementedSmartContractServiceServer) CallEthereum(context.Context, *Transaction) (*TransactionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CallEthereum not implemented")
 }
-func (UnimplementedSmartContractServiceServer) LambdaSStore(context.Context, *Transaction) (*TransactionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method LambdaSStore not implemented")
+func (UnimplementedSmartContractServiceServer) HookStore(context.Context, *Transaction) (*TransactionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HookStore not implemented")
 }
 func (UnimplementedSmartContractServiceServer) mustEmbedUnimplementedSmartContractServiceServer() {}
 func (UnimplementedSmartContractServiceServer) testEmbeddedByValue()                              {}
@@ -746,20 +746,20 @@ func _SmartContractService_CallEthereum_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SmartContractService_LambdaSStore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _SmartContractService_HookStore_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(Transaction)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(SmartContractServiceServer).LambdaSStore(ctx, in)
+		return srv.(SmartContractServiceServer).HookStore(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: SmartContractService_LambdaSStore_FullMethodName,
+		FullMethod: SmartContractService_HookStore_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SmartContractServiceServer).LambdaSStore(ctx, req.(*Transaction))
+		return srv.(SmartContractServiceServer).HookStore(ctx, req.(*Transaction))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -820,8 +820,8 @@ var SmartContractService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SmartContractService_CallEthereum_Handler,
 		},
 		{
-			MethodName: "lambdaSStore",
-			Handler:    _SmartContractService_LambdaSStore_Handler,
+			MethodName: "hookStore",
+			Handler:    _SmartContractService_HookStore_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

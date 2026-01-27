@@ -957,11 +957,17 @@ const (
 	// Submit a batch of transactions to run atomically
 	HederaFunctionality_AtomicBatch HederaFunctionality = 108
 	// *
-	// Update one or more storage slots in an lambda EVM hook.
+	// (DEPRECATED) Remove once no production throttle assets reference it.
 	HederaFunctionality_LambdaSStore HederaFunctionality = 109
 	// *
 	// (Internal-only) Dispatch a hook action.
 	HederaFunctionality_HookDispatch HederaFunctionality = 110
+	// *
+	// Update one or more storage slots in an EVM hook.
+	HederaFunctionality_HookStore HederaFunctionality = 111
+	// *
+	// (Internal-only) Publish a new ledger id and chain-of-trust key.
+	HederaFunctionality_LedgerIdPublication HederaFunctionality = 112
 )
 
 // Enum value maps for HederaFunctionality.
@@ -1060,6 +1066,8 @@ var (
 		108: "AtomicBatch",
 		109: "LambdaSStore",
 		110: "HookDispatch",
+		111: "HookStore",
+		112: "LedgerIdPublication",
 	}
 	HederaFunctionality_value = map[string]int32{
 		"NONE":                       0,
@@ -1155,6 +1163,8 @@ var (
 		"AtomicBatch":                108,
 		"LambdaSStore":               109,
 		"HookDispatch":               110,
+		"HookStore":                  111,
+		"LedgerIdPublication":        112,
 	}
 )
 
@@ -5962,7 +5972,7 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x12PauseNotApplicable\x10\x00\x12\n" +
 	"\n" +
 	"\x06Paused\x10\x01\x12\f\n" +
-	"\bUnpaused\x10\x02*\xb1\x10\n" +
+	"\bUnpaused\x10\x02*\xd9\x10\n" +
 	"\x13HederaFunctionality\x12\b\n" +
 	"\x04NONE\x10\x00\x12\x12\n" +
 	"\x0eCryptoTransfer\x10\x01\x12\x10\n" +
@@ -6066,7 +6076,9 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x0eCrsPublication\x10k\x12\x0f\n" +
 	"\vAtomicBatch\x10l\x12\x10\n" +
 	"\fLambdaSStore\x10m\x12\x10\n" +
-	"\fHookDispatch\x10nB&\n" +
+	"\fHookDispatch\x10n\x12\r\n" +
+	"\tHookStore\x10o\x12\x17\n" +
+	"\x13LedgerIdPublication\x10pB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

@@ -395,6 +395,8 @@ const (
 	ACCOUNT_IS_LINKED_TO_A_NODE                                    Status = 524
 	HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER             Status = 525
 	NODE_ACCOUNT_HAS_ZERO_BALANCE                                  Status = 526
+	TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED                 Status = 527
+	TOO_MANY_HOOK_INVOCATIONS                                      Status = 528
 )
 
 // String() returns a string representation of the status
@@ -1176,6 +1178,10 @@ func (status Status) String() string { // nolint
 		return "HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER"
 	case NODE_ACCOUNT_HAS_ZERO_BALANCE:
 		return "NODE_ACCOUNT_HAS_ZERO_BALANCE"
+	case TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED:
+		return "TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED"
+	case TOO_MANY_HOOK_INVOCATIONS:
+		return "TOO_MANY_HOOK_INVOCATIONS"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))

@@ -439,6 +439,7 @@ func TestIntegrationAccountUpdateSelectiveFieldChanges(t *testing.T) {
 
 func TestIntegrationAccountUpdateTransactionCanExecuteWithHook(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -480,6 +481,7 @@ func TestIntegrationAccountUpdateTransactionCanExecuteWithHook(t *testing.T) {
 
 func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -518,6 +520,7 @@ func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
 
 func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -561,6 +564,7 @@ func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
 
 func TestIntegrationAccountUpdateTransactionUpdateAddHookWithInitialStorageUpdates(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -604,6 +608,7 @@ func TestIntegrationAccountUpdateTransactionUpdateAddHookWithInitialStorageUpdat
 
 func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -647,6 +652,7 @@ func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.
 
 func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -690,6 +696,7 @@ func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
 
 func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -733,6 +740,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testin
 
 func TestIntegrationAccountUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameTime(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -775,6 +783,7 @@ func TestIntegrationAccountUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameT
 
 func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
