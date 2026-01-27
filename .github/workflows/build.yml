@@ -24,7 +24,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+              uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
               with:
                 egress-policy: audit
 
@@ -34,7 +34,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.24
-              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+              uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
               with:
                   go-version: "1.24"
               id: go
@@ -72,7 +72,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+              uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
               with:
                   egress-policy: audit
 
@@ -87,7 +87,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.24
-              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+              uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
               with:
                   go-version: "1.24"
               id: go
@@ -101,8 +101,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@fbca3e7a99ce9aa8a250563a81187abe115e0dad # v0.16.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.69.0-alpha.1
-                mirrorNodeVersion: v0.142.0
+                hieroVersion: v0.71.0-alpha.1
+                mirrorNodeVersion: v0.146.0
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
@@ -145,7 +145,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+              uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
               with:
                 egress-policy: audit
 
@@ -160,7 +160,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.24
-              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+              uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
               with:
                   go-version: "1.24"
               id: go
@@ -173,8 +173,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@fbca3e7a99ce9aa8a250563a81187abe115e0dad # v0.16.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.69.0-alpha.1
-                mirrorNodeVersion: v0.142.0
+                hieroVersion: v0.71.0-alpha.1
+                mirrorNodeVersion: v0.146.0
                 dualMode: true
 
             - name: Set Operator Account
@@ -204,7 +204,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+              uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
               with:
                   egress-policy: audit
 
@@ -219,7 +219,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.24
-              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+              uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
               with:
                   go-version: "1.24"
               id: go
@@ -235,8 +235,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@fbca3e7a99ce9aa8a250563a81187abe115e0dad # v0.16.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.69.0-alpha.1
-                mirrorNodeVersion: v0.142.0
+                hieroVersion: v0.71.0-alpha.1
+                mirrorNodeVersion: v0.146.0
 
             - name: Set Operator Account
               run: |
@@ -252,7 +252,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+              uses: step-security/harden-runner@e3f713f2d8f53843e71c69a996d56f51aa9adfb9 # v2.14.1
               with:
                 egress-policy: audit
 
@@ -262,7 +262,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go 1.24
-              uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+              uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
               with:
                   go-version: "1.24"
               id: go

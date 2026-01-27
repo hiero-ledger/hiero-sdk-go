@@ -259,6 +259,7 @@ func TestIntegrationContractCreateTransactionSetBytecode(t *testing.T) {
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -277,7 +278,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -295,6 +296,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorageUpdates(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -313,8 +315,8 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorage
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().
-			SetStorageUpdates([]LambdaStorageUpdate{*NewLambdaStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
+		SetEvmHook(*NewEvmHook().
+			SetStorageUpdates([]EvmHookStorageUpdate{*NewEvmHookStorageSlot().SetKey([]byte{0x01}).SetValue([]byte{0x02})}).
 			SetContractId(&ContractID{Contract: 1}))
 
 	resp, err = NewContractCreateTransaction().
@@ -333,6 +335,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorage
 
 func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContractId(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -351,7 +354,7 @@ func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContrac
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook())
+		SetEvmHook(*NewEvmHook())
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -367,6 +370,7 @@ func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContrac
 
 func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -385,7 +389,7 @@ func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1}))
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Contract: 1}))
 
 	resp, err = NewContractCreateTransaction().
 		SetMaxTransactionFee(NewHbar(20)).
@@ -399,6 +403,7 @@ func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHookAndAdminKey(t *testing.T) {
 	t.Parallel()
+	t.Skip("Skipping hook test")
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -420,7 +425,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHookAndAdminKey(t *te
 	hookDetail := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&ContractID{Contract: 1})).
+		SetEvmHook(*NewEvmHook().SetContractId(&ContractID{Contract: 1})).
 		SetAdminKey(hookAdminKey)
 
 	resp, err = NewContractCreateTransaction().

@@ -411,7 +411,7 @@ func TestUnitContractCreateBytesHooks(t *testing.T) {
 
 	hook := NewHookCreationDetails().SetHookId(1).
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
-		SetLambdaEvmHook(*NewLambdaEvmHook().SetContractId(&contractID)).
+		SetEvmHook(*NewEvmHook().SetContractId(&contractID)).
 		SetAdminKey(ed25519PublicKey)
 	tx := NewContractCreateTransaction().SetHooks([]HookCreationDetails{*hook})
 	byt, err := tx.ToBytes()

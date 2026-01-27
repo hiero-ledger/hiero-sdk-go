@@ -58,7 +58,7 @@ func createContractWithHook(client *hiero.Client, hookContractId *hiero.Contract
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Create bytecode file
 	fmt.Println("Creating bytecode file...")
@@ -113,7 +113,7 @@ func addHookToContract(client *hiero.Client, hookContractId *hiero.ContractID) {
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Create contract update transaction to add hook
 	fmt.Println("Adding hook to contract via update transaction...")
@@ -143,7 +143,7 @@ func deleteHookFromContract(client *hiero.Client, hookContractId *hiero.Contract
 	hookDetail := hiero.NewHookCreationDetails().
 		SetExtensionPoint(hiero.ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetLambdaEvmHook(*hiero.NewLambdaEvmHook().SetContractId(hookContractId))
+		SetEvmHook(*hiero.NewEvmHook().SetContractId(hookContractId))
 
 	// Create bytecode file
 	fmt.Println("Creating bytecode file...")

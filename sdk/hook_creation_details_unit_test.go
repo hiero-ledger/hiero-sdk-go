@@ -50,11 +50,11 @@ func TestUnitHookCreationDetailsLambdaEvmHook(t *testing.T) {
 	hcd := NewHookCreationDetails()
 
 	// Test default value
-	assert.Equal(t, LambdaEvmHook{}, hcd.GetLambdaEvmHook())
+	assert.Equal(t, EvmHook{}, hcd.GetLambdaEvmHook())
 
 	// Test setting lambda EVM hook
-	lambdaHook := NewLambdaEvmHook()
-	hcd.SetLambdaEvmHook(*lambdaHook)
+	lambdaHook := NewEvmHook()
+	hcd.SetEvmHook(*lambdaHook)
 	assert.Equal(t, *lambdaHook, hcd.GetLambdaEvmHook())
 }
 
@@ -94,13 +94,13 @@ func TestUnitHookCreationDetailsMethodChaining(t *testing.T) {
 	require.NoError(t, err)
 	ed25519PublicKey := ed25519PrivateKey.PublicKey()
 
-	lambdaHook := NewLambdaEvmHook()
+	lambdaHook := NewEvmHook()
 
 	// Test method chaining
 	hcd := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(12345).
-		SetLambdaEvmHook(*lambdaHook).
+		SetEvmHook(*lambdaHook).
 		SetAdminKey(ed25519PublicKey)
 
 	assert.Equal(t, ACCOUNT_ALLOWANCE_HOOK, hcd.GetExtensionPoint())
@@ -119,12 +119,12 @@ func TestUnitHookCreationDetailsToProtobuf(t *testing.T) {
 
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
-	lambdaHook := NewLambdaEvmHook().SetContractId(&contractID)
+	lambdaHook := NewEvmHook().SetContractId(&contractID)
 
 	hcd := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(789).
-		SetLambdaEvmHook(*lambdaHook).
+		SetEvmHook(*lambdaHook).
 		SetAdminKey(ed25519PublicKey)
 
 	pb := hcd.toProtobuf()
@@ -132,7 +132,7 @@ func TestUnitHookCreationDetailsToProtobuf(t *testing.T) {
 	assert.Equal(t, services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK), pb.ExtensionPoint)
 	assert.Equal(t, int64(789), pb.HookId)
 	assert.NotNil(t, pb.Hook)
-	assert.NotNil(t, pb.Hook.(*services.HookCreationDetails_LambdaEvmHook).LambdaEvmHook)
+	assert.NotNil(t, pb.Hook.(*services.HookCreationDetails_EvmHook).EvmHook)
 	assert.NotNil(t, pb.AdminKey)
 }
 
@@ -142,14 +142,14 @@ func TestUnitHookCreationDetailsToProtobufWithNilAdminKey(t *testing.T) {
 	// Test with nil admin key - we need to create a valid LambdaEvmHook to avoid nil pointer dereference
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
-	lambdaHook := NewLambdaEvmHook().SetContractId(&contractID)
+	lambdaHook := NewEvmHook().SetContractId(&contractID)
 
 	hcd := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(789).
-		SetLambdaEvmHook(*lambdaHook)
+		SetEvmHook(*lambdaHook)
 
-	lambdaEvmHook := &services.LambdaEvmHook{
+	lambdaEvmHook := &services.EvmHook{
 		Spec: &services.EvmHookSpec{
 			BytecodeSource: &services.EvmHookSpec_ContractId{
 				ContractId: contractID._ToProtobuf(),
@@ -161,7 +161,7 @@ func TestUnitHookCreationDetailsToProtobufWithNilAdminKey(t *testing.T) {
 	require.NotNil(t, pb)
 	assert.Equal(t, services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK), pb.ExtensionPoint)
 	assert.Equal(t, int64(789), pb.HookId)
-	assert.Equal(t, lambdaEvmHook, pb.Hook.(*services.HookCreationDetails_LambdaEvmHook).LambdaEvmHook)
+	assert.Equal(t, lambdaEvmHook, pb.Hook.(*services.HookCreationDetails_EvmHook).EvmHook)
 	assert.Nil(t, pb.AdminKey)
 }
 
@@ -175,13 +175,13 @@ func TestUnitHookCreationDetailsFromProtobufNoStorageUpdates(t *testing.T) {
 
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
-	lambdaHook := NewLambdaEvmHook().SetContractId(&contractID)
+	lambdaHook := NewEvmHook().SetContractId(&contractID)
 
 	pb := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK),
 		HookId:         789,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: &services.LambdaEvmHook{
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: &services.EvmHook{
 				Spec: &services.EvmHookSpec{
 					BytecodeSource: &services.EvmHookSpec_ContractId{
 						ContractId: contractID._ToProtobuf(),
@@ -207,22 +207,22 @@ func TestUnitHookCreationDetailsFromProtobuf(t *testing.T) {
 
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
-	storageUpdate := NewLambdaStorageSlot().SetKey([]byte{1, 2, 3}).SetValue([]byte{4, 5, 6})
-	lambdaHook := NewLambdaEvmHook().SetContractId(&contractID).AddStorageUpdate(storageUpdate)
+	storageUpdate := NewEvmHookStorageSlot().SetKey([]byte{1, 2, 3}).SetValue([]byte{4, 5, 6})
+	lambdaHook := NewEvmHook().SetContractId(&contractID).AddStorageUpdate(storageUpdate)
 
 	pb := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK),
 		HookId:         789,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: &services.LambdaEvmHook{
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: &services.EvmHook{
 				Spec: &services.EvmHookSpec{
 					BytecodeSource: &services.EvmHookSpec_ContractId{
 						ContractId: contractID._ToProtobuf(),
 					},
 				},
-				StorageUpdates: []*services.LambdaStorageUpdate{{
-					Update: &services.LambdaStorageUpdate_StorageSlot{
-						StorageSlot: &services.LambdaStorageSlot{
+				StorageUpdates: []*services.EvmHookStorageUpdate{{
+					Update: &services.EvmHookStorageUpdate_StorageSlot{
+						StorageSlot: &services.EvmHookStorageSlot{
 							Key:   storageUpdate.GetKey(),
 							Value: storageUpdate.GetValue(),
 						},
@@ -247,13 +247,13 @@ func TestUnitHookCreationDetailsFromProtobufWithNilAdminKey(t *testing.T) {
 	// Create a protobuf message with nil admin key
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
-	lambdaHook := NewLambdaEvmHook().SetContractId(&contractID)
+	lambdaHook := NewEvmHook().SetContractId(&contractID)
 
 	pb := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK),
 		HookId:         789,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: lambdaHook.toProtobuf(),
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: lambdaHook.toProtobuf(),
 		},
 		AdminKey: nil,
 	}
@@ -274,12 +274,12 @@ func TestUnitHookCreationDetailsRoundTrip(t *testing.T) {
 
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
-	lambdaHook := NewLambdaEvmHook().SetContractId(&contractID)
+	lambdaHook := NewEvmHook().SetContractId(&contractID)
 
 	original := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(789).
-		SetLambdaEvmHook(*lambdaHook).
+		SetEvmHook(*lambdaHook).
 		SetAdminKey(ed25519PublicKey)
 
 	// Convert to protobuf and back
@@ -299,7 +299,7 @@ func TestUnitHookCreationDetailsEdgeCases(t *testing.T) {
 	hcd := NewHookCreationDetails()
 	assert.Equal(t, HookExtensionPoint(0), hcd.GetExtensionPoint())
 	assert.Equal(t, int64(0), hcd.GetHookId())
-	assert.Equal(t, LambdaEvmHook{}, hcd.GetLambdaEvmHook())
+	assert.Equal(t, EvmHook{}, hcd.GetLambdaEvmHook())
 	assert.Nil(t, hcd.GetAdminKey())
 
 	// Test with maximum int64 value
@@ -315,8 +315,8 @@ func TestUnitHookCreationDetailsEmptyLambdaEvmHook(t *testing.T) {
 	t.Parallel()
 
 	// Test with empty LambdaEvmHook
-	emptyLambdaHook := LambdaEvmHook{}
-	hcd := NewHookCreationDetails().SetLambdaEvmHook(emptyLambdaHook)
+	emptyLambdaHook := EvmHook{}
+	hcd := NewHookCreationDetails().SetEvmHook(emptyLambdaHook)
 
 	assert.Equal(t, emptyLambdaHook, hcd.GetLambdaEvmHook())
 

@@ -1155,7 +1155,7 @@ const (
 	// A HAPI client cannot set the SignedTransaction#use_serialized_tx_message_hash_algorithm field.
 	ResponseCodeEnum_INVALID_SERIALIZED_TX_MESSAGE_HASH_ALGORITHM ResponseCodeEnum = 401
 	// *
-	// A LambdaSStore referenced a valid entity number but with the wrong entity type.
+	// A HookStore referenced a valid entity number but with the wrong entity type.
 	ResponseCodeEnum_WRONG_HOOK_ENTITY_TYPE ResponseCodeEnum = 499
 	// *
 	// An EVM hook execution was throttled due to high network gas utilization.
@@ -1174,18 +1174,18 @@ const (
 	// A hook id was not found.
 	ResponseCodeEnum_HOOK_NOT_FOUND ResponseCodeEnum = 504
 	// *
-	// A lambda mapping slot, storage key, or storage value exceeded 32 bytes.
-	ResponseCodeEnum_LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG ResponseCodeEnum = 505
+	// An EVM hook mapping slot, storage key, or storage value exceeded 32 bytes.
+	ResponseCodeEnum_EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG ResponseCodeEnum = 505
 	// *
-	// A lambda mapping slot, storage key, or storage value failed to use the
+	// An EVM hook's mapping slot, storage key, or storage value failed to use the
 	// minimal representation (i.e., no leading zeros).
-	ResponseCodeEnum_LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION ResponseCodeEnum = 506
+	ResponseCodeEnum_EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION ResponseCodeEnum = 506
 	// *
 	// A hook id was invalid.
 	ResponseCodeEnum_INVALID_HOOK_ID ResponseCodeEnum = 507
 	// *
-	// A lambda storage update had no contents.
-	ResponseCodeEnum_EMPTY_LAMBDA_STORAGE_UPDATE ResponseCodeEnum = 508
+	// An EVM hook storage update had no contents.
+	ResponseCodeEnum_EMPTY_EVM_HOOK_STORAGE_UPDATE ResponseCodeEnum = 508
 	// *
 	// A user repeated the same hook id in a creation details list.
 	ResponseCodeEnum_HOOK_ID_REPEATED_IN_CREATION_DETAILS ResponseCodeEnum = 509
@@ -1193,20 +1193,20 @@ const (
 	// Hooks are not not enabled on the target Hiero network.
 	ResponseCodeEnum_HOOKS_NOT_ENABLED ResponseCodeEnum = 510
 	// *
-	// The target hook is not a lambda.
-	ResponseCodeEnum_HOOK_IS_NOT_A_LAMBDA ResponseCodeEnum = 511
+	// The target hook is not an EVM hook.
+	ResponseCodeEnum_HOOK_IS_NOT_AN_EVM_HOOK ResponseCodeEnum = 511
 	// *
 	// A hook was deleted.
 	ResponseCodeEnum_HOOK_DELETED ResponseCodeEnum = 512
 	// *
-	// The LambdaSStore tried to update too many storage slots in a single transaction.
-	ResponseCodeEnum_TOO_MANY_LAMBDA_STORAGE_UPDATES ResponseCodeEnum = 513
+	// The HookStore tried to update too many storage slots in a single transaction.
+	ResponseCodeEnum_TOO_MANY_EVM_HOOK_STORAGE_UPDATES ResponseCodeEnum = 513
 	// *
-	// A lambda mapping slot, storage key, or storage value failed to use the
+	// An EVM hook mapping slot, storage key, or storage value failed to use the
 	// minimal representation (i.e., no leading zeros).
 	ResponseCodeEnum_HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION ResponseCodeEnum = 514
 	// *
-	// A lambda mapping slot, storage key, or storage value exceeded 32 bytes.
+	// A EVM hook mapping slot, storage key, or storage value exceeded 32 bytes.
 	ResponseCodeEnum_HOOK_CREATION_BYTES_TOO_LONG ResponseCodeEnum = 515
 	// *
 	// A hook creation spec was not found.
@@ -1254,6 +1254,14 @@ const (
 	// Node accounts require a positive balance. The transaction may be
 	// resubmitted once the account has been funded.
 	ResponseCodeEnum_NODE_ACCOUNT_HAS_ZERO_BALANCE ResponseCodeEnum = 526
+	// *
+	// This operation cannot be completed because the target
+	// account is a "Fee Collection Account".<br/>
+	// Any attempt to transfer to a fee collection account is not permitted.
+	ResponseCodeEnum_TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED ResponseCodeEnum = 527
+	// *
+	// The number of hook invocations exceeds the maximum allowed per transaction.
+	ResponseCodeEnum_TOO_MANY_HOOK_INVOCATIONS ResponseCodeEnum = 528
 )
 
 // Enum value maps for ResponseCodeEnum.
@@ -1625,15 +1633,15 @@ var (
 		502: "BAD_HOOK_REQUEST",
 		503: "REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK",
 		504: "HOOK_NOT_FOUND",
-		505: "LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG",
-		506: "LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION",
+		505: "EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG",
+		506: "EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION",
 		507: "INVALID_HOOK_ID",
-		508: "EMPTY_LAMBDA_STORAGE_UPDATE",
+		508: "EMPTY_EVM_HOOK_STORAGE_UPDATE",
 		509: "HOOK_ID_REPEATED_IN_CREATION_DETAILS",
 		510: "HOOKS_NOT_ENABLED",
-		511: "HOOK_IS_NOT_A_LAMBDA",
+		511: "HOOK_IS_NOT_AN_EVM_HOOK",
 		512: "HOOK_DELETED",
-		513: "TOO_MANY_LAMBDA_STORAGE_UPDATES",
+		513: "TOO_MANY_EVM_HOOK_STORAGE_UPDATES",
 		514: "HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION",
 		515: "HOOK_CREATION_BYTES_TOO_LONG",
 		516: "INVALID_HOOK_CREATION_SPEC",
@@ -1647,6 +1655,8 @@ var (
 		524: "ACCOUNT_IS_LINKED_TO_A_NODE",
 		525: "HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER",
 		526: "NODE_ACCOUNT_HAS_ZERO_BALANCE",
+		527: "TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED",
+		528: "TOO_MANY_HOOK_INVOCATIONS",
 	}
 	ResponseCodeEnum_value = map[string]int32{
 		"OK":                                                             0,
@@ -2015,15 +2025,15 @@ var (
 		"BAD_HOOK_REQUEST":                                               502,
 		"REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK":                             503,
 		"HOOK_NOT_FOUND":                                                 504,
-		"LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG":                           505,
-		"LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION":    506,
+		"EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG":                         505,
+		"EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION":  506,
 		"INVALID_HOOK_ID":                                                507,
-		"EMPTY_LAMBDA_STORAGE_UPDATE":                                    508,
+		"EMPTY_EVM_HOOK_STORAGE_UPDATE":                                  508,
 		"HOOK_ID_REPEATED_IN_CREATION_DETAILS":                           509,
 		"HOOKS_NOT_ENABLED":                                              510,
-		"HOOK_IS_NOT_A_LAMBDA":                                           511,
+		"HOOK_IS_NOT_AN_EVM_HOOK":                                        511,
 		"HOOK_DELETED":                                                   512,
-		"TOO_MANY_LAMBDA_STORAGE_UPDATES":                                513,
+		"TOO_MANY_EVM_HOOK_STORAGE_UPDATES":                              513,
 		"HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION":            514,
 		"HOOK_CREATION_BYTES_TOO_LONG":                                   515,
 		"INVALID_HOOK_CREATION_SPEC":                                     516,
@@ -2037,6 +2047,8 @@ var (
 		"ACCOUNT_IS_LINKED_TO_A_NODE":                                    524,
 		"HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER":             525,
 		"NODE_ACCOUNT_HAS_ZERO_BALANCE":                                  526,
+		"TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED":                 527,
+		"TOO_MANY_HOOK_INVOCATIONS":                                      528,
 	}
 )
 
@@ -2071,7 +2083,7 @@ var File_response_code_proto protoreflect.FileDescriptor
 
 const file_response_code_proto_rawDesc = "" +
 	"\n" +
-	"\x13response_code.proto\x12\x05proto*\x9ef\n" +
+	"\x13response_code.proto\x12\x05proto*\xfef\n" +
 	"\x10ResponseCodeEnum\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x17\n" +
 	"\x13INVALID_TRANSACTION\x10\x01\x12\x1b\n" +
@@ -2439,16 +2451,16 @@ const file_response_code_proto_rawDesc = "" +
 	"\x0eHOOK_ID_IN_USE\x10\xf5\x03\x12\x15\n" +
 	"\x10BAD_HOOK_REQUEST\x10\xf6\x03\x12'\n" +
 	"\"REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK\x10\xf7\x03\x12\x13\n" +
-	"\x0eHOOK_NOT_FOUND\x10\xf8\x03\x12)\n" +
-	"$LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG\x10\xf9\x03\x12@\n" +
-	";LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION\x10\xfa\x03\x12\x14\n" +
-	"\x0fINVALID_HOOK_ID\x10\xfb\x03\x12 \n" +
-	"\x1bEMPTY_LAMBDA_STORAGE_UPDATE\x10\xfc\x03\x12)\n" +
+	"\x0eHOOK_NOT_FOUND\x10\xf8\x03\x12+\n" +
+	"&EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG\x10\xf9\x03\x12B\n" +
+	"=EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION\x10\xfa\x03\x12\x14\n" +
+	"\x0fINVALID_HOOK_ID\x10\xfb\x03\x12\"\n" +
+	"\x1dEMPTY_EVM_HOOK_STORAGE_UPDATE\x10\xfc\x03\x12)\n" +
 	"$HOOK_ID_REPEATED_IN_CREATION_DETAILS\x10\xfd\x03\x12\x16\n" +
-	"\x11HOOKS_NOT_ENABLED\x10\xfe\x03\x12\x19\n" +
-	"\x14HOOK_IS_NOT_A_LAMBDA\x10\xff\x03\x12\x11\n" +
-	"\fHOOK_DELETED\x10\x80\x04\x12$\n" +
-	"\x1fTOO_MANY_LAMBDA_STORAGE_UPDATES\x10\x81\x04\x128\n" +
+	"\x11HOOKS_NOT_ENABLED\x10\xfe\x03\x12\x1c\n" +
+	"\x17HOOK_IS_NOT_AN_EVM_HOOK\x10\xff\x03\x12\x11\n" +
+	"\fHOOK_DELETED\x10\x80\x04\x12&\n" +
+	"!TOO_MANY_EVM_HOOK_STORAGE_UPDATES\x10\x81\x04\x128\n" +
 	"3HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION\x10\x82\x04\x12!\n" +
 	"\x1cHOOK_CREATION_BYTES_TOO_LONG\x10\x83\x04\x12\x1f\n" +
 	"\x1aINVALID_HOOK_CREATION_SPEC\x10\x84\x04\x12\x19\n" +
@@ -2461,7 +2473,9 @@ const file_response_code_proto_rawDesc = "" +
 	"#HOOKS_ARE_NOT_SUPPORTED_IN_AIRDROPS\x10\x8b\x04\x12 \n" +
 	"\x1bACCOUNT_IS_LINKED_TO_A_NODE\x10\x8c\x04\x127\n" +
 	"2HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER\x10\x8d\x04\x12\"\n" +
-	"\x1dNODE_ACCOUNT_HAS_ZERO_BALANCE\x10\x8e\x04B&\n" +
+	"\x1dNODE_ACCOUNT_HAS_ZERO_BALANCE\x10\x8e\x04\x123\n" +
+	".TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED\x10\x8f\x04\x12\x1e\n" +
+	"\x19TOO_MANY_HOOK_INVOCATIONS\x10\x90\x04B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

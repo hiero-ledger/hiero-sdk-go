@@ -32,14 +32,22 @@ const (
 )
 
 // *
-// A transaction body to publish a node's history proof key.
+// A transaction body to publish a node's history proof key and
+// WRAPS messages.
 type HistoryProofKeyPublicationTransactionBody struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
+	// Types that are valid to be assigned to Data:
+	//
+	//	*HistoryProofKeyPublicationTransactionBody_ProofKey
+	//	*HistoryProofKeyPublicationTransactionBody_WrapsMessage
+	Data isHistoryProofKeyPublicationTransactionBody_Data `protobuf_oneof:"data"`
 	// *
-	// The proof key the submitting node intends to use when
-	// contributing signatures for use in proving history
-	// belongs to the chain of trust for the ledger id.
-	ProofKey      []byte `protobuf:"bytes,1,opt,name=proof_key,json=proofKey,proto3" json:"proof_key,omitempty"`
+	// The id of the proof construction this publication is for.
+	ConstructionId uint64 `protobuf:"varint,3,opt,name=construction_id,json=constructionId,proto3" json:"construction_id,omitempty"`
+	// *
+	// The phase of the proof construction this key is being
+	// published for.
+	Phase         WrapsPhase `protobuf:"varint,4,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -74,20 +82,80 @@ func (*HistoryProofKeyPublicationTransactionBody) Descriptor() ([]byte, []int) {
 	return file_history_proof_key_publication_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *HistoryProofKeyPublicationTransactionBody) GetProofKey() []byte {
+func (x *HistoryProofKeyPublicationTransactionBody) GetData() isHistoryProofKeyPublicationTransactionBody_Data {
 	if x != nil {
-		return x.ProofKey
+		return x.Data
 	}
 	return nil
+}
+
+func (x *HistoryProofKeyPublicationTransactionBody) GetProofKey() []byte {
+	if x != nil {
+		if x, ok := x.Data.(*HistoryProofKeyPublicationTransactionBody_ProofKey); ok {
+			return x.ProofKey
+		}
+	}
+	return nil
+}
+
+func (x *HistoryProofKeyPublicationTransactionBody) GetWrapsMessage() []byte {
+	if x != nil {
+		if x, ok := x.Data.(*HistoryProofKeyPublicationTransactionBody_WrapsMessage); ok {
+			return x.WrapsMessage
+		}
+	}
+	return nil
+}
+
+func (x *HistoryProofKeyPublicationTransactionBody) GetConstructionId() uint64 {
+	if x != nil {
+		return x.ConstructionId
+	}
+	return 0
+}
+
+func (x *HistoryProofKeyPublicationTransactionBody) GetPhase() WrapsPhase {
+	if x != nil {
+		return x.Phase
+	}
+	return WrapsPhase_R1
+}
+
+type isHistoryProofKeyPublicationTransactionBody_Data interface {
+	isHistoryProofKeyPublicationTransactionBody_Data()
+}
+
+type HistoryProofKeyPublicationTransactionBody_ProofKey struct {
+	// *
+	// The proof key the submitting node intends to use when
+	// contributing WRAPS messages for use in proving history
+	// belongs to the chain of trust for the ledger id.
+	ProofKey []byte `protobuf:"bytes,1,opt,name=proof_key,json=proofKey,proto3,oneof"`
+}
+
+type HistoryProofKeyPublicationTransactionBody_WrapsMessage struct {
+	// *
+	// A WRAPS message from the submitting node.
+	WrapsMessage []byte `protobuf:"bytes,2,opt,name=wraps_message,json=wrapsMessage,proto3,oneof"`
+}
+
+func (*HistoryProofKeyPublicationTransactionBody_ProofKey) isHistoryProofKeyPublicationTransactionBody_Data() {
+}
+
+func (*HistoryProofKeyPublicationTransactionBody_WrapsMessage) isHistoryProofKeyPublicationTransactionBody_Data() {
 }
 
 var File_history_proof_key_publication_proto protoreflect.FileDescriptor
 
 const file_history_proof_key_publication_proto_rawDesc = "" +
 	"\n" +
-	"#history_proof_key_publication.proto\x12*com.hedera.hapi.services.auxiliary.history\"H\n" +
-	")HistoryProofKeyPublicationTransactionBody\x12\x1b\n" +
-	"\tproof_key\x18\x01 \x01(\fR\bproofKeyB5\n" +
+	"#history_proof_key_publication.proto\x12*com.hedera.hapi.services.auxiliary.history\x1a\x13history_types.proto\"\xe8\x01\n" +
+	")HistoryProofKeyPublicationTransactionBody\x12\x1d\n" +
+	"\tproof_key\x18\x01 \x01(\fH\x00R\bproofKey\x12%\n" +
+	"\rwraps_message\x18\x02 \x01(\fH\x00R\fwrapsMessage\x12'\n" +
+	"\x0fconstruction_id\x18\x03 \x01(\x04R\x0econstructionId\x12D\n" +
+	"\x05phase\x18\x04 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phaseB\x06\n" +
+	"\x04dataB5\n" +
 	"1com.hedera.hapi.services.auxiliary.history.legacyP\x01b\x06proto3"
 
 var (
@@ -105,19 +173,26 @@ func file_history_proof_key_publication_proto_rawDescGZIP() []byte {
 var file_history_proof_key_publication_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_history_proof_key_publication_proto_goTypes = []any{
 	(*HistoryProofKeyPublicationTransactionBody)(nil), // 0: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody
+	(WrapsPhase)(0), // 1: com.hedera.hapi.node.state.history.WrapsPhase
 }
 var file_history_proof_key_publication_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	1, // 0: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
+	1, // [1:1] is the sub-list for method output_type
+	1, // [1:1] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_history_proof_key_publication_proto_init() }
 func file_history_proof_key_publication_proto_init() {
 	if File_history_proof_key_publication_proto != nil {
 		return
+	}
+	file_history_types_proto_init()
+	file_history_proof_key_publication_proto_msgTypes[0].OneofWrappers = []any{
+		(*HistoryProofKeyPublicationTransactionBody_ProofKey)(nil),
+		(*HistoryProofKeyPublicationTransactionBody_WrapsMessage)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
