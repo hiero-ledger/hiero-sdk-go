@@ -324,8 +324,8 @@ func TestUnitLambdaSStoreTransactionBuild(t *testing.T) {
 	assert.NotNil(t, protoBody.TransactionValidDuration)
 	assert.NotNil(t, protoBody.TransactionID)
 
-	require.NotNil(t, protoBody.GetLambdaSstore())
-	lambdaSstore := protoBody.GetLambdaSstore()
+	require.NotNil(t, protoBody.GetHookStore())
+	lambdaSstore := protoBody.GetHookStore()
 	assert.NotNil(t, lambdaSstore.HookId)
 	assert.Len(t, lambdaSstore.StorageUpdates, 1)
 }
@@ -367,25 +367,25 @@ func TestUnitLambdaSStoreTransactionFromProtobuf(t *testing.T) {
 		},
 	}
 
-	storageSlot := &services.LambdaStorageSlot{
+	storageSlot := &services.EvmHookStorageSlot{
 		Key:   []byte{0x01, 0x02},
 		Value: []byte{0x03, 0x04},
 	}
 
-	storageUpdate := &services.LambdaStorageUpdate{
-		Update: &services.LambdaStorageUpdate_StorageSlot{
+	storageUpdate := &services.EvmHookStorageUpdate{
+		Update: &services.EvmHookStorageUpdate_StorageSlot{
 			StorageSlot: storageSlot,
 		},
 	}
 
-	lambdaSstore := &services.LambdaSStoreTransactionBody{
+	lambdaSstore := &services.HookStoreTransactionBody{
 		HookId:         hookId,
-		StorageUpdates: []*services.LambdaStorageUpdate{storageUpdate},
+		StorageUpdates: []*services.EvmHookStorageUpdate{storageUpdate},
 	}
 
 	pbBody := &services.TransactionBody{
-		Data: &services.TransactionBody_LambdaSstore{
-			LambdaSstore: lambdaSstore,
+		Data: &services.TransactionBody_HookStore{
+			HookStore: lambdaSstore,
 		},
 	}
 
@@ -414,30 +414,30 @@ func TestUnitLambdaSStoreTransactionFromProtobufWithMappingEntries(t *testing.T)
 		},
 	}
 
-	mappingEntry := &services.LambdaMappingEntry{
-		EntryKey: &services.LambdaMappingEntry_Key{Key: []byte{0x01}},
+	mappingEntry := &services.EvmHookMappingEntry{
+		EntryKey: &services.EvmHookMappingEntry_Key{Key: []byte{0x01}},
 		Value:    []byte{0x02},
 	}
 
-	mappingEntries := &services.LambdaMappingEntries{
+	mappingEntries := &services.EvmHookMappingEntries{
 		MappingSlot: []byte{0x03},
-		Entries:     []*services.LambdaMappingEntry{mappingEntry},
+		Entries:     []*services.EvmHookMappingEntry{mappingEntry},
 	}
 
-	storageUpdate := &services.LambdaStorageUpdate{
-		Update: &services.LambdaStorageUpdate_MappingEntries{
+	storageUpdate := &services.EvmHookStorageUpdate{
+		Update: &services.EvmHookStorageUpdate_MappingEntries{
 			MappingEntries: mappingEntries,
 		},
 	}
 
-	lambdaSstore := &services.LambdaSStoreTransactionBody{
+	lambdaSstore := &services.HookStoreTransactionBody{
 		HookId:         hookId,
-		StorageUpdates: []*services.LambdaStorageUpdate{storageUpdate},
+		StorageUpdates: []*services.EvmHookStorageUpdate{storageUpdate},
 	}
 
 	pbBody := &services.TransactionBody{
-		Data: &services.TransactionBody_LambdaSstore{
-			LambdaSstore: lambdaSstore,
+		Data: &services.TransactionBody_HookStore{
+			HookStore: lambdaSstore,
 		},
 	}
 
@@ -458,14 +458,14 @@ func TestUnitLambdaSStoreTransactionFromProtobufWithMappingEntries(t *testing.T)
 func TestUnitLambdaSStoreTransactionFromProtobufEmpty(t *testing.T) {
 	t.Parallel()
 
-	lambdaSstore := &services.LambdaSStoreTransactionBody{
+	lambdaSstore := &services.HookStoreTransactionBody{
 		HookId:         &services.HookId{},
-		StorageUpdates: []*services.LambdaStorageUpdate{},
+		StorageUpdates: []*services.EvmHookStorageUpdate{},
 	}
 
 	pbBody := &services.TransactionBody{
-		Data: &services.TransactionBody_LambdaSstore{
-			LambdaSstore: lambdaSstore,
+		Data: &services.TransactionBody_HookStore{
+			HookStore: lambdaSstore,
 		},
 	}
 

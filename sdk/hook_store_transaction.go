@@ -22,7 +22,7 @@ func NewHookStoreTransaction() *HookStoreTransaction {
 }
 
 func lambdaSStoreTransactionFromProtobuf(tx Transaction[*HookStoreTransaction], pb *services.TransactionBody) HookStoreTransaction {
-	protoBody := pb.GetLambdaSstore()
+	protoBody := pb.GetHookStore()
 	storageUpdates := make([]EvmHookStorageUpdate, 0)
 	for _, storageUpdate := range protoBody.GetStorageUpdates() {
 		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
@@ -92,8 +92,8 @@ func (tx HookStoreTransaction) build() *services.TransactionBody {
 		Memo:                     tx.Transaction.memo,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_LambdaSstore{
-			LambdaSstore: tx.buildProtoBody(),
+		Data: &services.TransactionBody_HookStore{
+			HookStore: tx.buildProtoBody(),
 		},
 	}
 }
@@ -102,8 +102,8 @@ func (tx HookStoreTransaction) buildScheduled() (*services.SchedulableTransactio
 	return nil, errors.New("cannot schedule `HookStoreTransaction`")
 }
 
-func (tx HookStoreTransaction) buildProtoBody() *services.LambdaSStoreTransactionBody {
-	body := &services.LambdaSStoreTransactionBody{
+func (tx HookStoreTransaction) buildProtoBody() *services.HookStoreTransactionBody {
+	body := &services.HookStoreTransactionBody{
 		HookId: tx.hookId.toProtobuf(),
 	}
 
@@ -116,7 +116,7 @@ func (tx HookStoreTransaction) buildProtoBody() *services.LambdaSStoreTransactio
 
 func (tx HookStoreTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
-		transaction: channel._GetContract().LambdaSStore,
+		transaction: channel._GetContract().HookStore,
 	}
 }
 

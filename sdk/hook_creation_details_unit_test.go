@@ -132,7 +132,7 @@ func TestUnitHookCreationDetailsToProtobuf(t *testing.T) {
 	assert.Equal(t, services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK), pb.ExtensionPoint)
 	assert.Equal(t, int64(789), pb.HookId)
 	assert.NotNil(t, pb.Hook)
-	assert.NotNil(t, pb.Hook.(*services.HookCreationDetails_LambdaEvmHook).LambdaEvmHook)
+	assert.NotNil(t, pb.Hook.(*services.HookCreationDetails_EvmHook).EvmHook)
 	assert.NotNil(t, pb.AdminKey)
 }
 
@@ -149,7 +149,7 @@ func TestUnitHookCreationDetailsToProtobufWithNilAdminKey(t *testing.T) {
 		SetHookId(789).
 		SetEvmHook(*lambdaHook)
 
-	lambdaEvmHook := &services.LambdaEvmHook{
+	lambdaEvmHook := &services.EvmHook{
 		Spec: &services.EvmHookSpec{
 			BytecodeSource: &services.EvmHookSpec_ContractId{
 				ContractId: contractID._ToProtobuf(),
@@ -161,7 +161,7 @@ func TestUnitHookCreationDetailsToProtobufWithNilAdminKey(t *testing.T) {
 	require.NotNil(t, pb)
 	assert.Equal(t, services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK), pb.ExtensionPoint)
 	assert.Equal(t, int64(789), pb.HookId)
-	assert.Equal(t, lambdaEvmHook, pb.Hook.(*services.HookCreationDetails_LambdaEvmHook).LambdaEvmHook)
+	assert.Equal(t, lambdaEvmHook, pb.Hook.(*services.HookCreationDetails_EvmHook).EvmHook)
 	assert.Nil(t, pb.AdminKey)
 }
 
@@ -180,8 +180,8 @@ func TestUnitHookCreationDetailsFromProtobufNoStorageUpdates(t *testing.T) {
 	pb := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK),
 		HookId:         789,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: &services.LambdaEvmHook{
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: &services.EvmHook{
 				Spec: &services.EvmHookSpec{
 					BytecodeSource: &services.EvmHookSpec_ContractId{
 						ContractId: contractID._ToProtobuf(),
@@ -213,16 +213,16 @@ func TestUnitHookCreationDetailsFromProtobuf(t *testing.T) {
 	pb := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK),
 		HookId:         789,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: &services.LambdaEvmHook{
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: &services.EvmHook{
 				Spec: &services.EvmHookSpec{
 					BytecodeSource: &services.EvmHookSpec_ContractId{
 						ContractId: contractID._ToProtobuf(),
 					},
 				},
-				StorageUpdates: []*services.LambdaStorageUpdate{{
-					Update: &services.LambdaStorageUpdate_StorageSlot{
-						StorageSlot: &services.LambdaStorageSlot{
+				StorageUpdates: []*services.EvmHookStorageUpdate{{
+					Update: &services.EvmHookStorageUpdate_StorageSlot{
+						StorageSlot: &services.EvmHookStorageSlot{
 							Key:   storageUpdate.GetKey(),
 							Value: storageUpdate.GetValue(),
 						},
@@ -252,8 +252,8 @@ func TestUnitHookCreationDetailsFromProtobufWithNilAdminKey(t *testing.T) {
 	pb := &services.HookCreationDetails{
 		ExtensionPoint: services.HookExtensionPoint(ACCOUNT_ALLOWANCE_HOOK),
 		HookId:         789,
-		Hook: &services.HookCreationDetails_LambdaEvmHook{
-			LambdaEvmHook: lambdaHook.toProtobuf(),
+		Hook: &services.HookCreationDetails_EvmHook{
+			EvmHook: lambdaHook.toProtobuf(),
 		},
 		AdminKey: nil,
 	}

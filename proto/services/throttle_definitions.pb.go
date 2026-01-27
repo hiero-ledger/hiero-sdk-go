@@ -159,8 +159,11 @@ type ThrottleBucket struct {
 	// <p>
 	// This list MUST contain at least one entry.
 	ThrottleGroups []*ThrottleGroup `protobuf:"bytes,3,rep,name=throttleGroups,proto3" json:"throttleGroups,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// *
+	// If set to true, this bucket is used for high-volume throttles.
+	HighVolume    bool `protobuf:"varint,4,opt,name=high_volume,json=highVolume,proto3" json:"high_volume,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ThrottleBucket) Reset() {
@@ -212,6 +215,13 @@ func (x *ThrottleBucket) GetThrottleGroups() []*ThrottleGroup {
 		return x.ThrottleGroups
 	}
 	return nil
+}
+
+func (x *ThrottleBucket) GetHighVolume() bool {
+	if x != nil {
+		return x.HighVolume
+	}
+	return false
 }
 
 // *
@@ -283,11 +293,13 @@ const file_throttle_definitions_proto_rawDesc = "" +
 	"\n" +
 	"operations\x18\x01 \x03(\x0e2\x1a.proto.HederaFunctionalityR\n" +
 	"operations\x12&\n" +
-	"\x0emilliOpsPerSec\x18\x02 \x01(\x04R\x0emilliOpsPerSec\"\x88\x01\n" +
+	"\x0emilliOpsPerSec\x18\x02 \x01(\x04R\x0emilliOpsPerSec\"\xa9\x01\n" +
 	"\x0eThrottleBucket\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12$\n" +
 	"\rburstPeriodMs\x18\x02 \x01(\x04R\rburstPeriodMs\x12<\n" +
-	"\x0ethrottleGroups\x18\x03 \x03(\v2\x14.proto.ThrottleGroupR\x0ethrottleGroups\"V\n" +
+	"\x0ethrottleGroups\x18\x03 \x03(\v2\x14.proto.ThrottleGroupR\x0ethrottleGroups\x12\x1f\n" +
+	"\vhigh_volume\x18\x04 \x01(\bR\n" +
+	"highVolume\"V\n" +
 	"\x13ThrottleDefinitions\x12?\n" +
 	"\x0fthrottleBuckets\x18\x01 \x03(\v2\x15.proto.ThrottleBucketR\x0fthrottleBucketsB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
