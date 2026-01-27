@@ -36,7 +36,7 @@ var File_smart_contract_service_proto protoreflect.FileDescriptor
 
 const file_smart_contract_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1csmart_contract_service.proto\x12\x05proto\x1a\x1atransaction_response.proto\x1a\vquery.proto\x1a\x0eresponse.proto\x1a\x11transaction.proto2\xc6\x06\n" +
+	"\x1csmart_contract_service.proto\x12\x05proto\x1a\x1atransaction_response.proto\x1a\vquery.proto\x1a\x0eresponse.proto\x1a\x11transaction.proto2\xc3\x06\n" +
 	"\x14SmartContractService\x12@\n" +
 	"\x0ecreateContract\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12@\n" +
 	"\x0eupdateContract\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12D\n" +
@@ -49,8 +49,8 @@ const file_smart_contract_service_proto_rawDesc = "" +
 	"\x0edeleteContract\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12C\n" +
 	"\fsystemDelete\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\"\x03\x88\x02\x01\x12E\n" +
 	"\x0esystemUndelete\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\"\x03\x88\x02\x01\x12>\n" +
-	"\fcallEthereum\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12>\n" +
-	"\flambdaSStore\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponseB(\n" +
+	"\fcallEthereum\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12;\n" +
+	"\thookStore\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponseB(\n" +
 	"&com.hederahashgraph.service.proto.javab\x06proto3"
 
 var file_smart_contract_service_proto_goTypes = []any{
@@ -72,7 +72,7 @@ var file_smart_contract_service_proto_depIdxs = []int32{
 	0,  // 9: proto.SmartContractService.systemDelete:input_type -> proto.Transaction
 	0,  // 10: proto.SmartContractService.systemUndelete:input_type -> proto.Transaction
 	0,  // 11: proto.SmartContractService.callEthereum:input_type -> proto.Transaction
-	0,  // 12: proto.SmartContractService.lambdaSStore:input_type -> proto.Transaction
+	0,  // 12: proto.SmartContractService.hookStore:input_type -> proto.Transaction
 	2,  // 13: proto.SmartContractService.createContract:output_type -> proto.TransactionResponse
 	2,  // 14: proto.SmartContractService.updateContract:output_type -> proto.TransactionResponse
 	2,  // 15: proto.SmartContractService.contractCallMethod:output_type -> proto.TransactionResponse
@@ -85,7 +85,7 @@ var file_smart_contract_service_proto_depIdxs = []int32{
 	2,  // 22: proto.SmartContractService.systemDelete:output_type -> proto.TransactionResponse
 	2,  // 23: proto.SmartContractService.systemUndelete:output_type -> proto.TransactionResponse
 	2,  // 24: proto.SmartContractService.callEthereum:output_type -> proto.TransactionResponse
-	2,  // 25: proto.SmartContractService.lambdaSStore:output_type -> proto.TransactionResponse
+	2,  // 25: proto.SmartContractService.hookStore:output_type -> proto.TransactionResponse
 	13, // [13:26] is the sub-list for method output_type
 	0,  // [0:13] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name
