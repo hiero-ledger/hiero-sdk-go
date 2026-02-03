@@ -114,19 +114,19 @@ func (t *TokenService) CreateToken(_ context.Context, params param.CreateTokenPa
 		transaction.SetTokenMetadata([]byte(*params.Metadata))
 	}
 
-	if params.CommonTransactionParams != nil {
-		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	if params.CustomFees != nil {
 		customFees, err := utils.ParseCustomFees(*params.CustomFees)
 		if err != nil {
 			return nil, err
 		}
 		transaction.SetCustomFees(customFees)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, t.sdkService.GetClient(params.SessionId))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	txResponse, err := transaction.Execute(t.sdkService.GetClient(params.SessionId))
