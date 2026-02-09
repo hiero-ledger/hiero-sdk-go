@@ -222,7 +222,7 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 	}
 
 	frozenTxn, err := NewHookStoreTransaction().
-		SetMaxTransactionFee(NewHbar(10)).
+		SetMaxTransactionFee(NewHbar(15)).
 		SetHookId(*hookId).
 		SetStorageUpdates(updates).
 		FreezeWith(env.Client)
