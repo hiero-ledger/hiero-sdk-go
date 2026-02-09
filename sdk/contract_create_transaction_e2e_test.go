@@ -259,7 +259,7 @@ func TestIntegrationContractCreateTransactionSetBytecode(t *testing.T) {
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -296,7 +296,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHook(t *testing.T) {
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorageUpdates(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -335,7 +335,7 @@ func TestIntegrationContractCreateTransactionCanExecuteWithHookAndInitialStorage
 
 func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContractId(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -370,7 +370,7 @@ func TestIntegrationContractCreateTransactionCannotExecuteWithHookWithoutContrac
 
 func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -403,7 +403,7 @@ func TestIntegrationContractCreateTransactionDuplicateHooks(t *testing.T) {
 
 func TestIntegrationContractCreateTransactionCanExecuteWithHookAndAdminKey(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 

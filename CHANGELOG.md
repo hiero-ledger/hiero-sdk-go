@@ -1,3 +1,12 @@
+## v2.75.0
+
+### Added
+- Simple fees that allows users to query expected transaction fees without submitting transactions to the network [#1559](https://github.com/hiero-ledger/hiero-sdk-go/pull/1559)
+- Support Pectra EVM transaction encoding [#1598](https://github.com/hiero-ledger/hiero-sdk-go/pull/1598)
+
+### Fixed
+- Fix the potential data race [#1581](https://github.com/hiero-ledger/hiero-sdk-go/pull/1581)
+
 ## v2.74.0
 
 ### Added

@@ -866,7 +866,7 @@ func TestIntegrationAccountCreateWithKeyAndAlias(t *testing.T) {
 // HIP-1195 hooks
 
 func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
-	t.Skip("Skipping hook test")
+
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -883,7 +883,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHook(t *testing.T) {
 }
 
 func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndInitialStorageUpdates(t *testing.T) {
-	t.Skip("Skipping hook test")
+
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -903,7 +903,7 @@ func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndInitialStorageU
 
 func TestIntegrationAccountCreateTransactionCannotExecuteWithHookWithoutContractId(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -929,7 +929,7 @@ func TestIntegrationAccountCreateTransactionCannotExecuteWithHookWithoutContract
 
 func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -951,7 +951,7 @@ func TestIntegrationAccountCreateTransactionDuplicateHooks(t *testing.T) {
 
 func TestIntegrationAccountCreateTransactionCanExecuteWithHookAndAdminKey(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 

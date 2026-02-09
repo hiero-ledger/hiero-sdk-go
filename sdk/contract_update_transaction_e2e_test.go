@@ -197,7 +197,7 @@ func TestIntegrationContractUpdateTransactionCanRemoveAutoRenewAccount(t *testin
 
 func TestIntegrationContractUpdateTransactionAddHook(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -244,7 +244,7 @@ func TestIntegrationContractUpdateTransactionAddHook(t *testing.T) {
 
 func TestIntegrationContractUpdateTransactionAddDuplicateHook(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -289,7 +289,7 @@ func TestIntegrationContractUpdateTransactionAddDuplicateHook(t *testing.T) {
 
 func TestIntegrationContractUpdateTransactionAddExisingHook(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -338,7 +338,7 @@ func TestIntegrationContractUpdateTransactionAddExisingHook(t *testing.T) {
 
 func TestIntegrationContractUpdateTransactionUpdateAddHookWithInitialStorageUpdates(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -387,7 +387,7 @@ func TestIntegrationContractUpdateTransactionUpdateAddHookWithInitialStorageUpda
 
 func TestIntegrationContractUpdateTransactionCannotAddHookThatIsInUse(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -436,7 +436,7 @@ func TestIntegrationContractUpdateTransactionCannotAddHookThatIsInUse(t *testing
 
 func TestIntegrationContractUpdateTransactionCanAddHookToDelete(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -485,7 +485,7 @@ func TestIntegrationContractUpdateTransactionCanAddHookToDelete(t *testing.T) {
 
 func TestIntegrationContractUpdateTransactionCanotDeleteNonExistantHook(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -534,7 +534,7 @@ func TestIntegrationContractUpdateTransactionCanotDeleteNonExistantHook(t *testi
 
 func TestIntegrationContractUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameTime(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
@@ -583,7 +583,7 @@ func TestIntegrationContractUpdateTransactionCanotAddAndAddHookToDeleteAtTheSame
 
 func TestIntegrationContractUpdateTransactionCanotDeleteDeletedHook(t *testing.T) {
 	t.Parallel()
-	t.Skip("Skipping hook test")
+
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
