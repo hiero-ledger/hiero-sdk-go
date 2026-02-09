@@ -11,6 +11,10 @@ The Go SDK for interacting with a Hiero based network.
 Hiero communicates using [gRPC](https://grpc.io);
 the Protobufs definitions for the protocol are available in the [hashgraph/hedera-protobuf](https://github.com/hashgraph/hedera-protobufs) repository (the repo will be migrated to Hiero in near future).
 
+## Prerequisites
+
+- **Go** — A supported version of Go is required to build and run the SDK, tests, and examples. See the [go-mod/go-version](https://github.com/hiero-ledger/hiero-sdk-go/blob/main/go.mod) badge or `go.mod` for the minimum version.
+
 ## Usage
 
 ### Installation
@@ -49,6 +53,30 @@ take precedence. If the config file is not provided then the network will defaul
 and `OPERATOR_KEY` and `OPERATOR_ID` **must** be provided.
 
 [Example Config File](./client-config-with-operator.json)
+
+### Running Examples
+
+Examples use the same environment as the integration tests: a running Hiero network (e.g. [Solo](https://solo.hiero.org)) and either a config file or `OPERATOR_KEY` and `OPERATOR_ID` environment variables.
+
+Run any example with:
+
+```bash
+$ env CONFIG_FILE="<your_config_file>" go run examples/<example-path>
+```
+
+or
+
+```bash
+$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go run examples/<example-path>
+```
+
+For example:
+
+```bash
+$ env CONFIG_FILE="<your_config_file>" go run examples/create_account/main.go
+$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go run examples/transfer_crypto/main.go
+$ env CONFIG_FILE="<your_config_file>" go run examples/hooks/hook_store/main.go
+```
 
 ### Linting
 
