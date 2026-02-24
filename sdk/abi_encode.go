@@ -165,7 +165,7 @@ func encodeTuple(v reflect.Value, t *Type) ([]byte, error) {
 }
 
 func convertArrayToBytes(value reflect.Value) reflect.Value {
-	slice := reflect.MakeSlice(reflect.TypeOf([]byte{}), value.Len(), value.Len())
+	slice := reflect.MakeSlice(reflect.TypeFor[[]byte](), value.Len(), value.Len())
 	reflect.Copy(slice, value)
 	return slice
 }

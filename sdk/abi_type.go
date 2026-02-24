@@ -13,21 +13,21 @@ import (
 
 // batch of predefined reflect types
 var (
-	boolT         = reflect.TypeOf(bool(false))
-	uint8T        = reflect.TypeOf(uint8(0))
-	uint16T       = reflect.TypeOf(uint16(0))
-	uint32T       = reflect.TypeOf(uint32(0))
-	uint64T       = reflect.TypeOf(uint64(0))
-	int8T         = reflect.TypeOf(int8(0))
-	int16T        = reflect.TypeOf(int16(0))
-	int32T        = reflect.TypeOf(int32(0))
-	int64T        = reflect.TypeOf(int64(0))
-	addressT      = reflect.TypeOf(Address{})
-	stringT       = reflect.TypeOf("")
-	dynamicBytesT = reflect.SliceOf(reflect.TypeOf(byte(0)))
-	functionT     = reflect.ArrayOf(24, reflect.TypeOf(byte(0)))
-	tupleT        = reflect.TypeOf(map[string]interface{}{})
-	bigIntT       = reflect.TypeOf(new(big.Int))
+	boolT         = reflect.TypeFor[bool]()
+	uint8T        = reflect.TypeFor[uint8]()
+	uint16T       = reflect.TypeFor[uint16]()
+	uint32T       = reflect.TypeFor[uint32]()
+	uint64T       = reflect.TypeFor[uint64]()
+	int8T         = reflect.TypeFor[int8]()
+	int16T        = reflect.TypeFor[int16]()
+	int32T        = reflect.TypeFor[int32]()
+	int64T        = reflect.TypeFor[int64]()
+	addressT      = reflect.TypeFor[Address]()
+	stringT       = reflect.TypeFor[string]()
+	dynamicBytesT = reflect.SliceOf(reflect.TypeFor[byte]())
+	functionT     = reflect.ArrayOf(24, reflect.TypeFor[byte]())
+	tupleT        = reflect.TypeFor[map[string]interface{}]()
+	bigIntT       = reflect.TypeFor[*big.Int]()
 )
 
 // AbiTypeKind represents the kind of abi type
@@ -549,7 +549,7 @@ func decodeSimpleType(str string) (*Type, error) {
 		if bytes == 0 {
 			return &Type{kind: KindBytes, t: dynamicBytesT}, nil
 		}
-		return &Type{kind: KindFixedBytes, size: bytes, t: reflect.ArrayOf(bytes, reflect.TypeOf(byte(0)))}, nil
+		return &Type{kind: KindFixedBytes, size: bytes, t: reflect.ArrayOf(bytes, reflect.TypeFor[byte]())}, nil
 
 	case "string":
 		return &Type{kind: KindString, t: stringT}, nil

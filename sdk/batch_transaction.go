@@ -51,8 +51,8 @@ type BatchTransaction struct {
 // blacklistedTransactions is a list of transaction types that are not allowed in a batch transaction.
 // These transactions are prohibited due to their special nature or network-level implications.
 var blacklistedTransactions = []reflect.Type{
-	reflect.TypeOf(&FreezeTransaction{}),
-	reflect.TypeOf(&BatchTransaction{}),
+	reflect.TypeFor[*FreezeTransaction](),
+	reflect.TypeFor[*BatchTransaction](),
 }
 
 // NewBatchTransaction creates a new empty BatchTransaction.
