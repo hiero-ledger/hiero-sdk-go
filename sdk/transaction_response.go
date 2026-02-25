@@ -72,9 +72,11 @@ func (response *TransactionResponse) retryTransaction(client *Client) (Transacti
 
 // GetReceipt retrieves the receipt for the transaction
 func (response *TransactionResponse) GetReceipt(client *Client) (TransactionReceipt, error) {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
 	receipt, err := NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID}).
+		SetNodeAccountIDs(nodeAccountIDs).
 		SetIncludeChildren(response.IncludeChildReceipts).
 		Execute(client)
 
@@ -91,9 +93,11 @@ func (response *TransactionResponse) GetReceipt(client *Client) (TransactionRece
 
 // GetRecord retrieves the record for the transaction
 func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecord, error) {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
 	receipt, err := NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID}).
+		SetNodeAccountIDs(nodeAccountIDs).
 		SetIncludeChildren(response.IncludeChildReceipts).
 		Execute(client)
 
@@ -108,22 +112,26 @@ func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecor
 
 	return NewTransactionRecordQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID}).
+		SetNodeAccountIDs(nodeAccountIDs).
 		Execute(client)
 }
 
 // GetReceiptQuery retrieves the receipt query for the transaction
-func (response TransactionResponse) GetReceiptQuery() *TransactionReceiptQuery {
+func (response TransactionResponse) GetReceiptQuery(client *Client) *TransactionReceiptQuery {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
 	return NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID})
+		SetNodeAccountIDs(nodeAccountIDs)
 }
 
 // GetRecordQuery retrieves the record query for the transaction
-func (response TransactionResponse) GetRecordQuery() *TransactionRecordQuery {
+func (response TransactionResponse) GetRecordQuery(client *Client) *TransactionRecordQuery {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
 	return NewTransactionRecordQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID})
+		SetNodeAccountIDs(nodeAccountIDs)
 }
 
 // SetValidateStatus sets the validate status for the transaction
@@ -148,4 +156,20 @@ func (response TransactionResponse) SetIncludeChildren(include bool) *Transactio
 // top-level transaction with the given transactionID.
 func (response TransactionResponse) GetIncludeChildren() bool {
 	return response.IncludeChildReceipts
+}
+
+// getNodeAccountIDs returns the node account IDs for the transaction response.
+// If the client allows receipt node failover, all other network nodes are appended
+// after the submitting node, so queries can iterate across multiple nodes.
+func (response TransactionResponse) getNodeAccountIDs(client *Client) []AccountID {
+	nodeAccountIDs := []AccountID{response.NodeID}
+
+	if client != nil && client.allowReceiptNodeFailover {
+		for _, id := range client.network._GetNodeAccountIDsForExecute() {
+			if id != response.NodeID {
+				nodeAccountIDs = append(nodeAccountIDs, id)
+			}
+		}
+	}
+	return nodeAccountIDs
 }
