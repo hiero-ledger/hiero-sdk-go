@@ -4,5 +4,5 @@ package response
 
 type GenerateKeyResponse struct {
 	Key         string   `json:"key"`
-	PrivateKeys []string `json:"privateKeys"`
+	PrivateKeys []string `json:"privateKeys"` //nolint
 }

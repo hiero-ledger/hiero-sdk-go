@@ -72,9 +72,11 @@ func (response *TransactionResponse) retryTransaction(client *Client) (Transacti
 
 // GetReceipt retrieves the receipt for the transaction
 func (response *TransactionResponse) GetReceipt(client *Client) (TransactionReceipt, error) {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
 	receipt, err := NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID}).
+		SetNodeAccountIDs(nodeAccountIDs).
 		SetIncludeChildren(response.IncludeChildReceipts).
 		Execute(client)
 
@@ -91,9 +93,11 @@ func (response *TransactionResponse) GetReceipt(client *Client) (TransactionRece
 
 // GetRecord retrieves the record for the transaction
 func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecord, error) {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
 	receipt, err := NewTransactionReceiptQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID}).
+		SetNodeAccountIDs(nodeAccountIDs).
 		SetIncludeChildren(response.IncludeChildReceipts).
 		Execute(client)
 
@@ -108,10 +112,11 @@ func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecor
 
 	return NewTransactionRecordQuery().
 		SetTransactionID(response.TransactionID).
-		SetNodeAccountIDs([]AccountID{response.NodeID}).
+		SetNodeAccountIDs(nodeAccountIDs).
 		Execute(client)
 }
 
+// Deprecated: Use GetReceiptQueryWithClient instead for failover support.
 // GetReceiptQuery retrieves the receipt query for the transaction
 func (response TransactionResponse) GetReceiptQuery() *TransactionReceiptQuery {
 	return NewTransactionReceiptQuery().
@@ -119,11 +124,34 @@ func (response TransactionResponse) GetReceiptQuery() *TransactionReceiptQuery {
 		SetNodeAccountIDs([]AccountID{response.NodeID})
 }
 
+// GetReceiptQueryWithClient retrieves the receipt query for the transaction.
+// When allowReceiptNodeFailover is enabled on the client, the query may iterate
+// across multiple nodes, starting with the submitting node first.
+func (response TransactionResponse) GetReceiptQueryWithClient(client *Client) *TransactionReceiptQuery {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
+	return NewTransactionReceiptQuery().
+		SetTransactionID(response.TransactionID).
+		SetNodeAccountIDs(nodeAccountIDs)
+}
+
+// Deprecated: Use GetRecordQueryWithClient instead for failover support.
 // GetRecordQuery retrieves the record query for the transaction
 func (response TransactionResponse) GetRecordQuery() *TransactionRecordQuery {
 	return NewTransactionRecordQuery().
 		SetTransactionID(response.TransactionID).
 		SetNodeAccountIDs([]AccountID{response.NodeID})
+}
+
+// GetRecordQueryWithClient retrieves the record query for the transaction.
+// When allowReceiptNodeFailover is enabled on the client, the query may iterate
+// across multiple nodes, starting with the submitting node first.
+func (response TransactionResponse) GetRecordQueryWithClient(client *Client) *TransactionRecordQuery {
+	nodeAccountIDs := response.getNodeAccountIDs(client)
+
+	return NewTransactionRecordQuery().
+		SetTransactionID(response.TransactionID).
+		SetNodeAccountIDs(nodeAccountIDs)
 }
 
 // SetValidateStatus sets the validate status for the transaction
@@ -148,4 +176,20 @@ func (response TransactionResponse) SetIncludeChildren(include bool) *Transactio
 // top-level transaction with the given transactionID.
 func (response TransactionResponse) GetIncludeChildren() bool {
 	return response.IncludeChildReceipts
+}
+
+// getNodeAccountIDs returns the node account IDs for the transaction response.
+// If the client allows receipt node failover, all other network nodes are appended
+// after the submitting node, so queries can iterate across multiple nodes.
+func (response TransactionResponse) getNodeAccountIDs(client *Client) []AccountID {
+	nodeAccountIDs := []AccountID{response.NodeID}
+
+	if client != nil && client.allowReceiptNodeFailover {
+		for _, id := range client.network._GetNodeAccountIDsForExecute() {
+			if id != response.NodeID {
+				nodeAccountIDs = append(nodeAccountIDs, id)
+			}
+		}
+	}
+	return nodeAccountIDs
 }

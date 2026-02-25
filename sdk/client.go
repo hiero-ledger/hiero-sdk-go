@@ -37,6 +37,7 @@ type Client struct {
 	mirrorNetwork                   *_MirrorNetwork
 	autoValidateChecksums           bool
 	defaultRegenerateTransactionIDs bool
+	allowReceiptNodeFailover        bool
 	maxAttempts                     *int
 	grpcDeadline                    time.Duration
 
@@ -178,6 +179,7 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 		grpcDeadline:                    10 * time.Second,
 		requestTimeout:                  2 * time.Minute,
 		defaultRegenerateTransactionIDs: true,
+		allowReceiptNodeFailover:        false,
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
@@ -266,7 +268,7 @@ func ClientForName(name string) (*Client, error) {
 
 type _ConfigOperator struct {
 	AccountID  string `json:"accountId"`
-	PrivateKey string `json:"privateKey"`
+	PrivateKey string `json:"privateKey"` //nolint
 }
 
 // TODO: Implement complete spec: https://gitlab.com/launchbadge/hedera/sdk/python/-/issues/45
@@ -655,6 +657,16 @@ func (client *Client) SetDefaultRegenerateTransactionIDs(regen bool) {
 // GetDefaultRegenerateTransactionIDs returns if an automatic transaction ID regeneration should be performed.
 func (client *Client) GetDefaultRegenerateTransactionIDs() bool {
 	return client.defaultRegenerateTransactionIDs
+}
+
+// SetAllowReceiptNodeFailover sets if the client should allow the receipt node to failover.
+func (client *Client) SetAllowReceiptNodeFailover(allowFailover bool) {
+	client.allowReceiptNodeFailover = allowFailover
+}
+
+// GetAllowReceiptNodeFailover returns if the client should allow the receipt node to failover.
+func (client *Client) GetAllowReceiptNodeFailover() bool {
+	return client.allowReceiptNodeFailover
 }
 
 // SetNodeMinReadmitPeriod sets the minimum amount of time to wait before attempting to
