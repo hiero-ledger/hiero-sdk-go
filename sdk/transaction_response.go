@@ -116,8 +116,18 @@ func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecor
 		Execute(client)
 }
 
+// Deprecated: Use GetReceiptQueryWithClient instead for failover support.
 // GetReceiptQuery retrieves the receipt query for the transaction
-func (response TransactionResponse) GetReceiptQuery(client *Client) *TransactionReceiptQuery {
+func (response TransactionResponse) GetReceiptQuery() *TransactionReceiptQuery {
+	return NewTransactionReceiptQuery().
+		SetTransactionID(response.TransactionID).
+		SetNodeAccountIDs([]AccountID{response.NodeID})
+}
+
+// GetReceiptQueryWithClient retrieves the receipt query for the transaction.
+// When allowReceiptNodeFailover is enabled on the client, the query may iterate
+// across multiple nodes, starting with the submitting node first.
+func (response TransactionResponse) GetReceiptQueryWithClient(client *Client) *TransactionReceiptQuery {
 	nodeAccountIDs := response.getNodeAccountIDs(client)
 
 	return NewTransactionReceiptQuery().
@@ -125,8 +135,18 @@ func (response TransactionResponse) GetReceiptQuery(client *Client) *Transaction
 		SetNodeAccountIDs(nodeAccountIDs)
 }
 
+// Deprecated: Use GetRecordQueryWithClient instead for failover support.
 // GetRecordQuery retrieves the record query for the transaction
-func (response TransactionResponse) GetRecordQuery(client *Client) *TransactionRecordQuery {
+func (response TransactionResponse) GetRecordQuery() *TransactionRecordQuery {
+	return NewTransactionRecordQuery().
+		SetTransactionID(response.TransactionID).
+		SetNodeAccountIDs([]AccountID{response.NodeID})
+}
+
+// GetRecordQueryWithClient retrieves the record query for the transaction.
+// When allowReceiptNodeFailover is enabled on the client, the query may iterate
+// across multiple nodes, starting with the submitting node first.
+func (response TransactionResponse) GetRecordQueryWithClient(client *Client) *TransactionRecordQuery {
 	nodeAccountIDs := response.getNodeAccountIDs(client)
 
 	return NewTransactionRecordQuery().
