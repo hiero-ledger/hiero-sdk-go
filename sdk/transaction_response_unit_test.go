@@ -24,7 +24,7 @@ func TestUnitTransactionResponseReceiptQueryPinnedToSubmittingNode(t *testing.T)
 		NodeID:        nodeID,
 	}
 
-	query := response.GetReceiptQuery(client)
+	query := response.GetReceiptQueryWithClient(client)
 	nodeAccountIDs := query.GetNodeAccountIDs()
 
 	require.Len(t, nodeAccountIDs, 1)
@@ -44,7 +44,7 @@ func TestUnitTransactionResponseRecordQueryPinnedToSubmittingNode(t *testing.T) 
 		NodeID:        nodeID,
 	}
 
-	query := response.GetRecordQuery(client)
+	query := response.GetRecordQueryWithClient(client)
 	nodeAccountIDs := query.GetNodeAccountIDs()
 
 	require.Len(t, nodeAccountIDs, 1)
@@ -66,7 +66,7 @@ func TestUnitTransactionResponseFailoverEnabledSubmittingNodeFirst(t *testing.T)
 		NodeID:        nodeID,
 	}
 
-	receiptQuery := response.GetReceiptQuery(client).GetNodeAccountIDs()
+	receiptQuery := response.GetReceiptQueryWithClient(client).GetNodeAccountIDs()
 	require.Greater(t, len(receiptQuery), 1)
 	assert.Equal(t, nodeID, receiptQuery[0])
 }
@@ -86,7 +86,7 @@ func TestUnitTransactionResponseFailoverEnabledNoDuplicateNodes(t *testing.T) {
 		NodeID:        nodeID,
 	}
 
-	query := response.GetReceiptQuery(client)
+	query := response.GetReceiptQueryWithClient(client)
 	nodeAccountIDs := query.GetNodeAccountIDs()
 
 	seen := make(map[AccountID]bool)
@@ -105,7 +105,7 @@ func TestUnitTransactionResponseGetNodeAccountIDsNilClient(t *testing.T) {
 		NodeID:        nodeID,
 	}
 
-	receiptQuery := response.GetReceiptQuery(nil).GetNodeAccountIDs()
+	receiptQuery := response.GetReceiptQueryWithClient(nil).GetNodeAccountIDs()
 	require.Len(t, receiptQuery, 1)
 	assert.Equal(t, nodeID, receiptQuery[0])
 }
@@ -127,7 +127,7 @@ func TestUnitTransactionResponseFailoverContainsAllHealthyNodes(t *testing.T) {
 		NodeID:        nodeID,
 	}
 
-	query := response.GetReceiptQuery(client)
+	query := response.GetReceiptQueryWithClient(client)
 	nodeAccountIDs := query.GetNodeAccountIDs()
 
 	require.Len(t, nodeAccountIDs, 2)

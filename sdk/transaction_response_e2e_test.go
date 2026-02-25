@@ -27,7 +27,7 @@ func TestIntegrationTransactionResponseRecordQueryPinnedToSubmittingNode(t *test
 	require.NoError(t, err)
 
 	// Record query should be pinned to submitting node only
-	recordQuery := resp.GetRecordQuery(env.Client)
+	recordQuery := resp.GetRecordQueryWithClient(env.Client)
 	nodeAccountIDs := recordQuery.GetNodeAccountIDs()
 
 	require.Len(t, nodeAccountIDs, 1)
@@ -60,7 +60,7 @@ func TestIntegrationTransactionResponseRecordWithFailoverEnabled(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	recordQuery := resp.GetRecordQuery(env.Client)
+	recordQuery := resp.GetRecordQueryWithClient(env.Client)
 	nodeAccountIDs := recordQuery.GetNodeAccountIDs()
 
 	require.GreaterOrEqual(t, len(nodeAccountIDs), 1)
