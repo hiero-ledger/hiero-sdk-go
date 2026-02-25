@@ -268,7 +268,7 @@ func ClientForName(name string) (*Client, error) {
 
 type _ConfigOperator struct {
 	AccountID  string `json:"accountId"`
-	PrivateKey string `json:"privateKey"`
+	PrivateKey string `json:"privateKey"` //nolint
 }
 
 // TODO: Implement complete spec: https://gitlab.com/launchbadge/hedera/sdk/python/-/issues/45

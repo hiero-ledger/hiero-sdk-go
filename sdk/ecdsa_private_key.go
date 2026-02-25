@@ -98,7 +98,7 @@ func _ECDSAPrivateKeyFromBytesDer(data []byte) (*_ECDSAPrivateKey, error) {
 
 	type ECPrivateKey struct {
 		Version       int
-		PrivateKey    []byte
+		PrivateKey    []byte                //nolint
 		NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
 		PublicKey     asn1.BitString        `asn1:"optional,explicit,tag:1"`
 	}
@@ -279,7 +279,7 @@ func (sk _ECDSAPrivateKey) _BytesRaw() []byte {
 func (sk _ECDSAPrivateKey) _BytesDer() []byte {
 	type ECPrivateKey struct {
 		Version       int
-		PrivateKey    []byte
+		PrivateKey    []byte                //nolint
 		NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
 		PublicKey     asn1.BitString        `asn1:"optional,explicit,tag:1"`
 	}
