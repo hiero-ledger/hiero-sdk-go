@@ -41,6 +41,7 @@ type BaseTransaction struct {
 	transactionFee           uint64
 	defaultMaxTransactionFee uint64
 	memo                     string
+	highVolume               bool
 	transactionValidDuration *time.Duration
 	transactionID            TransactionID
 
@@ -75,6 +76,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 		BaseTransaction: &BaseTransaction{
 			defaultMaxTransactionFee: uint64(NewHbar(2).AsTinybar()),
 			transactionValidDuration: &duration,
+			highVolume:               false,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
 			customFeeLimits:          nil,
@@ -600,7 +602,7 @@ func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 	ref := body[0]
 	savedRef := ref.NodeAccountID
 	ref.NodeAccountID = nil
-  
+
 	for i := 1; i < len(body); i++ {
 		saved := body[i].NodeAccountID
 		body[i].NodeAccountID = nil
@@ -821,6 +823,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 	}
 
 	originalBody.Memo = tx.memo
+	originalBody.HighVolume = tx.highVolume
 	if tx.transactionFee != 0 {
 		originalBody.TransactionFee = tx.transactionFee
 	} else {
@@ -1201,6 +1204,17 @@ func (tx *Transaction[T]) GetBatchKey() Key {
 	return tx.batchKey
 }
 
+// GetHighVolume returns the high volume flag for this transaction.
+func (tx *Transaction[T]) GetHighVolume() bool {
+	return tx.highVolume
+}
+
+// SetHighVolume sets the high volume flag for this transaction.
+func (tx *Transaction[T]) SetHighVolume(highVolume bool) T {
+	tx.highVolume = highVolume
+	return tx.childTransaction
+}
+
 // Batchify method is used to mark a transaction as part of a batch transaction or make it so-called inner transaction.
 // The Transaction will be frozen and signed by the operator of the client.
 func (tx *Transaction[T]) Batchify(client *Client, batchKey Key) (T, error) {
@@ -1343,6 +1357,7 @@ func (tx *Transaction[T]) buildTransactionBody() *services.TransactionBody {
 		Memo:                     tx.memo,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		TransactionID:            tx.transactionID._ToProtobuf(),
+		HighVolume:               tx.highVolume,
 	}
 }
 
@@ -1773,6 +1788,16 @@ func TransactionSetTransactionMemo(tx TransactionInterface, transactionMemo stri
 	return tx, nil
 }
 
+func TransactionGetHighVolume(tx TransactionInterface) (bool, error) {
+	return tx.getBaseTransaction().GetHighVolume(), nil
+}
+
+func TransactionSetHighVolume(tx TransactionInterface, highVolume bool) (TransactionInterface, error) {
+	baseTx := tx.getBaseTransaction()
+	baseTx.SetHighVolume(highVolume)
+	return tx, nil
+}
+
 func TransactionGetTransactionID(tx TransactionInterface) (TransactionID, error) {
 	return tx.getBaseTransaction().GetTransactionID(), nil
 }
@@ -1899,6 +1924,7 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 	}
 
 	baseTx.memo = body.Memo
+	baseTx.highVolume = body.HighVolume
 	if body.TransactionFee != 0 {
 		baseTx.transactionFee = body.TransactionFee
 	}
