@@ -112,7 +112,7 @@ func main() {
 	if port == "" {
 		port = "8544"
 	}
-	log.Println("Server is listening on port: " + port)
+	log.Println(fmt.Sprintf("Server is listening on port: %s", port)) //nolint
 
 	server := &http.Server{
 		Addr:         ":" + port,

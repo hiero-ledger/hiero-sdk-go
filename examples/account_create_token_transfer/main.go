@@ -69,7 +69,7 @@ func main() {
 	}
 
 	// Get the child receipt or child record to return the Hiero Account ID for the new account that was created
-	receipt, err := tx.GetReceiptQuery().SetIncludeChildren(true).Execute(client)
+	receipt, err := tx.GetReceiptQueryWithClient(client).SetIncludeChildren(true).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error with receipt: ", err))
 	}
@@ -95,7 +95,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	receipt, err = tx.GetReceiptQuery().Execute(client)
+	receipt, err = tx.GetReceiptQueryWithClient(client).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error with receipt: ", err))
 	}

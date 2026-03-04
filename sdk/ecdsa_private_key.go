@@ -3,6 +3,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/sha512"
 	"crypto/x509"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	ecdsa "github.com/btcsuite/btcd/btcec/v2/ecdsa"
-	"github.com/decred/dcrd/dcrec/secp256k1/v4"
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/pkg/errors"
 )
@@ -98,7 +98,7 @@ func _ECDSAPrivateKeyFromBytesDer(data []byte) (*_ECDSAPrivateKey, error) {
 
 	type ECPrivateKey struct {
 		Version       int
-		PrivateKey    []byte
+		PrivateKey    []byte                //nolint
 		NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
 		PublicKey     asn1.BitString        `asn1:"optional,explicit,tag:1"`
 	}
@@ -121,8 +121,8 @@ func privateKeyFromBytes(privateKey []byte) (*btcec.PrivateKey, error) {
 	}
 
 	// Define the curve order N (secp256k1)
-	curve := secp256k1.S256()
-	N := curve.N
+	curve := elliptic.P256()
+	N := curve.Params().N
 
 	// Convert privKeyBytes to a big integer
 	privKeyInt := new(big.Int).SetBytes(privateKey)
@@ -279,7 +279,7 @@ func (sk _ECDSAPrivateKey) _BytesRaw() []byte {
 func (sk _ECDSAPrivateKey) _BytesDer() []byte {
 	type ECPrivateKey struct {
 		Version       int
-		PrivateKey    []byte
+		PrivateKey    []byte                //nolint
 		NamedCurveOID asn1.ObjectIdentifier `asn1:"optional,explicit,tag:0"`
 		PublicKey     asn1.BitString        `asn1:"optional,explicit,tag:1"`
 	}
