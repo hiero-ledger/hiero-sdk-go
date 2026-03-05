@@ -1210,6 +1210,9 @@ func (tx *Transaction[T]) GetHighVolume() bool {
 }
 
 // SetHighVolume sets the high volume flag for this transaction.
+// Supported transactions: AccountCreate, ContractCreate, TokenCreate, TopicCreate,
+// FileCreate, FileAppend, ScheduleCreate, TokenAirdrop, TokenAssociate,
+// TokenClaimAirdrop, TokenMint, TransferTransaction, AccountAllowanceApprove, HookStore.
 func (tx *Transaction[T]) SetHighVolume(highVolume bool) T {
 	tx.highVolume = highVolume
 	return tx.childTransaction
@@ -1785,16 +1788,6 @@ func TransactionGetTransactionMemo(tx TransactionInterface) (string, error) {
 func TransactionSetTransactionMemo(tx TransactionInterface, transactionMemo string) (TransactionInterface, error) {
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetTransactionMemo(transactionMemo)
-	return tx, nil
-}
-
-func TransactionGetHighVolume(tx TransactionInterface) (bool, error) {
-	return tx.getBaseTransaction().GetHighVolume(), nil
-}
-
-func TransactionSetHighVolume(tx TransactionInterface, highVolume bool) (TransactionInterface, error) {
-	baseTx := tx.getBaseTransaction()
-	baseTx.SetHighVolume(highVolume)
 	return tx, nil
 }
 
