@@ -335,6 +335,7 @@ func (tx AccountAllowanceApproveTransaction) build() *services.TransactionBody {
 		TransactionFee:           tx.transactionFee,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		Memo:                     tx.Transaction.memo,
+		HighVolume:               tx.Transaction.highVolume,
 		Data: &services.TransactionBody_CryptoApproveAllowance{
 			CryptoApproveAllowance: tx.buildProtoBody(),
 		},

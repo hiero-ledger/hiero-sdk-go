@@ -41,6 +41,7 @@ type BaseTransaction struct {
 	transactionFee           uint64
 	defaultMaxTransactionFee uint64
 	memo                     string
+	highVolume               bool
 	transactionValidDuration *time.Duration
 	transactionID            TransactionID
 
@@ -75,6 +76,7 @@ func _NewTransaction[T TransactionInterface](concreteTransaction T) *Transaction
 		BaseTransaction: &BaseTransaction{
 			defaultMaxTransactionFee: uint64(NewHbar(2).AsTinybar()),
 			transactionValidDuration: &duration,
+			highVolume:               false,
 			transactions:             _NewLockableSlice(),
 			signedTransactions:       _NewLockableSlice(),
 			customFeeLimits:          nil,
@@ -808,6 +810,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 	}
 
 	originalBody.Memo = tx.memo
+	originalBody.HighVolume = tx.highVolume
 	if tx.transactionFee != 0 {
 		originalBody.TransactionFee = tx.transactionFee
 	} else {
@@ -1186,6 +1189,20 @@ func (tx *Transaction[T]) SetBatchKey(batchKey Key) T {
 // GetBatchKey returns the batch key for this transaction.
 func (tx *Transaction[T]) GetBatchKey() Key {
 	return tx.batchKey
+}
+
+// GetHighVolume returns the high volume flag for this transaction.
+func (tx *Transaction[T]) GetHighVolume() bool {
+	return tx.highVolume
+}
+
+// SetHighVolume sets the high volume flag for this transaction.
+// Supported transactions: AccountCreate, ContractCreate, TokenCreate, TopicCreate,
+// FileCreate, FileAppend, ScheduleCreate, TokenAirdrop, TokenAssociate,
+// TokenClaimAirdrop, TokenMint, TransferTransaction, AccountAllowanceApprove, HookStore.
+func (tx *Transaction[T]) SetHighVolume(highVolume bool) T {
+	tx.highVolume = highVolume
+	return tx.childTransaction
 }
 
 // Batchify method is used to mark a transaction as part of a batch transaction or make it so-called inner transaction.
@@ -1868,6 +1885,7 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 	}
 
 	baseTx.memo = body.Memo
+	baseTx.highVolume = body.HighVolume
 	if body.TransactionFee != 0 {
 		baseTx.transactionFee = body.TransactionFee
 	}
