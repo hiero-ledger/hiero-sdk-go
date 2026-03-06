@@ -165,7 +165,7 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 	}
 	body := tx.build()
 
-	chunks := (uint64(len(tx.message)) + (tx.chunkSize - 1)) / tx.chunkSize
+	chunks := (uint64(len(tx.message)) + tx.chunkSize) / tx.chunkSize
 	if chunks > tx.maxChunks {
 		return tx, ErrMaxChunksExceeded{
 			Chunks:    chunks,
