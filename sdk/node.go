@@ -170,6 +170,46 @@ func (node *_Node) _GetChannel(logger Logger) (*_Channel, error) {
 					Detail: "",
 				}
 			},
+			// VerifyConnection is called after VerifyPeerCertificate and also during
+			// session resumption when VerifyPeerCertificate may be skipped (gosec G402)
+			VerifyConnection: func(cs tls.ConnectionState) error {
+				if node.addressBook == nil {
+					return nil
+				}
+
+				if !node.verifyCertificate {
+					return nil
+				}
+
+				for _, cert := range cs.PeerCertificates {
+					var certHash []byte
+
+					block := &pem.Block{
+						Type:  "CERTIFICATE",
+						Bytes: cert.Raw,
+					}
+
+					var encodedBuf bytes.Buffer
+					_ = pem.Encode(&encodedBuf, block)
+					digest := sha512.New384()
+
+					if _, err = digest.Write(encodedBuf.Bytes()); err != nil {
+						return err
+					}
+
+					certHash = digest.Sum(nil)
+
+					if string(node.addressBook.CertHash) == hex.EncodeToString(certHash) {
+						return nil
+					}
+				}
+
+				return x509.CertificateInvalidError{
+					Cert:   nil,
+					Reason: x509.Expired,
+					Detail: "",
+				}
+			},
 		}))
 	}
 
