@@ -183,11 +183,7 @@ func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessa
 	if b, ok := body.Data.(*services.TransactionBody_ConsensusSubmitMessage); ok {
 		for i = 0; i < chunks; i++ {
 			start := i * tx.chunkSize
-			end := start + tx.chunkSize
-
-			if end > uint64(len(tx.message)) {
-				end = uint64(len(tx.message))
-			}
+			end := min(start+tx.chunkSize, uint64(len(tx.message)))
 
 			tx.transactionIDs._Push(_TransactionIDFromProtobuf(nextTransactionID._ToProtobuf()))
 
