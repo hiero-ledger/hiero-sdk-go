@@ -97,6 +97,7 @@ func (tx TokenClaimAirdropTransaction) build() *services.TransactionBody {
 		Memo:                     tx.Transaction.memo,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		TransactionID:            tx.transactionID._ToProtobuf(),
+		HighVolume:               tx.Transaction.highVolume,
 		Data: &services.TransactionBody_TokenClaimAirdrop{
 			TokenClaimAirdrop: tx.buildProtoBody(),
 		},

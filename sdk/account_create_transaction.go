@@ -410,6 +410,7 @@ func (tx AccountCreateTransaction) build() *services.TransactionBody {
 		TransactionFee:           tx.transactionFee,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		Memo:                     tx.Transaction.memo,
+		HighVolume:               tx.Transaction.highVolume,
 		Data: &services.TransactionBody_CryptoCreateAccount{
 			CryptoCreateAccount: tx.buildProtoBody(),
 		},
