@@ -184,7 +184,7 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 		return handle, err
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // G118: cancel is stored in handle.onUnsubscribe and called on unsubscribe
 	handle.onUnsubscribe = cancel
 
 	stream, err := channel.SubscribeTopic(ctx, pbBody)
