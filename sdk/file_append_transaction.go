@@ -144,11 +144,7 @@ func (tx *FileAppendTransaction) FreezeWith(client *Client) (*FileAppendTransact
 	if b, ok := body.Data.(*services.TransactionBody_FileAppend); ok {
 		for i := 0; uint64(i) < chunks; i++ {
 			start := i * tx.chunkSize
-			end := start + tx.chunkSize
-
-			if end > len(tx.contents) {
-				end = len(tx.contents)
-			}
+			end := min(start+tx.chunkSize, len(tx.contents))
 
 			// Important: if the toProtobuf -> fromProtobuf is not done, the transaction id will be wrong
 			tx.transactionIDs._Push(_TransactionIDFromProtobuf(nextTransactionID._ToProtobuf()))
