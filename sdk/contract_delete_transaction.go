@@ -138,17 +138,12 @@ func (tx ContractDeleteTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx ContractDeleteTransaction) build() *services.TransactionBody {
-	pb := services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_ContractDeleteInstance{
-			ContractDeleteInstance: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_ContractDeleteInstance{
+		ContractDeleteInstance: tx.buildProtoBody(),
 	}
 
-	return &pb
+	return body
 }
 
 func (tx ContractDeleteTransaction) buildProtoBody() *services.ContractDeleteTransactionBody {
@@ -176,13 +171,12 @@ func (tx ContractDeleteTransaction) buildProtoBody() *services.ContractDeleteTra
 }
 
 func (tx ContractDeleteTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_ContractDeleteInstance{
-			ContractDeleteInstance: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_ContractDeleteInstance{
+		ContractDeleteInstance: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx ContractDeleteTransaction) getMethod(channel *_Channel) _Method {

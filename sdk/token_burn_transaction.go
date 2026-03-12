@@ -128,25 +128,21 @@ func (tx TokenBurnTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TokenBurnTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenBurn{
-			TokenBurn: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenBurn{
+		TokenBurn: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenBurnTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_TokenBurn{
-			TokenBurn: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenBurn{
+		TokenBurn: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenBurnTransaction) buildProtoBody() *services.TokenBurnTransactionBody {

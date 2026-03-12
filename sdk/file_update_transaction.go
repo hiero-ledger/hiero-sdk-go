@@ -168,24 +168,20 @@ func (tx FileUpdateTransaction) validateNetworkOnIDs(client *Client) error {
 	return nil
 }
 func (tx FileUpdateTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_FileUpdate{
-			FileUpdate: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_FileUpdate{
+		FileUpdate: tx.buildProtoBody(),
 	}
+
+	return body
 }
 func (tx FileUpdateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_FileUpdate{
-			FileUpdate: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_FileUpdate{
+		FileUpdate: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 func (tx FileUpdateTransaction) buildProtoBody() *services.FileUpdateTransactionBody {
 	body := &services.FileUpdateTransactionBody{

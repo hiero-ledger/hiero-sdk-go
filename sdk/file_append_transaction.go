@@ -252,25 +252,21 @@ func (tx FileAppendTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx FileAppendTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_FileAppend{
-			FileAppend: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_FileAppend{
+		FileAppend: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx FileAppendTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_FileAppend{
-			FileAppend: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_FileAppend{
+		FileAppend: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 func (tx FileAppendTransaction) buildProtoBody() *services.FileAppendTransactionBody {
 	body := &services.FileAppendTransactionBody{
