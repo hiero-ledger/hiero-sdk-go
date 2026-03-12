@@ -90,15 +90,12 @@ func (tx LiveHashDeleteTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx LiveHashDeleteTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_CryptoDeleteLiveHash{
-			CryptoDeleteLiveHash: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_CryptoDeleteLiveHash{
+		CryptoDeleteLiveHash: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx LiveHashDeleteTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

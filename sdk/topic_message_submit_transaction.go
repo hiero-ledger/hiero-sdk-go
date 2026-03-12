@@ -290,15 +290,12 @@ func (tx TopicMessageSubmitTransaction) validateNetworkOnIDs(client *Client) err
 }
 
 func (tx TopicMessageSubmitTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_ConsensusSubmitMessage{
-			ConsensusSubmitMessage: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_ConsensusSubmitMessage{
+		ConsensusSubmitMessage: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TopicMessageSubmitTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

@@ -87,15 +87,12 @@ func (tx HookStoreTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx HookStoreTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_HookStore{
-			HookStore: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_HookStore{
+		HookStore: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx HookStoreTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

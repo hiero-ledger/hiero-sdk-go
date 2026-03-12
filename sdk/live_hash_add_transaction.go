@@ -165,15 +165,12 @@ func (tx LiveHashAddTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx LiveHashAddTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_CryptoAddLiveHash{
-			CryptoAddLiveHash: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_CryptoAddLiveHash{
+		CryptoAddLiveHash: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx LiveHashAddTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

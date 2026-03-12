@@ -201,15 +201,12 @@ func (tx BatchTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx BatchTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		TransactionFee:           tx.transactionFee,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		Memo:                     tx.Transaction.memo,
-		Data: &services.TransactionBody_AtomicBatch{
-			AtomicBatch: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_AtomicBatch{
+		AtomicBatch: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx BatchTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

@@ -79,25 +79,21 @@ func (tx TokenUnpauseTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TokenUnpauseTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenUnpause{
-			TokenUnpause: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenUnpause{
+		TokenUnpause: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenUnpauseTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) { //nolint
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_TokenUnpause{
-			TokenUnpause: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenUnpause{
+		TokenUnpause: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenUnpauseTransaction) buildProtoBody() *services.TokenUnpauseTransactionBody { //nolint
