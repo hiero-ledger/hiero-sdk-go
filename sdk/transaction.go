@@ -1323,6 +1323,24 @@ func (tx *Transaction[T]) validateTransactionFields() error {
 	return nil
 }
 
+// buildTransactionBody constructs a TransactionBody with the common fields shared by all transactions.
+func (tx *Transaction[T]) buildTransactionBody() *services.TransactionBody {
+	return &services.TransactionBody{
+		TransactionFee:           tx.transactionFee,
+		Memo:                     tx.memo,
+		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
+		TransactionID:            tx.transactionID._ToProtobuf(),
+	}
+}
+
+// buildSchedulableTransactionBody constructs a SchedulableTransactionBody with the common fields shared by all schedulable transactions.
+func (tx *Transaction[T]) buildSchedulableTransactionBody() *services.SchedulableTransactionBody {
+	return &services.SchedulableTransactionBody{
+		TransactionFee: tx.transactionFee,
+		Memo:           tx.memo,
+	}
+}
+
 func (tx *Transaction[T]) getLogID(transactionInterface Executable) string {
 	timestamp := tx.transactionIDs._GetCurrent().(TransactionID).ValidStart
 	return fmt.Sprintf("%s:%d", transactionInterface.getName(), timestamp.UnixNano())
