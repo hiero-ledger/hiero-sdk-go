@@ -1612,3 +1612,221 @@ func createTransactionTests(txName string, nodeAccountIds []AccountID) []transac
 // TransactionGetTransactionHash //needs to be tested in e2e tests
 // TransactionGetTransactionHashPerNode //needs to be tested in e2e tests
 // TransactionExecute //needs to be tested in e2e tests
+
+func TestUnitFromBytesSucceedsForValidMultiNodeTransactionList(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID1 := AccountID{Account: 3}
+	nodeAccountID2 := AccountID{Account: 4}
+	sender := AccountID{Account: 10}
+	receiver := AccountID{Account: 11}
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID1, nodeAccountID2}).
+		SetTransactionID(TransactionIDGenerate(sender)).
+		AddHbarTransfer(sender, NewHbar(-1)).
+		AddHbarTransfer(receiver, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	decoded, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	transferTx, ok := decoded.(TransferTransaction)
+	require.True(t, ok, "expected TransferTransaction")
+
+	nodeIDs := transferTx.GetNodeAccountIDs()
+	require.Len(t, nodeIDs, 2)
+	require.Equal(t, nodeAccountID1.String(), nodeIDs[0].String())
+	require.Equal(t, nodeAccountID2.String(), nodeIDs[1].String())
+}
+
+func TestUnitFromBytesFailsForMixedTransactionIDsNonChunked(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := AccountID{Account: 3}
+	payerAccountID := AccountID{Account: 201}
+	receiverA := AccountID{Account: 202}
+	receiverB := AccountID{Account: 9999}
+
+	transactionA, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(TransactionIDGenerate(payerAccountID)).
+		AddHbarTransfer(payerAccountID, NewHbar(-1)).
+		AddHbarTransfer(receiverA, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	transactionB, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(TransactionIDGenerate(payerAccountID)).
+		AddHbarTransfer(payerAccountID, NewHbar(-2)).
+		AddHbarTransfer(receiverB, NewHbar(2)).
+		Freeze()
+	require.NoError(t, err)
+
+	bytesA, err := transactionA.ToBytes()
+	require.NoError(t, err)
+
+	bytesB, err := transactionB.ToBytes()
+	require.NoError(t, err)
+
+	var listA sdk.TransactionList
+	err = protobuf.Unmarshal(bytesA, &listA)
+	require.NoError(t, err)
+
+	var listB sdk.TransactionList
+	err = protobuf.Unmarshal(bytesB, &listB)
+	require.NoError(t, err)
+
+	mixedBytes, err := protobuf.Marshal(&sdk.TransactionList{
+		TransactionList: []*services.Transaction{
+			listA.TransactionList[0],
+			listB.TransactionList[0],
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(mixedBytes)
+	require.Error(t, err)
+	assert.Equal(t, "failed to validate transaction bodies", err.Error())
+}
+
+func TestUnitFromBytesFailsForDuplicateTxIDNodeMismatchedBody(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := AccountID{Account: 3}
+	payerAccountID := AccountID{Account: 201}
+	receiverA := AccountID{Account: 202}
+	receiverB := AccountID{Account: 9999}
+	sharedTxID := TransactionIDGenerate(payerAccountID)
+
+	transactionA, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(sharedTxID).
+		AddHbarTransfer(payerAccountID, NewHbar(-1)).
+		AddHbarTransfer(receiverA, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	transactionB, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(sharedTxID).
+		AddHbarTransfer(payerAccountID, NewHbar(-2)).
+		AddHbarTransfer(receiverB, NewHbar(2)).
+		Freeze()
+	require.NoError(t, err)
+
+	bytesA, err := transactionA.ToBytes()
+	require.NoError(t, err)
+
+	bytesB, err := transactionB.ToBytes()
+	require.NoError(t, err)
+
+	var listA sdk.TransactionList
+	err = protobuf.Unmarshal(bytesA, &listA)
+	require.NoError(t, err)
+
+	var listB sdk.TransactionList
+	err = protobuf.Unmarshal(bytesB, &listB)
+	require.NoError(t, err)
+
+	mixedBytes, err := protobuf.Marshal(&sdk.TransactionList{
+		TransactionList: []*services.Transaction{
+			listA.TransactionList[0],
+			listB.TransactionList[0],
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(mixedBytes)
+	require.Error(t, err)
+	assert.Equal(t, "failed to validate transaction bodies", err.Error())
+}
+
+// TestUnitSignFailsWhenSignedTransactionListInconsistent verifies that
+// _TransactionCompare detects inconsistent bodies when the internal signed
+// transaction list contains entries from two different transactions.
+func TestUnitSignFailsWhenSignedTransactionListInconsistent(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := AccountID{Account: 3}
+	payerAccountID := AccountID{Account: 201}
+	receiverA := AccountID{Account: 202}
+	receiverB := AccountID{Account: 9999}
+	sharedTxID := TransactionIDGenerate(payerAccountID)
+
+	transactionA, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(sharedTxID).
+		AddHbarTransfer(payerAccountID, NewHbar(-1)).
+		AddHbarTransfer(receiverA, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	transactionB, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(sharedTxID).
+		AddHbarTransfer(payerAccountID, NewHbar(-2)).
+		AddHbarTransfer(receiverB, NewHbar(2)).
+		Freeze()
+	require.NoError(t, err)
+
+	// Deserialize transaction A
+	bytesA, err := transactionA.ToBytes()
+	require.NoError(t, err)
+
+	parsed, err := TransactionFromBytes(bytesA)
+	require.NoError(t, err)
+
+	transferTx, ok := parsed.(TransferTransaction)
+	require.True(t, ok, "expected TransferTransaction")
+
+	// Get signed transaction A from bytes
+	var listA sdk.TransactionList
+	err = protobuf.Unmarshal(bytesA, &listA)
+	require.NoError(t, err)
+
+	var signedA services.SignedTransaction
+	err = protobuf.Unmarshal(listA.TransactionList[0].SignedTransactionBytes, &signedA)
+	require.NoError(t, err)
+
+	// Get signed transaction B from bytes
+	bytesB, err := transactionB.ToBytes()
+	require.NoError(t, err)
+
+	var listB sdk.TransactionList
+	err = protobuf.Unmarshal(bytesB, &listB)
+	require.NoError(t, err)
+
+	var signedB services.SignedTransaction
+	err = protobuf.Unmarshal(listB.TransactionList[0].SignedTransactionBytes, &signedB)
+	require.NoError(t, err)
+
+	// Replace the signed transactions list with inconsistent entries from A and B
+	transferTx.signedTransactions = _NewLockableSlice()
+	transferTx.signedTransactions._Push(&signedA, &signedB)
+
+	// Build a TransactionList from the mixed signed transactions to verify
+	// that _TransactionCompare catches the inconsistency
+	mixedTransactions := make([]*services.Transaction, 0)
+	for i := 0; i < transferTx.signedTransactions._Length(); i++ {
+		signed := transferTx.signedTransactions._Get(i).(*services.SignedTransaction)
+		signedBytes, err := protobuf.Marshal(signed)
+		require.NoError(t, err)
+		mixedTransactions = append(mixedTransactions, &services.Transaction{
+			SignedTransactionBytes: signedBytes,
+		})
+	}
+
+	mixedList := &sdk.TransactionList{
+		TransactionList: mixedTransactions,
+	}
+
+	valid, err := _TransactionCompare(mixedList)
+	require.NoError(t, err)
+	require.False(t, valid, "mixed signed transaction list should fail body validation")
+}
