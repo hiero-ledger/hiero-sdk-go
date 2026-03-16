@@ -1017,8 +1017,7 @@ func TestUnitECDSAPrivateKeyRangeCheckUsesSecp256k1CurveOrder(t *testing.T) {
 	require.NoError(t, err)
 
 	key, err := _ECDSAPrivateKeyFromBytesRaw(rawBytes)
-	require.NoError(t, err,
-		"secp256k1 key above P256 N must be accepted; fix ecdsa_private_key.go line 124 to use secp256k1 curve order")
+	require.NoError(t, err)
 
 	roundTrip := key._BytesRaw()
 	require.Equal(t, rawBytes, roundTrip)
