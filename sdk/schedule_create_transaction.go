@@ -201,6 +201,7 @@ func (tx ScheduleCreateTransaction) build() *services.TransactionBody {
 		Memo:                     tx.Transaction.memo,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		TransactionID:            tx.transactionID._ToProtobuf(),
+		HighVolume:               tx.Transaction.highVolume,
 		Data: &services.TransactionBody_ScheduleCreate{
 			ScheduleCreate: tx.buildProtoBody(),
 		},

@@ -127,7 +127,11 @@
       "hook_types.proto",
       "hook_dispatch.proto",
       "chain_of_trust_proof.proto",
-      "ledger_id_publication.proto"
+      "ledger_id_publication.proto",
+      "registered_service_endpoint.proto",
+      "registered_node_create.proto",
+      "registered_node_update.proto",
+      "registered_node_delete.proto"
     ]
   }
   
