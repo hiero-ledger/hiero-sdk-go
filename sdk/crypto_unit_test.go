@@ -941,6 +941,89 @@ func TestUnitECDSAPrivateKeyFromBytesRawInvalidNValue(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUnitECDSAPrivateKeyRawBytesRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	rawHex := "8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048"
+	rawBytes, err := hex.DecodeString(rawHex)
+	require.NoError(t, err)
+
+	key, err := PrivateKeyFromBytesECDSA(rawBytes)
+	require.NoError(t, err)
+
+	roundTripRaw := key.BytesRaw()
+	require.Equal(t, rawBytes, roundTripRaw, "raw bytes round-trip must be identical for secp256k1")
+}
+
+func TestUnitECDSAPrivateKeyDerBytesRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	key, err := PrivateKeyFromStringECDSA("8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048")
+	require.NoError(t, err)
+
+	derBytes := key.BytesDer()
+	key2, err := PrivateKeyFromBytesDer(derBytes)
+	require.NoError(t, err)
+
+	roundTripDer := key2.BytesDer()
+	require.Equal(t, derBytes, roundTripDer, "DER bytes round-trip must be identical for secp256k1")
+}
+
+func TestUnitECDSAPrivateKeyToPublicKeyBytes(t *testing.T) {
+	t.Parallel()
+
+	privateKeyHex := "8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048"
+	expectedPublicKeyHex := "02703a9370b0443be6ae7c507b0aec81a55e94e4a863b9655360bd65358caa6588"
+
+	rawBytes, err := hex.DecodeString(privateKeyHex)
+	require.NoError(t, err)
+	key, err := PrivateKeyFromBytesECDSA(rawBytes)
+	require.NoError(t, err)
+
+	actualPublicKey := key.PublicKey().BytesRaw()
+	expectedPublicKey, err := hex.DecodeString(expectedPublicKeyHex)
+	require.NoError(t, err)
+	require.Equal(t, expectedPublicKey, actualPublicKey,
+		"public key bytes must match secp256k1 derivation; curve change would produce different bytes")
+}
+
+func TestUnitECDSAPrivateKeyFullRoundTripRawToDerToRaw(t *testing.T) {
+	t.Parallel()
+
+	rawHex := "8776c6b831a1b61ac10dac0304a2843de4716f54b1919bb91a2685d0fe3f3048"
+	rawBytes, err := hex.DecodeString(rawHex)
+	require.NoError(t, err)
+
+	key1, err := PrivateKeyFromBytesECDSA(rawBytes)
+	require.NoError(t, err)
+	derBytes := key1.BytesDer()
+
+	key2, err := PrivateKeyFromBytesDer(derBytes)
+	require.NoError(t, err)
+	roundTripRaw := key2.BytesRaw()
+
+	require.Equal(t, rawBytes, roundTripRaw,
+		"full round-trip raw->DER->raw must preserve bytes; curve/OID change would break this")
+}
+
+// Fails if elliptic.P256() is used instead of secp256k1's curve order
+func TestUnitECDSAPrivateKeyRangeCheckUsesSecp256k1CurveOrder(t *testing.T) {
+	t.Parallel()
+
+	// Private key value = P256's N + 1; valid for secp256k1, rejected if using P256's N for range check
+	// P256 N = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
+	aboveP256N := "ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632552"
+	rawBytes, err := hex.DecodeString(aboveP256N)
+	require.NoError(t, err)
+
+	key, err := _ECDSAPrivateKeyFromBytesRaw(rawBytes)
+	require.NoError(t, err,
+		"secp256k1 key above P256 N must be accepted; fix ecdsa_private_key.go line 124 to use secp256k1 curve order")
+
+	roundTrip := key._BytesRaw()
+	require.Equal(t, rawBytes, roundTrip)
+}
+
 func TestUnitECDSAPublicKeyFromBytesDerInvalidKey(t *testing.T) {
 	_, err := _ECDSAPublicKeyFromBytesDer(nil)
 	require.Error(t, err)
