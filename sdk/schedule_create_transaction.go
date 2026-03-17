@@ -196,15 +196,12 @@ func (tx ScheduleCreateTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx ScheduleCreateTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_ScheduleCreate{
-			ScheduleCreate: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_ScheduleCreate{
+		ScheduleCreate: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx ScheduleCreateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

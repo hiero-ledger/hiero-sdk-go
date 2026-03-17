@@ -330,25 +330,21 @@ func (tx AccountAllowanceApproveTransaction) validateNetworkOnIDs(client *Client
 }
 
 func (tx AccountAllowanceApproveTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		TransactionFee:           tx.transactionFee,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		Memo:                     tx.Transaction.memo,
-		Data: &services.TransactionBody_CryptoApproveAllowance{
-			CryptoApproveAllowance: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_CryptoApproveAllowance{
+		CryptoApproveAllowance: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx AccountAllowanceApproveTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_CryptoApproveAllowance{
-			CryptoApproveAllowance: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_CryptoApproveAllowance{
+		CryptoApproveAllowance: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx AccountAllowanceApproveTransaction) buildProtoBody() *services.CryptoApproveAllowanceTransactionBody {

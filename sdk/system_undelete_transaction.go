@@ -109,25 +109,21 @@ func (tx SystemUndeleteTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx SystemUndeleteTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_SystemUndelete{
-			SystemUndelete: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_SystemUndelete{
+		SystemUndelete: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx SystemUndeleteTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_SystemUndelete{
-			SystemUndelete: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_SystemUndelete{
+		SystemUndelete: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx SystemUndeleteTransaction) buildProtoBody() *services.SystemUndeleteTransactionBody {

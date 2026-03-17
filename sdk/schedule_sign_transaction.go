@@ -84,15 +84,12 @@ func (tx ScheduleSignTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx ScheduleSignTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_ScheduleSign{
-			ScheduleSign: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_ScheduleSign{
+		ScheduleSign: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx ScheduleSignTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
