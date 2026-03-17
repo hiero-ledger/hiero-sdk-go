@@ -134,7 +134,7 @@ func (approval *TokenNftAllowance) String() string {
 	}
 
 	for _, serial := range approval.SerialNumbers {
-		serials.WriteString(fmt.Sprintf("%d, ", serial))
+		fmt.Fprintf(&serials, "%d, ", serial)
 	}
 
 	return fmt.Sprintf("OwnerAccountID: %s, SpenderAccountID: %s, TokenID: %s, Serials: %s, ApprovedForAll: %t", owner, spender, token, serials.String(), approval.AllSerials)

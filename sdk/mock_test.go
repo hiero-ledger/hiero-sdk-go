@@ -433,6 +433,7 @@ func NewMockClientAndServer(allNodeResponses [][]interface{}) (*Client, *MockSer
 		grpcDeadline:                    10 * time.Second,
 		requestTimeout:                  2 * time.Minute,
 		defaultRegenerateTransactionIDs: true,
+		allowReceiptNodeFailover:        false,
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
