@@ -308,9 +308,7 @@ func (tx *TransferTransaction) addTokenTransfer(tokenID TokenID, accountID Accou
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 					tokenTransfer.ExpectedDecimals = decimal
 					transfer.hookCall = hookCall
-					for _, transfer := range tokenTransfer.Transfers {
-						transfer.isApproved = approve
-					}
+					transfer.isApproved = approve
 
 					return tx
 				}

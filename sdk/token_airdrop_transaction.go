@@ -247,9 +247,7 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransferWithDecimals(tokenID 
 				if transfer.accountID._Equals(accountID) {
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
 					tokenTransfer.ExpectedDecimals = &decimal
-					for _, transfer := range tokenTransfer.Transfers {
-						transfer.isApproved = approve
-					}
+					transfer.isApproved = approve
 
 					return tx
 				}
