@@ -1612,3 +1612,137 @@ func createTransactionTests(txName string, nodeAccountIds []AccountID) []transac
 // TransactionGetTransactionHash //needs to be tested in e2e tests
 // TransactionGetTransactionHashPerNode //needs to be tested in e2e tests
 // TransactionExecute //needs to be tested in e2e tests
+
+func TestUnitFromBytesSucceedsForValidMultiNodeTransactionList(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID1 := AccountID{Account: 3}
+	nodeAccountID2 := AccountID{Account: 4}
+	sender := AccountID{Account: 10}
+	receiver := AccountID{Account: 11}
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID1, nodeAccountID2}).
+		SetTransactionID(TransactionIDGenerate(sender)).
+		AddHbarTransfer(sender, NewHbar(-1)).
+		AddHbarTransfer(receiver, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	decoded, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	transferTx, ok := decoded.(TransferTransaction)
+	require.True(t, ok, "expected TransferTransaction")
+
+	nodeIDs := transferTx.GetNodeAccountIDs()
+	require.Len(t, nodeIDs, 2)
+	require.Equal(t, nodeAccountID1.String(), nodeIDs[0].String())
+	require.Equal(t, nodeAccountID2.String(), nodeIDs[1].String())
+}
+
+func TestUnitFromBytesFailsForMixedTransactionIDsNonChunked(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := AccountID{Account: 3}
+	payerAccountID := AccountID{Account: 201}
+	receiverA := AccountID{Account: 202}
+	receiverB := AccountID{Account: 9999}
+
+	transactionA, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(TransactionIDGenerate(payerAccountID)).
+		AddHbarTransfer(payerAccountID, NewHbar(-1)).
+		AddHbarTransfer(receiverA, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	transactionB, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(TransactionIDGenerate(payerAccountID)).
+		AddHbarTransfer(payerAccountID, NewHbar(-2)).
+		AddHbarTransfer(receiverB, NewHbar(2)).
+		Freeze()
+	require.NoError(t, err)
+
+	bytesA, err := transactionA.ToBytes()
+	require.NoError(t, err)
+
+	bytesB, err := transactionB.ToBytes()
+	require.NoError(t, err)
+
+	var listA sdk.TransactionList
+	err = protobuf.Unmarshal(bytesA, &listA)
+	require.NoError(t, err)
+
+	var listB sdk.TransactionList
+	err = protobuf.Unmarshal(bytesB, &listB)
+	require.NoError(t, err)
+
+	mixedBytes, err := protobuf.Marshal(&sdk.TransactionList{
+		TransactionList: []*services.Transaction{
+			listA.TransactionList[0],
+			listB.TransactionList[0],
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(mixedBytes)
+	require.Error(t, err)
+	assert.Equal(t, "failed to validate transaction bodies", err.Error())
+}
+
+func TestUnitFromBytesFailsForDuplicateTxIDNodeMismatchedBody(t *testing.T) {
+	t.Parallel()
+
+	nodeAccountID := AccountID{Account: 3}
+	payerAccountID := AccountID{Account: 201}
+	receiverA := AccountID{Account: 202}
+	receiverB := AccountID{Account: 9999}
+	sharedTxID := TransactionIDGenerate(payerAccountID)
+
+	transactionA, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(sharedTxID).
+		AddHbarTransfer(payerAccountID, NewHbar(-1)).
+		AddHbarTransfer(receiverA, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	transactionB, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(sharedTxID).
+		AddHbarTransfer(payerAccountID, NewHbar(-2)).
+		AddHbarTransfer(receiverB, NewHbar(2)).
+		Freeze()
+	require.NoError(t, err)
+
+	bytesA, err := transactionA.ToBytes()
+	require.NoError(t, err)
+
+	bytesB, err := transactionB.ToBytes()
+	require.NoError(t, err)
+
+	var listA sdk.TransactionList
+	err = protobuf.Unmarshal(bytesA, &listA)
+	require.NoError(t, err)
+
+	var listB sdk.TransactionList
+	err = protobuf.Unmarshal(bytesB, &listB)
+	require.NoError(t, err)
+
+	mixedBytes, err := protobuf.Marshal(&sdk.TransactionList{
+		TransactionList: []*services.Transaction{
+			listA.TransactionList[0],
+			listB.TransactionList[0],
+		},
+	})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(mixedBytes)
+	require.Error(t, err)
+	assert.Equal(t, "failed to validate transaction bodies", err.Error())
+}

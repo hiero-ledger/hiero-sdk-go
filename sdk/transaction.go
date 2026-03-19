@@ -593,12 +593,25 @@ func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 		body = append(body, &temp)
 	}
 
+	if len(body) == 0 {
+		return true, nil
+	}
+
+	ref := body[0]
+	savedRef := ref.NodeAccountID
+	ref.NodeAccountID = nil
+  
 	for i := 1; i < len(body); i++ {
-		// #nosec G602
-		if reflect.TypeOf(body[0].Data) != reflect.TypeOf(body[i].Data) {
+		saved := body[i].NodeAccountID
+		body[i].NodeAccountID = nil
+		equal := protobuf.Equal(ref, body[i])
+		body[i].NodeAccountID = saved
+		if !equal {
+			ref.NodeAccountID = savedRef
 			return false, nil
 		}
 	}
+	ref.NodeAccountID = savedRef
 
 	return true, nil
 }
