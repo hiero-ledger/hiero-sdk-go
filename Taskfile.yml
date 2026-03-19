@@ -3,9 +3,9 @@ version: "3"
 tasks:
     update-addressbook:
         cmds:
-            - go test ./sdk -tags="abnet" -v -run TestIntegrationAddressBookQueryPreviewnet
-            - go test ./sdk -tags="abnet" -v -run TestIntegrationAddressBookQueryTestnet
-            - go test ./sdk -tags="abnet" -v -run TestIntegrationAddressBookQueryMainnet
+            - go test ./sdk -tags="DAB" -v -run TestIntegrationAddressBookQueryPreviewnet
+            - go test ./sdk -tags="DAB" -v -run TestIntegrationAddressBookQueryTestnet
+            - go test ./sdk -tags="DAB" -v -run TestIntegrationAddressBookQueryMainnet
 
     run-examples:
         cmds:

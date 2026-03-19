@@ -1,3 +1,21 @@
+## v2.76.0
+
+### Added
+- Opt-in receipt/record query failover to other nodes. By default, `GetReceipt` and `GetRecord` queries remain pinned to the submitting node. When enabled via `Client.SetAllowReceiptNodeFailover(true)`, queries can advance to other healthy nodes if the submitting node becomes unavailable or overloaded [#1628](https://github.com/hiero-ledger/hiero-sdk-go/pull/1628)
+
+### Deprecated
+- `TransactionResponse.GetReceiptQuery()` and `TransactionResponse.GetRecordQuery()`, use `GetReceiptQueryWithClient` and `GetRecordQueryWithClient` instead [#1628](https://github.com/hiero-ledger/hiero-sdk-go/pull/1628)
+
+### Fixed
+- `TransactionFromBytes` now validates full transaction body consistency using `protobuf.Equal` instead of only comparing the protobuf type via `reflect.TypeOf` [#1644](https://github.com/hiero-ledger/hiero-sdk-go/pull/1644)
+- Revert p256 curve change [#1643](https://github.com/hiero-ledger/hiero-sdk-go/pull/1643)
+
+### Changed
+- Extracted common transaction body construction into shared helper methods `buildTransactionBody()` and `buildSchedulableTransactionBody()` on the base `Transaction` struct, removing duplicated field assignments across all concrete transaction implementations [#1642](https://github.com/hiero-ledger/hiero-sdk-go/pull/1642)
+- Replaced custom comparison logic with Go's built-in `max`/`min` functions to simplify the code [#1639](https://github.com/hiero-ledger/hiero-sdk-go/pull/1639)
+- Use `reflect.TypeFor` instead of `reflect.TypeOf` when the type is already known at compile time for improved type safety [#1623](https://github.com/hiero-ledger/hiero-sdk-go/pull/1623)
+- Enhanced README with pre-requisites and setup instructions for new contributors [#1621](https://github.com/hiero-ledger/hiero-sdk-go/pull/1621)
+
 ## v2.75.0
 
 ### Added
