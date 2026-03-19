@@ -269,9 +269,7 @@ func (sk _ECDSAPrivateKey) _Derive(index uint32) (*_ECDSAPrivateKey, error) {
 }
 
 func (sk _ECDSAPrivateKey) _BytesRaw() []byte {
-	privateKey := make([]byte, 32)
-	temp := sk.keyData.ToECDSA().D.Bytes()
-	copy(privateKey[32-len(temp):], temp)
+	privateKey := sk.keyData.ToECDSA().D.FillBytes(make([]byte, 32))
 
 	return privateKey
 }
