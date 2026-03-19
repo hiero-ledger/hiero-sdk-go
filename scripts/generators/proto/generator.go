@@ -207,7 +207,9 @@ func removeFilesWithExtension(rootDir, module, ext string) {
 		}
 
 		if strings.HasSuffix(filename, ext) {
-			if err := os.Remove(filename); err != nil {
+			// G122: This is a build-time code generator script, not production code.
+			// The TOCTOU risk from symlink traversal is acceptable in this context.
+			if err := os.Remove(filename); err != nil { //nolint:gosec
 				return err
 			}
 		}

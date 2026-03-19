@@ -3,7 +3,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/sha512"
 	"crypto/x509"
@@ -121,8 +120,7 @@ func privateKeyFromBytes(privateKey []byte) (*btcec.PrivateKey, error) {
 	}
 
 	// Define the curve order N (secp256k1)
-	curve := elliptic.P256()
-	N := curve.Params().N
+	N := btcec.S256().Params().N
 
 	// Convert privKeyBytes to a big integer
 	privKeyInt := new(big.Int).SetBytes(privateKey)

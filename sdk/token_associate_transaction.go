@@ -145,27 +145,21 @@ func (tx TokenAssociateTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TokenAssociateTransaction) build() *services.TransactionBody {
-	body := tx.buildProtoBody()
-
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenAssociate{
-			TokenAssociate: body,
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenAssociate{
+		TokenAssociate: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenAssociateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_TokenAssociate{
-			TokenAssociate: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenAssociate{
+		TokenAssociate: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenAssociateTransaction) buildProtoBody() *services.TokenAssociateTransactionBody {
@@ -182,6 +176,7 @@ func (tx TokenAssociateTransaction) buildProtoBody() *services.TokenAssociateTra
 			body.Tokens = append(body.Tokens, tokenID._ToProtobuf())
 		}
 	}
+
 	return body
 }
 

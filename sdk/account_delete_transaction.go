@@ -94,25 +94,21 @@ func (tx AccountDeleteTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx AccountDeleteTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_CryptoDelete{
-			CryptoDelete: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_CryptoDelete{
+		CryptoDelete: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx AccountDeleteTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_CryptoDelete{
-			CryptoDelete: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_CryptoDelete{
+		CryptoDelete: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx AccountDeleteTransaction) buildProtoBody() *services.CryptoDeleteTransactionBody {

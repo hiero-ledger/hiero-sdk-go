@@ -430,25 +430,21 @@ func (tx TransferTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TransferTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_CryptoTransfer{
-			CryptoTransfer: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_CryptoTransfer{
+		CryptoTransfer: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TransferTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_CryptoTransfer{
-			CryptoTransfer: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_CryptoTransfer{
+		CryptoTransfer: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TransferTransaction) buildProtoBody() *services.CryptoTransferTransactionBody {

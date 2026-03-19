@@ -111,15 +111,12 @@ func (tx TokenFeeScheduleUpdateTransaction) validateNetworkOnIDs(client *Client)
 }
 
 func (tx TokenFeeScheduleUpdateTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenFeeScheduleUpdate{
-			TokenFeeScheduleUpdate: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenFeeScheduleUpdate{
+		TokenFeeScheduleUpdate: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenFeeScheduleUpdateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {

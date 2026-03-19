@@ -72,25 +72,21 @@ func (tx NodeDeleteTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx NodeDeleteTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_NodeDelete{
-			NodeDelete: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_NodeDelete{
+		NodeDelete: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx NodeDeleteTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_NodeDelete{
-			NodeDelete: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_NodeDelete{
+		NodeDelete: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx NodeDeleteTransaction) buildProtoBody() *services.NodeDeleteTransactionBody {
@@ -99,6 +95,7 @@ func (tx NodeDeleteTransaction) buildProtoBody() *services.NodeDeleteTransaction
 	if tx.nodeID != nil {
 		body.NodeId = *tx.nodeID
 	}
+
 	return body
 }
 

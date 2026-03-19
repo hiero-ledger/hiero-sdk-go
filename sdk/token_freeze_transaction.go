@@ -112,25 +112,21 @@ func (tx TokenFreezeTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TokenFreezeTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenFreeze{
-			TokenFreeze: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenFreeze{
+		TokenFreeze: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenFreezeTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_TokenFreeze{
-			TokenFreeze: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenFreeze{
+		TokenFreeze: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenFreezeTransaction) buildProtoBody() *services.TokenFreezeAccountTransactionBody {

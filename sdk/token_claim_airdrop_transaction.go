@@ -92,24 +92,21 @@ func (tx TokenClaimAirdropTransaction) validateNetworkOnIDs(client *Client) erro
 }
 
 func (tx TokenClaimAirdropTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenClaimAirdrop{
-			TokenClaimAirdrop: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenClaimAirdrop{
+		TokenClaimAirdrop: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenClaimAirdropTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Data: &services.SchedulableTransactionBody_TokenClaimAirdrop{
-			TokenClaimAirdrop: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenClaimAirdrop{
+		TokenClaimAirdrop: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenClaimAirdropTransaction) buildProtoBody() *services.TokenClaimAirdropTransactionBody {
