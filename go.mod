@@ -1,6 +1,6 @@
 module github.com/hiero-ledger/hiero-sdk-go/v2
 
-go 1.25.2
+go 1.25.7
 
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.3.6
