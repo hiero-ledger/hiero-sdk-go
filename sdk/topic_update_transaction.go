@@ -32,8 +32,6 @@ func NewTopicUpdateTransaction() *TopicUpdateTransaction {
 	tx := &TopicUpdateTransaction{}
 	tx.Transaction = _NewTransaction(tx)
 
-	tx.SetAutoRenewPeriod(7890000 * time.Second)
-
 	return tx
 }
 
