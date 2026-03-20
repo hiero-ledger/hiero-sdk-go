@@ -21,6 +21,8 @@ var mnemonic24WordString = "inmate flip alley wear offer often piece magnet surg
 
 var mnemonic12WordString = "finish furnace tomorrow wine mass goose festival air palm easy region guilt"
 
+var mnemonicWithLeadingZeroScalar = "limit begin morning quantum asset grow borrow naive purse win claim nice million rifle palace warrior theme raise slam cherry deal spin debris sword"
+
 var passPhrase = "some pass"
 
 func TestUnitGenerate24WordMnemonic(t *testing.T) {
@@ -589,4 +591,52 @@ func TestToStandardECDSAsecp256k1PrivateKeyCustomDPath(t *testing.T) {
 	assert.Equal(t, hex.EncodeToString(key3.ecdsaPrivateKey.chainCode), CHAIN_CODE_3)
 	assert.Equal(t, key3.StringRaw(), PRIVATE_KEY_3)
 	assert.Contains(t, key3.PublicKey().StringRaw(), PUBLIC_KEY_3)
+}
+
+func TestToStandardECDSAsecp256k1PrivateKeyWithLeadingZeroScalar(t *testing.T) {
+	m, err := MnemonicFromString(mnemonicWithLeadingZeroScalar)
+	require.NoError(t, err)
+	_, err = m.ToStandardECDSAsecp256k1PrivateKey("", 0)
+	require.NoError(t, err)
+}
+
+func TestECDSAKeyDerivationPads32Bytes(t *testing.T) {
+	tests := []struct {
+		name         string
+		parentKeyHex string
+		chainCodeHex string
+	}{
+		{
+			name:         "parent key N-1, chain code 0x012b",
+			parentKeyHex: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+			chainCodeHex: "000000000000000000000000000000000000000000000000000000000000012b",
+		},
+		{
+			name:         "parent key N-1, chain code 0x0499",
+			parentKeyHex: "fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364140",
+			chainCodeHex: "0000000000000000000000000000000000000000000000000000000000000499",
+		},
+		{
+			name:         "parent key 1, chain code 0x0066",
+			parentKeyHex: "0000000000000000000000000000000000000000000000000000000000000001",
+			chainCodeHex: "0000000000000000000000000000000000000000000000000000000000000066",
+		},
+		{
+			name:         "parent key 1, chain code 0x0110",
+			parentKeyHex: "0000000000000000000000000000000000000000000000000000000000000001",
+			chainCodeHex: "0000000000000000000000000000000000000000000000000000000000000110",
+		},
+	}
+
+	for _, tc := range tests {
+		parentKey, err := hex.DecodeString(tc.parentKeyHex)
+		require.NoError(t, err)
+		chainCode, err := hex.DecodeString(tc.chainCodeHex)
+		require.NoError(t, err)
+
+		childKey, childChain, err := _DeriveECDSAChildKey(parentKey, chainCode, 0)
+		require.NoError(t, err)
+		assert.Len(t, childKey, 32, "child key must be 32 bytes, got %d", len(childKey))
+		assert.Len(t, childChain, 32, "child chain code must be 32 bytes, got %d", len(childChain))
+	}
 }
