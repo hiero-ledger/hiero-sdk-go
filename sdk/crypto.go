@@ -501,7 +501,7 @@ func _DeriveECDSAChildKey(parentKey []byte, chainCode []byte, index uint32) ([]b
 	ki.Add(privKey.ToECDSA().D, il)
 	ki.Mod(ki, privKey.ToECDSA().Curve.Params().N)
 
-	return ki.Bytes(), ir, nil
+	return ki.FillBytes(make([]byte, 32)), ir, nil
 }
 
 func _DeriveLegacyChildKey(parentKey []byte, index int64) ([]byte, error) {
