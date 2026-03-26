@@ -262,6 +262,7 @@ func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {
 	require.NoError(t, err)
 	record.Receipt.ContractID = &contractID
 	record.Receipt.NodeID = 1
+	record.Receipt.RegisteredNodeId = 2
 
 	tokenTransfer := TokenTransfer{
 		AccountID:  accID,
@@ -360,6 +361,7 @@ func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {
             "exchangeRate":{"cents":12,"expirationTime":"1963-11-25T17:31:44.000Z","hbars":1},
             "fileId":null,
             "nodeId":1,
+            "registeredNodeId":2,
             "scheduleId":null,
             "scheduledTransactionId":null,
             "serialNumbers":null,
