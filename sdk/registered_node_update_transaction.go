@@ -7,7 +7,13 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
-// RegisteredNodeUpdateTransaction updates an existing registered node in the network address book.
+/**
+ * A transaction to update an existing registered node in the network
+ * address book.
+ *
+ * This transaction, once complete, SHALL modify the identified registered
+ * node state as requested.
+ */
 type RegisteredNodeUpdateTransaction struct {
 	*Transaction[*RegisteredNodeUpdateTransaction]
 	registeredNodeId *uint64

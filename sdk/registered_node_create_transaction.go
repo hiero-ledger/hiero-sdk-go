@@ -6,7 +6,16 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
-// RegisteredNodeCreateTransaction creates a new registered node in the network address book.
+/**
+ * A transaction to create a new registered node in the network
+ * address book.
+ *
+ * This transaction, once complete, SHALL add a new registered node to the
+ * network state.
+ * The new registered node SHALL be visible and discoverable upon
+ * completion of this transaction.
+ *
+ */
 type RegisteredNodeCreateTransaction struct {
 	*Transaction[*RegisteredNodeCreateTransaction]
 	adminKey         Key
