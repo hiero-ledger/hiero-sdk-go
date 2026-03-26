@@ -352,6 +352,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _NodeUpdateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*NodeUpdateTransaction](baseTx), first)
 	case *services.TransactionBody_NodeDelete:
 		childTx = _NodeDeleteTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*NodeDeleteTransaction](baseTx), first)
+	case *services.TransactionBody_RegisteredNodeCreate:
+		childTx = _RegisteredNodeCreateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeCreateTransaction](baseTx), first)
 	case *services.TransactionBody_TokenAirdrop:
 		childTx = _TokenAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenAirdropTransaction](baseTx), first)
 	case *services.TransactionBody_TokenCancelAirdrop:
@@ -563,6 +565,11 @@ func transactionFromScheduledTransaction(scheduledBody *services.SchedulableTran
 			ScheduleDelete: scheduledBody.GetScheduleDelete(),
 		}
 		tx = _ScheduleDeleteTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ScheduleDeleteTransaction](baseTx), pbBody)
+	case *services.SchedulableTransactionBody_RegisteredNodeCreate:
+		pbBody.Data = &services.TransactionBody_RegisteredNodeCreate{
+			RegisteredNodeCreate: scheduledBody.GetRegisteredNodeCreate(),
+		}
+		tx = _RegisteredNodeCreateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeCreateTransaction](baseTx), pbBody)
 	default:
 		return nil, errors.New("unrecognized transaction type")
 	}
