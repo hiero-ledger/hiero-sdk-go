@@ -6,7 +6,16 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
-// RegisteredNodeDeleteTransaction removes a registered node from the network address book.
+/**
+ * A transaction to delete a registered node from the network
+ * address book.
+ *
+ * This transaction, once complete, SHALL remove the identified registered
+ * node from the network state.
+ * This transaction MUST be signed by the existing entry `admin_key` or
+ * authorized by the Hiero network governance structure.
+ *
+ */
 type RegisteredNodeDeleteTransaction struct {
 	*Transaction[*RegisteredNodeDeleteTransaction]
 	registeredNodeId *uint64
