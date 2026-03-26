@@ -3,6 +3,7 @@
 package hiero
 
 import (
+	"net"
 	"testing"
 	"time"
 
@@ -451,6 +452,63 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountWithoutMirrorNodeSe
 		Execute(client)
 
 	require.NoError(t, err)
+	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationNodeUpdateTransactionWithAssociatedRegisteredNode(t *testing.T) {
+	// Set the network
+	network := make(map[string]AccountID)
+	network["localhost:50211"] = AccountID{Account: 3}
+	client, err := ClientForNetworkV2(network)
+	require.NoError(t, err)
+	mirror := []string{"localhost:5600"}
+	client.SetMirrorNetwork(mirror)
+
+	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
+	require.NoError(t, err)
+	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
+
+	// Create a registered node to get a registeredNodeId
+	regAdminKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	regEndpoint := &BlockNodeServiceEndpoint{}
+	regEndpoint.SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(8080)
+	regEndpoint.SetEndpointApi(BlockNodeApiStatus)
+
+	regTx, err := NewRegisteredNodeCreateTransaction().
+		SetAdminKey(regAdminKey).
+		SetDescription("registered node for node update association test").
+		SetServiceEndpoints([]RegisteredServiceEndpoint{regEndpoint}).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	regResp, err := regTx.Sign(regAdminKey).Execute(client)
+	require.NoError(t, err)
+
+	regReceipt, err := regResp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
+
+	registeredNodeId := regReceipt.RegisteredNodeId
+
+	// Update existing consensus node 0 with the associated registered node
+	resp, err := NewNodeUpdateTransaction().
+		SetNodeID(nodeIDToUpdate).
+		SetAssociatedRegisteredNodes([]uint64{registeredNodeId}).
+		Execute(client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
+
+	// Clear the association to restore state
+	resp, err = NewNodeUpdateTransaction().
+		SetNodeID(nodeIDToUpdate).
+		ClearAssociatedRegisteredNodes().
+		Execute(client)
+	require.NoError(t, err)
+
 	_, err = resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 }
