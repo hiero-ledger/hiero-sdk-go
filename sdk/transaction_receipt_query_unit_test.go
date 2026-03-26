@@ -268,6 +268,7 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
 						TopicID:       &services.TopicID{TopicNum: 654},
 						ScheduleID:    &services.ScheduleID{ScheduleNum: 321},
 						NodeId:        1,
+						RegisteredNodeId: 2,
 						ScheduledTransactionID: &services.TransactionID{
 							AccountID: &services.AccountID{Account: &services.AccountID_AccountNum{
 								AccountNum: 123,
@@ -304,11 +305,12 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
 							ContractID: &services.ContractID{Contract: &services.ContractID_ContractNum{
 								ContractNum: 456,
 							}},
-							FileID:        &services.FileID{FileNum: 789},
-							TokenID:       &services.TokenID{TokenNum: 987},
-							SerialNumbers: []int64{1, 2, 3},
-							TopicID:       &services.TopicID{TopicNum: 654},
-							ScheduleID:    &services.ScheduleID{ScheduleNum: 321},
+							FileID:           &services.FileID{FileNum: 789},
+							TokenID:          &services.TokenID{TokenNum: 987},
+							SerialNumbers:    []int64{1, 2, 3},
+							TopicID:          &services.TopicID{TopicNum: 654},
+							ScheduleID:       &services.ScheduleID{ScheduleNum: 321},
+							RegisteredNodeId: 2,
 							ScheduledTransactionID: &services.TransactionID{
 								AccountID: &services.AccountID{Account: &services.AccountID_AccountNum{
 									AccountNum: 123,
@@ -339,11 +341,12 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
 							ContractID: &services.ContractID{Contract: &services.ContractID_ContractNum{
 								ContractNum: 456,
 							}},
-							FileID:        &services.FileID{FileNum: 789},
-							TokenID:       &services.TokenID{TokenNum: 987},
-							SerialNumbers: []int64{1, 2, 3},
-							TopicID:       &services.TopicID{TopicNum: 654},
-							ScheduleID:    &services.ScheduleID{ScheduleNum: 321},
+							FileID:           &services.FileID{FileNum: 789},
+							TokenID:          &services.TokenID{TokenNum: 987},
+							SerialNumbers:    []int64{1, 2, 3},
+							TopicID:          &services.TopicID{TopicNum: 654},
+							ScheduleID:       &services.ScheduleID{ScheduleNum: 321},
+							RegisteredNodeId: 2,
 							ScheduledTransactionID: &services.TransactionID{
 								AccountID: &services.AccountID{Account: &services.AccountID_AccountNum{
 									AccountNum: 123,
@@ -404,6 +407,7 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
          },
          "fileId":"0.0.789",
          "nodeId":0,
+         "registeredNodeId":2,
          "scheduleId":"0.0.321",
          "scheduledTransactionId":"0.0.123@1694689200.000000000",
          "serialNumbers":[
@@ -425,11 +429,11 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
       {
          "accountId":"0.0.123",
          "children":[
-            
+
          ],
          "contractId":"0.0.456",
          "duplicates":[
-            
+
          ],
          "fileId":"0.0.789",
          "nextExchangeRate":{
@@ -438,6 +442,7 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
             "hbars":50000
          },
          "nodeId":0,
+         "registeredNodeId":2,
          "scheduleId":"0.0.321",
          "scheduledTransactionId":"0.0.123@1694689200.000000000",
          "serialNumbers":[
@@ -466,6 +471,7 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
       "hbars":50000
    },
    "nodeId":1,
+   "registeredNodeId":2,
    "scheduleId":"0.0.321",
    "scheduledTransactionId":"0.0.123@1694689200.000000000",
    "serialNumbers":[
