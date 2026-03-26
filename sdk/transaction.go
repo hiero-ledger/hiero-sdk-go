@@ -354,6 +354,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _NodeDeleteTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*NodeDeleteTransaction](baseTx), first)
 	case *services.TransactionBody_RegisteredNodeCreate:
 		childTx = _RegisteredNodeCreateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeCreateTransaction](baseTx), first)
+	case *services.TransactionBody_RegisteredNodeDelete:
+		childTx = _RegisteredNodeDeleteTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeDeleteTransaction](baseTx), first)
 	case *services.TransactionBody_TokenAirdrop:
 		childTx = _TokenAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenAirdropTransaction](baseTx), first)
 	case *services.TransactionBody_TokenCancelAirdrop:
