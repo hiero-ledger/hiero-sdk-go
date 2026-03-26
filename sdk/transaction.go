@@ -239,6 +239,14 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		}
 	}
 
+	// Security: non-chunked transaction types must not have multiple TransactionID
+	// groups. This is defense-in-depth against cross-group body forgery attacks.
+	if first != nil && !_isChunkedTransactionType(first) {
+		if _countUniqueTransactionIDs(baseTx.transactionIDs) > 1 {
+			return nil, errUnexpectedMultipleTransactionGroups
+		}
+	}
+
 	if txIsSigned {
 		if baseTx.transactionIDs._Length() > 0 {
 			baseTx.transactionIDs.locked = true
@@ -572,6 +580,31 @@ func transactionFromScheduledTransaction(scheduledBody *services.SchedulableTran
 
 // Private methods //
 
+// _isChunkedTransactionType returns true for transaction types that legitimately
+// use multiple TransactionID groups (FileAppend, ConsensusSubmitMessage).
+func _isChunkedTransactionType(body *services.TransactionBody) bool {
+	switch body.Data.(type) {
+	case *services.TransactionBody_FileAppend,
+		*services.TransactionBody_ConsensusSubmitMessage:
+		return true
+	default:
+		return false
+	}
+}
+
+// _countUniqueTransactionIDs counts distinct TransactionID values in a LockableSlice.
+func _countUniqueTransactionIDs(ids *_LockableSlice) int {
+	seen := make(map[string]struct{})
+	for _, item := range ids.slice {
+		txID, ok := item.(TransactionID)
+		if !ok {
+			continue
+		}
+		seen[txID.String()] = struct{}{}
+	}
+	return len(seen)
+}
+
 func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 	signed := make([]*services.SignedTransaction, 0)
 	var err error
@@ -597,23 +630,57 @@ func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 		return true, nil
 	}
 
-	ref := body[0]
-	savedRef := ref.NodeAccountID
-	ref.NodeAccountID = nil
-  
+	// Security: all bodies must have the same transaction type (same Data oneOf variant).
+	// This is defense-in-depth against cross-type forgery where an attacker hides a
+	// different transaction type behind a chunked first body.
+	refType := reflect.TypeOf(body[0].Data)
 	for i := 1; i < len(body); i++ {
-		saved := body[i].NodeAccountID
-		body[i].NodeAccountID = nil
-		equal := protobuf.Equal(ref, body[i])
-		body[i].NodeAccountID = saved
-		if !equal {
-			ref.NodeAccountID = savedRef
+		if reflect.TypeOf(body[i].Data) != refType {
 			return false, nil
 		}
 	}
-	ref.NodeAccountID = savedRef
+
+	chunked := _isChunkedTransactionType(body[0])
+
+	// Compare each body against the first using cloned copies to avoid mutating
+	// the originals. Fields that legitimately differ are zeroed before comparison.
+	refCopy := protobuf.Clone(body[0]).(*services.TransactionBody)
+	_zeroVaryingFields(refCopy, chunked)
+
+	for i := 1; i < len(body); i++ {
+		currCopy := protobuf.Clone(body[i]).(*services.TransactionBody)
+		_zeroVaryingFields(currCopy, chunked)
+
+		if !protobuf.Equal(refCopy, currCopy) {
+			return false, nil
+		}
+	}
 
 	return true, nil
+}
+
+// _zeroVaryingFields zeroes fields that legitimately differ across transactions
+// within the same TransactionList, so that protobuf.Equal can compare the
+// invariant fields only. NodeAccountID always varies (per-node copies). For
+// chunked types, TransactionID, content/message payloads, and chunk sequence
+// numbers also vary across chunks.
+func _zeroVaryingFields(body *services.TransactionBody, chunked bool) {
+	body.NodeAccountID = nil
+
+	if !chunked {
+		return
+	}
+
+	body.TransactionID = nil
+	switch d := body.Data.(type) {
+	case *services.TransactionBody_FileAppend:
+		d.FileAppend.Contents = nil
+	case *services.TransactionBody_ConsensusSubmitMessage:
+		d.ConsensusSubmitMessage.Message = nil
+		if d.ConsensusSubmitMessage.ChunkInfo != nil {
+			d.ConsensusSubmitMessage.ChunkInfo.Number = 0
+		}
+	}
 }
 
 // Sets the maxTransaction fee based on priority:

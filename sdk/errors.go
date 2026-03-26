@@ -38,6 +38,7 @@ var errNodeIdIsRequired = errors.New("nodeID is required")
 var errEvmAddressIsNotALongZeroAddress = errors.New("EVM address is not a correct long zero address")
 var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct size")
 var errInvalidChunkSize = errors.New("chunk size must be greater than 0")
+var errUnexpectedMultipleTransactionGroups = errors.New("non-chunked transaction type must not contain multiple transaction ID groups")
 
 // Endpoint validation errors
 var errEndpointMustHaveAddressOrDomainName = errors.New("endpoint must have either address or domain name")

@@ -1746,3 +1746,582 @@ func TestUnitFromBytesFailsForDuplicateTxIDNodeMismatchedBody(t *testing.T) {
 	require.Error(t, err)
 	assert.Equal(t, "failed to validate transaction bodies", err.Error())
 }
+
+// --- Cross-Group Forgery Regression Tests ---
+
+// TestUnitCrossGroupForgeryDifferentAmountsRejected is the core attack PoC.
+// It constructs a TransactionList with two CryptoTransfer groups: Group 1
+// transfers 1 tinybar (benign), Group 2 transfers 1,000 HBAR (malicious).
+func TestUnitCrossGroupForgeryDifferentAmountsRejected(t *testing.T) {
+	t.Parallel()
+
+	victimProto := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 100}}
+	attackerProto := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 200}}
+
+	nodes := []*services.AccountID{
+		{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}},
+		{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 4}},
+		{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 5}},
+	}
+
+	txID1 := &services.TransactionID{
+		AccountID:             victimProto,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             victimProto,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567891},
+	}
+
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	// Group 1: benign 1 tinybar transfer
+	benignTransfer := &services.CryptoTransferTransactionBody{
+		Transfers: &services.TransferList{
+			AccountAmounts: []*services.AccountAmount{
+				{AccountID: victimProto, Amount: -1},
+				{AccountID: attackerProto, Amount: 1},
+			},
+		},
+	}
+
+	// Group 2: malicious 1000 HBAR transfer
+	maliciousTransfer := &services.CryptoTransferTransactionBody{
+		Transfers: &services.TransferList{
+			AccountAmounts: []*services.AccountAmount{
+				{AccountID: victimProto, Amount: -100_000_000_000},
+				{AccountID: attackerProto, Amount: 100_000_000_000},
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+
+	// Build Group 1 (benign) entries for all nodes
+	for _, node := range nodes {
+		body := &services.TransactionBody{
+			TransactionID:            txID1,
+			NodeAccountID:            node,
+			TransactionFee:           txFee,
+			TransactionValidDuration: duration,
+			Data: &services.TransactionBody_CryptoTransfer{
+				CryptoTransfer: benignTransfer,
+			},
+		}
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+
+		signedTx := &services.SignedTransaction{
+			BodyBytes: bodyBytes,
+			SigMap:    &services.SignatureMap{},
+		}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+
+		transactions = append(transactions, &services.Transaction{
+			SignedTransactionBytes: signedBytes,
+		})
+	}
+
+	// Build Group 2 (malicious) entries for all nodes
+	for _, node := range nodes {
+		body := &services.TransactionBody{
+			TransactionID:            txID2,
+			NodeAccountID:            node,
+			TransactionFee:           txFee,
+			TransactionValidDuration: duration,
+			Data: &services.TransactionBody_CryptoTransfer{
+				CryptoTransfer: maliciousTransfer,
+			},
+		}
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+
+		signedTx := &services.SignedTransaction{
+			BodyBytes: bodyBytes,
+			SigMap:    &services.SignatureMap{},
+		}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+
+		transactions = append(transactions, &services.Transaction{
+			SignedTransactionBytes: signedBytes,
+		})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{
+		TransactionList: transactions,
+	})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(payload)
+	require.Error(t, err, "multi-group non-chunked TransactionList with different bodies must be rejected")
+}
+
+// TestUnitCrossGroupIdenticalBodiesRejected verifies that two groups with identical
+// CryptoTransfer bodies but different TransactionIDs are rejected. This exercises
+// the Layer 1 defense-in-depth check.
+func TestUnitCrossGroupIdenticalBodiesRejected(t *testing.T) {
+	t.Parallel()
+
+	victimProto := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 100}}
+	attackerProto := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 200}}
+
+	nodes := []*services.AccountID{
+		{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}},
+	}
+
+	txID1 := &services.TransactionID{
+		AccountID:             victimProto,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             victimProto,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567891},
+	}
+
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	transfer := &services.CryptoTransferTransactionBody{
+		Transfers: &services.TransferList{
+			AccountAmounts: []*services.AccountAmount{
+				{AccountID: victimProto, Amount: -1},
+				{AccountID: attackerProto, Amount: 1},
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+
+	// Group 1
+	for _, node := range nodes {
+		body := &services.TransactionBody{
+			TransactionID:            txID1,
+			NodeAccountID:            node,
+			TransactionFee:           txFee,
+			TransactionValidDuration: duration,
+			Data: &services.TransactionBody_CryptoTransfer{CryptoTransfer: transfer},
+		}
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	// Group 2 (identical body, different TransactionID)
+	for _, node := range nodes {
+		body := &services.TransactionBody{
+			TransactionID:            txID2,
+			NodeAccountID:            node,
+			TransactionFee:           txFee,
+			TransactionValidDuration: duration,
+			Data: &services.TransactionBody_CryptoTransfer{CryptoTransfer: transfer},
+		}
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{TransactionList: transactions})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(payload)
+	require.Error(t, err, "multi-group non-chunked TransactionList must be rejected even with identical bodies")
+}
+
+// TestUnitSingleGroupTransferAccepted verifies that a normal single-group
+// TransferTransaction round-trips correctly through ToBytes/TransactionFromBytes.
+func TestUnitSingleGroupTransferAccepted(t *testing.T) {
+	t.Parallel()
+
+	sender := AccountID{Account: 10}
+	receiver := AccountID{Account: 11}
+	nodeID := AccountID{Account: 3}
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		SetTransactionID(TransactionIDGenerate(sender)).
+		AddHbarTransfer(sender, NewHbar(-1)).
+		AddHbarTransfer(receiver, NewHbar(1)).
+		Freeze()
+	require.NoError(t, err)
+
+	txBytes, err := tx.ToBytes()
+	require.NoError(t, err)
+
+	decoded, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+
+	transferTx, ok := decoded.(TransferTransaction)
+	require.True(t, ok, "expected TransferTransaction")
+
+	transfers := transferTx.GetHbarTransfers()
+	require.Contains(t, transfers, sender)
+	require.Contains(t, transfers, receiver)
+	assert.Equal(t, NewHbar(-1), transfers[sender])
+	assert.Equal(t, NewHbar(1), transfers[receiver])
+}
+
+// TestUnitChunkedFileAppendRoundTrip verifies that a legitimate FileAppendTransaction
+// with multiple chunks can round-trip through ToBytes/TransactionFromBytes.
+func TestUnitChunkedFileAppendRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	fileID := &services.FileID{ShardNum: 0, RealmNum: 0, FileNum: 150}
+	nodeID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}}
+	payerID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 10}}
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	txID1 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 0},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 1},
+	}
+
+	// Chunk 1
+	body1 := &services.TransactionBody{
+		TransactionID:            txID1,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_FileAppend{
+			FileAppend: &services.FileAppendTransactionBody{
+				FileID:   fileID,
+				Contents: []byte("chunk1-data-here"),
+			},
+		},
+	}
+
+	// Chunk 2
+	body2 := &services.TransactionBody{
+		TransactionID:            txID2,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_FileAppend{
+			FileAppend: &services.FileAppendTransactionBody{
+				FileID:   fileID,
+				Contents: []byte("chunk2-data-here"),
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+	for _, body := range []*services.TransactionBody{body1, body2} {
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{TransactionList: transactions})
+	require.NoError(t, err)
+
+	decoded, err := TransactionFromBytes(payload)
+	require.NoError(t, err, "legitimate chunked FileAppendTransaction must be accepted")
+
+	_, ok := decoded.(FileAppendTransaction)
+	require.True(t, ok, "expected FileAppendTransaction")
+}
+
+// TestUnitChunkedFileAppendDivergentFileIDRejected verifies that two FileAppend chunks
+// pointing to DIFFERENT FileIDs are rejected even for chunked types.
+func TestUnitChunkedFileAppendDivergentFileIDRejected(t *testing.T) {
+	t.Parallel()
+
+	nodeID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}}
+	payerID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 10}}
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	txID1 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 0},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 1},
+	}
+
+	// Chunk 1 targets file 150
+	body1 := &services.TransactionBody{
+		TransactionID:            txID1,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_FileAppend{
+			FileAppend: &services.FileAppendTransactionBody{
+				FileID:   &services.FileID{ShardNum: 0, RealmNum: 0, FileNum: 150},
+				Contents: []byte("chunk1"),
+			},
+		},
+	}
+
+	// Chunk 2 targets file 999 -- DIFFERENT FileID
+	body2 := &services.TransactionBody{
+		TransactionID:            txID2,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_FileAppend{
+			FileAppend: &services.FileAppendTransactionBody{
+				FileID:   &services.FileID{ShardNum: 0, RealmNum: 0, FileNum: 999},
+				Contents: []byte("chunk2"),
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+	for _, body := range []*services.TransactionBody{body1, body2} {
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{TransactionList: transactions})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(payload)
+	require.Error(t, err, "chunked FileAppendTransaction with divergent FileIDs must be rejected")
+}
+
+// TestUnitCrossTypeForgeryRejected verifies that a TransactionList with mixed types
+// (Group 1 = FileAppend, Group 2 = CryptoTransfer) is rejected.
+func TestUnitCrossTypeForgeryRejected(t *testing.T) {
+	t.Parallel()
+
+	nodeID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}}
+	payerID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 10}}
+	attackerID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 200}}
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	txID1 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 0},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 1},
+	}
+
+	// Group 1: FileAppend (benign)
+	body1 := &services.TransactionBody{
+		TransactionID:            txID1,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_FileAppend{
+			FileAppend: &services.FileAppendTransactionBody{
+				FileID:   &services.FileID{ShardNum: 0, RealmNum: 0, FileNum: 150},
+				Contents: []byte("benign content"),
+			},
+		},
+	}
+
+	// Group 2: CryptoTransfer (malicious -- hidden behind FileAppend facade)
+	body2 := &services.TransactionBody{
+		TransactionID:            txID2,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_CryptoTransfer{
+			CryptoTransfer: &services.CryptoTransferTransactionBody{
+				Transfers: &services.TransferList{
+					AccountAmounts: []*services.AccountAmount{
+						{AccountID: payerID, Amount: -100_000_000_000},
+						{AccountID: attackerID, Amount: 100_000_000_000},
+					},
+				},
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+	for _, body := range []*services.TransactionBody{body1, body2} {
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{TransactionList: transactions})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(payload)
+	require.Error(t, err, "cross-type forgery (FileAppend + CryptoTransfer) must be rejected")
+}
+
+// TestUnitChunkedTopicMessageSubmitRoundTrip verifies that a legitimate
+// TopicMessageSubmitTransaction with multiple chunks round-trips correctly.
+func TestUnitChunkedTopicMessageSubmitRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	topicID := &services.TopicID{ShardNum: 0, RealmNum: 0, TopicNum: 42}
+	nodeID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}}
+	payerID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 10}}
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	initialTxID := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 0},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 1},
+	}
+
+	// Chunk 1
+	body1 := &services.TransactionBody{
+		TransactionID:            initialTxID,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_ConsensusSubmitMessage{
+			ConsensusSubmitMessage: &services.ConsensusSubmitMessageTransactionBody{
+				TopicID: topicID,
+				Message: []byte("chunk1-message"),
+				ChunkInfo: &services.ConsensusMessageChunkInfo{
+					InitialTransactionID: initialTxID,
+					Total:                2,
+					Number:               1,
+				},
+			},
+		},
+	}
+
+	// Chunk 2
+	body2 := &services.TransactionBody{
+		TransactionID:            txID2,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_ConsensusSubmitMessage{
+			ConsensusSubmitMessage: &services.ConsensusSubmitMessageTransactionBody{
+				TopicID: topicID,
+				Message: []byte("chunk2-message"),
+				ChunkInfo: &services.ConsensusMessageChunkInfo{
+					InitialTransactionID: initialTxID,
+					Total:                2,
+					Number:               2,
+				},
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+	for _, body := range []*services.TransactionBody{body1, body2} {
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{TransactionList: transactions})
+	require.NoError(t, err)
+
+	decoded, err := TransactionFromBytes(payload)
+	require.NoError(t, err, "legitimate chunked TopicMessageSubmitTransaction must be accepted")
+
+	_, ok := decoded.(TopicMessageSubmitTransaction)
+	require.True(t, ok, "expected TopicMessageSubmitTransaction")
+}
+
+// TestUnitChunkedTopicMessageSubmitDivergentTopicIDRejected verifies that two
+// TopicMessageSubmit chunks pointing to DIFFERENT TopicIDs are rejected.
+func TestUnitChunkedTopicMessageSubmitDivergentTopicIDRejected(t *testing.T) {
+	t.Parallel()
+
+	nodeID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 3}}
+	payerID := &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 10}}
+	duration := &services.Duration{Seconds: 120}
+	var txFee uint64 = 100_000_000
+
+	initialTxID := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 0},
+	}
+	txID2 := &services.TransactionID{
+		AccountID:             payerID,
+		TransactionValidStart: &services.Timestamp{Seconds: 1234567890, Nanos: 1},
+	}
+
+	// Chunk 1 targets topic 42
+	body1 := &services.TransactionBody{
+		TransactionID:            initialTxID,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_ConsensusSubmitMessage{
+			ConsensusSubmitMessage: &services.ConsensusSubmitMessageTransactionBody{
+				TopicID: &services.TopicID{ShardNum: 0, RealmNum: 0, TopicNum: 42},
+				Message: []byte("chunk1"),
+				ChunkInfo: &services.ConsensusMessageChunkInfo{
+					InitialTransactionID: initialTxID,
+					Total:                2,
+					Number:               1,
+				},
+			},
+		},
+	}
+
+	// Chunk 2 targets topic 999 -- DIFFERENT TopicID
+	body2 := &services.TransactionBody{
+		TransactionID:            txID2,
+		NodeAccountID:            nodeID,
+		TransactionFee:           txFee,
+		TransactionValidDuration: duration,
+		Data: &services.TransactionBody_ConsensusSubmitMessage{
+			ConsensusSubmitMessage: &services.ConsensusSubmitMessageTransactionBody{
+				TopicID: &services.TopicID{ShardNum: 0, RealmNum: 0, TopicNum: 999},
+				Message: []byte("chunk2"),
+				ChunkInfo: &services.ConsensusMessageChunkInfo{
+					InitialTransactionID: initialTxID,
+					Total:                2,
+					Number:               2,
+				},
+			},
+		},
+	}
+
+	var transactions []*services.Transaction
+	for _, body := range []*services.TransactionBody{body1, body2} {
+		bodyBytes, err := protobuf.Marshal(body)
+		require.NoError(t, err)
+		signedTx := &services.SignedTransaction{BodyBytes: bodyBytes, SigMap: &services.SignatureMap{}}
+		signedBytes, err := protobuf.Marshal(signedTx)
+		require.NoError(t, err)
+		transactions = append(transactions, &services.Transaction{SignedTransactionBytes: signedBytes})
+	}
+
+	payload, err := protobuf.Marshal(&sdk.TransactionList{TransactionList: transactions})
+	require.NoError(t, err)
+
+	_, err = TransactionFromBytes(payload)
+	require.Error(t, err, "chunked TopicMessageSubmitTransaction with divergent TopicIDs must be rejected")
+}
