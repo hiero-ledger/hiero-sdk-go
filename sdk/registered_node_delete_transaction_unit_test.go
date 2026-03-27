@@ -16,10 +16,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitRegisteredNodeDeleteTransactionMock(t *testing.T) {
-	t.Parallel()
-
-	responses := [][]interface{}{{
+func registeredNodeDeleteMockResponses() [][]interface{} {
+	return [][]interface{}{{
 		grpcStatus.New(codes.Unavailable, "node is UNAVAILABLE").Err(),
 		grpcStatus.New(codes.Internal, "Received RST_STREAM with code 0").Err(),
 		&services.TransactionResponse{
@@ -66,8 +64,12 @@ func TestUnitRegisteredNodeDeleteTransactionMock(t *testing.T) {
 			},
 		},
 	}}
+}
 
-	client, server := NewMockClientAndServer(responses)
+func TestUnitRegisteredNodeDeleteTransactionMock(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer(registeredNodeDeleteMockResponses())
 	defer server.Close()
 
 	tran := TransactionIDGenerate(AccountID{Account: 3})
@@ -194,9 +196,8 @@ func TestUnitRegisteredNodeDeleteTransactionProtoCheck(t *testing.T) {
 	require.Equal(t, proto.RegisteredNodeId, uint64(7))
 }
 
-func TestUnitRegisteredNodeDeleteTransactionCoverage(t *testing.T) {
-	t.Parallel()
-
+func buildFrozenRegisteredNodeDeleteTransaction(t *testing.T) (*RegisteredNodeDeleteTransaction, *Client, PrivateKey) {
+	t.Helper()
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
@@ -224,8 +225,16 @@ func TestUnitRegisteredNodeDeleteTransactionCoverage(t *testing.T) {
 		Freeze()
 	require.NoError(t, err)
 
+	return trx, client, key
+}
+
+func TestUnitRegisteredNodeDeleteTransactionCoverage(t *testing.T) {
+	t.Parallel()
+
+	trx, client, key := buildFrozenRegisteredNodeDeleteTransaction(t)
+
 	trx.validateNetworkOnIDs(client)
-	_, err = trx.Schedule()
+	_, err := trx.Schedule()
 	require.NoError(t, err)
 	trx.GetTransactionID()
 	trx.GetNodeAccountIDs()

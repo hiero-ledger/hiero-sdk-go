@@ -280,9 +280,8 @@ func TestUnitRegisteredNodeUpdateTransactionFromProtobufWithEmptyDescription(t *
 	assert.Equal(t, "", restored.GetDescription())
 }
 
-func TestUnitRegisteredNodeUpdateTransactionCoverage(t *testing.T) {
-	t.Parallel()
-
+func buildFrozenRegisteredNodeUpdateTransaction(t *testing.T) (*RegisteredNodeUpdateTransaction, *Client, PrivateKey) {
+	t.Helper()
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
@@ -311,8 +310,16 @@ func TestUnitRegisteredNodeUpdateTransactionCoverage(t *testing.T) {
 		Freeze()
 	require.NoError(t, err)
 
+	return trx, client, key
+}
+
+func TestUnitRegisteredNodeUpdateTransactionCoverage(t *testing.T) {
+	t.Parallel()
+
+	trx, client, key := buildFrozenRegisteredNodeUpdateTransaction(t)
+
 	trx.validateNetworkOnIDs(client)
-	_, err = trx.Schedule()
+	_, err := trx.Schedule()
 	require.NoError(t, err)
 	trx.GetTransactionID()
 	trx.GetNodeAccountIDs()
