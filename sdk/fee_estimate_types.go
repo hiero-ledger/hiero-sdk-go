@@ -20,7 +20,7 @@ func (m FeeEstimateMode) String() string {
 	case FeeEstimateModeState:
 		return "STATE"
 	default:
-		return "UNKNOWN"
+		return unknownString
 	}
 }
 
