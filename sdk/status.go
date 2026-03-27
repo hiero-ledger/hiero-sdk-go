@@ -452,7 +452,7 @@ func (status Status) String() string { // nolint
 	case StatusInvalidSolidityID:
 		return "INVALID_SOLIDITY_ID"
 	case StatusUnknown:
-		return "UNKNOWN"
+		return unknownString
 	case StatusSuccess:
 		return "SUCCESS"
 	case StatusFailInvalid:

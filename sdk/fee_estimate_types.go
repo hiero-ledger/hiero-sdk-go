@@ -20,7 +20,7 @@ func (m FeeEstimateMode) String() string {
 	case FeeEstimateModeIntrinsic:
 		return "INTRINSIC"
 	default:
-		return "UNKNOWN"
+		return unknownString
 	}
 }
 

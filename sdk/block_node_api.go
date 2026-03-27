@@ -33,5 +33,5 @@ func (api BlockNodeApi) String() string {
 		return "STATE_PROOF"
 	}
 
-	return "UNKNOWN"
+	return unknownString
 }
