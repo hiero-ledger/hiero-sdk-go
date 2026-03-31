@@ -144,11 +144,7 @@ func (tx *FileAppendTransaction) FreezeWith(client *Client) (*FileAppendTransact
 	if b, ok := body.Data.(*services.TransactionBody_FileAppend); ok {
 		for i := 0; uint64(i) < chunks; i++ {
 			start := i * tx.chunkSize
-			end := start + tx.chunkSize
-
-			if end > len(tx.contents) {
-				end = len(tx.contents)
-			}
+			end := min(start+tx.chunkSize, len(tx.contents))
 
 			// Important: if the toProtobuf -> fromProtobuf is not done, the transaction id will be wrong
 			tx.transactionIDs._Push(_TransactionIDFromProtobuf(nextTransactionID._ToProtobuf()))
@@ -252,25 +248,21 @@ func (tx FileAppendTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx FileAppendTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_FileAppend{
-			FileAppend: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_FileAppend{
+		FileAppend: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx FileAppendTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_FileAppend{
-			FileAppend: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_FileAppend{
+		FileAppend: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 func (tx FileAppendTransaction) buildProtoBody() *services.FileAppendTransactionBody {
 	body := &services.FileAppendTransactionBody{

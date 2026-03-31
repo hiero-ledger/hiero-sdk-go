@@ -86,25 +86,21 @@ func (tx TokenUpdateNfts) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TokenUpdateNfts) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenUpdateNfts{
-			TokenUpdateNfts: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenUpdateNfts{
+		TokenUpdateNfts: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenUpdateNfts) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_TokenUpdateNfts{
-			TokenUpdateNfts: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenUpdateNfts{
+		TokenUpdateNfts: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenUpdateNfts) buildProtoBody() *services.TokenUpdateNftsTransactionBody {
@@ -123,6 +119,7 @@ func (tx TokenUpdateNfts) buildProtoBody() *services.TokenUpdateNftsTransactionB
 	if tx.metadata != nil {
 		body.Metadata = wrapperspb.Bytes(*tx.metadata)
 	}
+
 	return body
 }
 

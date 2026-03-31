@@ -593,12 +593,25 @@ func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 		body = append(body, &temp)
 	}
 
+	if len(body) == 0 {
+		return true, nil
+	}
+
+	ref := body[0]
+	savedRef := ref.NodeAccountID
+	ref.NodeAccountID = nil
+  
 	for i := 1; i < len(body); i++ {
-		// #nosec G602
-		if reflect.TypeOf(body[0].Data) != reflect.TypeOf(body[i].Data) {
+		saved := body[i].NodeAccountID
+		body[i].NodeAccountID = nil
+		equal := protobuf.Equal(ref, body[i])
+		body[i].NodeAccountID = saved
+		if !equal {
+			ref.NodeAccountID = savedRef
 			return false, nil
 		}
 	}
+	ref.NodeAccountID = savedRef
 
 	return true, nil
 }
@@ -1321,6 +1334,24 @@ func (tx *Transaction[T]) preFreezeWith(*Client, TransactionInterface) {
 
 func (tx *Transaction[T]) validateTransactionFields() error {
 	return nil
+}
+
+// buildTransactionBody constructs a TransactionBody with the common fields shared by all transactions.
+func (tx *Transaction[T]) buildTransactionBody() *services.TransactionBody {
+	return &services.TransactionBody{
+		TransactionFee:           tx.transactionFee,
+		Memo:                     tx.memo,
+		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
+		TransactionID:            tx.transactionID._ToProtobuf(),
+	}
+}
+
+// buildSchedulableTransactionBody constructs a SchedulableTransactionBody with the common fields shared by all schedulable transactions.
+func (tx *Transaction[T]) buildSchedulableTransactionBody() *services.SchedulableTransactionBody {
+	return &services.SchedulableTransactionBody{
+		TransactionFee: tx.transactionFee,
+		Memo:           tx.memo,
+	}
 }
 
 func (tx *Transaction[T]) getLogID(transactionInterface Executable) string {

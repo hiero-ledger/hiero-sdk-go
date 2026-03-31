@@ -123,15 +123,12 @@ func (tx EthereumTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx EthereumTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		TransactionFee:           tx.transactionFee,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		Memo:                     tx.Transaction.memo,
-		Data: &services.TransactionBody_EthereumTransaction{
-			EthereumTransaction: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_EthereumTransaction{
+		EthereumTransaction: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx EthereumTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
@@ -147,6 +144,7 @@ func (tx EthereumTransaction) buildProtoBody() *services.EthereumTransactionBody
 	if tx.callData != nil {
 		body.CallData = tx.callData._ToProtobuf()
 	}
+
 	return body
 }
 

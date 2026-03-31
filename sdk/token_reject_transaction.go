@@ -144,27 +144,21 @@ func (tx TokenRejectTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx TokenRejectTransaction) build() *services.TransactionBody {
-	body := tx.buildProtoBody()
-
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_TokenReject{
-			TokenReject: body,
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_TokenReject{
+		TokenReject: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx TokenRejectTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_TokenReject{
-			TokenReject: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_TokenReject{
+		TokenReject: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx TokenRejectTransaction) buildProtoBody() *services.TokenRejectTransactionBody {

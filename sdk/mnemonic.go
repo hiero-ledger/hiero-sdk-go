@@ -329,7 +329,7 @@ func (m Mnemonic) toStandardECDSAsecp256k1PrivateKeyImpl(passPhrase string, deri
 		return PrivateKey{}, err
 	}
 
-	keyBytes, chainCode := derivedKey.keyData.ToECDSA().D.Bytes(), derivedKey.chainCode
+	keyBytes, chainCode := derivedKey._BytesRaw(), derivedKey.chainCode
 	for _, i := range derivationPathValues {
 		keyBytes, chainCode, err = _DeriveECDSAChildKey(keyBytes, chainCode, i)
 		if err != nil {
@@ -368,7 +368,7 @@ func (m Mnemonic) ToStandardECDSAsecp256k1PrivateKey(passPhrase string, index ui
 		return PrivateKey{}, err
 	}
 
-	keyBytes, chainCode := derivedKey.keyData.ToECDSA().D.Bytes(), derivedKey.chainCode
+	keyBytes, chainCode := derivedKey._BytesRaw(), derivedKey.chainCode
 	for _, i := range []uint32{
 		ToHardenedIndex(44),
 		ToHardenedIndex(3030),

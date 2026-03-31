@@ -144,15 +144,12 @@ func (tx FileCreateTransaction) getName() string {
 	return "FileCreateTransaction"
 }
 func (tx FileCreateTransaction) build() *services.TransactionBody {
-	return &services.TransactionBody{
-		TransactionFee:           tx.transactionFee,
-		Memo:                     tx.Transaction.memo,
-		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
-		TransactionID:            tx.transactionID._ToProtobuf(),
-		Data: &services.TransactionBody_FileCreate{
-			FileCreate: tx.buildProtoBody(),
-		},
+	body := tx.buildTransactionBody()
+	body.Data = &services.TransactionBody_FileCreate{
+		FileCreate: tx.buildProtoBody(),
 	}
+
+	return body
 }
 
 func (tx FileCreateTransaction) validateNetworkOnIDs(client *Client) error {
@@ -160,13 +157,12 @@ func (tx FileCreateTransaction) validateNetworkOnIDs(client *Client) error {
 }
 
 func (tx FileCreateTransaction) buildScheduled() (*services.SchedulableTransactionBody, error) {
-	return &services.SchedulableTransactionBody{
-		TransactionFee: tx.transactionFee,
-		Memo:           tx.Transaction.memo,
-		Data: &services.SchedulableTransactionBody_FileCreate{
-			FileCreate: tx.buildProtoBody(),
-		},
-	}, nil
+	body := tx.buildSchedulableTransactionBody()
+	body.Data = &services.SchedulableTransactionBody_FileCreate{
+		FileCreate: tx.buildProtoBody(),
+	}
+
+	return body, nil
 }
 
 func (tx FileCreateTransaction) buildProtoBody() *services.FileCreateTransactionBody {
