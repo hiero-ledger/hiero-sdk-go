@@ -14,6 +14,30 @@ type BlockNodeServiceEndpoint struct {
 	endpointApi BlockNodeApi
 }
 
+// SetIPAddress sets the IP address for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetIPAddress(ip []byte) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetIPAddress(ip)
+	return e
+}
+
+// SetDomainName sets the domain name for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetDomainName(name string) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetDomainName(name)
+	return e
+}
+
+// SetPort sets the port number for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetPort(port uint32) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetPort(port)
+	return e
+}
+
+// SetRequiresTls sets whether this endpoint requires TLS.
+func (e *BlockNodeServiceEndpoint) SetRequiresTls(tls bool) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetRequiresTls(tls)
+	return e
+}
+
 // SetEndpointApi sets the block node API kind for this endpoint.
 func (e *BlockNodeServiceEndpoint) SetEndpointApi(api BlockNodeApi) *BlockNodeServiceEndpoint {
 	e.endpointApi = api

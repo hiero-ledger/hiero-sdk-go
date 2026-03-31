@@ -166,8 +166,8 @@ func TestUnitBlockNodeServiceEndpointSetters(t *testing.T) {
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress([]byte{192, 168, 0, 1}).
 		SetPort(443).
-		SetRequiresTls(true)
-	endpoint.SetEndpointApi(BlockNodeApiSubscribeStream)
+		SetRequiresTls(true).
+		SetEndpointApi(BlockNodeApiSubscribeStream)
 
 	assert.Equal(t, []byte{192, 168, 0, 1}, endpoint.GetIPAddress())
 	assert.Equal(t, uint32(443), endpoint.GetPort())
