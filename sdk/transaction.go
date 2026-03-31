@@ -601,17 +601,17 @@ func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 	}
 
 	for i := 1; i < len(list.TransactionList); i++ {
-		b, err := _extractBody(list.TransactionList[i])
+		body, err := _extractBody(list.TransactionList[i])
 		if err != nil {
 			return false, err
 		}
-		_normalizeBodyForComparison(b, chunked)
+		_normalizeBodyForComparison(body, chunked)
 
-		bBytes, err := protobuf.Marshal(b)
+		bodyBytes, err := protobuf.Marshal(body)
 		if err != nil {
 			return false, err
 		}
-		if !bytes.Equal(refBytes, bBytes) {
+		if !bytes.Equal(refBytes, bodyBytes) {
 			return false, nil
 		}
 	}
