@@ -32,6 +32,10 @@ func TestIntegrationHIP1313HighVolumeAccountCreate(t *testing.T) {
 
 	accountID := *receipt.AccountID
 	assert.NotEqual(t, AccountID{}, accountID)
+
+	record, err := resp.GetRecord(env.Client)
+	require.NoError(t, err)
+	assert.GreaterOrEqual(t, record.HighVolumePricingMultiplier, uint64(1000))
 }
 
 func TestIntegrationHIP1313HighVolumeWithMaxTransactionFee(t *testing.T) {
