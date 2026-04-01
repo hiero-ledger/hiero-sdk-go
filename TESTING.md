@@ -1,4 +1,3 @@
-@ -0,0 +1,94 @@
 # Testing Guide
 
 This document covers how to run tests for the Hiero Go SDK. **Note:** Running tests is only required if you are contributing to the SDK itself. If you're just using the SDK as a dependency, you don't need to run these tests.
