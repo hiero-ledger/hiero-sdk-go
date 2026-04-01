@@ -30,7 +30,7 @@ export HEDERA_NETWORK="testnet"  # or "localhost" for Solo
 go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
 
-See [.env.sample](.env.sample) for environment variable documentation.
+See [setup-env.sh.sample](setup-env.sh.sample) for a template you can copy and source.
 
 ### Option 2: Using a Config File
 

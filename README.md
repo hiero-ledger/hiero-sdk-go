@@ -25,7 +25,7 @@ $ go get github.com/hiero-ledger/hiero-sdk-go/v2@latest
 
 ### Environment Setup
 
-To run examples or integration tests, you need Hiero network credentials. Copy [.env.sample](.env.sample) to `.env` and fill in your account details from the [Hedera Portal](https://portal.hedera.com/).
+To run examples or integration tests, you need Hiero network credentials. Copy [setup-env.sh.sample](setup-env.sh.sample) to `.env.sh`, fill in your account details from the [Hedera Portal](https://portal.hedera.com/), then run `source .env.sh` to export the variables.
 
 See [TESTING.md](TESTING.md) for detailed instructions on running tests and examples.
 

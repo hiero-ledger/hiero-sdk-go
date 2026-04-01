@@ -1,5 +1,5 @@
 # Hiero SDK Go - Environment Variables
-# Copy this file to .env and fill in your values
+# Copy this file to .env.sh (or env.sh) and fill in your values, then run: source .env.sh
 #
 # Get your credentials from https://portal.hedera.com/
 #
@@ -8,18 +8,19 @@
 # the matching pair. Mismatched credentials will cause authentication failures.
 
 # Your account ID (format: 0.0.xxxxx)
-OPERATOR_ID=0.0.YOUR_ACCOUNT_ID
+export OPERATOR_ID="0.0.YOUR_ACCOUNT_ID"
 
 # Your private key corresponding to OPERATOR_ID above
 # Supported formats: hex string (no 0x prefix), DER-encoded, or PEM-prefixed
-OPERATOR_KEY=YOUR_PRIVATE_KEY
+export OPERATOR_KEY="YOUR_PRIVATE_KEY"
 
 # Network to connect to: testnet, previewnet, or localhost
 # For local development with Solo, use "localhost"
 # For mainnet, use CONFIG_FILE with a mainnet configuration
-HEDERA_NETWORK=testnet
+export HEDERA_NETWORK="testnet"
 
 # Optional: Path to a JSON config file (alternative to env vars above)
 # If set, network config is read from this file
 # See sdk/client-config-with-operator.json for format
-# CONFIG_FILE=./my-config.json
+# NOTE: HEDERA_NETWORK takes precedence. If HEDERA_NETWORK is set, CONFIG_FILE is ignored.
+# export CONFIG_FILE="./my-config.json"
