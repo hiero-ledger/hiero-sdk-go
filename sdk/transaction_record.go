@@ -41,13 +41,14 @@ type TransactionRecord struct {
 	// Deprecated
 	TokenAllowances []TokenAllowance
 	// Deprecated
-	TokenNftAllowances    []TokenNftAllowance
-	EthereumHash          []byte
-	PaidStakingRewards    map[AccountID]Hbar
-	PrngBytes             []byte
-	PrngNumber            *int32
-	EvmAddress            []byte
-	PendingAirdropRecords []PendingAirdropRecord
+	TokenNftAllowances          []TokenNftAllowance
+	EthereumHash                []byte
+	PaidStakingRewards          map[AccountID]Hbar
+	PrngBytes                   []byte
+	PrngNumber                  *int32
+	EvmAddress                  []byte
+	PendingAirdropRecords       []PendingAirdropRecord
+	HighVolumePricingMultiplier uint64
 }
 
 // MarshalJSON returns the JSON representation of the TransactionRecord
@@ -220,6 +221,7 @@ func (record TransactionRecord) MarshalJSON() ([]byte, error) {
 		}
 	}
 	m["pendingAirdropRecords"] = pendingAirdropRecords
+	m["highVolumePricingMultiplier"] = record.HighVolumePricingMultiplier
 
 	receiptBytes, err := record.Receipt.MarshalJSON()
 	if err != nil {
@@ -354,27 +356,28 @@ func _TransactionRecordFromProtobuf(protoResponse *services.TransactionGetRecord
 	}
 
 	txRecord := TransactionRecord{
-		Receipt:                    _TransactionReceiptFromProtobuf(&services.TransactionGetReceiptResponse{Receipt: pb.GetReceipt()}, txID),
-		TransactionHash:            pb.TransactionHash,
-		ConsensusTimestamp:         _TimeFromProtobuf(pb.ConsensusTimestamp),
-		TransactionID:              transactionID,
-		ScheduleRef:                scheduleRef,
-		TransactionMemo:            pb.Memo,
-		TransactionFee:             HbarFromTinybar(int64(pb.TransactionFee)),
-		Transfers:                  accountTransfers,
-		TokenTransfers:             tokenTransfers,
-		NftTransfers:               nftTransfers,
-		CallResultIsCreate:         true,
-		AssessedCustomFees:         assessedCustomFees,
-		AutomaticTokenAssociations: tokenAssociation,
-		ParentConsensusTimestamp:   _TimeFromProtobuf(pb.ParentConsensusTimestamp),
-		AliasKey:                   alias,
-		Duplicates:                 duplicateReceipts,
-		Children:                   childReceipts,
-		EthereumHash:               pb.EthereumHash,
-		PaidStakingRewards:         paidStakingRewards,
-		EvmAddress:                 pb.EvmAddress,
-		PendingAirdropRecords:      pendingAirdropRecords,
+		Receipt:                     _TransactionReceiptFromProtobuf(&services.TransactionGetReceiptResponse{Receipt: pb.GetReceipt()}, txID),
+		TransactionHash:             pb.TransactionHash,
+		ConsensusTimestamp:          _TimeFromProtobuf(pb.ConsensusTimestamp),
+		TransactionID:               transactionID,
+		ScheduleRef:                 scheduleRef,
+		TransactionMemo:             pb.Memo,
+		TransactionFee:              HbarFromTinybar(int64(pb.TransactionFee)),
+		Transfers:                   accountTransfers,
+		TokenTransfers:              tokenTransfers,
+		NftTransfers:                nftTransfers,
+		CallResultIsCreate:          true,
+		AssessedCustomFees:          assessedCustomFees,
+		AutomaticTokenAssociations:  tokenAssociation,
+		ParentConsensusTimestamp:    _TimeFromProtobuf(pb.ParentConsensusTimestamp),
+		AliasKey:                    alias,
+		Duplicates:                  duplicateReceipts,
+		Children:                    childReceipts,
+		EthereumHash:                pb.EthereumHash,
+		PaidStakingRewards:          paidStakingRewards,
+		EvmAddress:                  pb.EvmAddress,
+		PendingAirdropRecords:       pendingAirdropRecords,
+		HighVolumePricingMultiplier: pb.HighVolumePricingMultiplier,
 	}
 
 	if w, ok := pb.Entropy.(*services.TransactionRecord_PrngBytes); ok {
@@ -484,10 +487,11 @@ func (record TransactionRecord) _ToProtobuf() (*services.TransactionGetRecordRes
 			Seconds: int64(record.ParentConsensusTimestamp.Second()),
 			Nanos:   int32(record.ParentConsensusTimestamp.Nanosecond()),
 		},
-		Alias:              alias,
-		EthereumHash:       record.EthereumHash,
-		PaidStakingRewards: paidStakingRewards,
-		EvmAddress:         record.EvmAddress,
+		Alias:                       alias,
+		EthereumHash:                record.EthereumHash,
+		PaidStakingRewards:          paidStakingRewards,
+		EvmAddress:                  record.EvmAddress,
+		HighVolumePricingMultiplier: record.HighVolumePricingMultiplier,
 	}
 
 	if record.PrngNumber != nil {
