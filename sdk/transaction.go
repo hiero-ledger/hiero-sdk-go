@@ -572,48 +572,83 @@ func transactionFromScheduledTransaction(scheduledBody *services.SchedulableTran
 
 // Private methods //
 
-func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
-	signed := make([]*services.SignedTransaction, 0)
-	var err error
-	for _, s := range list.TransactionList {
-		temp := services.SignedTransaction{}
-		err = protobuf.Unmarshal(s.SignedTransactionBytes, &temp)
-		if err != nil {
-			return false, err
-		}
-		signed = append(signed, &temp)
+// _isChunkedTransactionType returns true for transaction types that use multiple TransactionID groups
+func _isChunkedTransactionType(body *services.TransactionBody) bool {
+	switch body.Data.(type) {
+	case *services.TransactionBody_FileAppend,
+		*services.TransactionBody_ConsensusSubmitMessage:
+		return true
+	default:
+		return false
 	}
-	body := make([]*services.TransactionBody, 0)
-	for _, s := range signed {
-		temp := services.TransactionBody{}
-		err = protobuf.Unmarshal(s.BodyBytes, &temp)
-		if err != nil {
-			return false, err
-		}
-		body = append(body, &temp)
-	}
+}
 
-	if len(body) == 0 {
+func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
+	if len(list.TransactionList) <= 1 {
 		return true, nil
 	}
 
-	ref := body[0]
-	savedRef := ref.NodeAccountID
-	ref.NodeAccountID = nil
-  
-	for i := 1; i < len(body); i++ {
-		saved := body[i].NodeAccountID
-		body[i].NodeAccountID = nil
-		equal := protobuf.Equal(ref, body[i])
-		body[i].NodeAccountID = saved
-		if !equal {
-			ref.NodeAccountID = savedRef
+	refBody, err := _extractBody(list.TransactionList[0])
+	if err != nil {
+		return false, err
+	}
+	chunked := _isChunkedTransactionType(refBody)
+	_normalizeBodyForComparison(refBody, chunked)
+
+	refBytes, err := protobuf.Marshal(refBody)
+	if err != nil {
+		return false, err
+	}
+
+	for i := 1; i < len(list.TransactionList); i++ {
+		body, err := _extractBody(list.TransactionList[i])
+		if err != nil {
+			return false, err
+		}
+		_normalizeBodyForComparison(body, chunked)
+
+		bodyBytes, err := protobuf.Marshal(body)
+		if err != nil {
+			return false, err
+		}
+		if !bytes.Equal(refBytes, bodyBytes) {
 			return false, nil
 		}
 	}
-	ref.NodeAccountID = savedRef
-
 	return true, nil
+}
+
+// _extractBody deserializes a Transaction into its TransactionBody.
+func _extractBody(tx *services.Transaction) (*services.TransactionBody, error) {
+	var signed services.SignedTransaction
+	if err := protobuf.Unmarshal(tx.SignedTransactionBytes, &signed); err != nil {
+		return nil, err
+	}
+	var body services.TransactionBody
+	if err := protobuf.Unmarshal(signed.BodyBytes, &body); err != nil {
+		return nil, err
+	}
+	return &body, nil
+}
+
+// _normalizeBodyForComparison nils out fields that legitimately vary across transactions
+func _normalizeBodyForComparison(body *services.TransactionBody, chunked bool) {
+	body.NodeAccountID = nil
+
+	if !chunked {
+		return
+	}
+
+	body.TransactionID = nil
+	switch d := body.Data.(type) {
+	case *services.TransactionBody_FileAppend:
+		d.FileAppend.Contents = nil
+	case *services.TransactionBody_ConsensusSubmitMessage:
+		d.ConsensusSubmitMessage.Message = nil
+		if d.ConsensusSubmitMessage.ChunkInfo != nil {
+			d.ConsensusSubmitMessage.ChunkInfo.Number = 0
+		}
+	}
 }
 
 // Sets the maxTransaction fee based on priority:
