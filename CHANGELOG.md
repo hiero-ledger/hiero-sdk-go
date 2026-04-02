@@ -1,3 +1,11 @@
+## v2.77.0
+
+### Fixed
+- ECDSA key derivation failing due to missing zero-padding on key scalars. `big.Int.Bytes()` strips leading zero bytes, so key scalars could return 31 bytes instead of 32, causing `_DeriveECDSAChildKey()` to reject the input [#1654](https://github.com/hiero-ledger/hiero-sdk-go/pull/1654)
+
+### Changed
+- Reworked `TransactionFromBytes` body comparison to correctly handle chunked transaction types (`FileAppendTransaction`, `TopicMessageSubmitTransaction`) [#1663](https://github.com/hiero-ledger/hiero-sdk-go/pull/1663)
+
 ## v2.76.0
 
 ### Added
