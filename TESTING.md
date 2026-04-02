@@ -30,7 +30,7 @@ export HEDERA_NETWORK="testnet"  # or "localhost" for Solo
 go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
 
-See [setup-env.sh.sample](setup-env.sh.sample) for a template you can copy and source.
+See [env.sh.sample](env.sh.sample) for a template you can copy and source.
 
 ### Option 2: Using a Config File
 
@@ -57,7 +57,7 @@ See [sdk/client-config-with-operator.json](sdk/client-config-with-operator.json)
 }
 ```
 
-**Note:** `HEDERA_NETWORK` takes precedence over `CONFIG_FILE` for network selection. If `HEDERA_NETWORK` is set (testnet/previewnet/localhost), `CONFIG_FILE` is ignored. When using `CONFIG_FILE`, the `OPERATOR_ID` and `OPERATOR_KEY` environment variables take precedence over the config file's operator settings.
+**Note:** `CONFIG_FILE` is only used when `OPERATOR_ID`, `OPERATOR_KEY`, and `HEDERA_NETWORK` are **all** unset. Environment variables always take precedence over config file settings.
 
 ## Local Development with Solo
 
