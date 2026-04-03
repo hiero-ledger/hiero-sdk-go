@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitLambdaEvmHookContractId(t *testing.T) {
+func TestUnitEvmHookContractId(t *testing.T) {
 	t.Parallel()
 
 	leh := NewEvmHook()
@@ -31,7 +31,7 @@ func TestUnitLambdaEvmHookContractId(t *testing.T) {
 	assert.Nil(t, leh.GetContractId())
 }
 
-func TestUnitLambdaEvmHookStorageUpdates(t *testing.T) {
+func TestUnitEvmHookStorageUpdates(t *testing.T) {
 	t.Parallel()
 
 	leh := NewEvmHook()
@@ -55,10 +55,10 @@ func TestUnitLambdaEvmHookStorageUpdates(t *testing.T) {
 	leh.SetStorageUpdates(nil)
 	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 	pb := leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 }
 
-func TestUnitLambdaEvmHookAddStorageUpdate(t *testing.T) {
+func TestUnitEvmHookAddStorageUpdate(t *testing.T) {
 	t.Parallel()
 
 	leh := NewEvmHook()
@@ -77,7 +77,7 @@ func TestUnitLambdaEvmHookAddStorageUpdate(t *testing.T) {
 	assert.Equal(t, storageSlot2, leh.GetStorageUpdates()[1])
 }
 
-func TestUnitLambdaEvmHookMethodChaining(t *testing.T) {
+func TestUnitEvmHookMethodChaining(t *testing.T) {
 	t.Parallel()
 
 	contractID, err := ContractIDFromString("0.0.456")
@@ -98,7 +98,7 @@ func TestUnitLambdaEvmHookMethodChaining(t *testing.T) {
 	assert.Equal(t, storageSlot2, leh.GetStorageUpdates()[1])
 }
 
-func TestUnitLambdaEvmHookToProtobuf(t *testing.T) {
+func TestUnitEvmHookToProtobuf(t *testing.T) {
 	t.Parallel()
 
 	// Test with all fields set
@@ -119,7 +119,7 @@ func TestUnitLambdaEvmHookToProtobuf(t *testing.T) {
 	assert.Len(t, pb.StorageUpdates, 2)
 }
 
-func TestUnitLambdaEvmHookToProtobufWithNilContractId(t *testing.T) {
+func TestUnitEvmHookToProtobufWithNilContractId(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil contract ID - this should cause a panic
@@ -129,10 +129,10 @@ func TestUnitLambdaEvmHookToProtobufWithNilContractId(t *testing.T) {
 
 	pb := leh.toProtobuf()
 	assert.Nil(t, pb.GetSpec().GetContractId())
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 }
 
-func TestUnitLambdaEvmHookToProtobufWithEmptyStorageUpdates(t *testing.T) {
+func TestUnitEvmHookToProtobufWithEmptyStorageUpdates(t *testing.T) {
 	t.Parallel()
 
 	// Test with empty storage updates
@@ -142,14 +142,14 @@ func TestUnitLambdaEvmHookToProtobufWithEmptyStorageUpdates(t *testing.T) {
 	leh := NewEvmHook().SetContractId(&contractID)
 
 	pb := leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 	require.NotNil(t, pb)
 	assert.NotNil(t, pb.Spec)
 	assert.NotNil(t, pb.Spec.GetContractId())
 	assert.Len(t, pb.StorageUpdates, 0)
 }
 
-func TestUnitLambdaEvmHookFromProtobuf(t *testing.T) {
+func TestUnitEvmHookFromProtobuf(t *testing.T) {
 	t.Parallel()
 
 	// Create a protobuf message
@@ -171,12 +171,12 @@ func TestUnitLambdaEvmHookFromProtobuf(t *testing.T) {
 		},
 	}
 
-	leh := lambdaEvmHookFromProtobuf(pb)
+	leh := evmHookFromProtobuf(pb)
 	assert.Equal(t, contractID, *leh.GetContractId())
 	assert.Len(t, leh.GetStorageUpdates(), 2)
 }
 
-func TestUnitLambdaEvmHookFromProtobufWithEmptyStorageUpdates(t *testing.T) {
+func TestUnitEvmHookFromProtobufWithEmptyStorageUpdates(t *testing.T) {
 	t.Parallel()
 
 	// Create a protobuf message with empty storage updates
@@ -192,12 +192,12 @@ func TestUnitLambdaEvmHookFromProtobufWithEmptyStorageUpdates(t *testing.T) {
 		StorageUpdates: []*services.EvmHookStorageUpdate{},
 	}
 
-	leh := lambdaEvmHookFromProtobuf(pb)
+	leh := evmHookFromProtobuf(pb)
 	assert.Equal(t, contractID, *leh.GetContractId())
 	assert.Len(t, leh.GetStorageUpdates(), 0)
 }
 
-func TestUnitLambdaEvmHookRoundTrip(t *testing.T) {
+func TestUnitEvmHookRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Test round trip conversion: struct -> protobuf -> struct
@@ -213,14 +213,14 @@ func TestUnitLambdaEvmHookRoundTrip(t *testing.T) {
 
 	// Convert to protobuf and back
 	pb := original.toProtobuf()
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 
 	// Compare original and converted
 	assert.Equal(t, original.GetContractId(), converted.GetContractId())
 	assert.Len(t, converted.GetStorageUpdates(), 2)
 }
 
-func TestUnitLambdaEvmHookWithDifferentContractIds(t *testing.T) {
+func TestUnitEvmHookWithDifferentContractIds(t *testing.T) {
 	t.Parallel()
 
 	// Test with different contract IDs
@@ -240,14 +240,14 @@ func TestUnitLambdaEvmHookWithDifferentContractIds(t *testing.T) {
 	pb1 := leh1.toProtobuf()
 	pb2 := leh2.toProtobuf()
 
-	converted1 := lambdaEvmHookFromProtobuf(pb1)
-	converted2 := lambdaEvmHookFromProtobuf(pb2)
+	converted1 := evmHookFromProtobuf(pb1)
+	converted2 := evmHookFromProtobuf(pb2)
 
 	assert.Equal(t, &contractID1, converted1.GetContractId())
 	assert.Equal(t, &contractID2, converted2.GetContractId())
 }
 
-func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
+func TestUnitEvmHookEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	// Test with zero values
@@ -255,7 +255,7 @@ func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
 	assert.Nil(t, leh.GetContractId())
 	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 	pb := leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 
 	// Test with empty storage slot
 	emptyStorageSlot := NewEvmHookStorageSlot()
@@ -263,7 +263,7 @@ func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
 	assert.Len(t, leh.GetStorageUpdates(), 1)
 	assert.Equal(t, emptyStorageSlot, leh.GetStorageUpdates()[0])
 	pb = leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 
 	// Test with large storage updates
 	largeStorageUpdates := make([]EvmHookStorageUpdate, 100)
@@ -283,13 +283,13 @@ func TestUnitLambdaEvmHookEdgeCases(t *testing.T) {
 	assert.Len(t, leh.GetStorageUpdates(), 101)
 	assert.Equal(t, storageSlot, leh.GetStorageUpdates()[100])
 	pb = leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 }
 
-func TestUnitLambdaEvmHookStorageSlotIntegration(t *testing.T) {
+func TestUnitEvmHookStorageSlotIntegration(t *testing.T) {
 	t.Parallel()
 
-	// Test integration with LambdaStorageSlot
+	// Test integration with EvmHookStorageSlot
 	contractID, err := ContractIDFromString("0.0.789")
 	require.NoError(t, err)
 
@@ -313,13 +313,13 @@ func TestUnitLambdaEvmHookStorageSlotIntegration(t *testing.T) {
 
 	// Test protobuf conversion
 	pb := leh.toProtobuf()
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 
 	assert.Equal(t, &contractID, converted.GetContractId())
 	assert.Len(t, converted.GetStorageUpdates(), len(storageSlots))
 }
 
-func TestUnitLambdaEvmHookNilHandling(t *testing.T) {
+func TestUnitEvmHookNilHandling(t *testing.T) {
 	t.Parallel()
 
 	// Test setting nil contract ID
@@ -331,7 +331,7 @@ func TestUnitLambdaEvmHookNilHandling(t *testing.T) {
 	leh.SetStorageUpdates(nil)
 	assert.Equal(t, []EvmHookStorageUpdate(nil), leh.GetStorageUpdates())
 	pb := leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 
 	// Test adding nil storage update (this should work but the slice will contain nil)
 	leh.AddStorageUpdate(nil)
@@ -339,13 +339,13 @@ func TestUnitLambdaEvmHookNilHandling(t *testing.T) {
 	assert.Nil(t, leh.GetStorageUpdates()[0])
 
 	pb = leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 }
 
-func TestUnitLambdaEvmHookWithMappingEntries(t *testing.T) {
+func TestUnitEvmHookWithMappingEntries(t *testing.T) {
 	t.Parallel()
 
-	// Test with LambdaMappingEntries as storage update
+	// Test with EvmHookMappingEntries as storage update
 	contractID, err := ContractIDFromString("0.0.456")
 	require.NoError(t, err)
 
@@ -354,7 +354,7 @@ func TestUnitLambdaEvmHookWithMappingEntries(t *testing.T) {
 	mappingEntry2 := NewEvmHookMappingEntryWithPreImage([]byte("preimage2"), []byte("value2"))
 	mappingEntry3 := NewEvmHookMappingEntryWithKey([]byte("key3"), []byte("value3"))
 
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot([]byte("mapping_slot_123")).
 		AddMappingEntry(*mappingEntry1).
 		AddMappingEntry(*mappingEntry2).
@@ -374,15 +374,15 @@ func TestUnitLambdaEvmHookWithMappingEntries(t *testing.T) {
 	assert.NotNil(t, pb.Spec)
 	assert.Len(t, pb.StorageUpdates, 1)
 
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 	assert.Equal(t, &contractID, converted.GetContractId())
 	assert.Len(t, converted.GetStorageUpdates(), 1)
 }
 
-func TestUnitLambdaEvmHookWithMixedStorageUpdates(t *testing.T) {
+func TestUnitEvmHookWithMixedStorageUpdates(t *testing.T) {
 	t.Parallel()
 
-	// Test with both LambdaStorageSlot and LambdaMappingEntries
+	// Test with both EvmHookStorageSlot and EvmHookMappingEntries
 	contractID, err := ContractIDFromString("0.0.789")
 	require.NoError(t, err)
 
@@ -391,7 +391,7 @@ func TestUnitLambdaEvmHookWithMixedStorageUpdates(t *testing.T) {
 
 	// Create mapping entries
 	mappingEntry := NewEvmHookMappingEntryWithKey([]byte("mapping_key"), []byte("mapping_value"))
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot([]byte("mapping_slot")).
 		AddMappingEntry(*mappingEntry)
 
@@ -410,19 +410,19 @@ func TestUnitLambdaEvmHookWithMixedStorageUpdates(t *testing.T) {
 	require.NotNil(t, pb)
 	assert.Len(t, pb.StorageUpdates, 2)
 
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 	assert.Equal(t, &contractID, converted.GetContractId())
 	assert.Len(t, converted.GetStorageUpdates(), 2)
 }
 
-func TestUnitLambdaEvmHookWithEmptyMappingEntries(t *testing.T) {
+func TestUnitEvmHookWithEmptyMappingEntries(t *testing.T) {
 	t.Parallel()
 
 	// Test with empty mapping entries
 	contractID, err := ContractIDFromString("0.0.123")
 	require.NoError(t, err)
 
-	emptyMappingEntries := NewLambdaMappingEntries().SetMappingSlot([]byte("empty_slot"))
+	emptyMappingEntries := NewEvmHookMappingEntries().SetMappingSlot([]byte("empty_slot"))
 
 	leh := NewEvmHook().
 		SetContractId(&contractID).
@@ -437,12 +437,12 @@ func TestUnitLambdaEvmHookWithEmptyMappingEntries(t *testing.T) {
 	require.NotNil(t, pb)
 	assert.Len(t, pb.StorageUpdates, 1)
 
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 	assert.Equal(t, &contractID, converted.GetContractId())
 	assert.Len(t, converted.GetStorageUpdates(), 1)
 }
 
-func TestUnitLambdaEvmHookWithComplexMappingEntries(t *testing.T) {
+func TestUnitEvmHookWithComplexMappingEntries(t *testing.T) {
 	t.Parallel()
 
 	// Test with complex mapping entries containing multiple entries
@@ -450,7 +450,7 @@ func TestUnitLambdaEvmHookWithComplexMappingEntries(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create multiple mapping entries with different key types
-	mappingEntries := NewLambdaMappingEntries().SetMappingSlot([]byte("complex_mapping_slot"))
+	mappingEntries := NewEvmHookMappingEntries().SetMappingSlot([]byte("complex_mapping_slot"))
 
 	// Add entries with keys
 	for i := 0; i < 5; i++ {
@@ -477,12 +477,12 @@ func TestUnitLambdaEvmHookWithComplexMappingEntries(t *testing.T) {
 	require.NotNil(t, pb)
 	assert.Len(t, pb.StorageUpdates, 1)
 
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 	assert.Equal(t, &contractID, converted.GetContractId())
 	assert.Len(t, converted.GetStorageUpdates(), 1)
 }
 
-func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
+func TestUnitEvmHookWithMappingEntriesRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Test round trip conversion with mapping entries
@@ -493,7 +493,7 @@ func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
 	mappingEntry1 := NewEvmHookMappingEntryWithKey([]byte("roundtrip_key1"), []byte("roundtrip_value1"))
 	mappingEntry2 := NewEvmHookMappingEntryWithPreImage([]byte("roundtrip_preimage"), []byte("roundtrip_value2"))
 
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot([]byte("roundtrip_slot")).
 		AddMappingEntry(*mappingEntry1).
 		AddMappingEntry(*mappingEntry2)
@@ -504,7 +504,7 @@ func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
 
 	// Convert to protobuf and back
 	pb := original.toProtobuf()
-	converted := lambdaEvmHookFromProtobuf(pb)
+	converted := evmHookFromProtobuf(pb)
 
 	// Compare original and converted
 	assert.Equal(t, original.GetContractId(), converted.GetContractId())
@@ -516,7 +516,7 @@ func TestUnitLambdaEvmHookMappingEntriesRoundTrip(t *testing.T) {
 	assert.Len(t, convertedMappingEntries.GetMappingEntries(), 2)
 }
 
-func TestUnitLambdaEvmHookMappingEntriesEdgeCases(t *testing.T) {
+func TestUnitEvmHookWithMappingEntriesEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	contractID, err := ContractIDFromString("0.0.555")
@@ -524,7 +524,7 @@ func TestUnitLambdaEvmHookMappingEntriesEdgeCases(t *testing.T) {
 
 	// Test with mapping entries with nil key/value
 	mappingEntry := NewEvmHookMappingEntryWithKey(nil, nil)
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot(nil).
 		AddMappingEntry(*mappingEntry)
 
@@ -536,5 +536,5 @@ func TestUnitLambdaEvmHookMappingEntriesEdgeCases(t *testing.T) {
 	assert.Len(t, leh.GetStorageUpdates(), 1)
 	assert.Equal(t, mappingEntries, leh.GetStorageUpdates()[0])
 	pb := leh.toProtobuf()
-	lambdaEvmHookFromProtobuf(pb)
+	evmHookFromProtobuf(pb)
 }
