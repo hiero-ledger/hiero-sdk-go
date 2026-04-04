@@ -13,7 +13,7 @@ type HookStoreTransaction struct {
 	storageUpdates []EvmHookStorageUpdate
 }
 
-// Adds or removes key/value pairs in the storage of a lambda.
+// Adds or removes key/value pairs in the storage of an EVM hook.
 func NewHookStoreTransaction() *HookStoreTransaction {
 	tx := &HookStoreTransaction{}
 	tx.Transaction = _NewTransaction(tx)
@@ -21,20 +21,20 @@ func NewHookStoreTransaction() *HookStoreTransaction {
 	return tx
 }
 
-func lambdaSStoreTransactionFromProtobuf(tx Transaction[*HookStoreTransaction], pb *services.TransactionBody) HookStoreTransaction {
+func _HookStoreTransactionFromProtobuf(tx Transaction[*HookStoreTransaction], pb *services.TransactionBody) HookStoreTransaction {
 	protoBody := pb.GetHookStore()
 	storageUpdates := make([]EvmHookStorageUpdate, 0)
 	for _, storageUpdate := range protoBody.GetStorageUpdates() {
-		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
+		storageUpdates = append(storageUpdates, evmHookStorageUpdateFromProtobuf(storageUpdate))
 	}
-	lambdaSStoreTransaction := HookStoreTransaction{
+	hookStoreTx := HookStoreTransaction{
 		hookId:         hookIdFromProtobuf(protoBody.GetHookId()),
 		storageUpdates: storageUpdates,
 	}
 
-	tx.childTransaction = &lambdaSStoreTransaction
-	lambdaSStoreTransaction.Transaction = &tx
-	return lambdaSStoreTransaction
+	tx.childTransaction = &hookStoreTx
+	hookStoreTx.Transaction = &tx
+	return hookStoreTx
 }
 
 // SetHookId sets the hook ID for the HookStoreTransaction.

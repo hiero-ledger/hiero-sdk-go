@@ -6,32 +6,32 @@ import (
 
 // SPDX-License-Identifier: Apache-2.0
 
-// Specifies a key/value pair in the storage of a lambda, either by the explicit storage
+// Specifies a key/value pair in the storage of an EVM hook, either by the explicit storage
 // slot contents; or by a combination of a Solidity mapping's slot key and the key into
 // that mapping.
 type EvmHookStorageUpdate interface {
 	toProtobuf() *services.EvmHookStorageUpdate
 }
 
-func lambdaStorageUpdateFromProtobuf(pb *services.EvmHookStorageUpdate) EvmHookStorageUpdate {
+func evmHookStorageUpdateFromProtobuf(pb *services.EvmHookStorageUpdate) EvmHookStorageUpdate {
 	if pb.GetStorageSlot() != nil {
-		return lambdaStorageSlotFromProtobuf(pb.GetStorageSlot())
+		return evmHookStorageSlotFromProtobuf(pb.GetStorageSlot())
 	}
 	if pb.GetMappingEntries() != nil {
-		return lambdaMappingEntriesFromProtobuf(pb.GetMappingEntries())
+		return evmHookMappingEntriesFromProtobuf(pb.GetMappingEntries())
 	}
 	return nil
 }
 
 /**
- * A slot in the storage of a lambda EVM hook.
+ * A slot in the storage of an EVM hook.
  */
 type EvmHookStorageSlot struct {
 	key   []byte
 	value []byte
 }
 
-// NewEvmHookStorageSlot creates a new LambdaStorageSlot
+// NewEvmHookStorageSlot creates a new EvmHookStorageSlot
 func NewEvmHookStorageSlot() *EvmHookStorageSlot {
 	return &EvmHookStorageSlot{}
 }
@@ -69,7 +69,7 @@ func (ls EvmHookStorageSlot) toProtobuf() *services.EvmHookStorageUpdate {
 	}
 }
 
-func lambdaStorageSlotFromProtobuf(pb *services.EvmHookStorageSlot) EvmHookStorageSlot {
+func evmHookStorageSlotFromProtobuf(pb *services.EvmHookStorageSlot) EvmHookStorageSlot {
 	return EvmHookStorageSlot{
 		key:   pb.GetKey(),
 		value: pb.GetValue(),
@@ -91,8 +91,8 @@ type EvmHookMappingEntries struct {
 	mappingEntries []EvmHookMappingEntry
 }
 
-// NewLambdaMappingEntries creates a new LambdaMappingEntries
-func NewLambdaMappingEntries() *EvmHookMappingEntries {
+// NewEvmHookMappingEntries creates a new EvmHookMappingEntries
+func NewEvmHookMappingEntries() *EvmHookMappingEntries {
 	return &EvmHookMappingEntries{}
 }
 
@@ -140,25 +140,25 @@ func (le EvmHookMappingEntries) toProtobuf() *services.EvmHookStorageUpdate {
 	}
 }
 
-func lambdaMappingEntriesFromProtobuf(pb *services.EvmHookMappingEntries) EvmHookMappingEntries {
+func evmHookMappingEntriesFromProtobuf(pb *services.EvmHookMappingEntries) EvmHookMappingEntries {
 	mappingEntries := EvmHookMappingEntries{
 		mappingSlot: pb.GetMappingSlot(),
 	}
 
 	for _, entry := range pb.GetEntries() {
-		mappingEntries.mappingEntries = append(mappingEntries.mappingEntries, lambdaMappingEntryFromProtobuf(entry))
+		mappingEntries.mappingEntries = append(mappingEntries.mappingEntries, evmHookMappingEntryFromProtobuf(entry))
 	}
 
 	return mappingEntries
 }
 
 // An entry in a Solidity mapping. Very helpful for protocols that apply
-// `LambdaSStore` to manage the entries of a hook contract's mapping instead
+// `HookStore` to manage the entries of a hook contract's mapping instead
 // its raw storage slots.
 // <p>
 // This is especially attractive when the mapping value itself fits in a single
 // word; for more complicated value storage layouts it becomes necessary to
-// combine the mapping update with additional `LambdaStorageSlot` updates that
+// combine the mapping update with additional `EvmHookStorageSlot` updates that
 // specify the complete storage slots of the value type.
 type EvmHookMappingEntry struct {
 	key      []byte
@@ -166,7 +166,7 @@ type EvmHookMappingEntry struct {
 	value    []byte
 }
 
-// NewEvmHookMappingEntryWithKey creates a new LambdaMappingEntry with key
+// NewEvmHookMappingEntryWithKey creates a new EvmHookMappingEntry with key
 func NewEvmHookMappingEntryWithKey(key []byte, value []byte) *EvmHookMappingEntry {
 	return &EvmHookMappingEntry{
 		key:   key,
@@ -174,7 +174,7 @@ func NewEvmHookMappingEntryWithKey(key []byte, value []byte) *EvmHookMappingEntr
 	}
 }
 
-// NewEvmHookMappingEntryWithPreImage creates a new LambdaMappingEntry with preimage
+// NewEvmHookMappingEntryWithPreImage creates a new EvmHookMappingEntry with preimage
 func NewEvmHookMappingEntryWithPreImage(preImage []byte, value []byte) *EvmHookMappingEntry {
 	return &EvmHookMappingEntry{
 		preImage: preImage,
@@ -236,7 +236,7 @@ func (le EvmHookMappingEntry) toProtobuf() *services.EvmHookMappingEntry {
 	return pbBody
 }
 
-func lambdaMappingEntryFromProtobuf(pb *services.EvmHookMappingEntry) EvmHookMappingEntry {
+func evmHookMappingEntryFromProtobuf(pb *services.EvmHookMappingEntry) EvmHookMappingEntry {
 	return EvmHookMappingEntry{
 		key:      pb.GetKey(),
 		preImage: pb.GetPreimage(),

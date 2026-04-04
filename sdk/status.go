@@ -373,15 +373,15 @@ const (
 	BAD_HOOK_REQUEST                                               Status = 502
 	REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK                             Status = 503
 	HOOK_NOT_FOUND                                                 Status = 504
-	LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG                           Status = 505
-	LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION    Status = 506
+	EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG                           Status = 505
+	EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION    Status = 506
 	INVALID_HOOK_ID                                                Status = 507
-	EMPTY_LAMBDA_STORAGE_UPDATE                                    Status = 508
+	EMPTY_EVM_HOOK_STORAGE_UPDATE                                    Status = 508
 	HOOK_ID_REPEATED_IN_CREATION_DETAILS                           Status = 509
 	HOOKS_NOT_ENABLED                                              Status = 510
-	HOOK_IS_NOT_A_LAMBDA                                           Status = 511
+	HOOK_IS_NOT_AN_EVM_HOOK                                           Status = 511
 	HOOK_DELETED                                                   Status = 512
-	TOO_MANY_LAMBDA_STORAGE_UPDATES                                Status = 513
+	TOO_MANY_EVM_HOOK_STORAGE_UPDATES                                Status = 513
 	HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION            Status = 514
 	HOOK_CREATION_BYTES_TOO_LONG                                   Status = 515
 	INVALID_HOOK_CREATION_SPEC                                     Status = 516
@@ -1134,24 +1134,24 @@ func (status Status) String() string { // nolint
 		return "REJECTED_BY_ACCOUNT_ALLOWANCE_HOOK"
 	case HOOK_NOT_FOUND:
 		return "HOOK_NOT_FOUND"
-	case LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG:
-		return "LAMBDA_STORAGE_UPDATE_BYTES_TOO_LONG"
-	case LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION:
-		return "LAMBDA_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION"
+	case EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG:
+		return "EVM_HOOK_STORAGE_UPDATE_BYTES_TOO_LONG"
+	case EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION:
+		return "EVM_HOOK_STORAGE_UPDATE_BYTES_MUST_USE_MINIMAL_REPRESENTATION"
 	case INVALID_HOOK_ID:
 		return "INVALID_HOOK_ID"
-	case EMPTY_LAMBDA_STORAGE_UPDATE:
-		return "EMPTY_LAMBDA_STORAGE_UPDATE"
+	case EMPTY_EVM_HOOK_STORAGE_UPDATE:
+		return "EMPTY_EVM_HOOK_STORAGE_UPDATE"
 	case HOOK_ID_REPEATED_IN_CREATION_DETAILS:
 		return "HOOK_ID_REPEATED_IN_CREATION_DETAILS"
 	case HOOKS_NOT_ENABLED:
 		return "HOOKS_NOT_ENABLED"
-	case HOOK_IS_NOT_A_LAMBDA:
-		return "HOOK_IS_NOT_A_LAMBDA"
+	case HOOK_IS_NOT_AN_EVM_HOOK:
+		return "HOOK_IS_NOT_AN_EVM_HOOK"
 	case HOOK_DELETED:
 		return "HOOK_DELETED"
-	case TOO_MANY_LAMBDA_STORAGE_UPDATES:
-		return "TOO_MANY_LAMBDA_STORAGE_UPDATES"
+	case TOO_MANY_EVM_HOOK_STORAGE_UPDATES:
+		return "TOO_MANY_EVM_HOOK_STORAGE_UPDATES"
 	case HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION:
 		return "HOOK_CREATION_BYTES_MUST_USE_MINIMAL_REPRESENTATION"
 	case HOOK_CREATION_BYTES_TOO_LONG:

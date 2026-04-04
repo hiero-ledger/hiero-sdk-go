@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitLambdaStorageSlotKey(t *testing.T) {
+func TestUnitEvmHookStorageSlotKey(t *testing.T) {
 	t.Parallel()
 
 	ls := NewEvmHookStorageSlot()
@@ -34,7 +34,7 @@ func TestUnitLambdaStorageSlotKey(t *testing.T) {
 	assert.Equal(t, []byte{}, ls.GetKey())
 }
 
-func TestUnitLambdaStorageSlotValue(t *testing.T) {
+func TestUnitEvmHookStorageSlotValue(t *testing.T) {
 	t.Parallel()
 
 	ls := NewEvmHookStorageSlot()
@@ -56,7 +56,7 @@ func TestUnitLambdaStorageSlotValue(t *testing.T) {
 	assert.Equal(t, []byte{}, ls.GetValue())
 }
 
-func TestUnitLambdaStorageSlotMethodChaining(t *testing.T) {
+func TestUnitEvmHookStorageSlotMethodChaining(t *testing.T) {
 	t.Parallel()
 
 	key := []byte("chained_key")
@@ -69,7 +69,7 @@ func TestUnitLambdaStorageSlotMethodChaining(t *testing.T) {
 	assert.Equal(t, value, ls.GetValue())
 }
 
-func TestUnitLambdaStorageSlotToProtobuf(t *testing.T) {
+func TestUnitEvmHookStorageSlotToProtobuf(t *testing.T) {
 	t.Parallel()
 
 	// Test with all fields set
@@ -86,7 +86,7 @@ func TestUnitLambdaStorageSlotToProtobuf(t *testing.T) {
 	assert.Equal(t, value, pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot.Value)
 }
 
-func TestUnitLambdaStorageSlotToProtobufWithNilValues(t *testing.T) {
+func TestUnitEvmHookStorageSlotToProtobufWithNilValues(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil values
@@ -100,7 +100,7 @@ func TestUnitLambdaStorageSlotToProtobufWithNilValues(t *testing.T) {
 	assert.Nil(t, pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot.Value)
 }
 
-func TestUnitLambdaStorageSlotFromProtobuf(t *testing.T) {
+func TestUnitEvmHookStorageSlotFromProtobuf(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf
@@ -112,12 +112,12 @@ func TestUnitLambdaStorageSlotFromProtobuf(t *testing.T) {
 		Value: value,
 	}
 
-	ls := lambdaStorageSlotFromProtobuf(pb)
+	ls := evmHookStorageSlotFromProtobuf(pb)
 	assert.Equal(t, key, ls.GetKey())
 	assert.Equal(t, value, ls.GetValue())
 }
 
-func TestUnitLambdaStorageSlotFromProtobufWithNilValues(t *testing.T) {
+func TestUnitEvmHookStorageSlotFromProtobufWithNilValues(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf with nil values
@@ -126,12 +126,12 @@ func TestUnitLambdaStorageSlotFromProtobufWithNilValues(t *testing.T) {
 		Value: nil,
 	}
 
-	ls := lambdaStorageSlotFromProtobuf(pb)
+	ls := evmHookStorageSlotFromProtobuf(pb)
 	assert.Nil(t, ls.GetKey())
 	assert.Nil(t, ls.GetValue())
 }
 
-func TestUnitLambdaStorageSlotRoundTrip(t *testing.T) {
+func TestUnitEvmHookStorageSlotRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Test round trip conversion
@@ -142,25 +142,25 @@ func TestUnitLambdaStorageSlotRoundTrip(t *testing.T) {
 
 	// Convert to protobuf and back
 	pb := original.toProtobuf()
-	converted := lambdaStorageSlotFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot)
+	converted := evmHookStorageSlotFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot)
 
 	assert.Equal(t, original.GetKey(), converted.GetKey())
 	assert.Equal(t, original.GetValue(), converted.GetValue())
 }
 
-func TestUnitLambdaMappingEntriesNew(t *testing.T) {
+func TestUnitEvmHookMappingEntriesNew(t *testing.T) {
 	t.Parallel()
 
-	lme := NewLambdaMappingEntries()
+	lme := NewEvmHookMappingEntries()
 	require.NotNil(t, lme)
 	assert.Nil(t, lme.GetMappingSlot())
 	assert.Equal(t, []EvmHookMappingEntry(nil), lme.GetMappingEntries())
 }
 
-func TestUnitLambdaMappingEntriesMappingSlot(t *testing.T) {
+func TestUnitEvmHookMappingEntriesMappingSlot(t *testing.T) {
 	t.Parallel()
 
-	lme := NewLambdaMappingEntries()
+	lme := NewEvmHookMappingEntries()
 
 	// Test default value
 	assert.Nil(t, lme.GetMappingSlot())
@@ -183,10 +183,10 @@ func TestUnitLambdaMappingEntriesMappingSlot(t *testing.T) {
 	assert.Equal(t, lme, result)
 }
 
-func TestUnitLambdaMappingEntriesMappingEntries(t *testing.T) {
+func TestUnitEvmHookMappingEntriesMappingEntries(t *testing.T) {
 	t.Parallel()
 
-	lme := NewLambdaMappingEntries()
+	lme := NewEvmHookMappingEntries()
 
 	// Test default value
 	assert.Equal(t, []EvmHookMappingEntry(nil), lme.GetMappingEntries())
@@ -212,10 +212,10 @@ func TestUnitLambdaMappingEntriesMappingEntries(t *testing.T) {
 	assert.Equal(t, lme, result)
 }
 
-func TestUnitLambdaMappingEntriesAddMappingEntry(t *testing.T) {
+func TestUnitEvmHookMappingEntriesAddMappingEntry(t *testing.T) {
 	t.Parallel()
 
-	lme := NewLambdaMappingEntries()
+	lme := NewEvmHookMappingEntries()
 
 	// Test adding to empty slice
 	entry1 := NewEvmHookMappingEntryWithKey([]byte("key1"), []byte("value1"))
@@ -237,7 +237,7 @@ func TestUnitLambdaMappingEntriesAddMappingEntry(t *testing.T) {
 	assert.Len(t, lme.GetMappingEntries(), 3)
 }
 
-func TestUnitLambdaMappingEntriesMethodChaining(t *testing.T) {
+func TestUnitEvmHookMappingEntriesMethodChaining(t *testing.T) {
 	t.Parallel()
 
 	mappingSlot := []byte("chained_slot")
@@ -245,7 +245,7 @@ func TestUnitLambdaMappingEntriesMethodChaining(t *testing.T) {
 	entry2 := NewEvmHookMappingEntryWithPreImage([]byte("preimage2"), []byte("value2"))
 
 	// Test method chaining
-	lme := NewLambdaMappingEntries().
+	lme := NewEvmHookMappingEntries().
 		SetMappingSlot(mappingSlot).
 		AddMappingEntry(*entry1).
 		AddMappingEntry(*entry2)
@@ -256,7 +256,7 @@ func TestUnitLambdaMappingEntriesMethodChaining(t *testing.T) {
 	assert.Equal(t, *entry2, lme.GetMappingEntries()[1])
 }
 
-func TestUnitLambdaMappingEntriesToProtobuf(t *testing.T) {
+func TestUnitEvmHookMappingEntriesToProtobuf(t *testing.T) {
 	t.Parallel()
 
 	// Test with all fields set
@@ -264,7 +264,7 @@ func TestUnitLambdaMappingEntriesToProtobuf(t *testing.T) {
 	entry1 := NewEvmHookMappingEntryWithKey([]byte("key1"), []byte("value1"))
 	entry2 := NewEvmHookMappingEntryWithPreImage([]byte("preimage2"), []byte("value2"))
 
-	lme := NewLambdaMappingEntries().
+	lme := NewEvmHookMappingEntries().
 		SetMappingSlot(mappingSlot).
 		AddMappingEntry(*entry1).
 		AddMappingEntry(*entry2)
@@ -278,13 +278,13 @@ func TestUnitLambdaMappingEntriesToProtobuf(t *testing.T) {
 	assert.Len(t, pb.Update.(*services.EvmHookStorageUpdate_MappingEntries).MappingEntries.Entries, 2)
 }
 
-func TestUnitLambdaMappingEntriesToProtobufWithEmptyEntries(t *testing.T) {
+func TestUnitEvmHookMappingEntriesToProtobufWithEmptyEntries(t *testing.T) {
 	t.Parallel()
 
 	// Test with empty entries
 	mappingSlot := []byte("empty_slot")
 
-	lme := NewLambdaMappingEntries().SetMappingSlot(mappingSlot)
+	lme := NewEvmHookMappingEntries().SetMappingSlot(mappingSlot)
 	pb := lme.toProtobuf()
 
 	require.NotNil(t, pb)
@@ -294,7 +294,7 @@ func TestUnitLambdaMappingEntriesToProtobufWithEmptyEntries(t *testing.T) {
 	assert.Len(t, pb.Update.(*services.EvmHookStorageUpdate_MappingEntries).MappingEntries.Entries, 0)
 }
 
-func TestUnitLambdaMappingEntriesFromProtobuf(t *testing.T) {
+func TestUnitEvmHookMappingEntriesFromProtobuf(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf
@@ -313,12 +313,12 @@ func TestUnitLambdaMappingEntriesFromProtobuf(t *testing.T) {
 		Entries:     []*services.EvmHookMappingEntry{entry1, entry2},
 	}
 
-	lme := lambdaMappingEntriesFromProtobuf(pb)
+	lme := evmHookMappingEntriesFromProtobuf(pb)
 	assert.Equal(t, mappingSlot, lme.GetMappingSlot())
 	assert.Len(t, lme.GetMappingEntries(), 2)
 }
 
-func TestUnitLambdaMappingEntriesFromProtobufWithEmptyEntries(t *testing.T) {
+func TestUnitEvmHookMappingEntriesFromProtobufWithEmptyEntries(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf with empty entries
@@ -329,12 +329,12 @@ func TestUnitLambdaMappingEntriesFromProtobufWithEmptyEntries(t *testing.T) {
 		Entries:     []*services.EvmHookMappingEntry{},
 	}
 
-	lme := lambdaMappingEntriesFromProtobuf(pb)
+	lme := evmHookMappingEntriesFromProtobuf(pb)
 	assert.Equal(t, mappingSlot, lme.GetMappingSlot())
 	assert.Len(t, lme.GetMappingEntries(), 0)
 }
 
-func TestUnitLambdaMappingEntriesRoundTrip(t *testing.T) {
+func TestUnitEvmHookMappingEntriesRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Test round trip conversion
@@ -342,20 +342,20 @@ func TestUnitLambdaMappingEntriesRoundTrip(t *testing.T) {
 	entry1 := NewEvmHookMappingEntryWithKey([]byte("key1"), []byte("value1"))
 	entry2 := NewEvmHookMappingEntryWithPreImage([]byte("preimage2"), []byte("value2"))
 
-	original := NewLambdaMappingEntries().
+	original := NewEvmHookMappingEntries().
 		SetMappingSlot(mappingSlot).
 		AddMappingEntry(*entry1).
 		AddMappingEntry(*entry2)
 
 	// Convert to protobuf and back
 	pb := original.toProtobuf()
-	converted := lambdaMappingEntriesFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_MappingEntries).MappingEntries)
+	converted := evmHookMappingEntriesFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_MappingEntries).MappingEntries)
 
 	assert.Equal(t, original.GetMappingSlot(), converted.GetMappingSlot())
 	assert.Len(t, converted.GetMappingEntries(), 2)
 }
 
-func TestUnitLambdaMappingEntryWithKey(t *testing.T) {
+func TestUnitEvmHookMappingEntryWithKey(t *testing.T) {
 	t.Parallel()
 
 	key := []byte("test_key")
@@ -368,7 +368,7 @@ func TestUnitLambdaMappingEntryWithKey(t *testing.T) {
 	assert.Nil(t, entry.GetPreImage())
 }
 
-func TestUnitLambdaMappingEntryWithPreImage(t *testing.T) {
+func TestUnitEvmHookMappingEntryWithPreImage(t *testing.T) {
 	t.Parallel()
 
 	preImage := []byte("test_preimage")
@@ -381,7 +381,7 @@ func TestUnitLambdaMappingEntryWithPreImage(t *testing.T) {
 	assert.Nil(t, entry.GetKey())
 }
 
-func TestUnitLambdaMappingEntryKey(t *testing.T) {
+func TestUnitEvmHookMappingEntryKey(t *testing.T) {
 	t.Parallel()
 
 	entry := &EvmHookMappingEntry{}
@@ -408,7 +408,7 @@ func TestUnitLambdaMappingEntryKey(t *testing.T) {
 	assert.Equal(t, entry, result)
 }
 
-func TestUnitLambdaMappingEntryPreImage(t *testing.T) {
+func TestUnitEvmHookMappingEntryPreImage(t *testing.T) {
 	t.Parallel()
 
 	entry := &EvmHookMappingEntry{}
@@ -435,7 +435,7 @@ func TestUnitLambdaMappingEntryPreImage(t *testing.T) {
 	assert.Equal(t, entry, result)
 }
 
-func TestUnitLambdaMappingEntryValue(t *testing.T) {
+func TestUnitEvmHookMappingEntryValue(t *testing.T) {
 	t.Parallel()
 
 	entry := &EvmHookMappingEntry{}
@@ -461,7 +461,7 @@ func TestUnitLambdaMappingEntryValue(t *testing.T) {
 	assert.Equal(t, entry, result)
 }
 
-func TestUnitLambdaMappingEntryKeyPreImageInteraction(t *testing.T) {
+func TestUnitEvmHookMappingEntryKeyPreImageInteraction(t *testing.T) {
 	t.Parallel()
 
 	entry := &EvmHookMappingEntry{}
@@ -485,7 +485,7 @@ func TestUnitLambdaMappingEntryKeyPreImageInteraction(t *testing.T) {
 	assert.Nil(t, entry.GetKey())
 }
 
-func TestUnitLambdaMappingEntryToProtobufWithKey(t *testing.T) {
+func TestUnitEvmHookMappingEntryToProtobufWithKey(t *testing.T) {
 	t.Parallel()
 
 	// Test with key
@@ -502,7 +502,7 @@ func TestUnitLambdaMappingEntryToProtobufWithKey(t *testing.T) {
 	assert.Equal(t, key, pb.EntryKey.(*services.EvmHookMappingEntry_Key).Key)
 }
 
-func TestUnitLambdaMappingEntryToProtobufWithPreImage(t *testing.T) {
+func TestUnitEvmHookMappingEntryToProtobufWithPreImage(t *testing.T) {
 	t.Parallel()
 
 	// Test with preimage
@@ -519,7 +519,7 @@ func TestUnitLambdaMappingEntryToProtobufWithPreImage(t *testing.T) {
 	assert.Equal(t, preImage, pb.EntryKey.(*services.EvmHookMappingEntry_Preimage).Preimage)
 }
 
-func TestUnitLambdaMappingEntryToProtobufWithNilValues(t *testing.T) {
+func TestUnitEvmHookMappingEntryToProtobufWithNilValues(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil values
@@ -531,7 +531,7 @@ func TestUnitLambdaMappingEntryToProtobufWithNilValues(t *testing.T) {
 	assert.Nil(t, pb.EntryKey)
 }
 
-func TestUnitLambdaMappingEntryFromProtobufWithKey(t *testing.T) {
+func TestUnitEvmHookMappingEntryFromProtobufWithKey(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf with key
@@ -543,13 +543,13 @@ func TestUnitLambdaMappingEntryFromProtobufWithKey(t *testing.T) {
 		Value:    value,
 	}
 
-	entry := lambdaMappingEntryFromProtobuf(pb)
+	entry := evmHookMappingEntryFromProtobuf(pb)
 	assert.Equal(t, key, entry.GetKey())
 	assert.Equal(t, value, entry.GetValue())
 	assert.Nil(t, entry.GetPreImage())
 }
 
-func TestUnitLambdaMappingEntryFromProtobufWithPreImage(t *testing.T) {
+func TestUnitEvmHookMappingEntryFromProtobufWithPreImage(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf with preimage
@@ -561,13 +561,13 @@ func TestUnitLambdaMappingEntryFromProtobufWithPreImage(t *testing.T) {
 		Value:    value,
 	}
 
-	entry := lambdaMappingEntryFromProtobuf(pb)
+	entry := evmHookMappingEntryFromProtobuf(pb)
 	assert.Equal(t, preImage, entry.GetPreImage())
 	assert.Equal(t, value, entry.GetValue())
 	assert.Nil(t, entry.GetKey())
 }
 
-func TestUnitLambdaMappingEntryFromProtobufWithNilValues(t *testing.T) {
+func TestUnitEvmHookMappingEntryFromProtobufWithNilValues(t *testing.T) {
 	t.Parallel()
 
 	// Test conversion from protobuf with nil values
@@ -576,13 +576,13 @@ func TestUnitLambdaMappingEntryFromProtobufWithNilValues(t *testing.T) {
 		Value:    nil,
 	}
 
-	entry := lambdaMappingEntryFromProtobuf(pb)
+	entry := evmHookMappingEntryFromProtobuf(pb)
 	assert.Nil(t, entry.GetKey())
 	assert.Nil(t, entry.GetPreImage())
 	assert.Nil(t, entry.GetValue())
 }
 
-func TestUnitLambdaMappingEntryRoundTrip(t *testing.T) {
+func TestUnitEvmHookMappingEntryRoundTrip(t *testing.T) {
 	t.Parallel()
 
 	// Test round trip conversion with key
@@ -591,7 +591,7 @@ func TestUnitLambdaMappingEntryRoundTrip(t *testing.T) {
 
 	original := NewEvmHookMappingEntryWithKey(key, value)
 	pb := original.toProtobuf()
-	converted := lambdaMappingEntryFromProtobuf(pb)
+	converted := evmHookMappingEntryFromProtobuf(pb)
 
 	assert.Equal(t, original.GetKey(), converted.GetKey())
 	assert.Equal(t, original.GetValue(), converted.GetValue())
@@ -603,14 +603,14 @@ func TestUnitLambdaMappingEntryRoundTrip(t *testing.T) {
 
 	original2 := NewEvmHookMappingEntryWithPreImage(preImage, value2)
 	pb2 := original2.toProtobuf()
-	converted2 := lambdaMappingEntryFromProtobuf(pb2)
+	converted2 := evmHookMappingEntryFromProtobuf(pb2)
 
 	assert.Equal(t, original2.GetKey(), converted2.GetKey())
 	assert.Equal(t, original2.GetValue(), converted2.GetValue())
 	assert.Equal(t, original2.GetPreImage(), converted2.GetPreImage())
 }
 
-func TestUnitLambdaStorageUpdateFromProtobufWithStorageSlot(t *testing.T) {
+func TestUnitEvmHookStorageUpdateFromProtobufWithStorageSlot(t *testing.T) {
 	t.Parallel()
 
 	// Test with storage slot
@@ -626,14 +626,14 @@ func TestUnitLambdaStorageUpdateFromProtobufWithStorageSlot(t *testing.T) {
 		},
 	}
 
-	update := lambdaStorageUpdateFromProtobuf(pb)
+	update := evmHookStorageUpdateFromProtobuf(pb)
 	require.NotNil(t, update)
 	storageSlot := update.(EvmHookStorageSlot)
 	assert.Equal(t, key, storageSlot.GetKey())
 	assert.Equal(t, value, storageSlot.GetValue())
 }
 
-func TestUnitLambdaStorageUpdateFromProtobufWithMappingEntries(t *testing.T) {
+func TestUnitEvmHookStorageUpdateFromProtobufWithMappingEntries(t *testing.T) {
 	t.Parallel()
 
 	// Test with mapping entries
@@ -652,14 +652,14 @@ func TestUnitLambdaStorageUpdateFromProtobufWithMappingEntries(t *testing.T) {
 		},
 	}
 
-	update := lambdaStorageUpdateFromProtobuf(pb)
+	update := evmHookStorageUpdateFromProtobuf(pb)
 	require.NotNil(t, update)
 	mappingEntries := update.(EvmHookMappingEntries)
 	assert.Equal(t, mappingSlot, mappingEntries.GetMappingSlot())
 	assert.Len(t, mappingEntries.GetMappingEntries(), 1)
 }
 
-func TestUnitLambdaStorageUpdateFromProtobufWithNil(t *testing.T) {
+func TestUnitEvmHookStorageUpdateFromProtobufWithNil(t *testing.T) {
 	t.Parallel()
 
 	// Test with nil update
@@ -667,11 +667,11 @@ func TestUnitLambdaStorageUpdateFromProtobufWithNil(t *testing.T) {
 		Update: nil,
 	}
 
-	update := lambdaStorageUpdateFromProtobuf(pb)
+	update := evmHookStorageUpdateFromProtobuf(pb)
 	assert.Nil(t, update)
 }
 
-func TestUnitLambdaStorageUpdateEdgeCases(t *testing.T) {
+func TestUnitEvmHookStorageUpdateEdgeCases(t *testing.T) {
 	t.Parallel()
 
 	// Test storage slot with empty values
@@ -681,13 +681,13 @@ func TestUnitLambdaStorageUpdateEdgeCases(t *testing.T) {
 
 	pb := ls.toProtobuf()
 	require.NotNil(t, pb)
-	converted := lambdaStorageSlotFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot)
+	converted := evmHookStorageSlotFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot)
 	assert.Equal(t, []byte{}, converted.GetKey())
 	assert.Equal(t, []byte{}, converted.GetValue())
 
 	// Test mapping entries with empty values
 	entry := NewEvmHookMappingEntryWithKey([]byte{}, []byte{})
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot([]byte{}).
 		AddMappingEntry(*entry)
 
@@ -696,12 +696,12 @@ func TestUnitLambdaStorageUpdateEdgeCases(t *testing.T) {
 
 	pb2 := mappingEntries.toProtobuf()
 	require.NotNil(t, pb2)
-	converted2 := lambdaMappingEntriesFromProtobuf(pb2.Update.(*services.EvmHookStorageUpdate_MappingEntries).MappingEntries)
+	converted2 := evmHookMappingEntriesFromProtobuf(pb2.Update.(*services.EvmHookStorageUpdate_MappingEntries).MappingEntries)
 	assert.Equal(t, []byte{}, converted2.GetMappingSlot())
 	assert.Len(t, converted2.GetMappingEntries(), 1)
 }
 
-func TestUnitLambdaStorageUpdateLargeData(t *testing.T) {
+func TestUnitEvmHookStorageUpdateLargeData(t *testing.T) {
 	t.Parallel()
 
 	// Test with large data
@@ -717,14 +717,14 @@ func TestUnitLambdaStorageUpdateLargeData(t *testing.T) {
 	// Test storage slot with large data
 	ls := NewEvmHookStorageSlot().SetKey(largeKey).SetValue(largeValue)
 	pb := ls.toProtobuf()
-	converted := lambdaStorageSlotFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot)
+	converted := evmHookStorageSlotFromProtobuf(pb.Update.(*services.EvmHookStorageUpdate_StorageSlot).StorageSlot)
 	assert.Equal(t, largeKey, converted.GetKey())
 	assert.Equal(t, largeValue, converted.GetValue())
 
 	// Test mapping entry with large data
 	entry := NewEvmHookMappingEntryWithKey(largeKey, largeValue)
 	pb2 := entry.toProtobuf()
-	converted2 := lambdaMappingEntryFromProtobuf(pb2)
+	converted2 := evmHookMappingEntryFromProtobuf(pb2)
 	assert.Equal(t, largeKey, converted2.GetKey())
 	assert.Equal(t, largeValue, converted2.GetValue())
 }

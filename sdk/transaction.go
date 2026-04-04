@@ -361,7 +361,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 	case *services.TransactionBody_AtomicBatch:
 		childTx = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
 	case *services.TransactionBody_HookStore:
-		childTx = lambdaSStoreTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*HookStoreTransaction](baseTx), first)
+		childTx = _HookStoreTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*HookStoreTransaction](baseTx), first)
 	default:
 		return nil, errFailedToDeserializeBytes
 	}

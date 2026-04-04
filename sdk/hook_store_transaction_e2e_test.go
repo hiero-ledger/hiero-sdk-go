@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
+func TestIntegrationHookStoreUpdatesStorageWithValidSignature(t *testing.T) {
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -25,14 +25,14 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 		SetKey([]byte{0x01}).
 		SetValue([]byte{0x01})
 
-	lambdaHook := NewEvmHook().
+	evmHook := NewEvmHook().
 		SetContractId(hookContractId).
 		AddStorageUpdate(initialSlot)
 
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(3).
-		SetEvmHook(*lambdaHook).
+		SetEvmHook(*evmHook).
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
@@ -67,10 +67,10 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 
 	newFrozenTxn, err := TransactionFromBytes(toBytes)
 	require.NoError(t, err)
-	lambdaSStoreTxn, ok := newFrozenTxn.(HookStoreTransaction)
+	hookStoreTxn, ok := newFrozenTxn.(HookStoreTransaction)
 	require.True(t, ok)
 	require.NoError(t, err)
-	resp, err = lambdaSStoreTxn.Execute(env.Client)
+	resp, err = hookStoreTxn.Execute(env.Client)
 	require.NoError(t, err)
 
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
@@ -78,7 +78,7 @@ func TestIntegrationLambdaSStoreUpdatesStorageWithValidSignature(t *testing.T) {
 	assert.Equal(t, StatusSuccess, receipt.Status)
 }
 
-func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
+func TestIntegrationHookStoreFailsWithoutProperSignature(t *testing.T) {
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -93,14 +93,14 @@ func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 		SetKey([]byte{0x01}).
 		SetValue([]byte{0x01})
 
-	lambdaHook := NewEvmHook().
+	evmHook := NewEvmHook().
 		SetContractId(hookContractId).
 		AddStorageUpdate(initialSlot)
 
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(3).
-		SetEvmHook(*lambdaHook).
+		SetEvmHook(*evmHook).
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
@@ -138,7 +138,7 @@ func TestIntegrationLambdaSStoreFailsWithoutProperSignature(t *testing.T) {
 	assert.Contains(t, err.Error(), "INVALID_SIGNATURE")
 }
 
-func TestIntegrationLambdaSStoreFailsWithNonExistentHookId(t *testing.T) {
+func TestIntegrationHookStoreFailsWithNonExistentHookId(t *testing.T) {
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -177,7 +177,7 @@ func TestIntegrationLambdaSStoreFailsWithNonExistentHookId(t *testing.T) {
 	assert.Contains(t, err.Error(), "HOOK_NOT_FOUND")
 }
 
-func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
+func TestIntegrationHookStoreTooManyStorageUpdatesFails(t *testing.T) {
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -188,13 +188,13 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 	accountKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	lambdaHook := NewEvmHook().
+	evmHook := NewEvmHook().
 		SetContractId(hookContractId)
 
 	hookDetails := NewHookCreationDetails().
 		SetExtensionPoint(ACCOUNT_ALLOWANCE_HOOK).
 		SetHookId(1).
-		SetEvmHook(*lambdaHook).
+		SetEvmHook(*evmHook).
 		SetAdminKey(accountKey.PublicKey())
 
 	resp, err := NewAccountCreateTransaction().
@@ -232,5 +232,5 @@ func TestIntegrationLambdaSStoreTooManyStorageUpdatesFails(t *testing.T) {
 
 	receipt, err = resp.GetReceipt(env.Client)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "TOO_MANY_LAMBDA_STORAGE_UPDATES")
+	assert.Contains(t, err.Error(), "TOO_MANY_EVM_HOOK_STORAGE_UPDATES")
 }

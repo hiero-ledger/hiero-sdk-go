@@ -268,7 +268,7 @@ func (tx *TransferTransaction) AddNftTransfer(nftID NftID, sender AccountID, rec
 }
 
 // Add an NFT transfer with optional sender/receiver allowance hooks.
-func (tx *TransferTransaction) AddNftTransferWitHook(nftID NftID, sender AccountID, receiver AccountID, senderHookCall *NftHookCall, receiverHookCall *NftHookCall) *TransferTransaction {
+func (tx *TransferTransaction) AddNftTransferWithHook(nftID NftID, sender AccountID, receiver AccountID, senderHookCall *NftHookCall, receiverHookCall *NftHookCall) *TransferTransaction {
 	return tx.addNftTransfer(nftID, sender, receiver, false, senderHookCall, receiverHookCall)
 }
 
