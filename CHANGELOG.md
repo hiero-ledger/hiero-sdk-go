@@ -1,3 +1,8 @@
+## v2.77.1
+
+### Fixed
+- Corrected function and type names from `lambda` to `hook`/`evm_hook` to match protobuf definitions [#1667](https://github.com/hiero-ledger/hiero-sdk-go/pull/1667)
+
 ## v2.77.0
 
 ### Fixed
