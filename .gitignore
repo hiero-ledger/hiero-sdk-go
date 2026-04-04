@@ -17,5 +17,7 @@ vendor/
 # Editors
 .idea
 .env
+.env.sh
+env.sh
 go.work
 .vscode/
