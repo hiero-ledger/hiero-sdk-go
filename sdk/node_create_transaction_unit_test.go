@@ -189,6 +189,7 @@ func TestUnitNodeCreateTransactionGet(t *testing.T) {
 	transaction.GetGossipCaCertificate()
 	transaction.GetGrpcCertificateHash()
 	transaction.GetAdminKey()
+	transaction.GetAssociatedRegisteredNodes()
 }
 
 func TestUnitNodeCreateTransactionSetNothing(t *testing.T) {
@@ -252,6 +253,8 @@ func TestUnitNodeCreateTransactionProtoCheck(t *testing.T) {
 		SetServiceEndpoints(serviceEndpoints).
 		SetGossipCaCertificate([]byte{111}).
 		SetGrpcCertificateHash([]byte{222}).
+		AddAssociatedRegisteredNode(1).
+		AddAssociatedRegisteredNode(2).
 		SetTransactionValidDuration(60 * time.Second).
 		Freeze()
 	require.NoError(t, err)
@@ -267,6 +270,7 @@ func TestUnitNodeCreateTransactionProtoCheck(t *testing.T) {
 	require.Equal(t, proto.GossipCaCertificate, []byte{111})
 	require.Equal(t, proto.GrpcCertificateHash, []byte{222})
 	require.Equal(t, proto.AdminKey, key._ToProtoKey())
+	require.Equal(t, []uint64{1, 2}, proto.AssociatedRegisteredNode)
 }
 
 func TestUnitNodeCreateTransactionCoverage(t *testing.T) {
@@ -329,6 +333,7 @@ func TestUnitNodeCreateTransactionCoverage(t *testing.T) {
 	trx.GetGossipCaCertificate()
 	trx.GetGrpcCertificateHash()
 	trx.GetAdminKey()
+	trx.GetAssociatedRegisteredNodes()
 	_, err = trx.GetSignatures()
 	require.NoError(t, err)
 	trx.getName()
