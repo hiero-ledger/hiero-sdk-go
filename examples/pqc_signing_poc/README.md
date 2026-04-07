@@ -107,6 +107,8 @@ go test ./examples/pqc_signing_poc/ -bench=BenchmarkKeyGen -benchmem
 5. **Network consensus**: Evaluate impact of larger signatures on gossip protocol throughput
 6. **HIP proposal**: Draft a Hedera Improvement Proposal for PQC support
 
+For a detailed breakdown of all ecosystem changes required, see [ECOSYSTEM_CHANGES.md](ECOSYSTEM_CHANGES.md).
+
 ## Dependencies
 
 - [`github.com/cloudflare/circl`](https://github.com/cloudflare/circl) — Cloudflare's cryptographic library implementing NIST post-quantum standards
