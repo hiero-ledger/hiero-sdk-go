@@ -88,13 +88,15 @@ func _KeyFromProtobuf(pbKey *services.Key) (Key, error) {
 }
 
 type PrivateKey struct {
-	ecdsaPrivateKey   *_ECDSAPrivateKey
-	ed25519PrivateKey *_Ed25519PrivateKey
+	ecdsaPrivateKey      *_ECDSAPrivateKey
+	ed25519PrivateKey    *_Ed25519PrivateKey
+	dilithiumPrivateKey  *_DilithiumPrivateKey // PQC POC: CRYSTALS-Dilithium Mode3 (ML-DSA-65)
 }
 
 type PublicKey struct {
-	ecdsaPublicKey   *_ECDSAPublicKey
-	ed25519PublicKey *_Ed25519PublicKey
+	ecdsaPublicKey      *_ECDSAPublicKey
+	ed25519PublicKey    *_Ed25519PublicKey
+	dilithiumPublicKey  *_DilithiumPublicKey // PQC POC: CRYSTALS-Dilithium Mode3 (ML-DSA-65)
 }
 
 /**
@@ -130,6 +132,19 @@ func PrivateKeyGenerateEd25519() (PrivateKey, error) {
 	}
 	return PrivateKey{
 		ed25519PrivateKey: key,
+	}, nil
+}
+
+// PrivateKeyGenerateDilithium generates a new CRYSTALS-Dilithium Mode3 (ML-DSA-65) key.
+// PQC POC: This is a post-quantum key type. The Hedera network does not yet accept
+// Dilithium signatures — this demonstrates SDK readiness for PQC adoption.
+func PrivateKeyGenerateDilithium() (PrivateKey, error) {
+	key, err := _GenerateDilithiumPrivateKey()
+	if err != nil {
+		return PrivateKey{}, err
+	}
+	return PrivateKey{
+		dilithiumPrivateKey: key,
 	}, nil
 }
 
@@ -193,6 +208,19 @@ func PrivateKeyFromBytesECDSA(bytes []byte) (PrivateKey, error) {
 	}, nil
 }
 
+// PrivateKeyFromBytesDilithium constructs a Dilithium Mode3 PrivateKey from raw bytes.
+// PQC POC: Post-quantum key type for demonstration purposes.
+func PrivateKeyFromBytesDilithium(bytes []byte) (PrivateKey, error) {
+	key, err := _DilithiumPrivateKeyFromBytes(bytes)
+	if err != nil {
+		return PrivateKey{}, err
+	}
+
+	return PrivateKey{
+		dilithiumPrivateKey: key,
+	}, nil
+}
+
 func PublicKeyFromBytesEd25519(bytes []byte) (PublicKey, error) {
 	key, err := _Ed25519PublicKeyFromBytes(bytes)
 	if err != nil {
@@ -212,6 +240,19 @@ func PublicKeyFromBytesECDSA(bytes []byte) (PublicKey, error) {
 
 	return PublicKey{
 		ecdsaPublicKey: key,
+	}, nil
+}
+
+// PublicKeyFromBytesDilithium constructs a Dilithium Mode3 PublicKey from raw bytes.
+// PQC POC: Post-quantum key type for demonstration purposes.
+func PublicKeyFromBytesDilithium(bytes []byte) (PublicKey, error) {
+	key, err := _DilithiumPublicKeyFromBytes(bytes)
+	if err != nil {
+		return PublicKey{}, err
+	}
+
+	return PublicKey{
+		dilithiumPublicKey: key,
 	}, nil
 }
 
@@ -546,6 +587,12 @@ func (sk PrivateKey) PublicKey() PublicKey {
 		}
 	}
 
+	if sk.dilithiumPrivateKey != nil {
+		return PublicKey{
+			dilithiumPublicKey: sk.dilithiumPrivateKey._PublicKey(),
+		}
+	}
+
 	return PublicKey{}
 }
 
@@ -575,6 +622,10 @@ func (sk PrivateKey) String() string {
 		return sk.ed25519PrivateKey._StringDer()
 	}
 
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._StringDer()
+	}
+
 	return ""
 }
 
@@ -585,6 +636,10 @@ func (sk PrivateKey) StringRaw() string {
 
 	if sk.ed25519PrivateKey != nil {
 		return sk.ed25519PrivateKey._StringRaw()
+	}
+
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._StringRaw()
 	}
 
 	return ""
@@ -599,6 +654,10 @@ func (sk PrivateKey) StringDer() string {
 		return sk.ed25519PrivateKey._StringDer()
 	}
 
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._StringDer()
+	}
+
 	return ""
 }
 
@@ -609,6 +668,10 @@ func (pk PublicKey) String() string {
 
 	if pk.ed25519PublicKey != nil {
 		return pk.ed25519PublicKey._StringDer()
+	}
+
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._StringDer()
 	}
 
 	return ""
@@ -623,6 +686,10 @@ func (pk PublicKey) StringDer() string {
 		return pk.ed25519PublicKey._StringDer()
 	}
 
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._StringDer()
+	}
+
 	return ""
 }
 
@@ -633,6 +700,10 @@ func (pk PublicKey) StringRaw() string {
 
 	if pk.ed25519PublicKey != nil {
 		return pk.ed25519PublicKey._StringRaw()
+	}
+
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._StringRaw()
 	}
 
 	return ""
@@ -670,6 +741,10 @@ func (sk PrivateKey) Bytes() []byte {
 		return sk.ed25519PrivateKey._BytesRaw()
 	}
 
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._BytesRaw()
+	}
+
 	return []byte{}
 }
 
@@ -682,6 +757,10 @@ func (sk PrivateKey) BytesDer() []byte {
 		return sk.ed25519PrivateKey._BytesDer()
 	}
 
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._BytesDer()
+	}
+
 	return []byte{}
 }
 
@@ -692,6 +771,10 @@ func (sk PrivateKey) BytesRaw() []byte {
 
 	if sk.ed25519PrivateKey != nil {
 		return sk.ed25519PrivateKey._BytesRaw()
+	}
+
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._BytesRaw()
 	}
 
 	return []byte{}
@@ -712,6 +795,10 @@ func (pk PublicKey) Bytes() []byte {
 		return pk.ed25519PublicKey._BytesRaw()
 	}
 
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._BytesRaw()
+	}
+
 	return []byte{}
 }
 
@@ -724,6 +811,10 @@ func (pk PublicKey) BytesRaw() []byte {
 		return pk.ed25519PublicKey._BytesRaw()
 	}
 
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._BytesRaw()
+	}
+
 	return []byte{}
 }
 
@@ -734,6 +825,10 @@ func (pk PublicKey) BytesDer() []byte {
 
 	if pk.ed25519PublicKey != nil {
 		return pk.ed25519PublicKey._BytesDer()
+	}
+
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._BytesDer()
 	}
 
 	return []byte{}
@@ -755,13 +850,16 @@ func (sk PrivateKey) WriteKeystore(destination io.Writer, passphrase string) err
 	return errors.New("only writing ed25519 keystore is supported right now")
 }
 
-// Sign signs the provided message with the Ed25519PrivateKey.
+// Sign signs the provided message with the PrivateKey.
 func (sk PrivateKey) Sign(message []byte) []byte {
 	if sk.ed25519PrivateKey != nil {
 		return sk.ed25519PrivateKey._Sign(message)
 	}
 	if sk.ecdsaPrivateKey != nil {
 		return sk.ecdsaPrivateKey._Sign(message)
+	}
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._Sign(message)
 	}
 
 	return []byte{}
@@ -839,6 +937,10 @@ func (sk PrivateKey) _ToProtoKey() *services.Key {
 		return sk.ed25519PrivateKey._ToProtoKey()
 	}
 
+	if sk.dilithiumPrivateKey != nil {
+		return sk.dilithiumPrivateKey._ToProtoKey()
+	}
+
 	return &services.Key{}
 }
 
@@ -849,6 +951,10 @@ func (pk PublicKey) _ToProtoKey() *services.Key {
 
 	if pk.ed25519PublicKey != nil {
 		return pk.ed25519PublicKey._ToProtoKey()
+	}
+
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._ToProtoKey()
 	}
 
 	return &services.Key{}
@@ -863,10 +969,14 @@ func (pk PublicKey) _ToSignaturePairProtobuf(signature []byte) *services.Signatu
 		return pk.ed25519PublicKey._ToSignaturePairProtobuf(signature)
 	}
 
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._ToSignaturePairProtobuf(signature)
+	}
+
 	return &services.SignaturePair{}
 }
 
-// SignTransaction signes the transaction and adds the signature to the transaction
+// SignTransaction signs the transaction and adds the signature to the transaction
 func (sk PrivateKey) SignTransaction(tx TransactionInterface) ([]byte, error) {
 	baseTx := tx.getBaseTransaction()
 
@@ -888,7 +998,16 @@ func (sk PrivateKey) SignTransaction(tx TransactionInterface) ([]byte, error) {
 		return b, nil
 	}
 
-	return []byte{}, errors.New("key type not supported, only ed25519 and ECDSASecp256K1 are supported right now")
+	if sk.dilithiumPrivateKey != nil {
+		b, err := sk.dilithiumPrivateKey._SignTransaction(baseTx)
+		if err != nil {
+			return []byte{}, err
+		}
+
+		return b, nil
+	}
+
+	return []byte{}, errors.New("key type not supported, only ed25519, ECDSASecp256K1, and Dilithium are supported")
 }
 
 // VerifySignedMessage reports whether signature is valid for the given message
@@ -899,6 +1018,10 @@ func (pk PublicKey) VerifySignedMessage(message []byte, signature []byte) bool {
 
 	if pk.ed25519PublicKey != nil {
 		return pk.ed25519PublicKey._VerifySignedMessage(message, signature)
+	}
+
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._VerifySignedMessage(message, signature)
 	}
 
 	return false
@@ -916,6 +1039,10 @@ func (pk PublicKey) Verify(message []byte, signature []byte) bool {
 		return pk.ed25519PublicKey._VerifySignedMessage(message, signature)
 	}
 
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._VerifySignedMessage(message, signature)
+	}
+
 	return false
 }
 
@@ -928,6 +1055,10 @@ func (pk PublicKey) VerifyTransaction(tx TransactionInterface) bool {
 
 	if pk.ed25519PublicKey != nil {
 		return pk.ed25519PublicKey._VerifyTransaction(baseTx)
+	}
+
+	if pk.dilithiumPublicKey != nil {
+		return pk.dilithiumPublicKey._VerifyTransaction(baseTx)
 	}
 
 	return false
