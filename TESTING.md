@@ -30,7 +30,7 @@ export HEDERA_NETWORK="testnet"  # or "localhost" for Solo
 go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
 
-See [env.sh.sample](env.sh.sample) for a template you can copy and source.
+See [.env.sample](.env.sample) for a template you can copy and source.
 
 ### Option 2: Using a Config File
 
