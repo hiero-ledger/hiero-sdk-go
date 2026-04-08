@@ -101,8 +101,8 @@ jobs:
               uses: hiero-ledger/hiero-solo-action@4d42a74e8e644a2753f3bb7a2afa429305375b14 # v0.17.0
               with:
                 installMirrorNode: true
-                hieroVersion: v0.70.0-rc.2
-                mirrorNodeVersion: v0.146.0
+                hieroVersion: v0.72.0
+                mirrorNodeVersion: v0.151.0
 
             - name: Set Operator Account
               if: success() && matrix.test-type == 'e2e'
