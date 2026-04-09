@@ -58,6 +58,7 @@ func assertComponentTotalsConsistent(t *testing.T, response FeeEstimateResponse)
 }
 
 func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -88,6 +89,7 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -114,6 +116,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -137,6 +140,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.
 }
 
 func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -162,6 +166,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *tes
 }
 
 func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -186,6 +191,7 @@ func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -211,6 +217,7 @@ func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -238,6 +245,7 @@ func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -264,6 +272,7 @@ func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -287,6 +296,7 @@ func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *tes
 }
 
 func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -310,6 +320,7 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) 
 }
 
 func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -333,6 +344,7 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T
 }
 
 func TestIntegrationFeeEstimateQueryWithoutTransactionThrowsError(t *testing.T) {
+	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
