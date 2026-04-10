@@ -85,7 +85,7 @@ Examples require the same environment setup as integration tests:
 # Using environment variables
 export OPERATOR_ID="0.0.YOUR_ACCOUNT_ID"
 export OPERATOR_KEY="YOUR_PRIVATE_KEY"
-
+export HEDERA_NETWORK="testnet"
 go run examples/create_account/main.go
 ```
 
