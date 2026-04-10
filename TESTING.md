@@ -92,4 +92,3 @@ export CONFIG_FILE="./path/to/config.json"
 
 go run examples/transfer_crypto/main.go
 ```
-
