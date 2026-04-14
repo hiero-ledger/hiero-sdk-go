@@ -43,13 +43,13 @@ func NewEthereumEIP2930Transaction(
 	}
 }
 
-// EthereumEIP2930TransactionFromBytes decodes the RLP encoded bytes into an EthereumEIP2930Transaction.
+// EthereumEIP2930TransactionFromBytes decodes signed EIP-2930 RLP bytes
+// (leading 0x01 prefix + list of 11 elements) into a transaction.
 func EthereumEIP2930TransactionFromBytes(bytes []byte) (*EthereumEIP2930Transaction, error) {
 	if len(bytes) == 0 || bytes[0] != 0x01 {
 		return nil, errors.New("input byte array is malformed; it should start with 0x01 followed by 11 RLP-encoded elements")
 	}
 
-	// Remove the prefix byte (0x01)
 	item := NewRLPItem(LIST_TYPE)
 	if err := item.Read(bytes[1:]); err != nil {
 		return nil, errors.Wrap(err, "failed to read RLP data")
@@ -59,13 +59,11 @@ func EthereumEIP2930TransactionFromBytes(bytes []byte) (*EthereumEIP2930Transact
 		return nil, errors.New("input byte array is malformed; it should be a list of 11 RLP-encoded elements")
 	}
 
-	// Handle the access list
 	var accessListValues [][]byte
 	for _, child := range item.childItems[7].childItems {
 		accessListValues = append(accessListValues, child.itemValue)
 	}
 
-	// Extract values from the RLP item
 	return NewEthereumEIP2930Transaction(
 		item.childItems[0].itemValue,
 		item.childItems[1].itemValue,
@@ -81,8 +79,8 @@ func EthereumEIP2930TransactionFromBytes(bytes []byte) (*EthereumEIP2930Transact
 	), nil
 }
 
-// ToBytes encodes the EthereumEIP2930Transaction into RLP format.
-func (txn *EthereumEIP2930Transaction) ToBytes() ([]byte, error) {
+// _toUnsignedRLP builds the unsigned portion of the EIP-2930 RLP list
+func (txn *EthereumEIP2930Transaction) _toUnsignedRLP() *RLPItem {
 	item := NewRLPItem(LIST_TYPE)
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.ChainId))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.Nonce))
@@ -96,23 +94,60 @@ func (txn *EthereumEIP2930Transaction) ToBytes() ([]byte, error) {
 		accessListItem.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(itemBytes))
 	}
 	item.PushBack(accessListItem)
+	return item
+}
+
+// _encodeWithSignature appends RecoveryId/R/S to the given (already-built)
+// unsigned RLP list, serializes it, and prepends the 0x01 type prefix.
+func (txn *EthereumEIP2930Transaction) _encodeWithSignature(item *RLPItem) ([]byte, error) {
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.RecoveryId))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.R))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.S))
-
-	transactionBytes, err := item.Write()
+	bytes, err := item.Write()
 	if err != nil {
 		return nil, err
 	}
-	// Append 01 byte as it is the standard for EIP-2930
-	combinedBytes := append([]byte{0x01}, transactionBytes...)
 
-	return combinedBytes, nil
+	// Append 01 byte as it is the standard for EIP2930
+	return append([]byte{0x01}, bytes...), nil
+}
+
+// ToBytes encodes the EthereumEIP2930Transaction into RLP format.
+func (txn *EthereumEIP2930Transaction) ToBytes() ([]byte, error) {
+	return txn._encodeWithSignature(txn._toUnsignedRLP())
+}
+
+// Sign signs the unsigned transaction with the given ECDSA key, populates
+// RecoveryId/R/S on the receiver, and returns the signed RLP bytes ready to
+// wrap in EthereumTransaction.
+func (txn *EthereumEIP2930Transaction) Sign(key PrivateKey) ([]byte, error) {
+	item := txn._toUnsignedRLP()
+	unsignedBytes, err := item.Write()
+	if err != nil {
+		return nil, err
+	}
+	message := append([]byte{0x01}, unsignedBytes...)
+
+	sig := key.Sign(message)
+	if len(sig) < 64 {
+		return nil, errors.New("signing produced an invalid signature; expected an ECDSA key")
+	}
+	r := sig[0:32]
+	s := sig[32:64]
+	v := key.GetRecoveryId(r, s, message)
+	if v < 0 {
+		return nil, errors.New("unable to compute recovery id; expected an ECDSA key")
+	}
+
+	txn.R = r
+	txn.S = s
+	txn.RecoveryId = []byte{byte(v)}
+
+	return txn._encodeWithSignature(item)
 }
 
 // String returns a string representation of the EthereumEIP2930Transaction.
 func (txn *EthereumEIP2930Transaction) String() string {
-	// Encode each element in the AccessList slice individually
 	var encodedAccessList []string
 	for _, entry := range txn.AccessList {
 		encodedAccessList = append(encodedAccessList, hex.EncodeToString(entry))
