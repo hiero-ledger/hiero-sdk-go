@@ -23,60 +23,11 @@ the Protobufs definitions for the protocol are available in the [hashgraph/heder
 $ go get github.com/hiero-ledger/hiero-sdk-go/v2@latest
 ```
 
-### Running Tests
+### Environment Setup
 
-# Integration
+To run examples or integration tests, you need Hiero network credentials. Copy [.env.sample](.env.sample) to `.env`, fill in your account details from the [Hedera Portal](https://portal.hedera.com/), then run `source .env` to export the variables.
 
-Integration tests require a running Hiero network. You can use [Solo](https://solo.hiero.org) to spin up a local development network.
-Solo is a CLI tool for running a local Hiero network for development and testing. For setup instructions, see the [Solo documentation](https://solo.hiero.org) or the [solo repository](https://github.com/hiero-ledger/solo).
-
-```bash
-$ env CONFIG_FILE="<your_config_file>" go test ./sdk -tags="e2e" -v -timeout 9999s
-```
-
-or
-
-```bash
-$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go test ./sdk -tags="e2e" -timeout 9999s
-```
-
-# Unit
-
-```bash
-$ go test ./sdk -tags="unit" -v -timeout 9999s
-```
-
-The config file _can_ contain both the network and the operator, but you can also
-use environment variables `OPERATOR_KEY` and `OPERATOR_ID`. If both are provided
-the network is used from the config file, but for the operator the environment variables
-take precedence. If the config file is not provided then the network will default to [Hiero testnet](https://docs.hedera.com/hedera/getting-started/introduction)
-and `OPERATOR_KEY` and `OPERATOR_ID` **must** be provided.
-
-[Example Config File](./client-config-with-operator.json)
-
-### Running Examples
-
-Examples use the same environment as the integration tests: a running Hiero network (e.g. [Solo](https://solo.hiero.org)) and either a config file or `OPERATOR_KEY` and `OPERATOR_ID` environment variables.
-
-Run any example with:
-
-```bash
-$ env CONFIG_FILE="<your_config_file>" go run examples/<example-path>
-```
-
-or
-
-```bash
-$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go run examples/<example-path>
-```
-
-For example:
-
-```bash
-$ env CONFIG_FILE="<your_config_file>" go run examples/create_account/main.go
-$ env OPERATOR_KEY="<key>" OPERATOR_ID="<id>" go run examples/transfer_crypto/main.go
-$ env CONFIG_FILE="<your_config_file>" go run examples/hooks/hook_store/main.go
-```
+See [TESTING.md](TESTING.md) for detailed instructions on running tests and examples.
 
 ### Linting
 
