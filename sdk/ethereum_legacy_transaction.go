@@ -38,7 +38,8 @@ func NewEthereumLegacyTransaction(nonce, gasPrice, gasLimit, to, value, callData
 	}
 }
 
-// FromBytes decodes the RLP encoded bytes into an EthereumLegacyTransaction.
+// EthereumLegacyTransactionFromBytes decodes a signed legacy transaction
+// (RLP list of 9 elements, no type prefix).
 func EthereumLegacyTransactionFromBytes(bytes []byte) (*EthereumLegacyTransaction, error) {
 	item := NewRLPItem(LIST_TYPE)
 	if err := item.Read(bytes); err != nil {
@@ -53,7 +54,6 @@ func EthereumLegacyTransactionFromBytes(bytes []byte) (*EthereumLegacyTransactio
 		return nil, errors.New("input byte array does not contain 9 RLP-encoded elements")
 	}
 
-	// Extract the values from the RLP item
 	return NewEthereumLegacyTransaction(
 		item.childItems[0].itemValue,
 		item.childItems[1].itemValue,
@@ -67,8 +67,8 @@ func EthereumLegacyTransactionFromBytes(bytes []byte) (*EthereumLegacyTransactio
 	), nil
 }
 
-// ToBytes encodes the EthereumLegacyTransaction into RLP format.
-func (txn *EthereumLegacyTransaction) ToBytes() ([]byte, error) {
+// _toUnsignedRLP builds the unsigned portion of the legacy RLP list
+func (txn *EthereumLegacyTransaction) _toUnsignedRLP() *RLPItem {
 	item := NewRLPItem(LIST_TYPE)
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.Nonce))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.GasPrice))
@@ -76,11 +76,48 @@ func (txn *EthereumLegacyTransaction) ToBytes() ([]byte, error) {
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.To))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.Value))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.CallData))
+	return item
+}
+
+// _encodeWithSignature appends V/R/S to the given unsigned RLP list
+// and serializes it. Legacy has no type prefix.
+func (txn *EthereumLegacyTransaction) _encodeWithSignature(item *RLPItem) ([]byte, error) {
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.V))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.R))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.S))
-
 	return item.Write()
+}
+
+// ToBytes encodes the EthereumLegacyTransaction into RLP format.
+func (txn *EthereumLegacyTransaction) ToBytes() ([]byte, error) {
+	return txn._encodeWithSignature(txn._toUnsignedRLP())
+}
+
+// Sign signs the transaction with the given ECDSA key, populates V/R/S on
+// the receiver, and returns the signed RLP bytes.
+func (txn *EthereumLegacyTransaction) Sign(key PrivateKey) ([]byte, error) {
+	item := txn._toUnsignedRLP()
+	message, err := item.Write()
+	if err != nil {
+		return nil, err
+	}
+
+	sig := key.Sign(message)
+	if len(sig) < 64 {
+		return nil, errors.New("signing produced an invalid signature; expected an ECDSA key")
+	}
+	r := sig[0:32]
+	s := sig[32:64]
+	v := key.GetRecoveryId(r, s, message)
+	if v < 0 {
+		return nil, errors.New("unable to compute recovery id; expected an ECDSA key")
+	}
+
+	txn.R = r
+	txn.S = s
+	txn.V = []byte{byte(27 + v)}
+
+	return txn._encodeWithSignature(item)
 }
 
 // String returns a string representation of the EthereumLegacyTransaction.
