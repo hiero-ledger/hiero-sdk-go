@@ -6,7 +6,7 @@ import (
 
 // SPDX-License-Identifier: Apache-2.0
 
-// Definition of a lambda EVM hook.
+// Definition of an EVM hook.
 type EvmHook struct {
 	evmHookSpec
 	storageUpdates []EvmHookStorageUpdate
@@ -45,14 +45,14 @@ func (leh *EvmHook) AddStorageUpdate(storageUpdate EvmHookStorageUpdate) *EvmHoo
 	return leh
 }
 
-func lambdaEvmHookFromProtobuf(pb *services.EvmHook) EvmHook {
+func evmHookFromProtobuf(pb *services.EvmHook) EvmHook {
 	body := EvmHook{
 		evmHookSpec: evmHookSpecFromProtobuf(pb.GetSpec()),
 	}
 
 	var storageUpdates []EvmHookStorageUpdate
 	for _, storageUpdate := range pb.GetStorageUpdates() {
-		storageUpdates = append(storageUpdates, lambdaStorageUpdateFromProtobuf(storageUpdate))
+		storageUpdates = append(storageUpdates, evmHookStorageUpdateFromProtobuf(storageUpdate))
 	}
 	body.storageUpdates = storageUpdates
 	return body

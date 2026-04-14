@@ -16,7 +16,7 @@ const (
 type HookCreationDetails struct {
 	extensionPoint HookExtensionPoint
 	hookId         int64
-	lambdaEvmHook  EvmHook
+	evmHook  EvmHook
 	adminKey       Key
 }
 
@@ -47,14 +47,14 @@ func (hcd *HookCreationDetails) SetHookId(hookId int64) *HookCreationDetails {
 	return hcd
 }
 
-// GetLambdaEvmHook returns the lambda EVM hook
-func (hcd HookCreationDetails) GetLambdaEvmHook() EvmHook {
-	return hcd.lambdaEvmHook
+// GetEvmHook returns the EVM hook
+func (hcd HookCreationDetails) GetEvmHook() EvmHook {
+	return hcd.evmHook
 }
 
-// SetEvmHook sets the lambda EVM hook
-func (hcd *HookCreationDetails) SetEvmHook(lambdaEvmHook EvmHook) *HookCreationDetails {
-	hcd.lambdaEvmHook = lambdaEvmHook
+// SetEvmHook sets the EVM hook
+func (hcd *HookCreationDetails) SetEvmHook(evmHook EvmHook) *HookCreationDetails {
+	hcd.evmHook = evmHook
 	return hcd
 }
 
@@ -77,7 +77,7 @@ func hookCreationDetailsFromProtobuf(pb *services.HookCreationDetails) HookCreat
 	return HookCreationDetails{
 		extensionPoint: HookExtensionPoint(pb.GetExtensionPoint()),
 		hookId:         pb.GetHookId(),
-		lambdaEvmHook:  lambdaEvmHookFromProtobuf(pb.GetEvmHook()),
+		evmHook:  evmHookFromProtobuf(pb.GetEvmHook()),
 		adminKey:       key,
 	}
 }
@@ -92,7 +92,7 @@ func (hcd HookCreationDetails) toProtobuf() *services.HookCreationDetails {
 		ExtensionPoint: services.HookExtensionPoint(hcd.extensionPoint),
 		HookId:         hcd.hookId,
 		Hook: &services.HookCreationDetails_EvmHook{
-			EvmHook: hcd.lambdaEvmHook.toProtobuf(),
+			EvmHook: hcd.evmHook.toProtobuf(),
 		},
 		AdminKey: adminKey,
 	}

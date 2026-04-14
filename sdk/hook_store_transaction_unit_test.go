@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitLambdaSStoreTransactionNew(t *testing.T) {
+func TestUnitHookStoreTransactionNew(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -24,7 +24,7 @@ func TestUnitLambdaSStoreTransactionNew(t *testing.T) {
 	assert.Empty(t, tx.storageUpdates)
 }
 
-func TestUnitLambdaSStoreTransactionSetHookId(t *testing.T) {
+func TestUnitHookStoreTransactionSetHookId(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -40,7 +40,7 @@ func TestUnitLambdaSStoreTransactionSetHookId(t *testing.T) {
 	assert.Equal(t, *hookId, tx.GetHookId())
 }
 
-func TestUnitLambdaSStoreTransactionSetHookIdChaining(t *testing.T) {
+func TestUnitHookStoreTransactionSetHookIdChaining(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -58,7 +58,7 @@ func TestUnitLambdaSStoreTransactionSetHookIdChaining(t *testing.T) {
 	assert.Equal(t, *hookId2, tx.GetHookId())
 }
 
-func TestUnitLambdaSStoreTransactionAddStorageUpdate(t *testing.T) {
+func TestUnitHookStoreTransactionAddStorageUpdate(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -74,7 +74,7 @@ func TestUnitLambdaSStoreTransactionAddStorageUpdate(t *testing.T) {
 	assert.Equal(t, storageSlot, updates[0])
 }
 
-func TestUnitLambdaSStoreTransactionAddMultipleStorageUpdates(t *testing.T) {
+func TestUnitHookStoreTransactionAddMultipleStorageUpdates(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -95,7 +95,7 @@ func TestUnitLambdaSStoreTransactionAddMultipleStorageUpdates(t *testing.T) {
 	assert.Equal(t, storageSlot2, updates[1])
 }
 
-func TestUnitLambdaSStoreTransactionSetStorageUpdates(t *testing.T) {
+func TestUnitHookStoreTransactionSetStorageUpdates(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -117,7 +117,7 @@ func TestUnitLambdaSStoreTransactionSetStorageUpdates(t *testing.T) {
 	assert.Equal(t, storageSlot2, result[1])
 }
 
-func TestUnitLambdaSStoreTransactionSetStorageUpdatesEmpty(t *testing.T) {
+func TestUnitHookStoreTransactionSetStorageUpdatesEmpty(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -132,13 +132,13 @@ func TestUnitLambdaSStoreTransactionSetStorageUpdatesEmpty(t *testing.T) {
 	assert.Empty(t, result)
 }
 
-func TestUnitLambdaSStoreTransactionAddMappingEntries(t *testing.T) {
+func TestUnitHookStoreTransactionAddMappingEntries(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
 
 	mappingEntry := NewEvmHookMappingEntryWithKey([]byte{0x01}, []byte{0x02})
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot([]byte{0x03}).
 		AddMappingEntry(*mappingEntry)
 
@@ -149,7 +149,7 @@ func TestUnitLambdaSStoreTransactionAddMappingEntries(t *testing.T) {
 	assert.Equal(t, mappingEntries, updates[0])
 }
 
-func TestUnitLambdaSStoreTransactionGetName(t *testing.T) {
+func TestUnitHookStoreTransactionGetName(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -157,7 +157,7 @@ func TestUnitLambdaSStoreTransactionGetName(t *testing.T) {
 	assert.Equal(t, "HookStoreTransaction", tx.getName())
 }
 
-func TestUnitLambdaSStoreTransactionValidateNetworkOnIDs(t *testing.T) {
+func TestUnitHookStoreTransactionValidateNetworkOnIDs(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
@@ -177,7 +177,7 @@ func TestUnitLambdaSStoreTransactionValidateNetworkOnIDs(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestUnitLambdaSStoreTransactionValidateNetworkOnIDsWrongChecksum(t *testing.T) {
+func TestUnitHookStoreTransactionValidateNetworkOnIDsWrongChecksum(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
@@ -198,7 +198,7 @@ func TestUnitLambdaSStoreTransactionValidateNetworkOnIDsWrongChecksum(t *testing
 	assert.Contains(t, err.Error(), "network mismatch or wrong checksum given")
 }
 
-func TestUnitLambdaSStoreTransactionValidateNetworkOnIDsNilClient(t *testing.T) {
+func TestUnitHookStoreTransactionValidateNetworkOnIDsNilClient(t *testing.T) {
 	t.Parallel()
 
 	contractID, err := ContractIDFromString("0.0.123-quros")
@@ -213,7 +213,7 @@ func TestUnitLambdaSStoreTransactionValidateNetworkOnIDsNilClient(t *testing.T) 
 	require.NoError(t, err)
 }
 
-func TestUnitLambdaSStoreTransactionValidateNetworkOnIDsDisabledChecksumValidation(t *testing.T) {
+func TestUnitHookStoreTransactionValidateNetworkOnIDsDisabledChecksumValidation(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
@@ -233,7 +233,7 @@ func TestUnitLambdaSStoreTransactionValidateNetworkOnIDsDisabledChecksumValidati
 	require.NoError(t, err)
 }
 
-func TestUnitLambdaSStoreTransactionBuildProtoBody(t *testing.T) {
+func TestUnitHookStoreTransactionBuildProtoBody(t *testing.T) {
 	t.Parallel()
 
 	contractID, err := ContractIDFromString("0.0.123")
@@ -263,7 +263,7 @@ func TestUnitLambdaSStoreTransactionBuildProtoBody(t *testing.T) {
 	assert.Equal(t, []byte{0x03, 0x04}, protoBody.StorageUpdates[0].GetStorageSlot().Value)
 }
 
-func TestUnitLambdaSStoreTransactionBuildProtoBodyWithMappingEntries(t *testing.T) {
+func TestUnitHookStoreTransactionBuildProtoBodyWithMappingEntries(t *testing.T) {
 	t.Parallel()
 
 	contractID, err := ContractIDFromString("0.0.123")
@@ -273,7 +273,7 @@ func TestUnitLambdaSStoreTransactionBuildProtoBodyWithMappingEntries(t *testing.
 	hookId := NewHookId(*entityId, 456)
 
 	mappingEntry := NewEvmHookMappingEntryWithKey([]byte{0x01}, []byte{0x02})
-	mappingEntries := NewLambdaMappingEntries().
+	mappingEntries := NewEvmHookMappingEntries().
 		SetMappingSlot([]byte{0x03}).
 		AddMappingEntry(*mappingEntry)
 
@@ -296,7 +296,7 @@ func TestUnitLambdaSStoreTransactionBuildProtoBodyWithMappingEntries(t *testing.
 	assert.Equal(t, []byte{0x02}, protoBody.StorageUpdates[0].GetMappingEntries().Entries[0].Value)
 }
 
-func TestUnitLambdaSStoreTransactionBuild(t *testing.T) {
+func TestUnitHookStoreTransactionBuild(t *testing.T) {
 	t.Parallel()
 
 	contractID, err := ContractIDFromString("0.0.123")
@@ -325,12 +325,12 @@ func TestUnitLambdaSStoreTransactionBuild(t *testing.T) {
 	assert.NotNil(t, protoBody.TransactionID)
 
 	require.NotNil(t, protoBody.GetHookStore())
-	lambdaSstore := protoBody.GetHookStore()
-	assert.NotNil(t, lambdaSstore.HookId)
-	assert.Len(t, lambdaSstore.StorageUpdates, 1)
+	hookStoreBody := protoBody.GetHookStore()
+	assert.NotNil(t, hookStoreBody.HookId)
+	assert.Len(t, hookStoreBody.StorageUpdates, 1)
 }
 
-func TestUnitLambdaSStoreTransactionBuildScheduled(t *testing.T) {
+func TestUnitHookStoreTransactionBuildScheduled(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -342,7 +342,7 @@ func TestUnitLambdaSStoreTransactionBuildScheduled(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot schedule `HookStoreTransaction`")
 }
 
-func TestUnitLambdaSStoreTransactionConstructScheduleProtobuf(t *testing.T) {
+func TestUnitHookStoreTransactionConstructScheduleProtobuf(t *testing.T) {
 	t.Parallel()
 
 	tx := NewHookStoreTransaction()
@@ -354,7 +354,7 @@ func TestUnitLambdaSStoreTransactionConstructScheduleProtobuf(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot schedule `HookStoreTransaction`")
 }
 
-func TestUnitLambdaSStoreTransactionFromProtobuf(t *testing.T) {
+func TestUnitHookStoreTransactionFromProtobuf(t *testing.T) {
 	t.Parallel()
 
 	contractID := &services.ContractID{
@@ -378,19 +378,19 @@ func TestUnitLambdaSStoreTransactionFromProtobuf(t *testing.T) {
 		},
 	}
 
-	lambdaSstore := &services.HookStoreTransactionBody{
+	hookStoreBody := &services.HookStoreTransactionBody{
 		HookId:         hookId,
 		StorageUpdates: []*services.EvmHookStorageUpdate{storageUpdate},
 	}
 
 	pbBody := &services.TransactionBody{
 		Data: &services.TransactionBody_HookStore{
-			HookStore: lambdaSstore,
+			HookStore: hookStoreBody,
 		},
 	}
 
 	baseTx := Transaction[*HookStoreTransaction]{}
-	result := lambdaSStoreTransactionFromProtobuf(baseTx, pbBody)
+	result := _HookStoreTransactionFromProtobuf(baseTx, pbBody)
 
 	assert.Equal(t, int64(456), result.hookId.GetHookId())
 	assert.Equal(t, uint64(123), result.hookId.GetEntityId().GetContractId().Contract)
@@ -401,7 +401,7 @@ func TestUnitLambdaSStoreTransactionFromProtobuf(t *testing.T) {
 	assert.Equal(t, []byte{0x03, 0x04}, storageSlotResult.GetValue())
 }
 
-func TestUnitLambdaSStoreTransactionFromProtobufWithMappingEntries(t *testing.T) {
+func TestUnitHookStoreTransactionFromProtobufWithMappingEntries(t *testing.T) {
 	t.Parallel()
 
 	contractID := &services.ContractID{
@@ -430,19 +430,19 @@ func TestUnitLambdaSStoreTransactionFromProtobufWithMappingEntries(t *testing.T)
 		},
 	}
 
-	lambdaSstore := &services.HookStoreTransactionBody{
+	hookStoreBody := &services.HookStoreTransactionBody{
 		HookId:         hookId,
 		StorageUpdates: []*services.EvmHookStorageUpdate{storageUpdate},
 	}
 
 	pbBody := &services.TransactionBody{
 		Data: &services.TransactionBody_HookStore{
-			HookStore: lambdaSstore,
+			HookStore: hookStoreBody,
 		},
 	}
 
 	baseTx := Transaction[*HookStoreTransaction]{}
-	result := lambdaSStoreTransactionFromProtobuf(baseTx, pbBody)
+	result := _HookStoreTransactionFromProtobuf(baseTx, pbBody)
 
 	assert.Equal(t, int64(456), result.hookId.GetHookId())
 	assert.Equal(t, uint64(123), result.hookId.GetEntityId().GetContractId().Contract)
@@ -455,22 +455,22 @@ func TestUnitLambdaSStoreTransactionFromProtobufWithMappingEntries(t *testing.T)
 	assert.Equal(t, []byte{0x02}, mappingEntriesResult.GetMappingEntries()[0].GetValue())
 }
 
-func TestUnitLambdaSStoreTransactionFromProtobufEmpty(t *testing.T) {
+func TestUnitHookStoreTransactionFromProtobufEmpty(t *testing.T) {
 	t.Parallel()
 
-	lambdaSstore := &services.HookStoreTransactionBody{
+	hookStoreBody := &services.HookStoreTransactionBody{
 		HookId:         &services.HookId{},
 		StorageUpdates: []*services.EvmHookStorageUpdate{},
 	}
 
 	pbBody := &services.TransactionBody{
 		Data: &services.TransactionBody_HookStore{
-			HookStore: lambdaSstore,
+			HookStore: hookStoreBody,
 		},
 	}
 
 	baseTx := Transaction[*HookStoreTransaction]{}
-	result := lambdaSStoreTransactionFromProtobuf(baseTx, pbBody)
+	result := _HookStoreTransactionFromProtobuf(baseTx, pbBody)
 
 	assert.Equal(t, HookId{}, result.hookId)
 	assert.Empty(t, result.storageUpdates)

@@ -109,7 +109,7 @@ func TestUnitTransferTransactionAddNftTransferWithHook(t *testing.T) {
 	receiverHookCall := NewNftHookCall(4, evmCall, PRE_HOOK_RECEIVER)
 
 	transaction := NewTransferTransaction().
-		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
+		AddNftTransferWithHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
 
 	require.NotNil(t, transaction)
 	require.Equal(t, 1, len(transaction.nftTransfers))
@@ -145,7 +145,7 @@ func TestUnitTransferTransactionValidateNftTransferWithHooksWrongSenderChecksum(
 	nftID := tokenID.Nft(1)
 
 	transaction := NewTransferTransaction().
-		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, nil)
+		AddNftTransferWithHook(nftID, sender, receiver, senderHookCall, nil)
 
 	err = transaction.validateNetworkOnIDs(client)
 	require.Error(t, err)
@@ -612,7 +612,7 @@ func TestUnitTransferTransactionAddNftTransferWithHookProtobuf(t *testing.T) {
 	receiverHookCall := NewNftHookCall(9, evmCall, PRE_HOOK_RECEIVER)
 
 	transaction := NewTransferTransaction().
-		AddNftTransferWitHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
+		AddNftTransferWithHook(nftID, sender, receiver, senderHookCall, receiverHookCall)
 
 	body := transaction.buildProtoBody()
 
@@ -832,7 +832,7 @@ func TestUnitTransferTransactionHookAndApprovalMutuallyExclusiveNft(t *testing.T
 
 	// Add NFT transfer with hook
 	txWithHook := NewTransferTransaction().
-		AddNftTransferWitHook(nftID1, sender, receiver, senderHookCall, nil)
+		AddNftTransferWithHook(nftID1, sender, receiver, senderHookCall, nil)
 
 	bodyWithHook := txWithHook.buildProtoBody()
 	require.NotNil(t, bodyWithHook.TokenTransfers[0].NftTransfers[0].SenderAllowanceHookCall)

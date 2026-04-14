@@ -188,7 +188,7 @@ func transferNftWithPreHook(client *hiero.Client, senderAccountId *hiero.Account
 	hookCall := hiero.NewNftHookCall(1, *hiero.NewEvmHookCall().SetData([]byte{}).SetGasLimit(25000), hiero.PRE_HOOK_SENDER)
 	fmt.Println("Executing NFT transfer transaction...")
 	response, err = hiero.NewTransferTransaction().
-		AddNftTransferWitHook(tokenId.Nft(serialNumbers[0]), *senderAccountId, *receiverAccountId, hookCall, nil).
+		AddNftTransferWithHook(tokenId.Nft(serialNumbers[0]), *senderAccountId, *receiverAccountId, hookCall, nil).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating transfer transaction", err))
