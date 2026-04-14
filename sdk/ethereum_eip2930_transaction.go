@@ -98,19 +98,10 @@ func (txn *EthereumEIP2930Transaction) _toUnsignedRLP() *RLPItem {
 	return item
 }
 
-// _encodeWithSignature appends RecoveryId/R/S to the given (already-built)
-// unsigned RLP list, serializes it, and prepends the 0x01 type prefix.
+// _encodeWithSignature appends the signature to the unsigned RLP list and
+// prepends the 0x01 EIP-2930 type prefix.
 func (txn *EthereumEIP2930Transaction) _encodeWithSignature(item *RLPItem) ([]byte, error) {
-	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.RecoveryId))
-	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.R))
-	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.S))
-	bytes, err := item.Write()
-	if err != nil {
-		return nil, err
-	}
-
-	// Append 01 byte as it is the standard for EIP2930
-	return append([]byte{0x01}, bytes...), nil
+	return _encodeTypedWithSignature(item, 0x01, txn.RecoveryId, txn.R, txn.S)
 }
 
 // ToBytes encodes the EthereumEIP2930Transaction into RLP format.
@@ -123,27 +114,13 @@ func (txn *EthereumEIP2930Transaction) ToBytes() ([]byte, error) {
 // wrap in EthereumTransaction.
 func (txn *EthereumEIP2930Transaction) Sign(key PrivateKey) ([]byte, error) {
 	item := txn._toUnsignedRLP()
-	unsignedBytes, err := item.Write()
+	r, s, v, err := _signTypedTransaction(item, 0x01, key)
 	if err != nil {
 		return nil, err
 	}
-	message := append([]byte{0x01}, unsignedBytes...)
-
-	sig := key.Sign(message)
-	if len(sig) < 64 {
-		return nil, errors.New("signing produced an invalid signature; expected an ECDSA key")
-	}
-	r := sig[0:32]
-	s := sig[32:64]
-	v := key.GetRecoveryId(r, s, message)
-	if v < 0 {
-		return nil, errors.New("unable to compute recovery id; expected an ECDSA key")
-	}
-
 	txn.R = r
 	txn.S = s
 	txn.RecoveryId = []byte{byte(v)}
-
 	return txn._encodeWithSignature(item)
 }
 

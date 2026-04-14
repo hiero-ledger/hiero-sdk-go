@@ -167,3 +167,39 @@ func (ethereumTxData *EthereumTransactionData) SetData(data []byte) *EthereumTra
 	ethereumTxData.legacy.CallData = data
 	return ethereumTxData
 }
+
+// _signTypedTransaction serializes the unsigned RLP list with the given
+// type prefix, signs it with key, and returns the signature components.
+// Shared by the three typed variants (EIP-1559, EIP-2930, EIP-7702).
+func _signTypedTransaction(item *RLPItem, prefix byte, key PrivateKey) (r, s []byte, recoveryId int, err error) {
+	unsignedBytes, err := item.Write()
+	if err != nil {
+		return nil, nil, 0, err
+	}
+	message := append([]byte{prefix}, unsignedBytes...)
+
+	sig := key.Sign(message)
+	if len(sig) < 64 {
+		return nil, nil, 0, errors.New("signing produced an invalid signature; expected an ECDSA key")
+	}
+	r = sig[0:32]
+	s = sig[32:64]
+	recoveryId = key.GetRecoveryId(r, s, message)
+	if recoveryId < 0 {
+		return nil, nil, 0, errors.New("unable to compute recovery id; expected an ECDSA key")
+	}
+	return r, s, recoveryId, nil
+}
+
+// _encodeTypedWithSignature appends RecoveryId/R/S to item, serializes it,
+// and prepends the type prefix.
+func _encodeTypedWithSignature(item *RLPItem, prefix byte, recoveryId, r, s []byte) ([]byte, error) {
+	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(recoveryId))
+	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(r))
+	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(s))
+	bytes, err := item.Write()
+	if err != nil {
+		return nil, err
+	}
+	return append([]byte{prefix}, bytes...), nil
+}
