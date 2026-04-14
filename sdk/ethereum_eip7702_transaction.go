@@ -110,8 +110,8 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 	), nil
 }
 
-// ToBytes encodes the EthereumEIP7702Transaction into RLP format.
-func (txn *EthereumEIP7702Transaction) ToBytes() ([]byte, error) {
+// _toUnsignedRLP builds the unsigned portion of the EIP-7702 RLP list
+func (txn *EthereumEIP7702Transaction) _toUnsignedRLP() *RLPItem {
 	item := NewRLPItem(LIST_TYPE)
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.ChainId))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.Nonce))
@@ -136,6 +136,12 @@ func (txn *EthereumEIP7702Transaction) ToBytes() ([]byte, error) {
 		authorizationListItem.PushBack(authTupleItem)
 	}
 	item.PushBack(authorizationListItem)
+	return item
+}
+
+// _encodeWithSignature appends RecoveryId/R/S to the given (already-built)
+// unsigned RLP list, serializes it, and prepends the 0x04 type prefix.
+func (txn *EthereumEIP7702Transaction) _encodeWithSignature(item *RLPItem) ([]byte, error) {
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.RecoveryId))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.R))
 	item.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(txn.S))
@@ -144,10 +150,44 @@ func (txn *EthereumEIP7702Transaction) ToBytes() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Append 04 byte as it is the standard for EIP7702
-	combinedBytes := append([]byte{0x04}, transactionBytes...)
 
-	return combinedBytes, nil
+	// Append 04 byte as it is the standard for EIP7702
+	return append([]byte{0x04}, transactionBytes...), nil
+}
+
+// ToBytes encodes the EthereumEIP7702Transaction into RLP format.
+func (txn *EthereumEIP7702Transaction) ToBytes() ([]byte, error) {
+	return txn._encodeWithSignature(txn._toUnsignedRLP())
+}
+
+// Sign signs the unsigned transaction with the given ECDSA key, populates
+// RecoveryId/R/S on the receiver, and returns the signed RLP bytes ready to
+// wrap in EthereumTransaction. AuthorizationList entries are expected to
+// already carry their own signatures (yParity, r, s) per the EIP-7702 spec.
+func (txn *EthereumEIP7702Transaction) Sign(key PrivateKey) ([]byte, error) {
+	item := txn._toUnsignedRLP()
+	unsignedBytes, err := item.Write()
+	if err != nil {
+		return nil, err
+	}
+	message := append([]byte{0x04}, unsignedBytes...)
+
+	sig := key.Sign(message)
+	if len(sig) < 64 {
+		return nil, errors.New("signing produced an invalid signature; expected an ECDSA key")
+	}
+	r := sig[0:32]
+	s := sig[32:64]
+	v := key.GetRecoveryId(r, s, message)
+	if v < 0 {
+		return nil, errors.New("unable to compute recovery id; expected an ECDSA key")
+	}
+
+	txn.R = r
+	txn.S = s
+	txn.RecoveryId = []byte{byte(v)}
+
+	return txn._encodeWithSignature(item)
 }
 
 // String returns a string representation of the EthereumEIP7702Transaction.
