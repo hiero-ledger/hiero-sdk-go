@@ -5,6 +5,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -227,4 +228,221 @@ func (txn *EthereumEIP7702Transaction) String() string {
 		hex.EncodeToString(txn.R),
 		hex.EncodeToString(txn.S),
 	)
+}
+
+// GetChainId returns the chain id as a uint64.
+func (txn *EthereumEIP7702Transaction) GetChainId() uint64 {
+	return _ethBytesToUint64(txn.ChainId)
+}
+
+// SetChainId sets the chain id from a uint64.
+func (txn *EthereumEIP7702Transaction) SetChainId(v uint64) *EthereumEIP7702Transaction {
+	txn.ChainId = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetChainIdBytes returns the raw canonical big-endian chain id bytes.
+func (txn *EthereumEIP7702Transaction) GetChainIdBytes() []byte { return txn.ChainId }
+
+// SetChainIdBytes sets the chain id from raw canonical big-endian bytes.
+func (txn *EthereumEIP7702Transaction) SetChainIdBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.ChainId = v
+	return txn
+}
+
+// GetNonce returns the nonce as a uint64.
+func (txn *EthereumEIP7702Transaction) GetNonce() uint64 {
+	return _ethBytesToUint64(txn.Nonce)
+}
+
+// SetNonce sets the nonce from a uint64.
+func (txn *EthereumEIP7702Transaction) SetNonce(v uint64) *EthereumEIP7702Transaction {
+	txn.Nonce = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetNonceBytes returns the raw canonical big-endian nonce bytes.
+func (txn *EthereumEIP7702Transaction) GetNonceBytes() []byte { return txn.Nonce }
+
+// SetNonceBytes sets the nonce from raw canonical big-endian bytes.
+func (txn *EthereumEIP7702Transaction) SetNonceBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.Nonce = v
+	return txn
+}
+
+// GetMaxPriorityGas returns the max priority fee per gas as a *big.Int.
+func (txn *EthereumEIP7702Transaction) GetMaxPriorityGas() *big.Int {
+	return _ethBytesToBigInt(txn.MaxPriorityGas)
+}
+
+// SetMaxPriorityGas sets the max priority fee per gas from a *big.Int.
+func (txn *EthereumEIP7702Transaction) SetMaxPriorityGas(v *big.Int) *EthereumEIP7702Transaction {
+	txn.MaxPriorityGas = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetMaxPriorityGasBytes returns the raw canonical big-endian max priority fee bytes.
+func (txn *EthereumEIP7702Transaction) GetMaxPriorityGasBytes() []byte { return txn.MaxPriorityGas }
+
+// SetMaxPriorityGasBytes sets the max priority fee per gas from raw bytes.
+func (txn *EthereumEIP7702Transaction) SetMaxPriorityGasBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.MaxPriorityGas = v
+	return txn
+}
+
+// GetMaxGas returns the max fee per gas as a *big.Int.
+func (txn *EthereumEIP7702Transaction) GetMaxGas() *big.Int {
+	return _ethBytesToBigInt(txn.MaxGas)
+}
+
+// SetMaxGas sets the max fee per gas from a *big.Int.
+func (txn *EthereumEIP7702Transaction) SetMaxGas(v *big.Int) *EthereumEIP7702Transaction {
+	txn.MaxGas = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetMaxGasBytes returns the raw canonical big-endian max fee bytes.
+func (txn *EthereumEIP7702Transaction) GetMaxGasBytes() []byte { return txn.MaxGas }
+
+// SetMaxGasBytes sets the max fee per gas from raw bytes.
+func (txn *EthereumEIP7702Transaction) SetMaxGasBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.MaxGas = v
+	return txn
+}
+
+// GetGasLimit returns the gas limit as a uint64.
+func (txn *EthereumEIP7702Transaction) GetGasLimit() uint64 {
+	return _ethBytesToUint64(txn.GasLimit)
+}
+
+// SetGasLimit sets the gas limit from a uint64.
+func (txn *EthereumEIP7702Transaction) SetGasLimit(v uint64) *EthereumEIP7702Transaction {
+	txn.GasLimit = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetGasLimitBytes returns the raw canonical big-endian gas limit bytes.
+func (txn *EthereumEIP7702Transaction) GetGasLimitBytes() []byte { return txn.GasLimit }
+
+// SetGasLimitBytes sets the gas limit from raw bytes.
+func (txn *EthereumEIP7702Transaction) SetGasLimitBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.GasLimit = v
+	return txn
+}
+
+// GetTo returns the recipient address bytes.
+func (txn *EthereumEIP7702Transaction) GetTo() []byte { return txn.To }
+
+// SetTo sets the recipient address bytes.
+func (txn *EthereumEIP7702Transaction) SetTo(v []byte) *EthereumEIP7702Transaction {
+	txn.To = v
+	return txn
+}
+
+// GetValue returns the transaction value (wei) as a *big.Int.
+func (txn *EthereumEIP7702Transaction) GetValue() *big.Int {
+	return _ethBytesToBigInt(txn.Value)
+}
+
+// SetValue sets the transaction value (wei) from a *big.Int.
+func (txn *EthereumEIP7702Transaction) SetValue(v *big.Int) *EthereumEIP7702Transaction {
+	txn.Value = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetValueBytes returns the raw canonical big-endian value bytes.
+func (txn *EthereumEIP7702Transaction) GetValueBytes() []byte { return txn.Value }
+
+// SetValueBytes sets the value from raw bytes.
+func (txn *EthereumEIP7702Transaction) SetValueBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.Value = v
+	return txn
+}
+
+// GetCallData returns the call data.
+func (txn *EthereumEIP7702Transaction) GetCallData() []byte { return txn.CallData }
+
+// SetCallData sets the call data.
+func (txn *EthereumEIP7702Transaction) SetCallData(v []byte) *EthereumEIP7702Transaction {
+	txn.CallData = v
+	return txn
+}
+
+// GetRecoveryId returns the recovery id as an int.
+func (txn *EthereumEIP7702Transaction) GetRecoveryId() int {
+	if len(txn.RecoveryId) == 0 {
+		return 0
+	}
+	return int(txn.RecoveryId[0])
+}
+
+// SetRecoveryId sets the recovery id from an int.
+func (txn *EthereumEIP7702Transaction) SetRecoveryId(v int) *EthereumEIP7702Transaction {
+	if v == 0 {
+		txn.RecoveryId = []byte{}
+	} else {
+		txn.RecoveryId = []byte{byte(v)}
+	}
+	return txn
+}
+
+// GetRecoveryIdBytes returns the raw recovery id bytes.
+func (txn *EthereumEIP7702Transaction) GetRecoveryIdBytes() []byte { return txn.RecoveryId }
+
+// SetRecoveryIdBytes sets the recovery id from raw bytes.
+func (txn *EthereumEIP7702Transaction) SetRecoveryIdBytes(v []byte) *EthereumEIP7702Transaction {
+	txn.RecoveryId = v
+	return txn
+}
+
+// GetR returns the R signature component.
+func (txn *EthereumEIP7702Transaction) GetR() []byte { return txn.R }
+
+// SetR sets the R signature component.
+func (txn *EthereumEIP7702Transaction) SetR(v []byte) *EthereumEIP7702Transaction {
+	txn.R = v
+	return txn
+}
+
+// GetS returns the S signature component.
+func (txn *EthereumEIP7702Transaction) GetS() []byte { return txn.S }
+
+// SetS sets the S signature component.
+func (txn *EthereumEIP7702Transaction) SetS(v []byte) *EthereumEIP7702Transaction {
+	txn.S = v
+	return txn
+}
+
+// GetAccessListItems returns the access list as structured AccessListItem entries.
+func (txn *EthereumEIP7702Transaction) GetAccessListItems() []AccessListItem {
+	return _accessListItemsFromBytes(txn.AccessList)
+}
+
+// SetAccessListItems replaces the access list from structured AccessListItem entries.
+func (txn *EthereumEIP7702Transaction) SetAccessListItems(items []AccessListItem) *EthereumEIP7702Transaction {
+	txn.AccessList = _accessListItemsToBytes(items)
+	return txn
+}
+
+// AddAccessListItem appends a single access list entry.
+func (txn *EthereumEIP7702Transaction) AddAccessListItem(item AccessListItem) *EthereumEIP7702Transaction {
+	txn.AccessList = append(txn.AccessList, _accessListItemToBytes(item))
+	return txn
+}
+
+// GetAuthorizationList returns the EIP-7702 authorization list.
+func (txn *EthereumEIP7702Transaction) GetAuthorizationList() []AuthorizationTuple {
+	return txn.AuthorizationList
+}
+
+// SetAuthorizationList replaces the EIP-7702 authorization list.
+func (txn *EthereumEIP7702Transaction) SetAuthorizationList(list []AuthorizationTuple) *EthereumEIP7702Transaction {
+	txn.AuthorizationList = list
+	return txn
+}
+
+// AddAuthorization appends a single authorization tuple to the list.
+func (txn *EthereumEIP7702Transaction) AddAuthorization(tuple AuthorizationTuple) *EthereumEIP7702Transaction {
+	txn.AuthorizationList = append(txn.AuthorizationList, tuple)
+	return txn
 }
