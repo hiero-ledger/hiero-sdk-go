@@ -5,6 +5,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -168,4 +169,184 @@ func (txn *EthereumEIP2930Transaction) String() string {
 		hex.EncodeToString(txn.R),
 		hex.EncodeToString(txn.S),
 	)
+}
+
+// GetChainId returns the chain id as a uint64.
+func (txn *EthereumEIP2930Transaction) GetChainId() uint64 {
+	return _ethBytesToUint64(txn.ChainId)
+}
+
+// SetChainId sets the chain id from a uint64.
+func (txn *EthereumEIP2930Transaction) SetChainId(v uint64) *EthereumEIP2930Transaction {
+	txn.ChainId = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetChainIdBytes returns the raw canonical big-endian chain id bytes.
+func (txn *EthereumEIP2930Transaction) GetChainIdBytes() []byte { return txn.ChainId }
+
+// SetChainIdBytes sets the chain id from raw canonical big-endian bytes.
+func (txn *EthereumEIP2930Transaction) SetChainIdBytes(v []byte) *EthereumEIP2930Transaction {
+	txn.ChainId = v
+	return txn
+}
+
+// GetNonce returns the nonce as a uint64.
+func (txn *EthereumEIP2930Transaction) GetNonce() uint64 {
+	return _ethBytesToUint64(txn.Nonce)
+}
+
+// SetNonce sets the nonce from a uint64.
+func (txn *EthereumEIP2930Transaction) SetNonce(v uint64) *EthereumEIP2930Transaction {
+	txn.Nonce = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetNonceBytes returns the raw canonical big-endian nonce bytes.
+func (txn *EthereumEIP2930Transaction) GetNonceBytes() []byte { return txn.Nonce }
+
+// SetNonceBytes sets the nonce from raw canonical big-endian bytes.
+func (txn *EthereumEIP2930Transaction) SetNonceBytes(v []byte) *EthereumEIP2930Transaction {
+	txn.Nonce = v
+	return txn
+}
+
+// GetGasPrice returns the gas price as a *big.Int.
+func (txn *EthereumEIP2930Transaction) GetGasPrice() *big.Int {
+	return _ethBytesToBigInt(txn.GasPrice)
+}
+
+// SetGasPrice sets the gas price from a *big.Int.
+func (txn *EthereumEIP2930Transaction) SetGasPrice(v *big.Int) *EthereumEIP2930Transaction {
+	txn.GasPrice = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetGasPriceBytes returns the raw canonical big-endian gas price bytes.
+func (txn *EthereumEIP2930Transaction) GetGasPriceBytes() []byte { return txn.GasPrice }
+
+// SetGasPriceBytes sets the gas price from raw bytes.
+func (txn *EthereumEIP2930Transaction) SetGasPriceBytes(v []byte) *EthereumEIP2930Transaction {
+	txn.GasPrice = v
+	return txn
+}
+
+// GetGasLimit returns the gas limit as a uint64.
+func (txn *EthereumEIP2930Transaction) GetGasLimit() uint64 {
+	return _ethBytesToUint64(txn.GasLimit)
+}
+
+// SetGasLimit sets the gas limit from a uint64.
+func (txn *EthereumEIP2930Transaction) SetGasLimit(v uint64) *EthereumEIP2930Transaction {
+	txn.GasLimit = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetGasLimitBytes returns the raw canonical big-endian gas limit bytes.
+func (txn *EthereumEIP2930Transaction) GetGasLimitBytes() []byte { return txn.GasLimit }
+
+// SetGasLimitBytes sets the gas limit from raw bytes.
+func (txn *EthereumEIP2930Transaction) SetGasLimitBytes(v []byte) *EthereumEIP2930Transaction {
+	txn.GasLimit = v
+	return txn
+}
+
+// GetTo returns the recipient address bytes.
+func (txn *EthereumEIP2930Transaction) GetTo() []byte { return txn.To }
+
+// SetTo sets the recipient address bytes.
+func (txn *EthereumEIP2930Transaction) SetTo(v []byte) *EthereumEIP2930Transaction {
+	txn.To = v
+	return txn
+}
+
+// GetValue returns the transaction value (wei) as a *big.Int.
+func (txn *EthereumEIP2930Transaction) GetValue() *big.Int {
+	return _ethBytesToBigInt(txn.Value)
+}
+
+// SetValue sets the transaction value (wei) from a *big.Int.
+func (txn *EthereumEIP2930Transaction) SetValue(v *big.Int) *EthereumEIP2930Transaction {
+	txn.Value = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetValueBytes returns the raw canonical big-endian value bytes.
+func (txn *EthereumEIP2930Transaction) GetValueBytes() []byte { return txn.Value }
+
+// SetValueBytes sets the value from raw bytes.
+func (txn *EthereumEIP2930Transaction) SetValueBytes(v []byte) *EthereumEIP2930Transaction {
+	txn.Value = v
+	return txn
+}
+
+// GetCallData returns the call data.
+func (txn *EthereumEIP2930Transaction) GetCallData() []byte { return txn.CallData }
+
+// SetCallData sets the call data.
+func (txn *EthereumEIP2930Transaction) SetCallData(v []byte) *EthereumEIP2930Transaction {
+	txn.CallData = v
+	return txn
+}
+
+// GetRecoveryId returns the recovery id as an int.
+func (txn *EthereumEIP2930Transaction) GetRecoveryId() int {
+	if len(txn.RecoveryId) == 0 {
+		return 0
+	}
+	return int(txn.RecoveryId[0])
+}
+
+// SetRecoveryId sets the recovery id from an int.
+func (txn *EthereumEIP2930Transaction) SetRecoveryId(v int) *EthereumEIP2930Transaction {
+	if v == 0 {
+		txn.RecoveryId = []byte{}
+	} else {
+		txn.RecoveryId = []byte{byte(v)}
+	}
+	return txn
+}
+
+// GetRecoveryIdBytes returns the raw recovery id bytes.
+func (txn *EthereumEIP2930Transaction) GetRecoveryIdBytes() []byte { return txn.RecoveryId }
+
+// SetRecoveryIdBytes sets the recovery id from raw bytes.
+func (txn *EthereumEIP2930Transaction) SetRecoveryIdBytes(v []byte) *EthereumEIP2930Transaction {
+	txn.RecoveryId = v
+	return txn
+}
+
+// GetR returns the R signature component.
+func (txn *EthereumEIP2930Transaction) GetR() []byte { return txn.R }
+
+// SetR sets the R signature component.
+func (txn *EthereumEIP2930Transaction) SetR(v []byte) *EthereumEIP2930Transaction {
+	txn.R = v
+	return txn
+}
+
+// GetS returns the S signature component.
+func (txn *EthereumEIP2930Transaction) GetS() []byte { return txn.S }
+
+// SetS sets the S signature component.
+func (txn *EthereumEIP2930Transaction) SetS(v []byte) *EthereumEIP2930Transaction {
+	txn.S = v
+	return txn
+}
+
+// GetAccessListItems returns the access list as structured AccessListItem entries.
+func (txn *EthereumEIP2930Transaction) GetAccessListItems() []AccessListItem {
+	return _accessListItemsFromBytes(txn.AccessList)
+}
+
+// SetAccessListItems replaces the access list from structured AccessListItem entries.
+func (txn *EthereumEIP2930Transaction) SetAccessListItems(items []AccessListItem) *EthereumEIP2930Transaction {
+	txn.AccessList = _accessListItemsToBytes(items)
+	return txn
+}
+
+// AddAccessListItem appends a single access list entry.
+func (txn *EthereumEIP2930Transaction) AddAccessListItem(item AccessListItem) *EthereumEIP2930Transaction {
+	txn.AccessList = append(txn.AccessList, _accessListItemToBytes(item))
+	return txn
 }
