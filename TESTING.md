@@ -30,11 +30,14 @@ export HEDERA_NETWORK="testnet"  # or "localhost" for Solo
 go test ./sdk -tags="e2e" -v -timeout 9999s
 ```
 
-See [.env.sample](.env.sample) for a template. Copy it to `.env` and fill in your values, then:
+See [.env.sample](.env.sample) for a template. Copy it to `.env` (gitignored) and fill in your values, then:
 
 ```bash
 source .env
 go test ./sdk -tags="e2e" -v -timeout 9999s
+```
+
+**Tip:** The `source .env` command only needs to be run once per terminal session. The variables remain available until you close the terminal. If you modify the `.env` file, run `source .env` again to apply the changes.
 
 ### Option 2: Using a Config File
 
