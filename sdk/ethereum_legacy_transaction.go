@@ -5,6 +5,7 @@ package hiero
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 
 	"github.com/pkg/errors"
 )
@@ -133,4 +134,140 @@ func (txn *EthereumLegacyTransaction) String() string {
 		hex.EncodeToString(txn.R),
 		hex.EncodeToString(txn.S),
 	)
+}
+
+// GetNonce returns the nonce as a uint64.
+func (txn *EthereumLegacyTransaction) GetNonce() uint64 {
+	return _ethBytesToUint64(txn.Nonce)
+}
+
+// SetNonce sets the nonce from a uint64.
+func (txn *EthereumLegacyTransaction) SetNonce(v uint64) *EthereumLegacyTransaction {
+	txn.Nonce = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetNonceBytes returns the raw canonical big-endian nonce bytes.
+func (txn *EthereumLegacyTransaction) GetNonceBytes() []byte { return txn.Nonce }
+
+// SetNonceBytes sets the nonce from raw canonical big-endian bytes.
+func (txn *EthereumLegacyTransaction) SetNonceBytes(v []byte) *EthereumLegacyTransaction {
+	txn.Nonce = v
+	return txn
+}
+
+// GetGasPrice returns the gas price as a *big.Int.
+func (txn *EthereumLegacyTransaction) GetGasPrice() *big.Int {
+	return _ethBytesToBigInt(txn.GasPrice)
+}
+
+// SetGasPrice sets the gas price from a *big.Int.
+func (txn *EthereumLegacyTransaction) SetGasPrice(v *big.Int) *EthereumLegacyTransaction {
+	txn.GasPrice = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetGasPriceBytes returns the raw canonical big-endian gas price bytes.
+func (txn *EthereumLegacyTransaction) GetGasPriceBytes() []byte { return txn.GasPrice }
+
+// SetGasPriceBytes sets the gas price from raw bytes.
+func (txn *EthereumLegacyTransaction) SetGasPriceBytes(v []byte) *EthereumLegacyTransaction {
+	txn.GasPrice = v
+	return txn
+}
+
+// GetGasLimit returns the gas limit as a uint64.
+func (txn *EthereumLegacyTransaction) GetGasLimit() uint64 {
+	return _ethBytesToUint64(txn.GasLimit)
+}
+
+// SetGasLimit sets the gas limit from a uint64.
+func (txn *EthereumLegacyTransaction) SetGasLimit(v uint64) *EthereumLegacyTransaction {
+	txn.GasLimit = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetGasLimitBytes returns the raw canonical big-endian gas limit bytes.
+func (txn *EthereumLegacyTransaction) GetGasLimitBytes() []byte { return txn.GasLimit }
+
+// SetGasLimitBytes sets the gas limit from raw bytes.
+func (txn *EthereumLegacyTransaction) SetGasLimitBytes(v []byte) *EthereumLegacyTransaction {
+	txn.GasLimit = v
+	return txn
+}
+
+// GetTo returns the recipient address bytes.
+func (txn *EthereumLegacyTransaction) GetTo() []byte { return txn.To }
+
+// SetTo sets the recipient address bytes.
+func (txn *EthereumLegacyTransaction) SetTo(v []byte) *EthereumLegacyTransaction {
+	txn.To = v
+	return txn
+}
+
+// GetValue returns the transaction value (wei) as a *big.Int.
+func (txn *EthereumLegacyTransaction) GetValue() *big.Int {
+	return _ethBytesToBigInt(txn.Value)
+}
+
+// SetValue sets the transaction value (wei) from a *big.Int.
+func (txn *EthereumLegacyTransaction) SetValue(v *big.Int) *EthereumLegacyTransaction {
+	txn.Value = _bigIntToEthBytes(v)
+	return txn
+}
+
+// GetValueBytes returns the raw canonical big-endian value bytes.
+func (txn *EthereumLegacyTransaction) GetValueBytes() []byte { return txn.Value }
+
+// SetValueBytes sets the value from raw bytes.
+func (txn *EthereumLegacyTransaction) SetValueBytes(v []byte) *EthereumLegacyTransaction {
+	txn.Value = v
+	return txn
+}
+
+// GetCallData returns the call data.
+func (txn *EthereumLegacyTransaction) GetCallData() []byte { return txn.CallData }
+
+// SetCallData sets the call data.
+func (txn *EthereumLegacyTransaction) SetCallData(v []byte) *EthereumLegacyTransaction {
+	txn.CallData = v
+	return txn
+}
+
+// GetV returns V as a uint64.
+func (txn *EthereumLegacyTransaction) GetV() uint64 {
+	return _ethBytesToUint64(txn.V)
+}
+
+// SetV sets V from a uint64.
+func (txn *EthereumLegacyTransaction) SetV(v uint64) *EthereumLegacyTransaction {
+	txn.V = _uint64ToEthBytes(v)
+	return txn
+}
+
+// GetVBytes returns the raw V bytes.
+func (txn *EthereumLegacyTransaction) GetVBytes() []byte { return txn.V }
+
+// SetVBytes sets V from raw bytes.
+func (txn *EthereumLegacyTransaction) SetVBytes(v []byte) *EthereumLegacyTransaction {
+	txn.V = v
+	return txn
+}
+
+// GetR returns the R signature component.
+func (txn *EthereumLegacyTransaction) GetR() []byte { return txn.R }
+
+// SetR sets the R signature component.
+func (txn *EthereumLegacyTransaction) SetR(v []byte) *EthereumLegacyTransaction {
+	txn.R = v
+	return txn
+}
+
+// GetS returns the S signature component.
+func (txn *EthereumLegacyTransaction) GetS() []byte { return txn.S }
+
+// SetS sets the S signature component.
+func (txn *EthereumLegacyTransaction) SetS(v []byte) *EthereumLegacyTransaction {
+	txn.S = v
+	return txn
 }
