@@ -1,3 +1,12 @@
+## v2.78.0
+
+### Added
+- `TESTING.md` with instructions for running unit and e2e tests, and `.env.sample` documenting required environment variables for tests/examples [#1635](https://github.com/hiero-ledger/hiero-sdk-go/pull/1635)
+
+### Changed
+- Update protobufs from `hiero-services` to v0.72.0, bump `mirrorNodeVersion` to v0.151.0 and `soloVersion` to v0.68.0 [#1673](https://github.com/hiero-ledger/hiero-sdk-go/pull/1673)
+- Use `slices.Backward` (Go 1.23) to simplify reverse-iteration loops [#1675](https://github.com/hiero-ledger/hiero-sdk-go/pull/1675)
+
 ## v2.77.1
 
 ### Fixed
