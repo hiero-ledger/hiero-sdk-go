@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"math"
 	"math/big"
+	"slices"
 	"sync"
 	"time"
 )
@@ -275,8 +276,8 @@ func (mn *_ManagedNetwork) _SetTransportSecurity(transportSecurity bool) (err er
 func _GetNodesToRemove(network map[string]_IManagedNode, nodes []_IManagedNode) []int {
 	nodeIndices := []int{}
 
-	for i := len(nodes) - 1; i >= 0; i-- {
-		if _, ok := network[nodes[i]._GetKey()]; !ok {
+	for i, v := range slices.Backward(nodes) {
+		if _, ok := network[v._GetKey()]; !ok {
 			nodeIndices = append(nodeIndices, i)
 		}
 	}
