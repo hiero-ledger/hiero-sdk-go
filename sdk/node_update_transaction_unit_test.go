@@ -160,6 +160,7 @@ func TestUnitNodeUpdateTransactionGet(t *testing.T) {
 	transaction.GetGrpcCertificateHash()
 	transaction.GetAdminKey()
 	transaction.GetNodeID()
+	transaction.GetAssociatedRegisteredNodes()
 }
 
 func TestUnitNodeUpdateTransactionSetNothing(t *testing.T) {
@@ -226,6 +227,7 @@ func TestUnitNodeUpdateTransactionProtoCheck(t *testing.T) {
 		SetServiceEndpoints(serviceEndpoints).
 		SetGossipCaCertificate([]byte{111}).
 		SetGrpcCertificateHash([]byte{222}).
+		SetAssociatedRegisteredNodes([]uint64{1, 2}).
 		SetTransactionValidDuration(60 * time.Second).
 		Freeze()
 	require.NoError(t, err)
@@ -242,6 +244,8 @@ func TestUnitNodeUpdateTransactionProtoCheck(t *testing.T) {
 	require.Equal(t, proto.GrpcCertificateHash.Value, []byte{222})
 	require.Equal(t, proto.AdminKey, key._ToProtoKey())
 	require.Equal(t, proto.NodeId, uint64(1))
+	require.NotNil(t, proto.AssociatedRegisteredNodeList)
+	require.Equal(t, []uint64{1, 2}, proto.AssociatedRegisteredNodeList.AssociatedRegisteredNode)
 }
 
 func TestUnitNodeUpdateTransactionCoverage(t *testing.T) {
@@ -306,6 +310,7 @@ func TestUnitNodeUpdateTransactionCoverage(t *testing.T) {
 	trx.GetGrpcCertificateHash()
 	trx.GetAdminKey()
 	trx.GetNodeID()
+	trx.GetAssociatedRegisteredNodes()
 	_, err = trx.GetSignatures()
 	require.NoError(t, err)
 	trx.getName()
@@ -437,4 +442,48 @@ func TestUnitNodeUpdateTransactionFailsWenNodeIDIsNotSet(t *testing.T) {
 
 	require.Error(t, err)
 	assert.ErrorIs(t, errNodeIdIsRequired, err)
+}
+
+func TestUnitNodeUpdateTransactionAssociatedRegisteredNodesRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	// Populated state
+	tx := NewNodeUpdateTransaction().
+		SetNodeID(1).
+		SetAssociatedRegisteredNodes([]uint64{3, 4, 5})
+
+	body := tx.buildProtoBody()
+	pbBody := &services.TransactionBody{
+		Data: &services.TransactionBody_NodeUpdate{
+			NodeUpdate: body,
+		},
+	}
+	restored := _NodeUpdateTransactionFromProtobuf(*tx.Transaction, pbBody)
+	assert.NotNil(t, restored.GetAssociatedRegisteredNodes())
+	assert.Equal(t, []uint64{3, 4, 5}, *restored.GetAssociatedRegisteredNodes())
+
+	// Empty state (clear)
+	tx2 := NewNodeUpdateTransaction().SetNodeID(1)
+	tx2.ClearAssociatedRegisteredNodes()
+
+	body2 := tx2.buildProtoBody()
+	pbBody2 := &services.TransactionBody{
+		Data: &services.TransactionBody_NodeUpdate{
+			NodeUpdate: body2,
+		},
+	}
+	restored2 := _NodeUpdateTransactionFromProtobuf(*tx2.Transaction, pbBody2)
+	assert.NotNil(t, restored2.GetAssociatedRegisteredNodes())
+	assert.Empty(t, *restored2.GetAssociatedRegisteredNodes())
+
+	// Nil state (preserve)
+	tx3 := NewNodeUpdateTransaction().SetNodeID(1)
+	body3 := tx3.buildProtoBody()
+	pbBody3 := &services.TransactionBody{
+		Data: &services.TransactionBody_NodeUpdate{
+			NodeUpdate: body3,
+		},
+	}
+	restored3 := _NodeUpdateTransactionFromProtobuf(*tx3.Transaction, pbBody3)
+	assert.Nil(t, restored3.GetAssociatedRegisteredNodes())
 }

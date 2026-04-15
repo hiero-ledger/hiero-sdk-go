@@ -1,0 +1,78 @@
+package hiero
+
+// SPDX-License-Identifier: Apache-2.0
+
+import (
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+)
+
+// BlockNodeServiceEndpoint a registered service endpoint for a block node.
+// Extends the base registered endpoint with the specific block node API
+// that the endpoint exposes.
+type BlockNodeServiceEndpoint struct {
+	registeredEndpointBase
+	endpointApi BlockNodeApi
+}
+
+// SetIPAddress sets the IP address for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetIPAddress(ip []byte) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetIPAddress(ip)
+	return e
+}
+
+// SetDomainName sets the domain name for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetDomainName(name string) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetDomainName(name)
+	return e
+}
+
+// SetPort sets the port number for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetPort(port uint32) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetPort(port)
+	return e
+}
+
+// SetRequiresTls sets whether this endpoint requires TLS.
+func (e *BlockNodeServiceEndpoint) SetRequiresTls(tls bool) *BlockNodeServiceEndpoint {
+	e.registeredEndpointBase.SetRequiresTls(tls)
+	return e
+}
+
+// SetEndpointApi sets the block node API kind for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetEndpointApi(api BlockNodeApi) *BlockNodeServiceEndpoint {
+	e.endpointApi = api
+	return e
+}
+
+// GetEndpointApi returns the block node API kind for this endpoint.
+func (e *BlockNodeServiceEndpoint) GetEndpointApi() BlockNodeApi {
+	return e.endpointApi
+}
+
+// _ToProtobuf converts this BlockNodeServiceEndpoint to its protobuf representation.
+func (e *BlockNodeServiceEndpoint) _ToProtobuf() *services.RegisteredServiceEndpoint {
+	pb := &services.RegisteredServiceEndpoint{
+		Port:        e.port,
+		RequiresTls: e.requiresTls,
+		EndpointType: &services.RegisteredServiceEndpoint_BlockNode{
+			BlockNode: &services.RegisteredServiceEndpoint_BlockNodeEndpoint{
+				EndpointApi: services.RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi(e.endpointApi),
+			},
+		},
+	}
+	e.addressToProtobuf(pb)
+	return pb
+}
+
+// _BlockNodeServiceEndpointFromProtobuf converts a protobuf RegisteredServiceEndpoint to a BlockNodeServiceEndpoint.
+func _BlockNodeServiceEndpointFromProtobuf(pb *services.RegisteredServiceEndpoint) *BlockNodeServiceEndpoint {
+	endpoint := &BlockNodeServiceEndpoint{
+		registeredEndpointBase: baseFromProtobuf(pb),
+	}
+
+	if bn, ok := pb.EndpointType.(*services.RegisteredServiceEndpoint_BlockNode); ok && bn.BlockNode != nil {
+		endpoint.endpointApi = BlockNodeApi(bn.BlockNode.GetEndpointApi())
+	}
+
+	return endpoint
+}
