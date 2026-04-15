@@ -1,4 +1,4 @@
-## v2.78.0
+## v2.78.1
 
 ### Added
 - `TESTING.md` with instructions for running unit and e2e tests, and `.env.sample` documenting required environment variables for tests/examples [#1635](https://github.com/hiero-ledger/hiero-sdk-go/pull/1635)
