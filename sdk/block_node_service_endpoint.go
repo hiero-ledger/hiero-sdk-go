@@ -11,7 +11,7 @@ import (
 // that the endpoint exposes.
 type BlockNodeServiceEndpoint struct {
 	registeredEndpointBase
-	endpointApi BlockNodeApi
+	endpointApis []BlockNodeApi
 }
 
 // SetIPAddress sets the IP address for this endpoint.
@@ -38,25 +38,36 @@ func (e *BlockNodeServiceEndpoint) SetRequiresTls(tls bool) *BlockNodeServiceEnd
 	return e
 }
 
-// SetEndpointApi sets the block node API kind for this endpoint.
-func (e *BlockNodeServiceEndpoint) SetEndpointApi(api BlockNodeApi) *BlockNodeServiceEndpoint {
-	e.endpointApi = api
+// SetEndpointApis sets the block node API kinds for this endpoint.
+func (e *BlockNodeServiceEndpoint) SetEndpointApis(apis []BlockNodeApi) *BlockNodeServiceEndpoint {
+	e.endpointApis = apis
+	return e
+}
+
+// AddEndpointApi adds a block node API kind to this endpoint.
+func (e *BlockNodeServiceEndpoint) AddEndpointApi(api BlockNodeApi) *BlockNodeServiceEndpoint {
+	e.endpointApis = append(e.endpointApis,api)
 	return e
 }
 
 // GetEndpointApi returns the block node API kind for this endpoint.
-func (e *BlockNodeServiceEndpoint) GetEndpointApi() BlockNodeApi {
-	return e.endpointApi
+func (e *BlockNodeServiceEndpoint) GetEndpointApis() []BlockNodeApi {
+	return e.endpointApis
 }
 
 // _ToProtobuf converts this BlockNodeServiceEndpoint to its protobuf representation.
 func (e *BlockNodeServiceEndpoint) _ToProtobuf() *services.RegisteredServiceEndpoint {
+	apis := make([]services.RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi, len(e.endpointApis))
+	for i, api := range e.endpointApis {
+		apis[i] = services.RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi(api)
+	}
+
 	pb := &services.RegisteredServiceEndpoint{
 		Port:        e.port,
 		RequiresTls: e.requiresTls,
 		EndpointType: &services.RegisteredServiceEndpoint_BlockNode{
 			BlockNode: &services.RegisteredServiceEndpoint_BlockNodeEndpoint{
-				EndpointApi: services.RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi(e.endpointApi),
+				EndpointApi: apis,
 			},
 		},
 	}
@@ -71,7 +82,11 @@ func _BlockNodeServiceEndpointFromProtobuf(pb *services.RegisteredServiceEndpoin
 	}
 
 	if bn, ok := pb.EndpointType.(*services.RegisteredServiceEndpoint_BlockNode); ok && bn.BlockNode != nil {
-		endpoint.endpointApi = BlockNodeApi(bn.BlockNode.GetEndpointApi())
+		pbApis := bn.BlockNode.GetEndpointApi()
+		endpoint.endpointApis = make([]BlockNodeApi, len(pbApis))
+		for i, api := range pbApis {
+			endpoint.endpointApis[i] = BlockNodeApi(api)
+		}
 	}
 
 	return endpoint
