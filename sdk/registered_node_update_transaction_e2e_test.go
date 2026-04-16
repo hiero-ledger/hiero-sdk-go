@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"fmt"
 	"net"
 	"testing"
 
@@ -35,7 +36,7 @@ func createRegisteredNode(t *testing.T, client *Client, adminKey PrivateKey) uin
 
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(8080)
-	endpoint.SetEndpointApi(BlockNodeApiStatus)
+	endpoint.AddEndpointApi(BlockNodeApiStatus)
 
 	createTx, err := NewRegisteredNodeCreateTransaction().
 		SetAdminKey(adminKey).
@@ -51,6 +52,8 @@ func createRegisteredNode(t *testing.T, client *Client, adminKey PrivateKey) uin
 	require.NoError(t, err)
 
 	require.Greater(t, createReceipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	t.Log(createReceipt.RegisteredNodeId)
+	fmt.Println(createReceipt)
 	return createReceipt.RegisteredNodeId
 }
 
@@ -93,7 +96,7 @@ func TestIntegrationRegisteredNodeUpdateTransactionReplaceEndpoints(t *testing.T
 
 	newEndpoint := &BlockNodeServiceEndpoint{}
 	newEndpoint.SetIPAddress(net.IPv4(172, 16, 0, 1).To4()).SetPort(9090)
-	newEndpoint.SetEndpointApi(BlockNodeApiPublish)
+	newEndpoint.AddEndpointApi(BlockNodeApiPublish)
 
 	updateTx, err := NewRegisteredNodeUpdateTransaction().
 		SetRegisteredNodeId(registeredNodeId).
@@ -206,7 +209,7 @@ func TestIntegrationRegisteredNodeUpdateTransactionReplaceDomainEndpoint(t *test
 
 	domainEndpoint := &BlockNodeServiceEndpoint{}
 	domainEndpoint.SetDomainName("node.example.com").SetPort(443)
-	domainEndpoint.SetEndpointApi(BlockNodeApiStatus)
+	domainEndpoint.AddEndpointApi(BlockNodeApiStatus)
 
 	updateTx, err := NewRegisteredNodeUpdateTransaction().
 		SetRegisteredNodeId(registeredNodeId).

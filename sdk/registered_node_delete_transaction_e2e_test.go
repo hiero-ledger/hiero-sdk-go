@@ -28,7 +28,7 @@ func TestIntegrationRegisteredNodeDeleteTransactionCanExecute(t *testing.T) {
 
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(8080)
-	endpoint.SetEndpointApi(BlockNodeApiStatus)
+	endpoint.AddEndpointApi(BlockNodeApiStatus)
 
 	createTx, err := NewRegisteredNodeCreateTransaction().
 		SetAdminKey(adminKey).
@@ -77,7 +77,7 @@ func TestIntegrationRegisteredNodeDeleteTransactionFailsIfAlreadyDeleted(t *test
 
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(8080)
-	endpoint.SetEndpointApi(BlockNodeApiStatus)
+	endpoint.AddEndpointApi(BlockNodeApiStatus)
 
 	createTx, err := NewRegisteredNodeCreateTransaction().
 		SetAdminKey(adminKey).
