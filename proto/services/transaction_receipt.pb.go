@@ -21,6 +21,7 @@ package services
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -189,8 +190,16 @@ type TransactionReceipt struct {
 	// This value SHALL NOT be set following any other transaction.<br/>
 	// This value SHALL be unique within a given network.
 	RegisteredNodeId uint64 `protobuf:"varint,16,opt,name=registered_node_id,json=registeredNodeId,proto3" json:"registered_node_id,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// *
+	// The block number containing this transaction.
+	// <p>
+	// This value SHALL be unset or default if consensus has not been reached
+	// or the block assignment is not yet known.<br/>
+	// Once known, this value SHALL identify the block containing the
+	// transaction represented by this receipt.
+	BlockNumber   *wrapperspb.UInt64Value `protobuf:"bytes,17,opt,name=block_number,json=blockNumber,proto3" json:"block_number,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *TransactionReceipt) Reset() {
@@ -335,11 +344,18 @@ func (x *TransactionReceipt) GetRegisteredNodeId() uint64 {
 	return 0
 }
 
+func (x *TransactionReceipt) GetBlockNumber() *wrapperspb.UInt64Value {
+	if x != nil {
+		return x.BlockNumber
+	}
+	return nil
+}
+
 var File_transaction_receipt_proto protoreflect.FileDescriptor
 
 const file_transaction_receipt_proto_rawDesc = "" +
 	"\n" +
-	"\x19transaction_receipt.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13response_code.proto\x1a\x13exchange_rate.proto\"\x8d\x06\n" +
+	"\x19transaction_receipt.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13response_code.proto\x1a\x13exchange_rate.proto\x1a\x1egoogle/protobuf/wrappers.proto\"\xce\x06\n" +
 	"\x12TransactionReceipt\x12/\n" +
 	"\x06status\x18\x01 \x01(\x0e2\x17.proto.ResponseCodeEnumR\x06status\x12.\n" +
 	"\taccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\taccountID\x12%\n" +
@@ -361,7 +377,8 @@ const file_transaction_receipt_proto_rawDesc = "" +
 	"\x16scheduledTransactionID\x18\r \x01(\v2\x14.proto.TransactionIDR\x16scheduledTransactionID\x12$\n" +
 	"\rserialNumbers\x18\x0e \x03(\x03R\rserialNumbers\x12\x17\n" +
 	"\anode_id\x18\x0f \x01(\x04R\x06nodeId\x12,\n" +
-	"\x12registered_node_id\x18\x10 \x01(\x04R\x10registeredNodeIdB&\n" +
+	"\x12registered_node_id\x18\x10 \x01(\x04R\x10registeredNodeId\x12?\n" +
+	"\fblock_number\x18\x11 \x01(\v2\x1c.google.protobuf.UInt64ValueR\vblockNumberB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (
@@ -378,32 +395,34 @@ func file_transaction_receipt_proto_rawDescGZIP() []byte {
 
 var file_transaction_receipt_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_transaction_receipt_proto_goTypes = []any{
-	(*TransactionReceipt)(nil), // 0: proto.TransactionReceipt
-	(ResponseCodeEnum)(0),      // 1: proto.ResponseCodeEnum
-	(*AccountID)(nil),          // 2: proto.AccountID
-	(*FileID)(nil),             // 3: proto.FileID
-	(*ContractID)(nil),         // 4: proto.ContractID
-	(*ExchangeRateSet)(nil),    // 5: proto.ExchangeRateSet
-	(*TopicID)(nil),            // 6: proto.TopicID
-	(*TokenID)(nil),            // 7: proto.TokenID
-	(*ScheduleID)(nil),         // 8: proto.ScheduleID
-	(*TransactionID)(nil),      // 9: proto.TransactionID
+	(*TransactionReceipt)(nil),     // 0: proto.TransactionReceipt
+	(ResponseCodeEnum)(0),          // 1: proto.ResponseCodeEnum
+	(*AccountID)(nil),              // 2: proto.AccountID
+	(*FileID)(nil),                 // 3: proto.FileID
+	(*ContractID)(nil),             // 4: proto.ContractID
+	(*ExchangeRateSet)(nil),        // 5: proto.ExchangeRateSet
+	(*TopicID)(nil),                // 6: proto.TopicID
+	(*TokenID)(nil),                // 7: proto.TokenID
+	(*ScheduleID)(nil),             // 8: proto.ScheduleID
+	(*TransactionID)(nil),          // 9: proto.TransactionID
+	(*wrapperspb.UInt64Value)(nil), // 10: google.protobuf.UInt64Value
 }
 var file_transaction_receipt_proto_depIdxs = []int32{
-	1, // 0: proto.TransactionReceipt.status:type_name -> proto.ResponseCodeEnum
-	2, // 1: proto.TransactionReceipt.accountID:type_name -> proto.AccountID
-	3, // 2: proto.TransactionReceipt.fileID:type_name -> proto.FileID
-	4, // 3: proto.TransactionReceipt.contractID:type_name -> proto.ContractID
-	5, // 4: proto.TransactionReceipt.exchangeRate:type_name -> proto.ExchangeRateSet
-	6, // 5: proto.TransactionReceipt.topicID:type_name -> proto.TopicID
-	7, // 6: proto.TransactionReceipt.tokenID:type_name -> proto.TokenID
-	8, // 7: proto.TransactionReceipt.scheduleID:type_name -> proto.ScheduleID
-	9, // 8: proto.TransactionReceipt.scheduledTransactionID:type_name -> proto.TransactionID
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	1,  // 0: proto.TransactionReceipt.status:type_name -> proto.ResponseCodeEnum
+	2,  // 1: proto.TransactionReceipt.accountID:type_name -> proto.AccountID
+	3,  // 2: proto.TransactionReceipt.fileID:type_name -> proto.FileID
+	4,  // 3: proto.TransactionReceipt.contractID:type_name -> proto.ContractID
+	5,  // 4: proto.TransactionReceipt.exchangeRate:type_name -> proto.ExchangeRateSet
+	6,  // 5: proto.TransactionReceipt.topicID:type_name -> proto.TopicID
+	7,  // 6: proto.TransactionReceipt.tokenID:type_name -> proto.TokenID
+	8,  // 7: proto.TransactionReceipt.scheduleID:type_name -> proto.ScheduleID
+	9,  // 8: proto.TransactionReceipt.scheduledTransactionID:type_name -> proto.TransactionID
+	10, // 9: proto.TransactionReceipt.block_number:type_name -> google.protobuf.UInt64Value
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_transaction_receipt_proto_init() }

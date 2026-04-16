@@ -130,7 +130,8 @@
       "registered_node_create.proto",
       "registered_node_update.proto",
       "registered_node_delete.proto",
-      "registered_service_endpoint.proto"
+      "registered_service_endpoint.proto",
+      "migration_root_hash_vote.proto"
     ]
   }
   

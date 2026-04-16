@@ -142,6 +142,7 @@ type RegisteredServiceEndpoint struct {
 	//	*RegisteredServiceEndpoint_BlockNode
 	//	*RegisteredServiceEndpoint_MirrorNode
 	//	*RegisteredServiceEndpoint_RpcRelay
+	//	*RegisteredServiceEndpoint_GeneralService
 	EndpointType  isRegisteredServiceEndpoint_EndpointType `protobuf_oneof:"endpoint_type"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -250,6 +251,15 @@ func (x *RegisteredServiceEndpoint) GetRpcRelay() *RegisteredServiceEndpoint_Rpc
 	return nil
 }
 
+func (x *RegisteredServiceEndpoint) GetGeneralService() *RegisteredServiceEndpoint_GeneralServiceEndpoint {
+	if x != nil {
+		if x, ok := x.EndpointType.(*RegisteredServiceEndpoint_GeneralService); ok {
+			return x.GeneralService
+		}
+	}
+	return nil
+}
+
 type isRegisteredServiceEndpoint_Address interface {
 	isRegisteredServiceEndpoint_Address()
 }
@@ -309,11 +319,22 @@ type RegisteredServiceEndpoint_RpcRelay struct {
 	RpcRelay *RegisteredServiceEndpoint_RpcRelayEndpoint `protobuf:"bytes,7,opt,name=rpc_relay,json=rpcRelay,proto3,oneof"`
 }
 
+type RegisteredServiceEndpoint_GeneralService struct {
+	// *
+	// A general service.<br/>
+	// A general service endpoint represents any network accessible service
+	// that is provided by a registered node but that is not a service
+	// currently defined as part of the Hiero Ledger system.
+	GeneralService *RegisteredServiceEndpoint_GeneralServiceEndpoint `protobuf:"bytes,8,opt,name=general_service,json=generalService,proto3,oneof"`
+}
+
 func (*RegisteredServiceEndpoint_BlockNode) isRegisteredServiceEndpoint_EndpointType() {}
 
 func (*RegisteredServiceEndpoint_MirrorNode) isRegisteredServiceEndpoint_EndpointType() {}
 
 func (*RegisteredServiceEndpoint_RpcRelay) isRegisteredServiceEndpoint_EndpointType() {}
+
+func (*RegisteredServiceEndpoint_GeneralService) isRegisteredServiceEndpoint_EndpointType() {}
 
 // *
 // A message indicating this endpoint is a Block Node endpoint.<br/>
@@ -326,7 +347,7 @@ type RegisteredServiceEndpoint_BlockNodeEndpoint struct {
 	// An indicator of what API this endpoint supports.
 	// <p>
 	// This field is REQUIRED.
-	EndpointApi   RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi `protobuf:"varint,1,opt,name=endpoint_api,json=endpointApi,proto3,enum=com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi" json:"endpoint_api,omitempty"`
+	EndpointApi   []RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi `protobuf:"varint,1,rep,packed,name=endpoint_api,json=endpointApi,proto3,enum=com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi" json:"endpoint_api,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -361,11 +382,11 @@ func (*RegisteredServiceEndpoint_BlockNodeEndpoint) Descriptor() ([]byte, []int)
 	return file_registered_service_endpoint_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *RegisteredServiceEndpoint_BlockNodeEndpoint) GetEndpointApi() RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi {
+func (x *RegisteredServiceEndpoint_BlockNodeEndpoint) GetEndpointApi() []RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi {
 	if x != nil {
 		return x.EndpointApi
 	}
-	return RegisteredServiceEndpoint_BlockNodeEndpoint_OTHER
+	return nil
 }
 
 // *
@@ -444,11 +465,62 @@ func (*RegisteredServiceEndpoint_RpcRelayEndpoint) Descriptor() ([]byte, []int) 
 	return file_registered_service_endpoint_proto_rawDescGZIP(), []int{0, 2}
 }
 
+// *
+// A message indicating this endpoint is a General Service endpoint.
+type RegisteredServiceEndpoint_GeneralServiceEndpoint struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// *
+	// A short description of the service provided.
+	// <p>
+	// This value, if set, MUST NOT exceed 100 bytes when encoded as UTF-8.<br/>
+	// This field is OPTIONAL.
+	Description   string `protobuf:"bytes,1,opt,name=description,proto3" json:"description,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegisteredServiceEndpoint_GeneralServiceEndpoint) Reset() {
+	*x = RegisteredServiceEndpoint_GeneralServiceEndpoint{}
+	mi := &file_registered_service_endpoint_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegisteredServiceEndpoint_GeneralServiceEndpoint) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegisteredServiceEndpoint_GeneralServiceEndpoint) ProtoMessage() {}
+
+func (x *RegisteredServiceEndpoint_GeneralServiceEndpoint) ProtoReflect() protoreflect.Message {
+	mi := &file_registered_service_endpoint_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegisteredServiceEndpoint_GeneralServiceEndpoint.ProtoReflect.Descriptor instead.
+func (*RegisteredServiceEndpoint_GeneralServiceEndpoint) Descriptor() ([]byte, []int) {
+	return file_registered_service_endpoint_proto_rawDescGZIP(), []int{0, 3}
+}
+
+func (x *RegisteredServiceEndpoint_GeneralServiceEndpoint) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
 var File_registered_service_endpoint_proto protoreflect.FileDescriptor
 
 const file_registered_service_endpoint_proto_rawDesc = "" +
 	"\n" +
-	"!registered_service_endpoint.proto\x12 com.hedera.hapi.node.addressbook\"\x9c\x06\n" +
+	"!registered_service_endpoint.proto\x12 com.hedera.hapi.node.addressbook\"\xd7\a\n" +
 	"\x19RegisteredServiceEndpoint\x12\x1f\n" +
 	"\n" +
 	"ip_address\x18\x01 \x01(\fH\x00R\tipAddress\x12!\n" +
@@ -460,9 +532,10 @@ const file_registered_service_endpoint_proto_rawDesc = "" +
 	"block_node\x18\x05 \x01(\v2M.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpointH\x01R\tblockNode\x12q\n" +
 	"\vmirror_node\x18\x06 \x01(\v2N.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.MirrorNodeEndpointH\x01R\n" +
 	"mirrorNode\x12k\n" +
-	"\trpc_relay\x18\a \x01(\v2L.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.RpcRelayEndpointH\x01R\brpcRelay\x1a\xed\x01\n" +
+	"\trpc_relay\x18\a \x01(\v2L.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.RpcRelayEndpointH\x01R\brpcRelay\x12}\n" +
+	"\x0fgeneral_service\x18\b \x01(\v2R.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.GeneralServiceEndpointH\x01R\x0egeneralService\x1a\xed\x01\n" +
 	"\x11BlockNodeEndpoint\x12}\n" +
-	"\fendpoint_api\x18\x01 \x01(\x0e2Z.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.BlockNodeApiR\vendpointApi\"Y\n" +
+	"\fendpoint_api\x18\x01 \x03(\x0e2Z.com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.BlockNodeApiR\vendpointApi\"Y\n" +
 	"\fBlockNodeApi\x12\t\n" +
 	"\x05OTHER\x10\x00\x12\n" +
 	"\n" +
@@ -471,7 +544,9 @@ const file_registered_service_endpoint_proto_rawDesc = "" +
 	"\x10SUBSCRIBE_STREAM\x10\x03\x12\x0f\n" +
 	"\vSTATE_PROOF\x10\x04\x1a\x14\n" +
 	"\x12MirrorNodeEndpoint\x1a\x12\n" +
-	"\x10RpcRelayEndpointB\t\n" +
+	"\x10RpcRelayEndpoint\x1a:\n" +
+	"\x16GeneralServiceEndpoint\x12 \n" +
+	"\vdescription\x18\x01 \x01(\tR\vdescriptionB\t\n" +
 	"\aaddressB\x0f\n" +
 	"\rendpoint_typeB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
@@ -489,24 +564,26 @@ func file_registered_service_endpoint_proto_rawDescGZIP() []byte {
 }
 
 var file_registered_service_endpoint_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_registered_service_endpoint_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_registered_service_endpoint_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_registered_service_endpoint_proto_goTypes = []any{
 	(RegisteredServiceEndpoint_BlockNodeEndpoint_BlockNodeApi)(0), // 0: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.BlockNodeApi
 	(*RegisteredServiceEndpoint)(nil),                             // 1: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint
 	(*RegisteredServiceEndpoint_BlockNodeEndpoint)(nil),           // 2: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint
 	(*RegisteredServiceEndpoint_MirrorNodeEndpoint)(nil),          // 3: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.MirrorNodeEndpoint
 	(*RegisteredServiceEndpoint_RpcRelayEndpoint)(nil),            // 4: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.RpcRelayEndpoint
+	(*RegisteredServiceEndpoint_GeneralServiceEndpoint)(nil),      // 5: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.GeneralServiceEndpoint
 }
 var file_registered_service_endpoint_proto_depIdxs = []int32{
 	2, // 0: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.block_node:type_name -> com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint
 	3, // 1: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.mirror_node:type_name -> com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.MirrorNodeEndpoint
 	4, // 2: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.rpc_relay:type_name -> com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.RpcRelayEndpoint
-	0, // 3: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.endpoint_api:type_name -> com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.BlockNodeApi
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	5, // 3: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.general_service:type_name -> com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.GeneralServiceEndpoint
+	0, // 4: com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.endpoint_api:type_name -> com.hedera.hapi.node.addressbook.RegisteredServiceEndpoint.BlockNodeEndpoint.BlockNodeApi
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_registered_service_endpoint_proto_init() }
@@ -520,6 +597,7 @@ func file_registered_service_endpoint_proto_init() {
 		(*RegisteredServiceEndpoint_BlockNode)(nil),
 		(*RegisteredServiceEndpoint_MirrorNode)(nil),
 		(*RegisteredServiceEndpoint_RpcRelay)(nil),
+		(*RegisteredServiceEndpoint_GeneralService)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -527,7 +605,7 @@ func file_registered_service_endpoint_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_registered_service_endpoint_proto_rawDesc), len(file_registered_service_endpoint_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
