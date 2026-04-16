@@ -475,7 +475,7 @@ func TestIntegrationNodeUpdateTransactionWithAssociatedRegisteredNode(t *testing
 
 	regEndpoint := &BlockNodeServiceEndpoint{}
 	regEndpoint.SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(8080)
-	regEndpoint.SetEndpointApi(BlockNodeApiStatus)
+	regEndpoint.AddEndpointApi(BlockNodeApiStatus)
 
 	regTx, err := NewRegisteredNodeCreateTransaction().
 		SetAdminKey(regAdminKey).

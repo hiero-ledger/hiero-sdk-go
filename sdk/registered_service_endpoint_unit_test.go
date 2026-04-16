@@ -41,7 +41,7 @@ func TestUnitBlockNodeServiceEndpointRoundTripIP(t *testing.T) {
 			port:        8080,
 			requiresTls: true,
 		},
-		endpointApi: BlockNodeApiStatus,
+		endpointApis: []BlockNodeApi{BlockNodeApiStatus},
 	}
 
 	pb := endpoint._ToProtobuf()
@@ -52,7 +52,7 @@ func TestUnitBlockNodeServiceEndpointRoundTripIP(t *testing.T) {
 	assert.Equal(t, ip, block.GetIPAddress())
 	assert.Equal(t, uint32(8080), block.GetPort())
 	assert.True(t, block.GetRequiresTls())
-	assert.Equal(t, BlockNodeApiStatus, block.GetEndpointApi())
+	assert.Equal(t, []BlockNodeApi{BlockNodeApiStatus}, block.GetEndpointApis())
 	assert.Equal(t, "", block.GetDomainName())
 }
 
@@ -148,7 +148,7 @@ func TestUnitBlockNodeServiceEndpointApiRoundTrip(t *testing.T) {
 				ipAddress: []byte{10, 0, 0, 1},
 				port:      8080,
 			},
-			endpointApi: api,
+			endpointApis: []BlockNodeApi{api},
 		}
 
 		pb := endpoint._ToProtobuf()
@@ -156,7 +156,7 @@ func TestUnitBlockNodeServiceEndpointApiRoundTrip(t *testing.T) {
 
 		block, ok := restored.(*BlockNodeServiceEndpoint)
 		assert.True(t, ok)
-		assert.Equal(t, api, block.GetEndpointApi(), "BlockNodeApi %s did not round-trip", api.String())
+		assert.Equal(t, []BlockNodeApi{api}, block.GetEndpointApis(), "BlockNodeApi %s did not round-trip", api.String())
 	}
 }
 
@@ -167,12 +167,12 @@ func TestUnitBlockNodeServiceEndpointSetters(t *testing.T) {
 	endpoint.SetIPAddress([]byte{192, 168, 0, 1}).
 		SetPort(443).
 		SetRequiresTls(true).
-		SetEndpointApi(BlockNodeApiSubscribeStream)
+		AddEndpointApi(BlockNodeApiSubscribeStream)
 
 	assert.Equal(t, []byte{192, 168, 0, 1}, endpoint.GetIPAddress())
 	assert.Equal(t, uint32(443), endpoint.GetPort())
 	assert.True(t, endpoint.GetRequiresTls())
-	assert.Equal(t, BlockNodeApiSubscribeStream, endpoint.GetEndpointApi())
+	assert.Equal(t, []BlockNodeApi{BlockNodeApiSubscribeStream}, endpoint.GetEndpointApis())
 }
 
 func TestUnitMirrorNodeServiceEndpointSetters(t *testing.T) {

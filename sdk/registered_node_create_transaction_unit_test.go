@@ -21,7 +21,7 @@ func TestUnitRegisteredNodeCreateTransactionBuild(t *testing.T) {
 			port:        8080,
 			requiresTls: true,
 		},
-		endpointApi: BlockNodeApiStatus,
+		endpointApis: []BlockNodeApi{BlockNodeApiStatus},
 	}
 
 	tx := NewRegisteredNodeCreateTransaction().

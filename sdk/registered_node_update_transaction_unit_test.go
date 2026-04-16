@@ -140,7 +140,7 @@ func TestUnitRegisteredNodeUpdateTransactionGet(t *testing.T) {
 			ipAddress: []byte{10, 0, 0, 1},
 			port:      8080,
 		},
-		endpointApi: BlockNodeApiStatus,
+		endpointApis: []BlockNodeApi{BlockNodeApiStatus},
 	}
 
 	transaction, err := NewRegisteredNodeUpdateTransaction().

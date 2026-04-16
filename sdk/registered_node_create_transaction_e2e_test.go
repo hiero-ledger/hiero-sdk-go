@@ -35,7 +35,7 @@ func TestIntegrationRegisteredNodeCreateTransactionCanExecute(t *testing.T) {
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress(net.IPv4(192, 168, 1, 1).To4()).
 		SetPort(50211)
-	endpoint.SetEndpointApi(BlockNodeApiPublish)
+	endpoint.AddEndpointApi(BlockNodeApiPublish)
 
 	// Execute the RegisteredNodeCreateTransaction
 	tx, err := NewRegisteredNodeCreateTransaction().
@@ -53,6 +53,7 @@ func TestIntegrationRegisteredNodeCreateTransactionCanExecute(t *testing.T) {
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	t.Log(receipt.RegisteredNodeId)
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionMirrorNodeEndpointSucceeds(t *testing.T) {
@@ -94,6 +95,8 @@ func TestIntegrationRegisteredNodeCreateTransactionMirrorNodeEndpointSucceeds(t 
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	t.Log(receipt.RegisteredNodeId)
+	t.Log(receipt)
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *testing.T) {
@@ -135,6 +138,8 @@ func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *t
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	t.Log(receipt.RegisteredNodeId)
+	t.Log(receipt)
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *testing.T) {
@@ -160,7 +165,7 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 	// Build a block node service endpoint
 	blockEndpoint := &BlockNodeServiceEndpoint{}
 	blockEndpoint.SetIPAddress(net.IPv4(192, 168, 1, 1).To4()).SetPort(50211)
-	blockEndpoint.SetEndpointApi(BlockNodeApiPublish)
+	blockEndpoint.AddEndpointApi(BlockNodeApiPublish)
 
 	// Build a mirror node service endpoint
 	mirrorEndpoint := &MirrorNodeServiceEndpoint{}
@@ -210,7 +215,7 @@ func TestIntegrationRegisteredNodeCreateTransactionWithDescriptionSucceeds(t *te
 	// Build a block node service endpoint
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress(net.IPv4(192, 168, 1, 1).To4()).SetPort(50211)
-	endpoint.SetEndpointApi(BlockNodeApiPublish)
+	endpoint.AddEndpointApi(BlockNodeApiPublish)
 
 	description := "e2e test registered node with description"
 
@@ -251,7 +256,7 @@ func TestIntegrationRegisteredNodeCreateTransactionFailsIfNoAdminKeySet(t *testi
 	// Build a block node service endpoint
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress(net.IPv4(192, 168, 1, 1).To4()).SetPort(50211)
-	endpoint.SetEndpointApi(BlockNodeApiPublish)
+	endpoint.AddEndpointApi(BlockNodeApiPublish)
 
 	// Execute the RegisteredNodeCreateTransaction without an admin key
 	tx, err := NewRegisteredNodeCreateTransaction().
