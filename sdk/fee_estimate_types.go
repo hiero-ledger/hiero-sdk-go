@@ -6,19 +6,19 @@ package hiero
 type FeeEstimateMode int32
 
 const (
-	// FeeEstimateModeState uses the latest known state for fee estimation
-	FeeEstimateModeState FeeEstimateMode = iota
-	// FeeEstimateModeIntrinsic estimates from the payload alone, ignoring state-dependent costs
-	FeeEstimateModeIntrinsic
+	// FeeEstimateModeIntrinsic estimates from the payload alone, ignoring state-dependent costs (default)
+	FeeEstimateModeIntrinsic FeeEstimateMode = iota
+	// FeeEstimateModeState uses the mirror node's latest known state for fee estimation
+	FeeEstimateModeState
 )
 
 // String returns the string representation of FeeEstimateMode
 func (m FeeEstimateMode) String() string {
 	switch m {
-	case FeeEstimateModeState:
-		return "STATE"
 	case FeeEstimateModeIntrinsic:
 		return "INTRINSIC"
+	case FeeEstimateModeState:
+		return "STATE"
 	default:
 		return "UNKNOWN"
 	}
@@ -26,12 +26,12 @@ func (m FeeEstimateMode) String() string {
 
 // FeeExtra represents an extra fee charged for the transaction
 type FeeExtra struct {
-	Name       string `json:"name"`       // The unique name of this extra fee as defined in the fee schedule
-	Included   uint32 `json:"included"`   // The count of this "extra" that is included for free
-	Count      uint32 `json:"count"`      // The actual count of items received
-	Charged    uint32 `json:"charged"`    // The charged count of items as calculated by max(0, count - included)
-	FeePerUnit uint64 `json:"feePerUnit"` // The fee price per unit in tinycents
-	Subtotal   uint64 `json:"subtotal"`   // The subtotal in tinycents for this extra fee
+	Name       string `json:"name"`         // The unique name of this extra fee as defined in the fee schedule
+	Included   uint64 `json:"included"`     // The count of this "extra" that is included for free
+	Count      uint64 `json:"count"`        // The actual count of items received
+	Charged    uint64 `json:"charged"`      // The charged count of items as calculated by max(0, count - included)
+	FeePerUnit uint64 `json:"fee_per_unit"` // The fee price per unit in tinycents
+	Subtotal   uint64 `json:"subtotal"`     // The subtotal in tinycents for this extra fee
 }
 
 // FeeEstimate represents the fee estimate for a component
@@ -58,9 +58,16 @@ type NetworkFee struct {
 
 // FeeEstimateResponse represents the response containing the estimated transaction fees
 type FeeEstimateResponse struct {
-	NetworkFee NetworkFee  `json:"network"` // The network fee component
-	NodeFee    FeeEstimate `json:"node"`    // The node fee component which is to be paid to the node that submitted the transaction to the network. This fee exists to compensate the node for the work it performed to pre-check the transaction before submitting it, and incentivizes the node to accept new transactions from users (required)
-	ServiceFee FeeEstimate `json:"service"` // The service fee component which covers execution costs, state saved in the Merkle tree, and additional costs to the blockchain storage
-	Notes      []string    `json:"notes"`
-	Total      uint64      `json:"total"` // The sum of the network, node, and service subtotals in tinycents
+	// The high-volume pricing multiplier per HIP-1313. A value of 1 indicates no
+	// high-volume pricing. A value greater than 1 applies when the transaction's
+	// highVolume flag is true and throttle utilization is non-zero.
+	HighVolumeMultiplier uint64 `json:"high_volume_multiplier"`
+	// NetworkFee covers gossip, consensus, signature verification, fee payment, and storage.
+	NetworkFee NetworkFee `json:"network"`
+	// NodeFee is paid to the submitting node for pre-checking the transaction (required).
+	NodeFee FeeEstimate `json:"node"`
+	// ServiceFee covers execution, Merkle state, and blockchain storage costs.
+	ServiceFee FeeEstimate `json:"service"`
+	// Total is the sum of network, node, and service subtotals in tinycents.
+	Total uint64 `json:"total"`
 }
