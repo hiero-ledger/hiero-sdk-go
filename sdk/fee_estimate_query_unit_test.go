@@ -29,10 +29,14 @@ func TestUnitFeeEstimateQueryCoverage(t *testing.T) {
 	require.Equal(t, uint64(5), query.GetMaxAttempts())
 
 	query2 := NewFeeEstimateQuery()
-	require.Equal(t, FeeEstimateModeState, query2.GetMode())
+	require.Equal(t, FeeEstimateModeIntrinsic, query2.GetMode())
+	require.Equal(t, uint16(0), query2.GetHighVolumeThrottle())
 
 	query.SetMode(FeeEstimateModeIntrinsic)
 	require.Equal(t, FeeEstimateModeIntrinsic, query.GetMode())
+
+	query.SetHighVolumeThrottle(5000)
+	require.Equal(t, uint16(5000), query.GetHighVolumeThrottle())
 
 	require.Equal(t, "STATE", FeeEstimateModeState.String())
 	require.Equal(t, "INTRINSIC", FeeEstimateModeIntrinsic.String())
@@ -129,6 +133,7 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	t.Parallel()
 
 	jsonData := `{
+		"high_volume_multiplier": 2,
 		"network": {
 			"multiplier": 3,
 			"subtotal": 3000
@@ -141,7 +146,7 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 					"included": 0,
 					"count": 1,
 					"charged": 1,
-					"feePerUnit": 100,
+					"fee_per_unit": 100,
 					"subtotal": 100
 				}
 			]
@@ -149,22 +154,22 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 		"service": {
 			"base": 500
 		},
-		"notes": ["note1", "note2"],
 		"total": 4600
 	}`
 
 	var response FeeEstimateResponse
 	err := json.Unmarshal([]byte(jsonData), &response)
 	require.NoError(t, err)
+	require.Equal(t, uint64(2), response.HighVolumeMultiplier)
 	require.Equal(t, uint32(3), response.NetworkFee.Multiplier)
 	require.Equal(t, uint64(3000), response.NetworkFee.Subtotal)
 	require.Equal(t, uint64(1000), response.NodeFee.Base)
 	require.Len(t, response.NodeFee.Extras, 1)
 	require.Equal(t, "extra1", response.NodeFee.Extras[0].Name)
+	require.Equal(t, uint64(1), response.NodeFee.Extras[0].Count)
+	require.Equal(t, uint64(1), response.NodeFee.Extras[0].Charged)
+	require.Equal(t, uint64(100), response.NodeFee.Extras[0].FeePerUnit)
 	require.Equal(t, uint64(500), response.ServiceFee.Base)
-	require.Len(t, response.Notes, 2)
-	require.Equal(t, "note1", response.Notes[0])
-	require.Equal(t, "note2", response.Notes[1])
 	require.Equal(t, uint64(4600), response.Total)
 
 	jsonData2 := `{
@@ -185,7 +190,7 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	err = json.Unmarshal([]byte(jsonData2), &response2)
 	require.NoError(t, err)
 	require.Equal(t, uint32(2), response2.NetworkFee.Multiplier)
-	require.Empty(t, response2.Notes)
+	require.Equal(t, uint64(0), response2.HighVolumeMultiplier)
 
 	var response3 FeeEstimateResponse
 	err = json.Unmarshal([]byte("invalid json"), &response3)
