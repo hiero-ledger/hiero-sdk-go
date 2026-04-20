@@ -102,7 +102,7 @@ jobs:
               with:
                 installMirrorNode: true
                 hieroVersion: v0.72.0
-                mirrorNodeVersion: v0.151.0
+                mirrorNodeVersion: v0.152.0
                 soloVersion: v0.69.0
 
             - name: Set Operator Account
