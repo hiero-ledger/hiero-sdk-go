@@ -5,6 +5,7 @@ package hiero
 import (
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -56,6 +57,15 @@ func TestIntegrationRegisteredNodeDeleteTransactionCanExecute(t *testing.T) {
 
 	_, err = deleteResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
+
+	// Wait for mirror node propagation, then verify the node is gone from the address book.
+	time.Sleep(time.Second * 5)
+
+	book, err := NewRegisteredNodeAddressBookQuery().
+		SetRegisteredNodeId(registeredNodeId).
+		Execute(client)
+	require.NoError(t, err)
+	require.Empty(t, book.RegisteredNodes, "deleted node should not appear in the address book")
 }
 
 func TestIntegrationRegisteredNodeDeleteTransactionFailsIfAlreadyDeleted(t *testing.T) {
