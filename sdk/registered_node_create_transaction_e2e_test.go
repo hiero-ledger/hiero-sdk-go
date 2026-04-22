@@ -142,6 +142,50 @@ func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *t
 	t.Log(receipt)
 }
 
+func TestIntegrationRegisteredNodeCreateTransactionGeneralServiceEndpointSucceeds(t *testing.T) {
+	t.Parallel()
+
+	// Set the network
+	network := make(map[string]AccountID)
+	network["localhost:50211"] = AccountID{Account: 3}
+	client, err := ClientForNetworkV2(network)
+	require.NoError(t, err)
+	mirror := []string{"localhost:5600"}
+	client.SetMirrorNetwork(mirror)
+
+	// Set the operator to be account 0.0.2
+	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
+	require.NoError(t, err)
+	client.SetOperator(AccountID{Account: 2}, originalOperatorKey)
+
+	// Generate admin key
+	adminKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	// Build a general service endpoint with a description
+	endpoint := &GeneralServiceEndpoint{}
+	endpoint.SetDomainName("general.example.com").
+		SetPort(9000).
+		SetDescription("custom-service")
+
+	// Execute the RegisteredNodeCreateTransaction
+	tx, err := NewRegisteredNodeCreateTransaction().
+		SetAdminKey(adminKey).
+		SetServiceEndpoints([]RegisteredServiceEndpoint{endpoint}).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	resp, err := tx.Sign(adminKey).Execute(client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
+	require.NoError(t, err)
+
+	// Verify the receipt contains a non-zero registeredNodeId
+	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	t.Log(receipt.RegisteredNodeId)
+}
+
 func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *testing.T) {
 	t.Parallel()
 
@@ -175,10 +219,16 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 	rpcEndpoint := &RpcRelayServiceEndpoint{}
 	rpcEndpoint.SetDomainName("rpc.example.com").SetPort(8545)
 
-	// Execute the RegisteredNodeCreateTransaction with all three endpoint types
+	// Build a general service endpoint
+	generalEndpoint := &GeneralServiceEndpoint{}
+	generalEndpoint.SetDomainName("general.example.com").
+		SetPort(9000).
+		SetDescription("custom-service")
+
+	// Execute the RegisteredNodeCreateTransaction with all four endpoint types
 	tx, err := NewRegisteredNodeCreateTransaction().
 		SetAdminKey(adminKey).
-		SetServiceEndpoints([]RegisteredServiceEndpoint{blockEndpoint, mirrorEndpoint, rpcEndpoint}).
+		SetServiceEndpoints([]RegisteredServiceEndpoint{blockEndpoint, mirrorEndpoint, rpcEndpoint, generalEndpoint}).
 		FreezeWith(client)
 	require.NoError(t, err)
 

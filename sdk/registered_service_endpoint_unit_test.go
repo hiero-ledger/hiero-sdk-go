@@ -210,6 +210,7 @@ func TestUnitRegisteredServiceEndpointFromProtobufDispatch(t *testing.T) {
 		{"BlockNode", &BlockNodeServiceEndpoint{registeredEndpointBase: registeredEndpointBase{ipAddress: []byte{1, 2, 3, 4}, port: 1}}},
 		{"MirrorNode", &MirrorNodeServiceEndpoint{registeredEndpointBase: registeredEndpointBase{ipAddress: []byte{1, 2, 3, 4}, port: 2}}},
 		{"RpcRelay", &RpcRelayServiceEndpoint{registeredEndpointBase: registeredEndpointBase{ipAddress: []byte{1, 2, 3, 4}, port: 3}}},
+		{"GeneralService", &GeneralServiceEndpoint{registeredEndpointBase: registeredEndpointBase{ipAddress: []byte{1, 2, 3, 4}, port: 4}}},
 	}
 
 	for _, tt := range tests {
@@ -226,6 +227,75 @@ func TestUnitRegisteredServiceEndpointFromProtobufDispatch(t *testing.T) {
 		case "RpcRelay":
 			_, ok := restored.(*RpcRelayServiceEndpoint)
 			assert.True(t, ok, "expected *RpcRelayServiceEndpoint")
+		case "GeneralService":
+			_, ok := restored.(*GeneralServiceEndpoint)
+			assert.True(t, ok, "expected *GeneralServiceEndpoint")
 		}
 	}
+}
+
+func TestUnitGeneralServiceEndpointRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	endpoint := &GeneralServiceEndpoint{
+		registeredEndpointBase: registeredEndpointBase{
+			domainName:  "general.example.com",
+			port:        9000,
+			requiresTls: true,
+		},
+		description: "custom-service",
+	}
+
+	pb := endpoint._ToProtobuf()
+	restored := _RegisteredServiceEndpointFromProtobuf(pb)
+
+	general, ok := restored.(*GeneralServiceEndpoint)
+	assert.True(t, ok, "expected *GeneralServiceEndpoint")
+	assert.Equal(t, "general.example.com", general.GetDomainName())
+	assert.Equal(t, uint32(9000), general.GetPort())
+	assert.True(t, general.GetRequiresTls())
+	assert.Equal(t, "custom-service", general.GetDescription())
+	assert.Nil(t, general.GetIPAddress())
+}
+
+func TestUnitGeneralServiceEndpointSetters(t *testing.T) {
+	t.Parallel()
+
+	endpoint := &GeneralServiceEndpoint{}
+	endpoint.SetIPAddress([]byte{10, 0, 0, 2}).
+		SetPort(9090).
+		SetRequiresTls(true).
+		SetDescription("my-service")
+
+	assert.Equal(t, []byte{10, 0, 0, 2}, endpoint.GetIPAddress())
+	assert.Equal(t, uint32(9090), endpoint.GetPort())
+	assert.True(t, endpoint.GetRequiresTls())
+	assert.Equal(t, "my-service", endpoint.GetDescription())
+}
+
+func TestUnitGeneralServiceEndpointValidateNoAddress(t *testing.T) {
+	t.Parallel()
+
+	endpoint := &GeneralServiceEndpoint{}
+
+	err := endpoint.Validate()
+	assert.Equal(t, errEndpointMustHaveAddressOrDomainName, err)
+}
+
+func TestUnitGeneralServiceEndpointProtobufOneof(t *testing.T) {
+	t.Parallel()
+
+	endpoint := &GeneralServiceEndpoint{
+		registeredEndpointBase: registeredEndpointBase{
+			domainName: "general.example.com",
+			port:       9000,
+		},
+		description: "custom-service",
+	}
+
+	pb := endpoint._ToProtobuf()
+
+	gs, ok := pb.EndpointType.(*services.RegisteredServiceEndpoint_GeneralService)
+	assert.True(t, ok, "expected EndpointType to be *RegisteredServiceEndpoint_GeneralService")
+	assert.Equal(t, "custom-service", gs.GeneralService.GetDescription())
 }
