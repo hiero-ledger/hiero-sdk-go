@@ -7,6 +7,7 @@ package hiero
 import (
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -53,7 +54,25 @@ func TestIntegrationRegisteredNodeCreateTransactionCanExecute(t *testing.T) {
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
-	t.Log(receipt.RegisteredNodeId)
+
+	time.Sleep(time.Second * 5)
+
+	// Query the registered node from the mirror node and verify fields
+	book, err := NewRegisteredNodeAddressBookQuery().
+		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		Execute(client)
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 1)
+	require.Equal(t, "e2e test registered node", book.RegisteredNodes[0].Description)
+	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
+	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
+
+	ep, ok := book.RegisteredNodes[0].ServiceEndpoints[0].(*BlockNodeServiceEndpoint)
+	require.True(t, ok, "expected *BlockNodeServiceEndpoint")
+	require.Equal(t, net.IPv4(192, 168, 1, 1).To4(), net.IP(ep.GetIPAddress()))
+	require.Equal(t, uint32(50211), ep.GetPort())
+	require.Equal(t, []BlockNodeApi{BlockNodeApiPublish}, ep.GetEndpointApis())
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionMirrorNodeEndpointSucceeds(t *testing.T) {
@@ -95,8 +114,6 @@ func TestIntegrationRegisteredNodeCreateTransactionMirrorNodeEndpointSucceeds(t 
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
-	t.Log(receipt.RegisteredNodeId)
-	t.Log(receipt)
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *testing.T) {
@@ -138,8 +155,6 @@ func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *t
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
-	t.Log(receipt.RegisteredNodeId)
-	t.Log(receipt)
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionGeneralServiceEndpointSucceeds(t *testing.T) {
@@ -183,7 +198,6 @@ func TestIntegrationRegisteredNodeCreateTransactionGeneralServiceEndpointSucceed
 
 	// Verify the receipt contains a non-zero registeredNodeId
 	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
-	t.Log(receipt.RegisteredNodeId)
 }
 
 func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *testing.T) {

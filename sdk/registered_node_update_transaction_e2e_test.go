@@ -5,9 +5,9 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"fmt"
 	"net"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -52,8 +52,6 @@ func createRegisteredNode(t *testing.T, client *Client, adminKey PrivateKey) uin
 	require.NoError(t, err)
 
 	require.Greater(t, createReceipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
-	t.Log(createReceipt.RegisteredNodeId)
-	fmt.Println(createReceipt)
 	return createReceipt.RegisteredNodeId
 }
 
@@ -80,7 +78,16 @@ func TestIntegrationRegisteredNodeUpdateTransactionUpdateDescription(t *testing.
 	_, err = updateResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// TODO: query the registered node and verify description == "updated description"
+	// Wait for mirror node propagation
+	time.Sleep(5 * time.Second)
+
+	// Query the registered node and verify description was updated
+	book, err := NewRegisteredNodeAddressBookQuery().
+		SetRegisteredNodeId(registeredNodeId).
+		Execute(client)
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 1)
+	require.Equal(t, "updated description", book.RegisteredNodes[0].Description)
 }
 
 func TestIntegrationRegisteredNodeUpdateTransactionReplaceEndpoints(t *testing.T) {
@@ -110,7 +117,22 @@ func TestIntegrationRegisteredNodeUpdateTransactionReplaceEndpoints(t *testing.T
 	_, err = updateResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// TODO: query the registered node and verify endpoints were replaced
+	// Wait for mirror node propagation
+	time.Sleep(5 * time.Second)
+
+	// Query the registered node and verify endpoints were replaced
+	book, err := NewRegisteredNodeAddressBookQuery().
+		SetRegisteredNodeId(registeredNodeId).
+		Execute(client)
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 1)
+	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
+
+	ep, ok := book.RegisteredNodes[0].ServiceEndpoints[0].(*BlockNodeServiceEndpoint)
+	require.True(t, ok, "expected *BlockNodeServiceEndpoint")
+	require.Equal(t, net.IPv4(172, 16, 0, 1).To4(), net.IP(ep.GetIPAddress()))
+	require.Equal(t, uint32(9090), ep.GetPort())
+	require.Equal(t, []BlockNodeApi{BlockNodeApiPublish}, ep.GetEndpointApis())
 }
 
 func TestIntegrationRegisteredNodeUpdateTransactionUpdateAdminKeyBothSign(t *testing.T) {
@@ -142,7 +164,16 @@ func TestIntegrationRegisteredNodeUpdateTransactionUpdateAdminKeyBothSign(t *tes
 	_, err = updateResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// TODO: query the registered node and verify admin key was updated to newAdminKey
+	// Wait for mirror node propagation
+	time.Sleep(5 * time.Second)
+
+	// Query the registered node and verify admin key was updated
+	book, err := NewRegisteredNodeAddressBookQuery().
+		SetRegisteredNodeId(registeredNodeId).
+		Execute(client)
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 1)
+	require.Equal(t, newAdminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 }
 
 func TestIntegrationRegisteredNodeUpdateTransactionUpdateAdminKeyOnlyOldSigns(t *testing.T) {
@@ -223,5 +254,20 @@ func TestIntegrationRegisteredNodeUpdateTransactionReplaceDomainEndpoint(t *test
 	_, err = updateResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// TODO: query the registered node and verify endpoint uses domain name "node.example.com"
+	// Wait for mirror node propagation
+	time.Sleep(5 * time.Second)
+
+	// Query the registered node and verify endpoint uses domain name
+	book, err := NewRegisteredNodeAddressBookQuery().
+		SetRegisteredNodeId(registeredNodeId).
+		Execute(client)
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 1)
+	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
+
+	ep, ok := book.RegisteredNodes[0].ServiceEndpoints[0].(*BlockNodeServiceEndpoint)
+	require.True(t, ok, "expected *BlockNodeServiceEndpoint")
+	require.Equal(t, "node.example.com", ep.GetDomainName())
+	require.Equal(t, uint32(443), ep.GetPort())
+	require.Equal(t, []BlockNodeApi{BlockNodeApiStatus}, ep.GetEndpointApis())
 }
