@@ -8,8 +8,8 @@ import (
 
 // RegisteredServiceEndpoint a service endpoint published by a registered node. Each endpoint
 // declares an address (IP or FQDN), port, TLS requirement, and the type of node service it provides.
-// The concrete subtypes are BlockNodeServiceEndpoint, MirrorNodeServiceEndpoint and
-// RpcRelayServiceEndpoint.
+// The concrete subtypes are BlockNodeServiceEndpoint, MirrorNodeServiceEndpoint,
+// RpcRelayServiceEndpoint and GeneralServiceEndpoint.
 type RegisteredServiceEndpoint interface {
 	GetIPAddress() []byte
 	GetDomainName() string
@@ -121,6 +121,8 @@ func _RegisteredServiceEndpointFromProtobuf(pb *services.RegisteredServiceEndpoi
 		return _MirrorNodeServiceEndpointFromProtobuf(pb)
 	case *services.RegisteredServiceEndpoint_RpcRelay:
 		return _RpcRelayServiceEndpointFromProtobuf(pb)
+	case *services.RegisteredServiceEndpoint_GeneralService:
+		return _GeneralServiceEndpointFromProtobuf(pb)
 	}
 	return nil
 }
