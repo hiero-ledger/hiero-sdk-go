@@ -48,7 +48,7 @@ func main() {
 	// Create accounts
 	senderAccountResponse, err := hiero.NewAccountCreateTransaction().
 		SetKeyWithoutAlias(senderKey.PublicKey()).
-		SetInitialBalance(hiero.NewHbar(10)).
+		SetInitialBalance(hiero.NewHbar(20)).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to execute sender account creation transaction: %v", err))
