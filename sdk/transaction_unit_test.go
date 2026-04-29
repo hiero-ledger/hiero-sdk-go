@@ -1546,6 +1546,21 @@ func createTransactionTests(txName string, nodeAccountIds []AccountID) []transac
 			},
 		},
 		{
+			name: "TransactionHighVolume/" + txName,
+			set: func(transactionInterface TransactionInterface) (TransactionInterface, error) {
+				baseTx := transactionInterface.getBaseTransaction()
+				baseTx.SetHighVolume(true)
+				return transactionInterface, nil
+			},
+			get: func(transactionInterface TransactionInterface) (interface{}, error) {
+				baseTx := transactionInterface.getBaseTransaction()
+				return baseTx.GetHighVolume(), nil
+			},
+			assert: func(t *testing.T, actual interface{}) {
+				require.Equal(t, true, actual)
+			},
+		},
+		{
 			name: "TransactionMaxTransactionFee/" + txName,
 			set: func(transactionInterface TransactionInterface) (TransactionInterface, error) {
 				return TransactionSetMaxTransactionFee(transactionInterface, NewHbar(1))

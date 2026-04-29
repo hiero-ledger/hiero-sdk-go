@@ -314,6 +314,8 @@ func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {
 	record.PrngBytes = []byte{1, 2, 3, 4}
 	record.PrngNumber = &prngNumber
 	record.EvmAddress = evmAddressBytes
+	highVolumeMultiplier := uint64(1000)
+	record.HighVolumePricingMultiplier = &highVolumeMultiplier
 	record.AssessedCustomFees = []AssessedCustomFee{assessedCustomFee}
 	record.AutomaticTokenAssociations = []TokenAssociation{tokenAssociation}
 	record.PendingAirdropRecords = []PendingAirdropRecord{{pendingAirdropId: PendingAirdropId{&accID, &accID, &tokenID, nil}, pendingAirdropAmount: 789}}
@@ -329,6 +331,7 @@ func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {
         "duplicates":[],
         "ethereumHash":"01020304",
         "evmAddress":"deadbeef",
+        "highVolumePricingMultiplier":1000,
         "nftTransfers":{"0.0.123":[{"sender":"0.0.1246","recipient":"0.0.1246","isApproved":true,"serial":123}]},
         "paidStakingRewards":[
             {"accountId":"0.0.1157","amount":"-1041694270","isApproved":false},
