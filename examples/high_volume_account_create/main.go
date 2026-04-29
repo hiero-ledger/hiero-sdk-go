@@ -66,5 +66,9 @@ func main() {
 	}
 
 	fmt.Printf("transaction fee = %v\n", record.TransactionFee)
-	fmt.Printf("high-volume pricing multiplier = %.3fx\n", float64(record.HighVolumePricingMultiplier)/1000)
+	if record.HighVolumePricingMultiplier != nil {
+		fmt.Printf("high-volume pricing multiplier = %.3fx\n", float64(*record.HighVolumePricingMultiplier)/1000)
+	} else {
+		fmt.Println("high-volume pricing multiplier = (not set)")
+	}
 }

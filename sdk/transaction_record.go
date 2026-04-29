@@ -48,7 +48,7 @@ type TransactionRecord struct {
 	PrngNumber                  *int32
 	EvmAddress                  []byte
 	PendingAirdropRecords       []PendingAirdropRecord
-	HighVolumePricingMultiplier uint64
+	HighVolumePricingMultiplier *uint64
 }
 
 // MarshalJSON returns the JSON representation of the TransactionRecord
@@ -377,7 +377,11 @@ func _TransactionRecordFromProtobuf(protoResponse *services.TransactionGetRecord
 		PaidStakingRewards:          paidStakingRewards,
 		EvmAddress:                  pb.EvmAddress,
 		PendingAirdropRecords:       pendingAirdropRecords,
-		HighVolumePricingMultiplier: pb.HighVolumePricingMultiplier,
+	}
+
+	if pb.HighVolumePricingMultiplier != 0 {
+		multiplier := pb.HighVolumePricingMultiplier
+		txRecord.HighVolumePricingMultiplier = &multiplier
 	}
 
 	if w, ok := pb.Entropy.(*services.TransactionRecord_PrngBytes); ok {
@@ -487,11 +491,14 @@ func (record TransactionRecord) _ToProtobuf() (*services.TransactionGetRecordRes
 			Seconds: int64(record.ParentConsensusTimestamp.Second()),
 			Nanos:   int32(record.ParentConsensusTimestamp.Nanosecond()),
 		},
-		Alias:                       alias,
-		EthereumHash:                record.EthereumHash,
-		PaidStakingRewards:          paidStakingRewards,
-		EvmAddress:                  record.EvmAddress,
-		HighVolumePricingMultiplier: record.HighVolumePricingMultiplier,
+		Alias:              alias,
+		EthereumHash:       record.EthereumHash,
+		PaidStakingRewards: paidStakingRewards,
+		EvmAddress:         record.EvmAddress,
+	}
+
+	if record.HighVolumePricingMultiplier != nil {
+		tRecord.HighVolumePricingMultiplier = *record.HighVolumePricingMultiplier
 	}
 
 	if record.PrngNumber != nil {

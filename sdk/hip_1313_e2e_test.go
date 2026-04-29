@@ -35,7 +35,8 @@ func TestIntegrationHIP1313HighVolumeAccountCreate(t *testing.T) {
 
 	record, err := resp.GetRecord(env.Client)
 	require.NoError(t, err)
-	assert.GreaterOrEqual(t, record.HighVolumePricingMultiplier, uint64(1000))
+	require.NotNil(t, record.HighVolumePricingMultiplier)
+	assert.GreaterOrEqual(t, *record.HighVolumePricingMultiplier, uint64(1000))
 }
 
 func TestIntegrationHIP1313HighVolumeWithMaxTransactionFee(t *testing.T) {

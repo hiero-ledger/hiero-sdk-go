@@ -314,7 +314,8 @@ func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {
 	record.PrngBytes = []byte{1, 2, 3, 4}
 	record.PrngNumber = &prngNumber
 	record.EvmAddress = evmAddressBytes
-	record.HighVolumePricingMultiplier = 1000
+	highVolumeMultiplier := uint64(1000)
+	record.HighVolumePricingMultiplier = &highVolumeMultiplier
 	record.AssessedCustomFees = []AssessedCustomFee{assessedCustomFee}
 	record.AutomaticTokenAssociations = []TokenAssociation{tokenAssociation}
 	record.PendingAirdropRecords = []PendingAirdropRecord{{pendingAirdropId: PendingAirdropId{&accID, &accID, &tokenID, nil}, pendingAirdropAmount: 789}}
