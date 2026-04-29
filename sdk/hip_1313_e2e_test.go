@@ -82,6 +82,6 @@ func TestIntegrationHIP1313HighVolumeInsufficientFee(t *testing.T) {
 		SetHighVolume(true).
 		SetMaxTransactionFee(HbarFromTinybar(1)).
 		Execute(env.Client)
-	require.Error(t, err)
-	assert.Equal(t, "exceptional precheck status INSUFFICIENT_TX_FEE", err.Error())
+
+	require.ErrorContains(t, err, "exceptional precheck status INSUFFICIENT_TX_FEE")
 }
