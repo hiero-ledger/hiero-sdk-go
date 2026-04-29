@@ -397,6 +397,13 @@ const (
 	NODE_ACCOUNT_HAS_ZERO_BALANCE                                  Status = 526
 	TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED                 Status = 527
 	TOO_MANY_HOOK_INVOCATIONS                                      Status = 528
+	INVALID_REGISTERED_NODE_ID                                     Status = 529
+	INVALID_REGISTERED_ENDPOINT                                    Status = 530
+	REGISTERED_ENDPOINTS_EXCEEDED_LIMIT                            Status = 531
+	INVALID_REGISTERED_ENDPOINT_ADDRESS                            Status = 532
+	INVALID_REGISTERED_ENDPOINT_TYPE                               Status = 533
+	REGISTERED_NODE_STILL_ASSOCIATED                               Status = 534
+	MAX_REGISTERED_NODES_EXCEEDED                                  Status = 535
 )
 
 // String() returns a string representation of the status
@@ -1182,6 +1189,20 @@ func (status Status) String() string { // nolint
 		return "TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED"
 	case TOO_MANY_HOOK_INVOCATIONS:
 		return "TOO_MANY_HOOK_INVOCATIONS"
+	case INVALID_REGISTERED_NODE_ID:
+		return "INVALID_REGISTERED_NODE_ID"
+	case INVALID_REGISTERED_ENDPOINT:
+		return "INVALID_REGISTERED_ENDPOINT"
+	case REGISTERED_ENDPOINTS_EXCEEDED_LIMIT:
+		return "REGISTERED_ENDPOINTS_EXCEEDED_LIMIT"
+	case INVALID_REGISTERED_ENDPOINT_ADDRESS:
+		return "INVALID_REGISTERED_ENDPOINT_ADDRESS"
+	case INVALID_REGISTERED_ENDPOINT_TYPE:
+		return "INVALID_REGISTERED_ENDPOINT_TYPE"
+	case REGISTERED_NODE_STILL_ASSOCIATED:
+		return "REGISTERED_NODE_STILL_ASSOCIATED"
+	case MAX_REGISTERED_NODES_EXCEEDED:
+		return "MAX_REGISTERED_NODES_EXCEEDED"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))
