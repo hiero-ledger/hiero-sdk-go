@@ -196,3 +196,15 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	err = json.Unmarshal([]byte("invalid json"), &response3)
 	require.Error(t, err)
 }
+
+func TestUnitTransactionEstimateFee(t *testing.T) {
+	t.Parallel()
+
+	tx := NewTransferTransaction()
+	query := tx.EstimateFee()
+
+	require.NotNil(t, query)
+	require.Equal(t, FeeEstimateModeIntrinsic, query.GetMode())
+	require.NotNil(t, query.GetTransaction())
+	require.Equal(t, tx, query.GetTransaction())
+}
