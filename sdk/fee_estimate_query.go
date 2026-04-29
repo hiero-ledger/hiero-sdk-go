@@ -21,7 +21,6 @@ type FeeEstimateQuery struct {
 	mode               FeeEstimateMode
 	transaction        TransactionInterface
 	highVolumeThrottle uint16
-	attempt            uint64
 	maxAttempts        uint64
 }
 
@@ -199,7 +198,7 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 	var lastErr error
 	var resp *http.Response
 
-	for q.attempt < q.maxAttempts {
+	for attempt := uint64(0); attempt < q.maxAttempts; attempt++ {
 		resp, err = http.Post(url, "application/protobuf", bytes.NewBuffer(txBytes)) // #nosec
 		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
 			break
@@ -226,7 +225,7 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		}
 
 		// Calculate delay with exponential backoff
-		delayMs := 250.0 * float64(uint64(1)<<q.attempt) // 250ms, 500ms, 1000ms, etc.
+		delayMs := 250.0 * float64(uint64(1)<<attempt) // 250ms, 500ms, 1000ms, etc.
 		if delayMs > 8000 {
 			delayMs = 8000
 		}
@@ -237,8 +236,6 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 			return FeeEstimateResponse{}, client.networkUpdateContext.Err()
 		case <-time.After(time.Duration(delayMs) * time.Millisecond):
 		}
-
-		q.attempt++
 	}
 
 	if resp == nil {
