@@ -1,3 +1,9 @@
+## v2.79.0
+
+### Added
+- Support for HIP-1313: high-volume entity creation. New `SetHighVolume`/`GetHighVolume` methods on supported transactions [#1633](https://github.com/hiero-ledger/hiero-sdk-go/pull/1633)
+- Support for HIP-1261: `FeeEstimateQuery` defaults to `INTRINSIC` mode, `FeeEstimateResponse` reshape (drop `Notes`, add `HighVolumeMultiplier`), `FeeExtra` counts widened to `uint64`, and `SetHighVolumeThrottle` for HIP-1313 high-volume pricing [#1685](https://github.com/hiero-ledger/hiero-sdk-go/pull/1685)
+
 ## v2.78.1
 
 ### Added
