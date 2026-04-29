@@ -1253,6 +1253,11 @@ func (tx *Transaction[T]) SetHighVolume(highVolume bool) T {
 	return tx.childTransaction
 }
 
+// EstimateFee returns a FeeEstimateQuery pre-populated with this transaction.
+func (tx *Transaction[T]) EstimateFee() *FeeEstimateQuery {
+	return NewFeeEstimateQuery().SetTransaction(tx.childTransaction)
+}
+
 // Batchify method is used to mark a transaction as part of a batch transaction or make it so-called inner transaction.
 // The Transaction will be frozen and signed by the operator of the client.
 func (tx *Transaction[T]) Batchify(client *Client, batchKey Key) (T, error) {

@@ -20,10 +20,10 @@ func newSuccessResponse(networkMultiplier int, nodeBase, serviceBase uint64) str
 	networkSubtotal := nodeBase * uint64(networkMultiplier)
 	total := networkSubtotal + nodeBase + serviceBase
 	return fmt.Sprintf(`{
+  "high_volume_multiplier": 1,
   "network": {"multiplier": %d, "subtotal": %d},
   "node": {"base": %d, "extras": []},
   "service": {"base": %d, "extras": []},
-  "notes": [],
   "total": %d
 }`, networkMultiplier, networkSubtotal, nodeBase, serviceBase, total)
 }
@@ -153,6 +153,7 @@ func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
 		queryParams := r.URL.Query()
 		assert.Contains(t, queryParams, "mode", "request should contain mode query parameter")
 		assert.Equal(t, "INTRINSIC", queryParams.Get("mode"), "mode should be INTRINSIC")
+		assert.NotContains(t, queryParams, "high_volume_throttle", "high_volume_throttle should be omitted when zero")
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -175,4 +176,83 @@ func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, uint64(60), response.Total)
+	assert.Equal(t, uint64(1), response.HighVolumeMultiplier)
+}
+
+func TestUnitFeeEstimateQueryDefaultsToIntrinsic(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		queryParams := r.URL.Query()
+		assert.Equal(t, "INTRINSIC", queryParams.Get("mode"), "default mode should be INTRINSIC")
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(newSuccessResponse(2, 5, 10)))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+	tx := NewTransferTransaction()
+
+	response, err := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		Execute(client)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(25), response.Total)
+}
+
+func TestUnitFeeEstimateQuerySendsHighVolumeThrottle(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		queryParams := r.URL.Query()
+		assert.Equal(t, "5000", queryParams.Get("high_volume_throttle"),
+			"high_volume_throttle should be forwarded as a query parameter")
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(newSuccessResponse(3, 10, 20)))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+	tx := NewTransferTransaction()
+
+	response, err := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetHighVolumeThrottle(5000).
+		Execute(client)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(60), response.Total)
+	assert.GreaterOrEqual(t, response.HighVolumeMultiplier, uint64(1),
+		"highVolumeMultiplier should be >= 1 when throttle is non-zero")
+}
+
+func TestUnitFeeEstimateQueryDoesNotRetryOn400(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("malformed transaction"))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+	client.SetMaxBackoff(500 * time.Millisecond)
+
+	tx := NewTransferTransaction()
+
+	_, err := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMaxAttempts(3).
+		Execute(client)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "400")
+	assert.Equal(t, 1, requestCount, "HTTP 400 must not trigger a retry")
 }

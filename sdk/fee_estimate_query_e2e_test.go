@@ -12,18 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const mirrorSyncDelayMillis = 2 * time.Second
+const mirrorSyncDelay = 2 * time.Second
 
 func waitForMirrorNodeSync() {
-	time.Sleep(mirrorSyncDelayMillis)
-}
-
-func subtotal(estimate FeeEstimate) uint64 {
-	total := estimate.Base
-	for _, extra := range estimate.Extras {
-		total += extra.Subtotal
-	}
-	return total
+	time.Sleep(mirrorSyncDelay)
 }
 
 func assertFeeComponentsPresent(t *testing.T, response FeeEstimateResponse) {
@@ -31,34 +23,25 @@ func assertFeeComponentsPresent(t *testing.T, response FeeEstimateResponse) {
 
 	require.NotNil(t, response.NetworkFee)
 	assert.Greater(t, response.NetworkFee.Multiplier, uint32(0))
-	assert.GreaterOrEqual(t, response.NetworkFee.Subtotal, uint64(0))
 
 	require.NotNil(t, response.NodeFee)
-	assert.GreaterOrEqual(t, response.NodeFee.Base, uint64(0))
 	require.NotNil(t, response.NodeFee.Extras)
 
 	require.NotNil(t, response.ServiceFee)
-	assert.GreaterOrEqual(t, response.ServiceFee.Base, uint64(0))
 	require.NotNil(t, response.ServiceFee.Extras)
 
-	require.NotNil(t, response.Notes)
 	assert.Greater(t, response.Total, uint64(0))
 }
 
 func assertComponentTotalsConsistent(t *testing.T, response FeeEstimateResponse) {
-	network := response.NetworkFee
-	node := response.NodeFee
-	service := response.ServiceFee
+	nodeSubtotal := response.NodeFee.Subtotal()
+	serviceSubtotal := response.ServiceFee.Subtotal()
 
-	nodeSubtotal := subtotal(node)
-	serviceSubtotal := subtotal(service)
-
-	assert.Equal(t, network.Subtotal, nodeSubtotal*uint64(network.Multiplier))
-	assert.Equal(t, response.Total, network.Subtotal+nodeSubtotal+serviceSubtotal)
+	assert.Equal(t, response.NetworkFee.Subtotal, nodeSubtotal*uint64(response.NetworkFee.Multiplier))
+	assert.Equal(t, response.Total, response.NetworkFee.Subtotal+nodeSubtotal+serviceSubtotal)
 }
 
 func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -89,7 +72,6 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -116,7 +98,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -139,8 +120,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.
 	assertComponentTotalsConsistent(t, response)
 }
 
-func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
+func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsIntrinsic(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -156,9 +136,10 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *tes
 
 	waitForMirrorNodeSync()
 
-	response, err := NewFeeEstimateQuery().
-		SetTransaction(transaction).
-		Execute(env.Client)
+	query := NewFeeEstimateQuery().SetTransaction(transaction)
+	require.Equal(t, FeeEstimateModeIntrinsic, query.GetMode())
+
+	response, err := query.Execute(env.Client)
 	require.NoError(t, err)
 
 	assertFeeComponentsPresent(t, response)
@@ -166,7 +147,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsState(t *tes
 }
 
 func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -191,7 +171,6 @@ func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -217,7 +196,6 @@ func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -245,7 +223,6 @@ func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -272,7 +249,6 @@ func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
 }
 
 func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -296,7 +272,6 @@ func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *tes
 }
 
 func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -320,7 +295,6 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) 
 }
 
 func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -344,7 +318,6 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T
 }
 
 func TestIntegrationFeeEstimateQueryWithoutTransactionThrowsError(t *testing.T) {
-	t.Skip("Disabled in version .151 of mirror node")
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
@@ -354,4 +327,33 @@ func TestIntegrationFeeEstimateQueryWithoutTransactionThrowsError(t *testing.T) 
 		Execute(env.Client)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "transaction is required")
+}
+
+func TestIntegrationFeeEstimateQueryWithHighVolumeThrottle(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	transaction, err := NewTransferTransaction().
+		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1)).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	_, err = transaction.SignWithOperator(env.Client)
+	require.NoError(t, err)
+
+	waitForMirrorNodeSync()
+
+	response, err := NewFeeEstimateQuery().
+		SetTransaction(transaction).
+		SetMode(FeeEstimateModeIntrinsic).
+		SetHighVolumeThrottle(5000).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	assertFeeComponentsPresent(t, response)
+	assertComponentTotalsConsistent(t, response)
+	assert.GreaterOrEqual(t, response.HighVolumeMultiplier, uint64(1),
+		"highVolumeMultiplier should be >= 1 when throttle is non-zero")
 }

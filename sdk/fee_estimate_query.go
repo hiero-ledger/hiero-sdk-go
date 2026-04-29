@@ -18,21 +18,21 @@ import (
 
 // FeeEstimateQuery allows users to query expected transaction fees without submitting transactions to the network
 type FeeEstimateQuery struct {
-	mode        FeeEstimateMode
-	transaction TransactionInterface
-	attempt     uint64
-	maxAttempts uint64
+	mode               FeeEstimateMode
+	transaction        TransactionInterface
+	highVolumeThrottle uint16
+	maxAttempts        uint64
 }
 
 // NewFeeEstimateQuery creates a new FeeEstimateQuery
 func NewFeeEstimateQuery() *FeeEstimateQuery {
 	return &FeeEstimateQuery{
-		mode:        FeeEstimateModeState, // Default mode is STATE
+		mode:        FeeEstimateModeIntrinsic, // Default mode is INTRINSIC
 		maxAttempts: maxAttempts,
 	}
 }
 
-// SetMode sets the estimation mode (optional, defaults to STATE)
+// SetMode sets the estimation mode (optional, defaults to INTRINSIC)
 func (q *FeeEstimateQuery) SetMode(mode FeeEstimateMode) *FeeEstimateQuery {
 	q.mode = mode
 	return q
@@ -52,6 +52,19 @@ func (q *FeeEstimateQuery) SetTransaction(transaction TransactionInterface) *Fee
 // GetTransaction returns the current transaction
 func (q *FeeEstimateQuery) GetTransaction() TransactionInterface {
 	return q.transaction
+}
+
+// SetHighVolumeThrottle sets the high-volume throttle utilization in basis points (0–10000, where 10000 = 100%).
+// A value of 0 (the default) indicates no high-volume pricing simulation. Maps to the
+// `high_volume_throttle` query parameter
+func (q *FeeEstimateQuery) SetHighVolumeThrottle(throttle uint16) *FeeEstimateQuery {
+	q.highVolumeThrottle = throttle
+	return q
+}
+
+// GetHighVolumeThrottle returns the current high-volume throttle utilization in basis points
+func (q *FeeEstimateQuery) GetHighVolumeThrottle() uint16 {
+	return q.highVolumeThrottle
 }
 
 // SetMaxAttempts sets the maximum number of retry attempts
@@ -111,7 +124,6 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 	aggregatedResponse.NodeFee = FeeEstimate{Base: 0, Extras: []FeeExtra{}}
 	aggregatedResponse.ServiceFee = FeeEstimate{Base: 0, Extras: []FeeExtra{}}
 	aggregatedResponse.NetworkFee = NetworkFee{Multiplier: 0, Subtotal: 0}
-	aggregatedResponse.Notes = []string{}
 
 	var totalNodeSubtotal uint64
 	var totalServiceSubtotal uint64
@@ -133,9 +145,8 @@ func (q *FeeEstimateQuery) executeChunkedTransaction(client *Client, tx Transact
 
 		if i == 0 {
 			aggregatedResponse.NetworkFee.Multiplier = chunkResponse.NetworkFee.Multiplier
+			aggregatedResponse.HighVolumeMultiplier = chunkResponse.HighVolumeMultiplier
 		}
-
-		aggregatedResponse.Notes = append(aggregatedResponse.Notes, chunkResponse.Notes...)
 	}
 
 	aggregatedResponse.NodeFee.Base = totalNodeSubtotal
@@ -180,11 +191,14 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 	}
 
 	url := fmt.Sprintf("%s/network/fees?mode=%s", mirrorUrl, q.mode.String())
+	if q.highVolumeThrottle != 0 {
+		url = fmt.Sprintf("%s&high_volume_throttle=%d", url, q.highVolumeThrottle)
+	}
 
 	var lastErr error
 	var resp *http.Response
 
-	for q.attempt < q.maxAttempts {
+	for attempt := uint64(0); attempt < q.maxAttempts; attempt++ {
 		resp, err = http.Post(url, "application/protobuf", bytes.NewBuffer(txBytes)) // #nosec
 		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
 			break
@@ -210,8 +224,9 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 			return FeeEstimateResponse{}, errors.Wrap(lastErr, "failed to call fee estimate API")
 		}
 
-		// Calculate delay with exponential backoff
-		delayMs := 250.0 * float64(uint64(1)<<q.attempt) // 250ms, 500ms, 1000ms, etc.
+		// Exponential backoff capped at 8s; exp is clamped to avoid shift overflow.
+		exp := min(attempt, uint64(5))
+		delayMs := 250.0 * float64(uint64(1)<<exp)
 		if delayMs > 8000 {
 			delayMs = 8000
 		}
@@ -222,8 +237,6 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 			return FeeEstimateResponse{}, client.networkUpdateContext.Err()
 		case <-time.After(time.Duration(delayMs) * time.Millisecond):
 		}
-
-		q.attempt++
 	}
 
 	if resp == nil {
