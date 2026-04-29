@@ -12,6 +12,7 @@ import (
 )
 
 func TestIntegrationHookStoreUpdatesStorageWithValidSignature(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -79,6 +80,7 @@ func TestIntegrationHookStoreUpdatesStorageWithValidSignature(t *testing.T) {
 }
 
 func TestIntegrationHookStoreFailsWithoutProperSignature(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -139,6 +141,7 @@ func TestIntegrationHookStoreFailsWithoutProperSignature(t *testing.T) {
 }
 
 func TestIntegrationHookStoreFailsWithNonExistentHookId(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -178,6 +181,7 @@ func TestIntegrationHookStoreFailsWithNonExistentHookId(t *testing.T) {
 }
 
 func TestIntegrationHookStoreTooManyStorageUpdatesFails(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)

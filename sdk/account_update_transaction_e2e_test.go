@@ -438,6 +438,7 @@ func TestIntegrationAccountUpdateSelectiveFieldChanges(t *testing.T) {
 // HIP-1195 hooks
 
 func TestIntegrationAccountUpdateTransactionCanExecuteWithHook(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -480,6 +481,7 @@ func TestIntegrationAccountUpdateTransactionCanExecuteWithHook(t *testing.T) {
 }
 
 func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -519,6 +521,7 @@ func TestIntegrationAccountUpdateTransactionAddDuplicateHook(t *testing.T) {
 }
 
 func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -563,6 +566,7 @@ func TestIntegrationAccountUpdateTransactionAddExisingHook(t *testing.T) {
 }
 
 func TestIntegrationAccountUpdateTransactionUpdateAddHookWithInitialStorageUpdates(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -607,6 +611,7 @@ func TestIntegrationAccountUpdateTransactionUpdateAddHookWithInitialStorageUpdat
 }
 
 func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -651,6 +656,7 @@ func TestIntegrationAccountUpdateTransactionCannotAddHookThatIsInUse(t *testing.
 }
 
 func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -695,6 +701,7 @@ func TestIntegrationAccountUpdateTransactionCanAddHookToDelete(t *testing.T) {
 }
 
 func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -739,6 +746,7 @@ func TestIntegrationAccountUpdateTransactionCanotDeleteNonExistantHook(t *testin
 }
 
 func TestIntegrationAccountUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameTime(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -782,6 +790,7 @@ func TestIntegrationAccountUpdateTransactionCanotAddAndAddHookToDeleteAtTheSameT
 }
 
 func TestIntegrationAccountUpdateTransactionCanotDeleteDeletedHook(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
