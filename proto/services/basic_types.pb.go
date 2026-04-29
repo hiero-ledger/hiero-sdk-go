@@ -977,6 +977,9 @@ const (
 	// *
 	// Delete a registered node
 	HederaFunctionality_RegisteredNodeDelete HederaFunctionality = 115
+	// *
+	// Vote on wrapped record migration hash state.
+	HederaFunctionality_MigrationRootHashVote HederaFunctionality = 116
 )
 
 // Enum value maps for HederaFunctionality.
@@ -1080,6 +1083,7 @@ var (
 		113: "RegisteredNodeCreate",
 		114: "RegisteredNodeUpdate",
 		115: "RegisteredNodeDelete",
+		116: "MigrationRootHashVote",
 	}
 	HederaFunctionality_value = map[string]int32{
 		"NONE":                       0,
@@ -1180,6 +1184,7 @@ var (
 		"RegisteredNodeCreate":       113,
 		"RegisteredNodeUpdate":       114,
 		"RegisteredNodeDelete":       115,
+		"MigrationRootHashVote":      116,
 	}
 )
 
@@ -5987,7 +5992,7 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x12PauseNotApplicable\x10\x00\x12\n" +
 	"\n" +
 	"\x06Paused\x10\x01\x12\f\n" +
-	"\bUnpaused\x10\x02*\xa7\x11\n" +
+	"\bUnpaused\x10\x02*\xc2\x11\n" +
 	"\x13HederaFunctionality\x12\b\n" +
 	"\x04NONE\x10\x00\x12\x12\n" +
 	"\x0eCryptoTransfer\x10\x01\x12\x10\n" +
@@ -6096,7 +6101,8 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x13LedgerIdPublication\x10p\x12\x18\n" +
 	"\x14RegisteredNodeCreate\x10q\x12\x18\n" +
 	"\x14RegisteredNodeUpdate\x10r\x12\x18\n" +
-	"\x14RegisteredNodeDelete\x10sB&\n" +
+	"\x14RegisteredNodeDelete\x10s\x12\x19\n" +
+	"\x15MigrationRootHashVote\x10tB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

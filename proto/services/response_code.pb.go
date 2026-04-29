@@ -1262,6 +1262,32 @@ const (
 	// *
 	// The number of hook invocations exceeds the maximum allowed per transaction.
 	ResponseCodeEnum_TOO_MANY_HOOK_INVOCATIONS ResponseCodeEnum = 528
+	// *
+	// A registered node ID is invalid or does not exist.
+	ResponseCodeEnum_INVALID_REGISTERED_NODE_ID ResponseCodeEnum = 529
+	// *
+	// A registered service endpoint is invalid.<br/>
+	// The port is out of range, or the address field is not set.
+	ResponseCodeEnum_INVALID_REGISTERED_ENDPOINT ResponseCodeEnum = 530
+	// *
+	// The number of registered service endpoints exceeds the configured limit.
+	ResponseCodeEnum_REGISTERED_ENDPOINTS_EXCEEDED_LIMIT ResponseCodeEnum = 531
+	// *
+	// A registered service endpoint has an invalid address.<br/>
+	// The IP address length is not 4 (IPv4) or 16 (IPv6), or the
+	// domain name is not a valid ASCII FQDN.
+	ResponseCodeEnum_INVALID_REGISTERED_ENDPOINT_ADDRESS ResponseCodeEnum = 532
+	// *
+	// A registered service endpoint does not specify an endpoint type.<br/>
+	// Exactly one of block_node, mirror_node, or rpc_relay MUST be set.
+	ResponseCodeEnum_INVALID_REGISTERED_ENDPOINT_TYPE ResponseCodeEnum = 533
+	// *
+	// A registered node cannot be deleted because it is still associated
+	// with a consensus node via their associated registered node list.
+	ResponseCodeEnum_REGISTERED_NODE_STILL_ASSOCIATED ResponseCodeEnum = 534
+	// *
+	// The number of associated registered nodes exceeds the maximum allowed limit.
+	ResponseCodeEnum_MAX_REGISTERED_NODES_EXCEEDED ResponseCodeEnum = 535
 )
 
 // Enum value maps for ResponseCodeEnum.
@@ -1657,6 +1683,13 @@ var (
 		526: "NODE_ACCOUNT_HAS_ZERO_BALANCE",
 		527: "TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED",
 		528: "TOO_MANY_HOOK_INVOCATIONS",
+		529: "INVALID_REGISTERED_NODE_ID",
+		530: "INVALID_REGISTERED_ENDPOINT",
+		531: "REGISTERED_ENDPOINTS_EXCEEDED_LIMIT",
+		532: "INVALID_REGISTERED_ENDPOINT_ADDRESS",
+		533: "INVALID_REGISTERED_ENDPOINT_TYPE",
+		534: "REGISTERED_NODE_STILL_ASSOCIATED",
+		535: "MAX_REGISTERED_NODES_EXCEEDED",
 	}
 	ResponseCodeEnum_value = map[string]int32{
 		"OK":                                                             0,
@@ -2049,6 +2082,13 @@ var (
 		"NODE_ACCOUNT_HAS_ZERO_BALANCE":                                  526,
 		"TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED":                 527,
 		"TOO_MANY_HOOK_INVOCATIONS":                                      528,
+		"INVALID_REGISTERED_NODE_ID":                                     529,
+		"INVALID_REGISTERED_ENDPOINT":                                    530,
+		"REGISTERED_ENDPOINTS_EXCEEDED_LIMIT":                            531,
+		"INVALID_REGISTERED_ENDPOINT_ADDRESS":                            532,
+		"INVALID_REGISTERED_ENDPOINT_TYPE":                               533,
+		"REGISTERED_NODE_STILL_ASSOCIATED":                               534,
+		"MAX_REGISTERED_NODES_EXCEEDED":                                  535,
 	}
 )
 
@@ -2083,7 +2123,7 @@ var File_response_code_proto protoreflect.FileDescriptor
 
 const file_response_code_proto_rawDesc = "" +
 	"\n" +
-	"\x13response_code.proto\x12\x05proto*\xfef\n" +
+	"\x13response_code.proto\x12\x05proto*\x87i\n" +
 	"\x10ResponseCodeEnum\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x17\n" +
 	"\x13INVALID_TRANSACTION\x10\x01\x12\x1b\n" +
@@ -2475,7 +2515,14 @@ const file_response_code_proto_rawDesc = "" +
 	"2HOOKS_EXECUTIONS_REQUIRE_TOP_LEVEL_CRYPTO_TRANSFER\x10\x8d\x04\x12\"\n" +
 	"\x1dNODE_ACCOUNT_HAS_ZERO_BALANCE\x10\x8e\x04\x123\n" +
 	".TRANSFER_TO_FEE_COLLECTION_ACCOUNT_NOT_ALLOWED\x10\x8f\x04\x12\x1e\n" +
-	"\x19TOO_MANY_HOOK_INVOCATIONS\x10\x90\x04B&\n" +
+	"\x19TOO_MANY_HOOK_INVOCATIONS\x10\x90\x04\x12\x1f\n" +
+	"\x1aINVALID_REGISTERED_NODE_ID\x10\x91\x04\x12 \n" +
+	"\x1bINVALID_REGISTERED_ENDPOINT\x10\x92\x04\x12(\n" +
+	"#REGISTERED_ENDPOINTS_EXCEEDED_LIMIT\x10\x93\x04\x12(\n" +
+	"#INVALID_REGISTERED_ENDPOINT_ADDRESS\x10\x94\x04\x12%\n" +
+	" INVALID_REGISTERED_ENDPOINT_TYPE\x10\x95\x04\x12%\n" +
+	" REGISTERED_NODE_STILL_ASSOCIATED\x10\x96\x04\x12\"\n" +
+	"\x1dMAX_REGISTERED_NODES_EXCEEDED\x10\x97\x04B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

@@ -12,6 +12,7 @@ import (
 )
 
 func TestIntegrationTransferHbarWithPreTransactionAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -53,6 +54,7 @@ func TestIntegrationTransferHbarWithPreTransactionAllowanceHookSucceeds(t *testi
 }
 
 func TestIntegrationMultipleAccountsHooksMustAllApprove(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -119,6 +121,7 @@ func TestIntegrationMultipleAccountsHooksMustAllApprove(t *testing.T) {
 }
 
 func TestIntegrationTransferFungibleTokenWithPreTransactionAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -183,6 +186,7 @@ func TestIntegrationTransferFungibleTokenWithPreTransactionAllowanceHookSucceeds
 }
 
 func TestIntegrationTransferNftWithPreTransactionAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -254,6 +258,7 @@ func TestIntegrationTransferNftWithPreTransactionAllowanceHookSucceeds(t *testin
 }
 
 func TestIntegrationTransferNftWithReceiverAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -319,6 +324,7 @@ func TestIntegrationTransferNftWithReceiverAllowanceHookSucceeds(t *testing.T) {
 }
 
 func TestIntegrationTransferNftWithBothSenderAndReceiverHooksSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -419,6 +425,7 @@ func TestIntegrationTransferNftWithBothSenderAndReceiverHooksSucceeds(t *testing
 }
 
 func TestIntegrationTransferWithInvalidGasHook(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -459,6 +466,7 @@ func TestIntegrationTransferWithInvalidGasHook(t *testing.T) {
 }
 
 func TestIntegrationTransferHbarWithPrePostTransactionAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -500,6 +508,7 @@ func TestIntegrationTransferHbarWithPrePostTransactionAllowanceHookSucceeds(t *t
 }
 
 func TestIntegrationTransferFungibleTokenWithPrePostTransactionAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -563,6 +572,7 @@ func TestIntegrationTransferFungibleTokenWithPrePostTransactionAllowanceHookSucc
 }
 
 func TestIntegrationTransferNftWithPrePostSenderAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)
@@ -634,6 +644,7 @@ func TestIntegrationTransferNftWithPrePostSenderAllowanceHookSucceeds(t *testing
 }
 
 func TestIntegrationTransferNftWithPrePostReceiverAllowanceHookSucceeds(t *testing.T) {
+	t.Skip("Hooks are disabled")
 	t.Parallel()
 
 	env := NewIntegrationTestEnv(t)

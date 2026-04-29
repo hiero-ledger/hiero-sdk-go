@@ -170,6 +170,7 @@ func TestIntegrationEthereumTransactionJumboTransaction(t *testing.T) {
 	require.NoError(t, err)
 
 	response, err := NewEthereumTransaction().
+		SetMaxTransactionFee(NewHbar(15)).
 		SetEthereumData(messageBytes).
 		Execute(env.Client)
 	require.NoError(t, err)
