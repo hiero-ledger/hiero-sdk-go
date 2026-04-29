@@ -224,8 +224,9 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 			return FeeEstimateResponse{}, errors.Wrap(lastErr, "failed to call fee estimate API")
 		}
 
-		// Calculate delay with exponential backoff
-		delayMs := 250.0 * float64(uint64(1)<<attempt) // 250ms, 500ms, 1000ms, etc.
+		// Exponential backoff capped at 8s; exp is clamped to avoid shift overflow.
+		exp := min(attempt, uint64(5))
+		delayMs := 250.0 * float64(uint64(1)<<exp)
 		if delayMs > 8000 {
 			delayMs = 8000
 		}
