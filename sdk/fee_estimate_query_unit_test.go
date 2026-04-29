@@ -197,6 +197,35 @@ func TestUnitFeeEstimateResponseFromREST(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestUnitFeeEstimateResponseTotalFormula(t *testing.T) {
+	t.Parallel()
+
+	response := FeeEstimateResponse{
+		NetworkFee: NetworkFee{Multiplier: 3},
+		NodeFee: FeeEstimate{
+			Base: 1000,
+			Extras: []FeeExtra{
+				{Subtotal: 50},
+				{Subtotal: 500},
+			},
+		},
+		ServiceFee: FeeEstimate{
+			Base:   200,
+			Extras: []FeeExtra{{Subtotal: 75}},
+		},
+	}
+
+	nodeSubtotal := response.NodeFee.Subtotal()
+	serviceSubtotal := response.ServiceFee.Subtotal()
+	response.NetworkFee.Subtotal = nodeSubtotal * uint64(response.NetworkFee.Multiplier)
+	response.Total = response.NetworkFee.Subtotal + nodeSubtotal + serviceSubtotal
+
+	require.Equal(t, uint64(1550), nodeSubtotal)
+	require.Equal(t, uint64(275), serviceSubtotal)
+	require.Equal(t, uint64(4650), response.NetworkFee.Subtotal)
+	require.Equal(t, response.NetworkFee.Subtotal+nodeSubtotal+serviceSubtotal, response.Total)
+}
+
 func TestUnitTransactionEstimateFee(t *testing.T) {
 	t.Parallel()
 

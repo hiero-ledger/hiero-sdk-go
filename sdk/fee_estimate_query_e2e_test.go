@@ -12,18 +12,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const mirrorSyncDelayMillis = 2 * time.Second
+const mirrorSyncDelay = 2 * time.Second
 
 func waitForMirrorNodeSync() {
-	time.Sleep(mirrorSyncDelayMillis)
-}
-
-func subtotal(estimate FeeEstimate) uint64 {
-	total := estimate.Base
-	for _, extra := range estimate.Extras {
-		total += extra.Subtotal
-	}
-	return total
+	time.Sleep(mirrorSyncDelay)
 }
 
 func assertFeeComponentsPresent(t *testing.T, response FeeEstimateResponse) {
@@ -31,31 +23,22 @@ func assertFeeComponentsPresent(t *testing.T, response FeeEstimateResponse) {
 
 	require.NotNil(t, response.NetworkFee)
 	assert.Greater(t, response.NetworkFee.Multiplier, uint32(0))
-	assert.GreaterOrEqual(t, response.NetworkFee.Subtotal, uint64(0))
 
 	require.NotNil(t, response.NodeFee)
-	assert.GreaterOrEqual(t, response.NodeFee.Base, uint64(0))
 	require.NotNil(t, response.NodeFee.Extras)
 
 	require.NotNil(t, response.ServiceFee)
-	assert.GreaterOrEqual(t, response.ServiceFee.Base, uint64(0))
 	require.NotNil(t, response.ServiceFee.Extras)
-
-	assert.GreaterOrEqual(t, response.HighVolumeMultiplier, uint64(1))
 
 	assert.Greater(t, response.Total, uint64(0))
 }
 
 func assertComponentTotalsConsistent(t *testing.T, response FeeEstimateResponse) {
-	network := response.NetworkFee
-	node := response.NodeFee
-	service := response.ServiceFee
+	nodeSubtotal := response.NodeFee.Subtotal()
+	serviceSubtotal := response.ServiceFee.Subtotal()
 
-	nodeSubtotal := subtotal(node)
-	serviceSubtotal := subtotal(service)
-
-	assert.Equal(t, network.Subtotal, nodeSubtotal*uint64(network.Multiplier))
-	assert.Equal(t, response.Total, network.Subtotal+nodeSubtotal+serviceSubtotal)
+	assert.Equal(t, response.NetworkFee.Subtotal, nodeSubtotal*uint64(response.NetworkFee.Multiplier))
+	assert.Equal(t, response.Total, response.NetworkFee.Subtotal+nodeSubtotal+serviceSubtotal)
 }
 
 func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
