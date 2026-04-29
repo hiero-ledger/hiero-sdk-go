@@ -302,6 +302,7 @@ type TransactionBody struct {
 	//	*TransactionBody_RegisteredNodeCreate
 	//	*TransactionBody_RegisteredNodeUpdate
 	//	*TransactionBody_RegisteredNodeDelete
+	//	*TransactionBody_MigrationRootHashVote
 	Data isTransactionBody_Data `protobuf_oneof:"data"`
 	// *
 	// A list of maximum custom fees that the users are willing to pay.
@@ -1020,6 +1021,15 @@ func (x *TransactionBody) GetRegisteredNodeDelete() *RegisteredNodeDeleteTransac
 	return nil
 }
 
+func (x *TransactionBody) GetMigrationRootHashVote() *MigrationRootHashVoteTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_MigrationRootHashVote); ok {
+			return x.MigrationRootHashVote
+		}
+	}
+	return nil
+}
+
 func (x *TransactionBody) GetMaxCustomFees() []*CustomFeeLimit {
 	if x != nil {
 		return x.MaxCustomFees
@@ -1555,6 +1565,12 @@ type TransactionBody_RegisteredNodeDelete struct {
 	RegisteredNodeDelete *RegisteredNodeDeleteTransactionBody `protobuf:"bytes,80,opt,name=registeredNodeDelete,proto3,oneof"`
 }
 
+type TransactionBody_MigrationRootHashVote struct {
+	// *
+	// A transaction body for voting on migration wrapped record root hash state.
+	MigrationRootHashVote *MigrationRootHashVoteTransactionBody `protobuf:"bytes,81,opt,name=migration_root_hash_vote,json=migrationRootHashVote,proto3,oneof"`
+}
+
 func (*TransactionBody_ContractCall) isTransactionBody_Data() {}
 
 func (*TransactionBody_ContractCreateInstance) isTransactionBody_Data() {}
@@ -1691,6 +1707,8 @@ func (*TransactionBody_RegisteredNodeUpdate) isTransactionBody_Data() {}
 
 func (*TransactionBody_RegisteredNodeDelete) isTransactionBody_Data() {}
 
+func (*TransactionBody_MigrationRootHashVote) isTransactionBody_Data() {}
+
 // *
 // A transaction body for handling a set of transactions atomically.
 type AtomicBatchTransactionBody struct {
@@ -1743,13 +1761,13 @@ var File_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_proto_rawDesc = "" +
 	"\n" +
-	"\x11transaction.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13system_delete.proto\x1a\x15system_undelete.proto\x1a\ffreeze.proto\x1a\x13contract_call.proto\x1a\x15contract_create.proto\x1a\x15contract_update.proto\x1a\x1acrypto_add_live_hash.proto\x1a\x13crypto_create.proto\x1a\x13crypto_delete.proto\x1a\x1dcrypto_delete_live_hash.proto\x1a\x15crypto_transfer.proto\x1a\x13crypto_update.proto\x1a\x1ecrypto_approve_allowance.proto\x1a\x1dcrypto_delete_allowance.proto\x1a\x1aethereum_transaction.proto\x1a\x11file_append.proto\x1a\x11file_create.proto\x1a\x11file_delete.proto\x1a\x11file_update.proto\x1a\x0eduration.proto\x1a\x15contract_delete.proto\x1a\x1cconsensus_create_topic.proto\x1a\x1cconsensus_update_topic.proto\x1a\x1cconsensus_delete_topic.proto\x1a\x1econsensus_submit_message.proto\x1a\x16unchecked_submit.proto\x1a\x12token_create.proto\x1a\x1atoken_freeze_account.proto\x1a\x1ctoken_unfreeze_account.proto\x1a\x15token_grant_kyc.proto\x1a\x16token_revoke_kyc.proto\x1a\x12token_delete.proto\x1a\x12token_update.proto\x1a\x10token_mint.proto\x1a\x10token_burn.proto\x1a\x18token_wipe_account.proto\x1a\x15token_associate.proto\x1a\x16token_dissociate.proto\x1a\x1ftoken_fee_schedule_update.proto\x1a\x11token_pause.proto\x1a\x13token_unpause.proto\x1a\x17token_update_nfts.proto\x1a\x12token_reject.proto\x1a\x13token_airdrop.proto\x1a\x1atoken_cancel_airdrop.proto\x1a\x19token_claim_airdrop.proto\x1a\x15schedule_create.proto\x1a\x15schedule_delete.proto\x1a\x13schedule_sign.proto\x1a\x17node_stake_update.proto\x1a\x0futil_prng.proto\x1a\x11node_create.proto\x1a\x11node_update.proto\x1a\x11node_delete.proto\x1a\x11custom_fees.proto\x1a!state_signature_transaction.proto\x1a\x1bhints_key_publication.proto\x1a\x1ehints_preprocessing_vote.proto\x1a\x1dhints_partial_signature.proto\x1a\x15crs_publication.proto\x1a\x1dhistory_proof_signature.proto\x1a#history_proof_key_publication.proto\x1a\x18history_proof_vote.proto\x1a\x1bledger_id_publication.proto\x1a\x10hook_store.proto\x1a\x13hook_dispatch.proto\x1a\x1cregistered_node_create.proto\x1a\x1cregistered_node_update.proto\x1a\x1cregistered_node_delete.proto\"\xf6\x01\n" +
+	"\x11transaction.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13system_delete.proto\x1a\x15system_undelete.proto\x1a\ffreeze.proto\x1a\x13contract_call.proto\x1a\x15contract_create.proto\x1a\x15contract_update.proto\x1a\x1acrypto_add_live_hash.proto\x1a\x13crypto_create.proto\x1a\x13crypto_delete.proto\x1a\x1dcrypto_delete_live_hash.proto\x1a\x15crypto_transfer.proto\x1a\x13crypto_update.proto\x1a\x1ecrypto_approve_allowance.proto\x1a\x1dcrypto_delete_allowance.proto\x1a\x1aethereum_transaction.proto\x1a\x11file_append.proto\x1a\x11file_create.proto\x1a\x11file_delete.proto\x1a\x11file_update.proto\x1a\x0eduration.proto\x1a\x15contract_delete.proto\x1a\x1cconsensus_create_topic.proto\x1a\x1cconsensus_update_topic.proto\x1a\x1cconsensus_delete_topic.proto\x1a\x1econsensus_submit_message.proto\x1a\x16unchecked_submit.proto\x1a\x12token_create.proto\x1a\x1atoken_freeze_account.proto\x1a\x1ctoken_unfreeze_account.proto\x1a\x15token_grant_kyc.proto\x1a\x16token_revoke_kyc.proto\x1a\x12token_delete.proto\x1a\x12token_update.proto\x1a\x10token_mint.proto\x1a\x10token_burn.proto\x1a\x18token_wipe_account.proto\x1a\x15token_associate.proto\x1a\x16token_dissociate.proto\x1a\x1ftoken_fee_schedule_update.proto\x1a\x11token_pause.proto\x1a\x13token_unpause.proto\x1a\x17token_update_nfts.proto\x1a\x12token_reject.proto\x1a\x13token_airdrop.proto\x1a\x1atoken_cancel_airdrop.proto\x1a\x19token_claim_airdrop.proto\x1a\x15schedule_create.proto\x1a\x15schedule_delete.proto\x1a\x13schedule_sign.proto\x1a\x17node_stake_update.proto\x1a\x0futil_prng.proto\x1a\x11node_create.proto\x1a\x11node_update.proto\x1a\x11node_delete.proto\x1a\x11custom_fees.proto\x1a!state_signature_transaction.proto\x1a\x1bhints_key_publication.proto\x1a\x1ehints_preprocessing_vote.proto\x1a\x1dhints_partial_signature.proto\x1a\x15crs_publication.proto\x1a\x1dhistory_proof_signature.proto\x1a#history_proof_key_publication.proto\x1a\x18history_proof_vote.proto\x1a\x1bledger_id_publication.proto\x1a\x1emigration_root_hash_vote.proto\x1a\x10hook_store.proto\x1a\x13hook_dispatch.proto\x1a\x1cregistered_node_create.proto\x1a\x1cregistered_node_update.proto\x1a\x1cregistered_node_delete.proto\"\xf6\x01\n" +
 	"\vTransaction\x12.\n" +
 	"\x04body\x18\x01 \x01(\v2\x16.proto.TransactionBodyB\x02\x18\x01R\x04body\x12,\n" +
 	"\x04sigs\x18\x02 \x01(\v2\x14.proto.SignatureListB\x02\x18\x01R\x04sigs\x12/\n" +
 	"\x06sigMap\x18\x03 \x01(\v2\x13.proto.SignatureMapB\x02\x18\x01R\x06sigMap\x12 \n" +
 	"\tbodyBytes\x18\x04 \x01(\fB\x02\x18\x01R\tbodyBytes\x126\n" +
-	"\x16signedTransactionBytes\x18\x05 \x01(\fR\x16signedTransactionBytes\"\xcf4\n" +
+	"\x16signedTransactionBytes\x18\x05 \x01(\fR\x16signedTransactionBytes\"\xe25\n" +
 	"\x0fTransactionBody\x12:\n" +
 	"\rtransactionID\x18\x01 \x01(\v2\x14.proto.TransactionIDR\rtransactionID\x126\n" +
 	"\rnodeAccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\rnodeAccountID\x12&\n" +
@@ -1843,7 +1861,8 @@ const file_transaction_proto_rawDesc = "" +
 	"\x15ledger_id_publication\x18M \x01(\v2<.com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBodyH\x00R\x13ledgerIdPublication\x12{\n" +
 	"\x14registeredNodeCreate\x18N \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeCreateTransactionBodyH\x00R\x14registeredNodeCreate\x12{\n" +
 	"\x14registeredNodeUpdate\x18O \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBodyH\x00R\x14registeredNodeUpdate\x12{\n" +
-	"\x14registeredNodeDelete\x18P \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBodyH\x00R\x14registeredNodeDelete\x12>\n" +
+	"\x14registeredNodeDelete\x18P \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBodyH\x00R\x14registeredNodeDelete\x12\x90\x01\n" +
+	"\x18migration_root_hash_vote\x18Q \x01(\v2U.com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBodyH\x00R\x15migrationRootHashVote\x12>\n" +
 	"\x0fmax_custom_fees\x18\xe9\a \x03(\v2\x15.proto.CustomFeeLimitR\rmaxCustomFees\x12 \n" +
 	"\vhigh_volume\x18\xea\a \x01(\bR\n" +
 	"highVolumeB\x06\n" +
@@ -1943,7 +1962,8 @@ var file_transaction_proto_goTypes = []any{
 	(*RegisteredNodeCreateTransactionBody)(nil),       // 73: com.hedera.hapi.node.addressbook.RegisteredNodeCreateTransactionBody
 	(*RegisteredNodeUpdateTransactionBody)(nil),       // 74: com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBody
 	(*RegisteredNodeDeleteTransactionBody)(nil),       // 75: com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBody
-	(*CustomFeeLimit)(nil),                            // 76: proto.CustomFeeLimit
+	(*MigrationRootHashVoteTransactionBody)(nil),      // 76: com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody
+	(*CustomFeeLimit)(nil),                            // 77: proto.CustomFeeLimit
 }
 var file_transaction_proto_depIdxs = []int32{
 	1,  // 0: proto.Transaction.body:type_name -> proto.TransactionBody
@@ -2021,12 +2041,13 @@ var file_transaction_proto_depIdxs = []int32{
 	73, // 72: proto.TransactionBody.registeredNodeCreate:type_name -> com.hedera.hapi.node.addressbook.RegisteredNodeCreateTransactionBody
 	74, // 73: proto.TransactionBody.registeredNodeUpdate:type_name -> com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBody
 	75, // 74: proto.TransactionBody.registeredNodeDelete:type_name -> com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBody
-	76, // 75: proto.TransactionBody.max_custom_fees:type_name -> proto.CustomFeeLimit
-	76, // [76:76] is the sub-list for method output_type
-	76, // [76:76] is the sub-list for method input_type
-	76, // [76:76] is the sub-list for extension type_name
-	76, // [76:76] is the sub-list for extension extendee
-	0,  // [0:76] is the sub-list for field type_name
+	76, // 75: proto.TransactionBody.migration_root_hash_vote:type_name -> com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody
+	77, // 76: proto.TransactionBody.max_custom_fees:type_name -> proto.CustomFeeLimit
+	77, // [77:77] is the sub-list for method output_type
+	77, // [77:77] is the sub-list for method input_type
+	77, // [77:77] is the sub-list for extension type_name
+	77, // [77:77] is the sub-list for extension extendee
+	0,  // [0:77] is the sub-list for field type_name
 }
 
 func init() { file_transaction_proto_init() }
@@ -2099,6 +2120,7 @@ func file_transaction_proto_init() {
 	file_history_proof_key_publication_proto_init()
 	file_history_proof_vote_proto_init()
 	file_ledger_id_publication_proto_init()
+	file_migration_root_hash_vote_proto_init()
 	file_hook_store_proto_init()
 	file_hook_dispatch_proto_init()
 	file_registered_node_create_proto_init()
@@ -2173,6 +2195,7 @@ func file_transaction_proto_init() {
 		(*TransactionBody_RegisteredNodeCreate)(nil),
 		(*TransactionBody_RegisteredNodeUpdate)(nil),
 		(*TransactionBody_RegisteredNodeDelete)(nil),
+		(*TransactionBody_MigrationRootHashVote)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

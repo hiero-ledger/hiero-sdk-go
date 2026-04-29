@@ -175,8 +175,19 @@ type CryptoCreateTransactionBody struct {
 	// *
 	// Details of hooks to add immediately after creating this account.
 	HookCreationDetails []*HookCreationDetails `protobuf:"bytes,19,rep,name=hook_creation_details,json=hookCreationDetails,proto3" json:"hook_creation_details,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// *
+	// The initial delegated contract address to set for the new account.
+	// <p>
+	// If set, the value MUST be 20 bytes long (EVM address).
+	// A value of `0x0000000000000000000000000000000000000000` will be ignored.
+	//
+	// If this field is set on the account, anytime a call is made to the account's address
+	// (either an EVM call within HSCS or a child call dispatched by CryptoTransfer)
+	// the EVM code of the contract referenced by `delegation_address` will be
+	// executed in the context of the account.
+	DelegationAddress []byte `protobuf:"bytes,20,opt,name=delegation_address,json=delegationAddress,proto3" json:"delegation_address,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CryptoCreateTransactionBody) Reset() {
@@ -343,6 +354,13 @@ func (x *CryptoCreateTransactionBody) GetHookCreationDetails() []*HookCreationDe
 	return nil
 }
 
+func (x *CryptoCreateTransactionBody) GetDelegationAddress() []byte {
+	if x != nil {
+		return x.DelegationAddress
+	}
+	return nil
+}
+
 type isCryptoCreateTransactionBody_StakedId interface {
 	isCryptoCreateTransactionBody_StakedId()
 }
@@ -376,7 +394,7 @@ var File_crypto_create_proto protoreflect.FileDescriptor
 
 const file_crypto_create_proto_rawDesc = "" +
 	"\n" +
-	"\x13crypto_create.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x0eduration.proto\x1a\x10hook_types.proto\"\x90\a\n" +
+	"\x13crypto_create.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x0eduration.proto\x1a\x10hook_types.proto\"\xbf\a\n" +
 	"\x1bCryptoCreateTransactionBody\x12\x1c\n" +
 	"\x03key\x18\x01 \x01(\v2\n" +
 	".proto.KeyR\x03key\x12&\n" +
@@ -397,7 +415,8 @@ const file_crypto_create_proto_rawDesc = "" +
 	"\x0estaked_node_id\x18\x10 \x01(\x03H\x00R\fstakedNodeId\x12%\n" +
 	"\x0edecline_reward\x18\x11 \x01(\bR\rdeclineReward\x12\x14\n" +
 	"\x05alias\x18\x12 \x01(\fR\x05alias\x12c\n" +
-	"\x15hook_creation_details\x18\x13 \x03(\v2/.com.hedera.hapi.node.hooks.HookCreationDetailsR\x13hookCreationDetailsB\v\n" +
+	"\x15hook_creation_details\x18\x13 \x03(\v2/.com.hedera.hapi.node.hooks.HookCreationDetailsR\x13hookCreationDetails\x12-\n" +
+	"\x12delegation_address\x18\x14 \x01(\fR\x11delegationAddressB\v\n" +
 	"\tstaked_idJ\x04\b\x04\x10\x05J\x04\b\x05\x10\x06B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
