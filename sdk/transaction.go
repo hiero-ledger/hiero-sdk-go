@@ -356,6 +356,8 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _NodeDeleteTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*NodeDeleteTransaction](baseTx), first)
 	case *services.TransactionBody_RegisteredNodeCreate:
 		childTx = _RegisteredNodeCreateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeCreateTransaction](baseTx), first)
+	case *services.TransactionBody_RegisteredNodeUpdate:
+		childTx = _RegisteredNodeUpdateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeUpdateTransaction](baseTx), first)
 	case *services.TransactionBody_RegisteredNodeDelete:
 		childTx = _RegisteredNodeDeleteTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeDeleteTransaction](baseTx), first)
 	case *services.TransactionBody_TokenAirdrop:
@@ -574,6 +576,11 @@ func transactionFromScheduledTransaction(scheduledBody *services.SchedulableTran
 			RegisteredNodeCreate: scheduledBody.GetRegisteredNodeCreate(),
 		}
 		tx = _RegisteredNodeCreateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeCreateTransaction](baseTx), pbBody)
+	case *services.SchedulableTransactionBody_RegisteredNodeUpdate:
+		pbBody.Data = &services.TransactionBody_RegisteredNodeUpdate{
+			RegisteredNodeUpdate: scheduledBody.GetRegisteredNodeUpdate(),
+		}
+		tx = _RegisteredNodeUpdateTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*RegisteredNodeUpdateTransaction](baseTx), pbBody)
 	case *services.SchedulableTransactionBody_RegisteredNodeDelete:
 		pbBody.Data = &services.TransactionBody_RegisteredNodeDelete{
 			RegisteredNodeDelete: scheduledBody.GetRegisteredNodeDelete(),
