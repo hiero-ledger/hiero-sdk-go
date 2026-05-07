@@ -85,13 +85,24 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 		return RegisteredNodeAddressBook{}, errNoClientProvided
 	}
 
+	mirrorBase, endpoint, err := q.resolveEndpoint(client)
+	if err != nil {
+		return RegisteredNodeAddressBook{}, err
+	}
+
+	return q.walkPages(mirrorBase, endpoint, q.resolveAttempts(client))
+}
+
+// resolveEndpoint discovers the mirror node REST base URL on the client,
+// parses it, and returns it together with the initial query URL.
+func (q *RegisteredNodeAddressBookQuery) resolveEndpoint(client *Client) (*url.URL, string, error) {
 	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return RegisteredNodeAddressBook{}, fmt.Errorf("mirror node is not set")
+		return nil, "", fmt.Errorf("mirror node is not set")
 	}
 
 	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
 	if err != nil {
-		return RegisteredNodeAddressBook{}, fmt.Errorf("failed to get mirror REST API base URL: %w", err)
+		return nil, "", fmt.Errorf("failed to get mirror REST API base URL: %w", err)
 	}
 
 	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
@@ -100,19 +111,26 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 
 	mirrorBase, err := url.Parse(mirrorUrl)
 	if err != nil {
-		return RegisteredNodeAddressBook{}, fmt.Errorf("invalid mirror REST API base URL %q: %w", mirrorUrl, err)
+		return nil, "", fmt.Errorf("invalid mirror REST API base URL %q: %w", mirrorUrl, err)
 	}
 
-	attempts := q.maxAttempts
-	if attempts == 0 {
-		if clientMax := client.GetMaxAttempts(); clientMax > 0 {
-			attempts = uint64(clientMax)
-		} else {
-			attempts = 1
-		}
-	}
+	return mirrorBase, q.buildURL(mirrorUrl), nil
+}
 
-	endpoint := q.buildURL(mirrorUrl)
+// resolveAttempts picks the per-page retry budget: query setting first,
+// client default second, single attempt as the final fallback.
+func (q *RegisteredNodeAddressBookQuery) resolveAttempts(client *Client) uint64 {
+	if q.maxAttempts > 0 {
+		return q.maxAttempts
+	}
+	if clientMax := client.GetMaxAttempts(); clientMax > 0 {
+		return uint64(clientMax)
+	}
+	return 1
+}
+
+// walkPages follows links.next until exhausted (or the page cap trips).
+func (q *RegisteredNodeAddressBookQuery) walkPages(base *url.URL, endpoint string, attempts uint64) (RegisteredNodeAddressBook, error) {
 	allNodes := make([]RegisteredNode, 0)
 
 	for range registeredNodeMaxPages {
@@ -131,7 +149,7 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 			return RegisteredNodeAddressBook{RegisteredNodes: allNodes}, nil
 		}
 
-		resolved, err := resolveNextURL(mirrorBase, *next)
+		resolved, err := resolveNextURL(base, *next)
 		if err != nil {
 			return RegisteredNodeAddressBook{}, fmt.Errorf("invalid pagination next link %q: %w", *next, err)
 		}
@@ -315,6 +333,28 @@ func adminKeyFromJSON(raw adminKeyJSON) (Key, error) {
 }
 
 func serviceEndpointFromJSON(raw serviceEndpointJSON) (RegisteredServiceEndpoint, error) {
+	base, err := endpointBaseFromJSON(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	switch strings.ToUpper(raw.Type) {
+	case "BLOCK_NODE":
+		return blockNodeEndpointFromJSON(base, raw.BlockNode), nil
+	case "MIRROR_NODE":
+		return &MirrorNodeServiceEndpoint{registeredEndpointBase: base}, nil
+	case "RPC_RELAY":
+		return &RpcRelayServiceEndpoint{registeredEndpointBase: base}, nil
+	case "GENERAL_SERVICE":
+		return generalServiceEndpointFromJSON(base, raw.GeneralService), nil
+	default:
+		return nil, fmt.Errorf("unknown endpoint type: %s", raw.Type)
+	}
+}
+
+// endpointBaseFromJSON extracts the IP / domain / port / TLS fields shared by
+// every endpoint subtype.
+func endpointBaseFromJSON(raw serviceEndpointJSON) (registeredEndpointBase, error) {
 	base := registeredEndpointBase{
 		port:        raw.Port,
 		requiresTls: raw.RequiresTls,
@@ -323,7 +363,7 @@ func serviceEndpointFromJSON(raw serviceEndpointJSON) (RegisteredServiceEndpoint
 	if raw.IPAddress != nil && *raw.IPAddress != "" {
 		ip := net.ParseIP(*raw.IPAddress)
 		if ip == nil {
-			return nil, fmt.Errorf("invalid IP address: %s", *raw.IPAddress)
+			return base, fmt.Errorf("invalid IP address: %s", *raw.IPAddress)
 		}
 		if v4 := ip.To4(); v4 != nil {
 			base.ipAddress = v4
@@ -336,42 +376,28 @@ func serviceEndpointFromJSON(raw serviceEndpointJSON) (RegisteredServiceEndpoint
 		base.domainName = *raw.DomainName
 	}
 
-	switch strings.ToUpper(raw.Type) {
-	case "BLOCK_NODE":
-		endpoint := &BlockNodeServiceEndpoint{
-			registeredEndpointBase: base,
-		}
-		if raw.BlockNode != nil {
-			apis := make([]BlockNodeApi, 0, len(raw.BlockNode.EndpointApis))
-			for _, apiStr := range raw.BlockNode.EndpointApis {
-				apis = append(apis, blockNodeApiFromString(apiStr))
-			}
-			endpoint.endpointApis = apis
-		}
-		return endpoint, nil
+	return base, nil
+}
 
-	case "MIRROR_NODE":
-		return &MirrorNodeServiceEndpoint{
-			registeredEndpointBase: base,
-		}, nil
-
-	case "RPC_RELAY":
-		return &RpcRelayServiceEndpoint{
-			registeredEndpointBase: base,
-		}, nil
-
-	case "GENERAL_SERVICE":
-		endpoint := &GeneralServiceEndpoint{
-			registeredEndpointBase: base,
-		}
-		if raw.GeneralService != nil {
-			endpoint.description = raw.GeneralService.Description
-		}
-		return endpoint, nil
-
-	default:
-		return nil, fmt.Errorf("unknown endpoint type: %s", raw.Type)
+func blockNodeEndpointFromJSON(base registeredEndpointBase, raw *blockNodeJSON) *BlockNodeServiceEndpoint {
+	endpoint := &BlockNodeServiceEndpoint{registeredEndpointBase: base}
+	if raw == nil {
+		return endpoint
 	}
+
+	endpoint.endpointApis = make([]BlockNodeApi, 0, len(raw.EndpointApis))
+	for _, apiStr := range raw.EndpointApis {
+		endpoint.endpointApis = append(endpoint.endpointApis, blockNodeApiFromString(apiStr))
+	}
+	return endpoint
+}
+
+func generalServiceEndpointFromJSON(base registeredEndpointBase, raw *generalServiceJSON) *GeneralServiceEndpoint {
+	endpoint := &GeneralServiceEndpoint{registeredEndpointBase: base}
+	if raw != nil {
+		endpoint.description = raw.Description
+	}
+	return endpoint
 }
 
 func blockNodeApiFromString(s string) BlockNodeApi {

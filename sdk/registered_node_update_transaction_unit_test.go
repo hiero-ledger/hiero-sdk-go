@@ -366,3 +366,34 @@ func TestUnitRegisteredNodeUpdateTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(RegisteredNodeUpdateTransaction).buildProtoBody())
 }
+
+func TestUnitRegisteredNodeUpdateTransactionSetServiceEndpoints(t *testing.T) {
+	t.Parallel()
+
+	endpoint := &MirrorNodeServiceEndpoint{
+		registeredEndpointBase: registeredEndpointBase{
+			ipAddress: []byte{10, 0, 0, 1},
+			port:      443,
+		},
+	}
+
+	tx := NewRegisteredNodeUpdateTransaction().
+		SetRegisteredNodeId(7).
+		SetServiceEndpoints([]RegisteredServiceEndpoint{endpoint})
+
+	require.Len(t, tx.GetServiceEndpoints(), 1)
+	body := tx.buildProtoBody()
+	require.Len(t, body.ServiceEndpoint, 1)
+}
+
+func TestUnitRegisteredNodeUpdateTransactionScheduleProtobuf(t *testing.T) {
+	t.Parallel()
+
+	tx := NewRegisteredNodeUpdateTransaction().
+		SetRegisteredNodeId(7).
+		SetDescription("scheduled")
+
+	scheduled, err := tx.constructScheduleProtobuf()
+	require.NoError(t, err)
+	require.NotNil(t, scheduled.GetRegisteredNodeUpdate())
+}

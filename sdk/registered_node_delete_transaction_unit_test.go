@@ -278,3 +278,13 @@ func TestUnitRegisteredNodeDeleteTransactionFromToBytes(t *testing.T) {
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(RegisteredNodeDeleteTransaction).buildProtoBody())
 }
 
+func TestUnitRegisteredNodeDeleteTransactionScheduleProtobuf(t *testing.T) {
+	t.Parallel()
+
+	tx := NewRegisteredNodeDeleteTransaction().SetRegisteredNodeId(7)
+
+	scheduled, err := tx.constructScheduleProtobuf()
+	require.NoError(t, err)
+	require.NotNil(t, scheduled.GetRegisteredNodeDelete())
+}
+

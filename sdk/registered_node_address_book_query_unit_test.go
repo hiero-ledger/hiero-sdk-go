@@ -344,3 +344,61 @@ func TestUnitServiceEndpointFromJSONUnknownType(t *testing.T) {
 	})
 	assert.Error(t, err)
 }
+
+func TestUnitServiceEndpointFromJSONBlockNodeMissingNested(t *testing.T) {
+	t.Parallel()
+
+	ip := "10.0.0.1"
+	ep, err := serviceEndpointFromJSON(serviceEndpointJSON{
+		Type:      "BLOCK_NODE",
+		IPAddress: &ip,
+		Port:      50211,
+	})
+	require.NoError(t, err)
+
+	bn, ok := ep.(*BlockNodeServiceEndpoint)
+	require.True(t, ok)
+	assert.Empty(t, bn.GetEndpointApis())
+}
+
+// ----- registeredNodeFromJSON -----
+
+func TestUnitRegisteredNodeFromJSONBadAdminKey(t *testing.T) {
+	t.Parallel()
+
+	_, err := registeredNodeFromJSON(registeredNodeJSON{
+		AdminKey:         &adminKeyJSON{Type: "ED25519", Key: "not-a-key"},
+		RegisteredNodeID: 1,
+	})
+	assert.Error(t, err)
+}
+
+// ----- resolveAttempts / Execute precondition guards -----
+
+func TestUnitResolveAttempts(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+
+	q := NewRegisteredNodeAddressBookQuery()
+	assert.Equal(t, uint64(1), q.resolveAttempts(client), "fallback to 1 when neither is set")
+
+	client.SetMaxAttempts(7)
+	assert.Equal(t, uint64(7), q.resolveAttempts(client), "uses client default when query unset")
+
+	q.SetMaxAttempts(3)
+	assert.Equal(t, uint64(3), q.resolveAttempts(client), "query setting wins over client")
+}
+
+func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetMirrorNetwork(nil)
+
+	_, err = NewRegisteredNodeAddressBookQuery().Execute(client)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "mirror node is not set")
+}

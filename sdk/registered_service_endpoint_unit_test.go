@@ -165,24 +165,29 @@ func TestUnitBlockNodeServiceEndpointSetters(t *testing.T) {
 
 	endpoint := &BlockNodeServiceEndpoint{}
 	endpoint.SetIPAddress([]byte{192, 168, 0, 1}).
+		SetDomainName("block.example.com").
 		SetPort(443).
 		SetRequiresTls(true).
-		AddEndpointApi(BlockNodeApiSubscribeStream)
+		AddEndpointApi(BlockNodeApiSubscribeStream).
+		SetEndpointApis([]BlockNodeApi{BlockNodeApiStatus, BlockNodeApiPublish})
 
 	assert.Equal(t, []byte{192, 168, 0, 1}, endpoint.GetIPAddress())
+	assert.Equal(t, "block.example.com", endpoint.GetDomainName())
 	assert.Equal(t, uint32(443), endpoint.GetPort())
 	assert.True(t, endpoint.GetRequiresTls())
-	assert.Equal(t, []BlockNodeApi{BlockNodeApiSubscribeStream}, endpoint.GetEndpointApis())
+	assert.Equal(t, []BlockNodeApi{BlockNodeApiStatus, BlockNodeApiPublish}, endpoint.GetEndpointApis())
 }
 
 func TestUnitMirrorNodeServiceEndpointSetters(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &MirrorNodeServiceEndpoint{}
-	endpoint.SetDomainName("mirror.example.com").
+	endpoint.SetIPAddress([]byte{10, 0, 0, 1}).
+		SetDomainName("mirror.example.com").
 		SetPort(443).
 		SetRequiresTls(true)
 
+	assert.Equal(t, []byte{10, 0, 0, 1}, endpoint.GetIPAddress())
 	assert.Equal(t, "mirror.example.com", endpoint.GetDomainName())
 	assert.Equal(t, uint32(443), endpoint.GetPort())
 	assert.True(t, endpoint.GetRequiresTls())
@@ -192,12 +197,15 @@ func TestUnitRpcRelayServiceEndpointSetters(t *testing.T) {
 	t.Parallel()
 
 	endpoint := &RpcRelayServiceEndpoint{}
-	endpoint.SetDomainName("rpc.example.com").
-		SetPort(8545)
+	endpoint.SetIPAddress([]byte{10, 0, 0, 2}).
+		SetDomainName("rpc.example.com").
+		SetPort(8545).
+		SetRequiresTls(true)
 
+	assert.Equal(t, []byte{10, 0, 0, 2}, endpoint.GetIPAddress())
 	assert.Equal(t, "rpc.example.com", endpoint.GetDomainName())
 	assert.Equal(t, uint32(8545), endpoint.GetPort())
-	assert.False(t, endpoint.GetRequiresTls())
+	assert.True(t, endpoint.GetRequiresTls())
 }
 
 func TestUnitRegisteredServiceEndpointFromProtobufDispatch(t *testing.T) {
@@ -263,11 +271,13 @@ func TestUnitGeneralServiceEndpointSetters(t *testing.T) {
 
 	endpoint := &GeneralServiceEndpoint{}
 	endpoint.SetIPAddress([]byte{10, 0, 0, 2}).
+		SetDomainName("general.example.com").
 		SetPort(9090).
 		SetRequiresTls(true).
 		SetDescription("my-service")
 
 	assert.Equal(t, []byte{10, 0, 0, 2}, endpoint.GetIPAddress())
+	assert.Equal(t, "general.example.com", endpoint.GetDomainName())
 	assert.Equal(t, uint32(9090), endpoint.GetPort())
 	assert.True(t, endpoint.GetRequiresTls())
 	assert.Equal(t, "my-service", endpoint.GetDescription())
