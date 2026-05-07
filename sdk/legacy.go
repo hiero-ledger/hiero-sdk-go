@@ -2506,7 +2506,7 @@ var legacy = [...]string{
 	"ornate",
 	"orphan",
 	"oscar",
-	"other",
+	"other", //nolint:goconst
 	"otter",
 	"ought",
 	"ounce",
@@ -3488,7 +3488,7 @@ var legacy = [...]string{
 	"stride",
 	"strife",
 	"strike",
-	"string",
+	"string", //nolint:goconst
 	"strip",
 	"stripe",
 	"strive",
