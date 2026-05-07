@@ -4,7 +4,16 @@ package hiero
 
 // SPDX-License-Identifier: Apache-2.0
 
+// On a fresh solo deployment, mirror's rest-java FeeEstimationService
+// races the importer's ingestion of the genesis fee schedule — the
+// calculator stays null and every FeeEstimateQuery returns HTTP 400
+// until the @Scheduled refresh fires (up to 10 minutes later). Each
+// test calls waitForFeeEstimationServiceReady before its real query;
+// the readiness probe runs once across all parallel tests in this file.
+
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -12,10 +21,51 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const mirrorSyncDelay = 2 * time.Second
+const (
+	mirrorSyncDelay            = 2 * time.Second
+	feeEstimationProbeInterval = 5 * time.Second
+	feeEstimationProbeTimeout  = 10 * time.Minute
+)
+
+var (
+	feeEstimationReadyOnce sync.Once
+	feeEstimationReadyErr  error
+)
 
 func waitForMirrorNodeSync() {
 	time.Sleep(mirrorSyncDelay)
+}
+
+// waitForFeeEstimationServiceReady blocks until the mirror node's
+// FeeEstimationService can answer a known-good probe query. Re-issues
+// a fresh INTRINSIC estimate for a 1-hbar self-transfer every 5 seconds
+// until one succeeds, or 10 minutes have elapsed. Safe to call from multiple parallel
+// tests; the probe runs once and the result is shared.
+func waitForFeeEstimationServiceReady(t *testing.T, env IntegrationTestEnv) {
+	t.Helper()
+	feeEstimationReadyOnce.Do(func() {
+		deadline := time.Now().Add(feeEstimationProbeTimeout)
+		var attempt int
+		var lastErr error
+		for time.Now().Before(deadline) {
+			attempt++
+			probe := NewTransferTransaction().
+				AddHbarTransfer(env.OperatorID, NewHbar(-1)).
+				AddHbarTransfer(env.OperatorID, NewHbar(1))
+			_, err := NewFeeEstimateQuery().
+				SetMode(FeeEstimateModeIntrinsic).
+				SetTransaction(probe).
+				SetMaxAttempts(1).
+				Execute(env.Client)
+			if err == nil {
+				return
+			}
+			lastErr = err
+			time.Sleep(feeEstimationProbeInterval)
+		}
+		feeEstimationReadyErr = fmt.Errorf("FeeEstimationService never became ready after %d probe attempts: %w", attempt, lastErr)
+	})
+	require.NoError(t, feeEstimationReadyErr, "FeeEstimationService readiness probe failed")
 }
 
 func assertFeeComponentsPresent(t *testing.T, response FeeEstimateResponse) {
@@ -45,6 +95,7 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTokenCreateTransaction().
 		SetTokenName("Test Token").
@@ -75,6 +126,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTransferTransaction().
 		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
@@ -101,6 +153,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTransferTransaction().
 		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
@@ -124,6 +177,7 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsIntrinsic(t 
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTransferTransaction().
 		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
@@ -150,6 +204,7 @@ func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTokenMintTransaction().
 		SetTokenID(TokenID{Token: 1234}).
@@ -174,6 +229,7 @@ func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTopicCreateTransaction().
 		SetTopicMemo("integration test topic").
@@ -199,6 +255,7 @@ func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewContractCreateTransaction().
 		SetBytecode([]byte{1, 2, 3}).
@@ -226,6 +283,7 @@ func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewFileCreateTransaction().
 		SetKeys(env.Client.GetOperatorPublicKey()).
@@ -252,6 +310,7 @@ func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *tes
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewFileAppendTransaction().
 		SetFileID(FileID{File: 1234}).
@@ -275,6 +334,7 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) 
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTopicID(TopicID{Topic: 1234}).
@@ -298,6 +358,7 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTopicMessageSubmitTransaction().
 		SetTopicID(TopicID{Topic: 1234}).
@@ -333,6 +394,7 @@ func TestIntegrationFeeEstimateQueryWithHighVolumeThrottle(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
+	waitForFeeEstimationServiceReady(t, env)
 
 	transaction, err := NewTransferTransaction().
 		AddHbarTransfer(env.Client.GetOperatorAccountID(), NewHbar(-1)).
