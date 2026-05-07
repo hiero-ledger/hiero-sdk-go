@@ -2,6 +2,11 @@ package hiero
 
 // SPDX-License-Identifier: Apache-2.0
 
+import (
+	"fmt"
+	"strings"
+)
+
 // BlockNodeApi is an enumeration of well-known block node endpoint APIs.
 type BlockNodeApi int32
 
@@ -34,4 +39,23 @@ func (api BlockNodeApi) String() string {
 	}
 
 	return unknownString
+}
+
+// blockNodeApiFromString parses a BlockNodeApi enum name. Returns an error
+// for anything outside the known set, including "UNKNOWN".
+func blockNodeApiFromString(s string) (BlockNodeApi, error) {
+	switch strings.ToUpper(s) {
+	case "OTHER":
+		return BlockNodeApiOther, nil
+	case "STATUS":
+		return BlockNodeApiStatus, nil
+	case "PUBLISH":
+		return BlockNodeApiPublish, nil
+	case "SUBSCRIBE_STREAM":
+		return BlockNodeApiSubscribeStream, nil
+	case "STATE_PROOF":
+		return BlockNodeApiStateProof, nil
+	default:
+		return BlockNodeApiOther, fmt.Errorf("unknown block node API: %q", s)
+	}
 }

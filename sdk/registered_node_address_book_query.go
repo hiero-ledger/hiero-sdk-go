@@ -340,7 +340,7 @@ func serviceEndpointFromJSON(raw serviceEndpointJSON) (RegisteredServiceEndpoint
 
 	switch strings.ToUpper(raw.Type) {
 	case "BLOCK_NODE":
-		return blockNodeEndpointFromJSON(base, raw.BlockNode), nil
+		return blockNodeEndpointFromJSON(base, raw.BlockNode)
 	case "MIRROR_NODE":
 		return &MirrorNodeServiceEndpoint{registeredEndpointBase: base}, nil
 	case "RPC_RELAY":
@@ -379,17 +379,21 @@ func endpointBaseFromJSON(raw serviceEndpointJSON) (registeredEndpointBase, erro
 	return base, nil
 }
 
-func blockNodeEndpointFromJSON(base registeredEndpointBase, raw *blockNodeJSON) *BlockNodeServiceEndpoint {
+func blockNodeEndpointFromJSON(base registeredEndpointBase, raw *blockNodeJSON) (*BlockNodeServiceEndpoint, error) {
 	endpoint := &BlockNodeServiceEndpoint{registeredEndpointBase: base}
 	if raw == nil {
-		return endpoint
+		return endpoint, nil
 	}
 
 	endpoint.endpointApis = make([]BlockNodeApi, 0, len(raw.EndpointApis))
 	for _, apiStr := range raw.EndpointApis {
-		endpoint.endpointApis = append(endpoint.endpointApis, blockNodeApiFromString(apiStr))
+		api, err := blockNodeApiFromString(apiStr)
+		if err != nil {
+			return nil, err
+		}
+		endpoint.endpointApis = append(endpoint.endpointApis, api)
 	}
-	return endpoint
+	return endpoint, nil
 }
 
 func generalServiceEndpointFromJSON(base registeredEndpointBase, raw *generalServiceJSON) *GeneralServiceEndpoint {
@@ -400,17 +404,3 @@ func generalServiceEndpointFromJSON(base registeredEndpointBase, raw *generalSer
 	return endpoint
 }
 
-func blockNodeApiFromString(s string) BlockNodeApi {
-	switch strings.ToUpper(s) {
-	case "STATUS":
-		return BlockNodeApiStatus
-	case "PUBLISH":
-		return BlockNodeApiPublish
-	case "SUBSCRIBE_STREAM":
-		return BlockNodeApiSubscribeStream
-	case "STATE_PROOF":
-		return BlockNodeApiStateProof
-	default:
-		return BlockNodeApiOther
-	}
-}

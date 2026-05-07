@@ -131,25 +131,44 @@ func TestUnitResolveNextURL(t *testing.T) {
 
 // ----- blockNodeApiFromString -----
 
-func TestUnitBlockNodeApiFromString(t *testing.T) {
+func TestUnitBlockNodeApiFromStringRecognized(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		in   string
 		want BlockNodeApi
 	}{
+		{"OTHER", BlockNodeApiOther},
 		{"STATUS", BlockNodeApiStatus},
 		{"PUBLISH", BlockNodeApiPublish},
 		{"SUBSCRIBE_STREAM", BlockNodeApiSubscribeStream},
 		{"STATE_PROOF", BlockNodeApiStateProof},
-		{"OTHER", BlockNodeApiOther},
-		{"unrecognised", BlockNodeApiOther},
-		{"", BlockNodeApiOther},
 		{"status", BlockNodeApiStatus},
 	}
 
 	for _, tt := range tests {
-		assert.Equal(t, tt.want, blockNodeApiFromString(tt.in), "input %q", tt.in)
+		got, err := blockNodeApiFromString(tt.in)
+		require.NoError(t, err, "input %q", tt.in)
+		assert.Equal(t, tt.want, got, "input %q", tt.in)
+	}
+}
+
+func TestUnitBlockNodeApiFromStringRejectsUnknown(t *testing.T) {
+	t.Parallel()
+
+	cases := []string{
+		// "UNKNOWN" only ever appears when BlockNodeApi.String() was called on
+		// a value the SDK could not name, so seeing it on the way back in
+		// signals a corrupt round-trip.
+		"UNKNOWN",
+		"UNRECOGNIZED",
+		"FUTURE_KIND",
+		"",
+	}
+
+	for _, in := range cases {
+		_, err := blockNodeApiFromString(in)
+		assert.Error(t, err, "input %q should error", in)
 	}
 }
 
