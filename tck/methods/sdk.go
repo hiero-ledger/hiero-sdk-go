@@ -11,6 +11,8 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+const statusSuccess = "SUCCESS"
+
 type SDKService struct {
 	clients *utils.SafeClientMap
 }
@@ -56,7 +58,7 @@ func (s *SDKService) Setup(_ context.Context, params param.SetupParams) (respons
 
 	return response.SetupResponse{
 		Message: "Successfully setup " + clientType + " client.",
-		Status:  "SUCCESS",
+		Status:  statusSuccess,
 	}, nil
 }
 
@@ -66,7 +68,7 @@ func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) re
 	operatorKey, _ := hiero.PrivateKeyFromString(params.OperatorPrivateKey)
 	client.SetOperator(operatorId, operatorKey)
 	return response.SetupResponse{
-		Status: "SUCCESS",
+		Status: statusSuccess,
 	}
 }
 
@@ -74,6 +76,6 @@ func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) re
 func (s *SDKService) Reset(_ context.Context, params param.BaseParams) response.SetupResponse {
 	s.clients.Delete(params.SessionId)
 	return response.SetupResponse{
-		Status: "SUCCESS",
+		Status: statusSuccess,
 	}
 }

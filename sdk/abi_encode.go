@@ -99,7 +99,7 @@ func encodeSliceAndArray(v reflect.Value, t *Type) ([]byte, error) {
 }
 
 func encodeTuple(v reflect.Value, t *Type) ([]byte, error) {
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		v = v.Elem()
 	}
 
@@ -242,7 +242,7 @@ func encodeNum(v reflect.Value) ([]byte, error) {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return toU256(big.NewInt(v.Int())), nil
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if v.Type() != bigIntT {
 			return nil, encodeErr(v.Elem(), "number")
 		}

@@ -21,7 +21,7 @@ func (networkName NetworkName) String() string { //nolint
 	case NetworkNamePreviewnet:
 		return "previewnet" //nolint
 	case NetworkNameOther:
-		return "other"
+		return "other" //nolint
 	}
 
 	panic("unreachable: NetworkName.String() switch statement is non-exhaustive.")
