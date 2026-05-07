@@ -82,7 +82,8 @@ func TestUnitRegisteredNodeDeleteTransactionMock(t *testing.T) {
 
 	receipt, err := resp.GetReceipt(client)
 	require.NoError(t, err)
-	require.Equal(t, uint64(42), receipt.RegisteredNodeId)
+	require.NotNil(t, receipt.RegisteredNodeId)
+	require.Equal(t, uint64(42), *receipt.RegisteredNodeId)
 }
 
 func TestUnitRegisteredNodeDeleteTransactionBuild(t *testing.T) {

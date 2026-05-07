@@ -52,19 +52,19 @@ func TestIntegrationRegisteredNodeCreateTransactionCanExecute(t *testing.T) {
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// Verify the receipt contains a non-zero registeredNodeId
-	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	// Verify the receipt contains a registered node ID
+	require.NotNil(t, receipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
 
 	time.Sleep(time.Second * 5)
 
 	// Query the registered node from the mirror node and verify fields
 	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		SetRegisteredNodeId(*receipt.RegisteredNodeId).
 		Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
 	require.Equal(t, "e2e test registered node", book.RegisteredNodes[0].Description)
-	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
 	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
 
@@ -112,18 +112,18 @@ func TestIntegrationRegisteredNodeCreateTransactionMirrorNodeEndpointSucceeds(t 
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// Verify the receipt contains a non-zero registeredNodeId
-	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	// Verify the receipt contains a registered node ID
+	require.NotNil(t, receipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
 
 	time.Sleep(time.Second * 5)
 
 	// Query the registered node from the mirror node and verify the endpoint
 	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		SetRegisteredNodeId(*receipt.RegisteredNodeId).
 		Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
-	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
 	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
 
@@ -170,18 +170,18 @@ func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *t
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// Verify the receipt contains a non-zero registeredNodeId
-	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	// Verify the receipt contains a registered node ID
+	require.NotNil(t, receipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
 
 	time.Sleep(time.Second * 5)
 
 	// Query the registered node from the mirror node and verify the endpoint
 	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		SetRegisteredNodeId(*receipt.RegisteredNodeId).
 		Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
-	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
 	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
 
@@ -230,18 +230,18 @@ func TestIntegrationRegisteredNodeCreateTransactionGeneralServiceEndpointSucceed
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// Verify the receipt contains a non-zero registeredNodeId
-	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	// Verify the receipt contains a registered node ID
+	require.NotNil(t, receipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
 
 	time.Sleep(time.Second * 5)
 
 	// Query the registered node from the mirror node and verify the endpoint
 	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		SetRegisteredNodeId(*receipt.RegisteredNodeId).
 		Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
-	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
 	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 1)
 
@@ -304,19 +304,19 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// Verify the receipt contains a non-zero registeredNodeId
-	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	// Verify the receipt contains a registered node ID
+	require.NotNil(t, receipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
 
 	time.Sleep(time.Second * 5)
 
 	// Query the registered node from the mirror node and verify all four endpoints
 	// come back in the order they were sent.
 	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		SetRegisteredNodeId(*receipt.RegisteredNodeId).
 		Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
-	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
 	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 	require.Len(t, book.RegisteredNodes[0].ServiceEndpoints, 4)
 
@@ -384,18 +384,18 @@ func TestIntegrationRegisteredNodeCreateTransactionWithDescriptionSucceeds(t *te
 	receipt, err := resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// Verify the receipt contains a non-zero registeredNodeId
-	require.Greater(t, receipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
+	// Verify the receipt contains a registered node ID
+	require.NotNil(t, receipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
 
 	time.Sleep(time.Second * 5)
 
 	// Query the registered node from the mirror node and verify the description
 	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(receipt.RegisteredNodeId).
+		SetRegisteredNodeId(*receipt.RegisteredNodeId).
 		Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
-	require.Equal(t, receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
+	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
 	require.Equal(t, description, book.RegisteredNodes[0].Description)
 	require.Equal(t, adminKey.PublicKey().String(), book.RegisteredNodes[0].AdminKey.String())
 }

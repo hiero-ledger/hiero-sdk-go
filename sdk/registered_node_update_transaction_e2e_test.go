@@ -51,8 +51,8 @@ func createRegisteredNode(t *testing.T, client *Client, adminKey PrivateKey) uin
 	createReceipt, err := createResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	require.Greater(t, createReceipt.RegisteredNodeId, uint64(0), "registeredNodeId should be non-zero")
-	return createReceipt.RegisteredNodeId
+	require.NotNil(t, createReceipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
+	return *createReceipt.RegisteredNodeId
 }
 
 func TestIntegrationRegisteredNodeUpdateTransactionUpdateDescription(t *testing.T) {

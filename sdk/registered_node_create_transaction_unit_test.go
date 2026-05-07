@@ -156,7 +156,8 @@ func TestUnitRegisteredNodeCreateTransactionMock(t *testing.T) {
 
 	receipt, err := resp.GetReceipt(client)
 	require.NoError(t, err)
-	require.Equal(t, uint64(11), receipt.RegisteredNodeId)
+	require.NotNil(t, receipt.RegisteredNodeId)
+	require.Equal(t, uint64(11), *receipt.RegisteredNodeId)
 }
 
 func TestUnitRegisteredNodeCreateTransactionScheduledBuild(t *testing.T) {

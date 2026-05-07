@@ -490,7 +490,8 @@ func TestIntegrationNodeUpdateTransactionWithAssociatedRegisteredNode(t *testing
 	regReceipt, err := regResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	registeredNodeId := regReceipt.RegisteredNodeId
+	require.NotNil(t, regReceipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
+	registeredNodeId := *regReceipt.RegisteredNodeId
 
 	// Update existing consensus node 0 with the associated registered node
 	resp, err := NewNodeUpdateTransaction().

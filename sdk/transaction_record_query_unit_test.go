@@ -262,7 +262,8 @@ func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {
 	require.NoError(t, err)
 	record.Receipt.ContractID = &contractID
 	record.Receipt.NodeID = 1
-	record.Receipt.RegisteredNodeId = 2
+	registeredNodeId := uint64(2)
+	record.Receipt.RegisteredNodeId = &registeredNodeId
 
 	tokenTransfer := TokenTransfer{
 		AccountID:  accID,

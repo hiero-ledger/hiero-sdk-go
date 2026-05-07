@@ -131,7 +131,8 @@ func TestIntegrationNodeCreateTransactionWithAssociatedRegisteredNode(t *testing
 	regReceipt, err := regResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	registeredNodeId := regReceipt.RegisteredNodeId
+	require.NotNil(t, regReceipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
+	registeredNodeId := *regReceipt.RegisteredNodeId
 
 	accountId, _, err := createAccount(&IntegrationTestEnv{Client: client, NodeAccountIDs: []AccountID{nodeAccountID}})
 	require.NoError(t, err)

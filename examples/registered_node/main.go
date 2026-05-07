@@ -83,10 +83,10 @@ func main() {
 	}
 
 	// Step 4 — verify the assigned registeredNodeId.
-	registeredNodeId := createReceipt.RegisteredNodeId
-	if registeredNodeId == 0 {
-		panic("expected a non-zero registeredNodeId in the receipt")
+	if createReceipt.RegisteredNodeId == nil || *createReceipt.RegisteredNodeId == 0 {
+		panic("expected a non-zero registeredNodeId on the receipt")
 	}
+	registeredNodeId := *createReceipt.RegisteredNodeId
 	fmt.Printf("Created registered node with id: %d\n", registeredNodeId)
 
 	// Wait for it

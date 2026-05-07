@@ -44,7 +44,8 @@ func TestIntegrationRegisteredNodeDeleteTransactionCanExecute(t *testing.T) {
 	createReceipt, err := createResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	registeredNodeId := createReceipt.RegisteredNodeId
+	require.NotNil(t, createReceipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
+	registeredNodeId := *createReceipt.RegisteredNodeId
 
 	// Delete the registered node
 	deleteTx, err := NewRegisteredNodeDeleteTransaction().
@@ -102,7 +103,8 @@ func TestIntegrationRegisteredNodeDeleteTransactionFailsIfAlreadyDeleted(t *test
 	createReceipt, err := createResp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	registeredNodeId := createReceipt.RegisteredNodeId
+	require.NotNil(t, createReceipt.RegisteredNodeId, "registeredNodeId should be set on the receipt")
+	registeredNodeId := *createReceipt.RegisteredNodeId
 
 	// First delete should succeed
 	deleteTx, err := NewRegisteredNodeDeleteTransaction().
