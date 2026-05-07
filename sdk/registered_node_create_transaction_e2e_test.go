@@ -256,12 +256,9 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 	t.Parallel()
 
 	// Set the network
-	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
-	client, err := ClientForNetworkV2(network)
+	client, err := ClientForNetworkV2(map[string]AccountID{"localhost:50211": {Account: 3}})
 	require.NoError(t, err)
-	mirror := []string{"localhost:5600"}
-	client.SetMirrorNetwork(mirror)
+	client.SetMirrorNetwork([]string{"localhost:5600"})
 
 	// Set the operator to be account 0.0.2
 	originalOperatorKey, err := PrivateKeyFromStringEd25519("302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137")
@@ -272,24 +269,11 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 	adminKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 
-	// Build a block node service endpoint
-	blockEndpoint := &BlockNodeServiceEndpoint{}
-	blockEndpoint.SetIPAddress(net.IPv4(192, 168, 1, 1).To4()).SetPort(50211)
-	blockEndpoint.AddEndpointApi(BlockNodeApiPublish)
-
-	// Build a mirror node service endpoint
-	mirrorEndpoint := &MirrorNodeServiceEndpoint{}
-	mirrorEndpoint.SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(443)
-
-	// Build an RPC relay service endpoint
-	rpcEndpoint := &RpcRelayServiceEndpoint{}
-	rpcEndpoint.SetDomainName("rpc.example.com").SetPort(8545)
-
-	// Build a general service endpoint
-	generalEndpoint := &GeneralServiceEndpoint{}
-	generalEndpoint.SetDomainName("general.example.com").
-		SetPort(9000).
-		SetDescription("custom-service")
+	// Build one endpoint per kind: block node, mirror node, RPC relay, general service.
+	blockEndpoint := (&BlockNodeServiceEndpoint{}).SetIPAddress(net.IPv4(192, 168, 1, 1).To4()).SetPort(50211).AddEndpointApi(BlockNodeApiPublish)
+	mirrorEndpoint := (&MirrorNodeServiceEndpoint{}).SetIPAddress(net.IPv4(10, 0, 0, 1).To4()).SetPort(443)
+	rpcEndpoint := (&RpcRelayServiceEndpoint{}).SetDomainName("rpc.example.com").SetPort(8545)
+	generalEndpoint := (&GeneralServiceEndpoint{}).SetDomainName("general.example.com").SetPort(9000).SetDescription("custom-service")
 
 	// Execute the RegisteredNodeCreateTransaction with all four endpoint types
 	tx, err := NewRegisteredNodeCreateTransaction().
@@ -311,9 +295,7 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 
 	// Query the registered node from the mirror node and verify all four endpoints
 	// come back in the order they were sent.
-	book, err := NewRegisteredNodeAddressBookQuery().
-		SetRegisteredNodeId(*receipt.RegisteredNodeId).
-		Execute(client)
+	book, err := NewRegisteredNodeAddressBookQuery().SetRegisteredNodeId(*receipt.RegisteredNodeId).Execute(client)
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 1)
 	require.Equal(t, *receipt.RegisteredNodeId, book.RegisteredNodes[0].RegisteredNodeID)
