@@ -32,14 +32,26 @@ func main() {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
 
-	operatorAccountID, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ID"))
+	// Operator: defaults to account 0.0.2 + genesis Ed25519 key (the standard
+	// local hedera-services bootstrap, also what the HIP-1137 e2e tests use).
+	// Override either via GENESIS_OPERATOR_ID / GENESIS_OPERATOR_KEY if your
+	// network has a different system account.
+	operatorIDStr := os.Getenv("GENESIS_OPERATOR_ID")
+	if operatorIDStr == "" {
+		operatorIDStr = "0.0.2"
+	}
+	operatorAccountID, err := hiero.AccountIDFromString(operatorIDStr)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error parsing OPERATOR_ID", err))
+		panic(fmt.Sprintf("%v : error parsing operator ID", err))
 	}
 
-	operatorKey, err := hiero.PrivateKeyFromString(os.Getenv("OPERATOR_KEY"))
+	operatorKeyStr := os.Getenv("GENESIS_OPERATOR_KEY")
+	if operatorKeyStr == "" {
+		operatorKeyStr = "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137"
+	}
+	operatorKey, err := hiero.PrivateKeyFromString(operatorKeyStr)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error parsing OPERATOR_KEY", err))
+		panic(fmt.Sprintf("%v : error parsing operator key", err))
 	}
 
 	client.SetOperator(operatorAccountID, operatorKey)
