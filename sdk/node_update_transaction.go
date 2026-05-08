@@ -30,16 +30,17 @@ import (
  */
 type NodeUpdateTransaction struct {
 	*Transaction[*NodeUpdateTransaction]
-	nodeID               *uint64
-	accountID            *AccountID
-	description          string
-	gossipEndpoints      []Endpoint
-	serviceEndpoints     []Endpoint
-	gossipCaCertificate  []byte
-	grpcCertificateHash  []byte
-	adminKey             Key
-	declineReward        *bool
-	grpcWebProxyEndpoint *Endpoint
+	nodeID                    *uint64
+	accountID                 *AccountID
+	description               string
+	gossipEndpoints           []Endpoint
+	serviceEndpoints          []Endpoint
+	gossipCaCertificate       []byte
+	grpcCertificateHash       []byte
+	adminKey                  Key
+	declineReward             *bool
+	grpcWebProxyEndpoint      *Endpoint
+	associatedRegisteredNodes *[]uint64 // nil=unchanged, empty=clear, non-empty=replace
 }
 
 func NewNodeUpdateTransaction() *NodeUpdateTransaction {
@@ -92,18 +93,28 @@ func _NodeUpdateTransactionFromProtobuf(tx Transaction[*NodeUpdateTransaction], 
 		declineReward = &declineRewardValue
 	}
 
+	var associatedRegisteredNodes *[]uint64
+	if pb.GetNodeUpdate().GetAssociatedRegisteredNodeList() != nil {
+		ids := pb.GetNodeUpdate().GetAssociatedRegisteredNodeList().GetAssociatedRegisteredNode()
+		if ids == nil {
+			ids = []uint64{}
+		}
+		associatedRegisteredNodes = &ids
+	}
+
 	nodeID := pb.GetNodeUpdate().GetNodeId()
 	nodeUpdateTransaction := NodeUpdateTransaction{
-		nodeID:               &nodeID,
-		accountID:            accountID,
-		description:          description,
-		gossipEndpoints:      gossipEndpoints,
-		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  certificate,
-		grpcCertificateHash:  certificateHash,
-		adminKey:             adminKey,
-		grpcWebProxyEndpoint: grpcProxyEndpoint,
-		declineReward:        declineReward,
+		nodeID:                    &nodeID,
+		accountID:                 accountID,
+		description:               description,
+		gossipEndpoints:           gossipEndpoints,
+		serviceEndpoints:          serviceEndpoints,
+		gossipCaCertificate:       certificate,
+		grpcCertificateHash:       certificateHash,
+		adminKey:                  adminKey,
+		grpcWebProxyEndpoint:      grpcProxyEndpoint,
+		declineReward:             declineReward,
+		associatedRegisteredNodes: associatedRegisteredNodes,
 	}
 
 	tx.childTransaction = &nodeUpdateTransaction
@@ -270,6 +281,41 @@ func (tx *NodeUpdateTransaction) DeleteGrpcWebProxyEndpoint() *NodeUpdateTransac
 	return tx
 }
 
+// GetAssociatedRegisteredNodes returns the associated registered node IDs.
+// Returns nil if the field was never set (preserve existing), a pointer to an empty
+// slice if cleared, or a pointer to a populated slice if replaced.
+func (tx *NodeUpdateTransaction) GetAssociatedRegisteredNodes() *[]uint64 {
+	return tx.associatedRegisteredNodes
+}
+
+// SetAssociatedRegisteredNodes sets the associated registered node IDs, replacing any existing ones.
+// Pass a non-empty slice to replace, or use ClearAssociatedRegisteredNodes to clear.
+func (tx *NodeUpdateTransaction) SetAssociatedRegisteredNodes(ids []uint64) *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.associatedRegisteredNodes = &ids
+	return tx
+}
+
+// AddAssociatedRegisteredNode adds a registered node ID to the association list.
+func (tx *NodeUpdateTransaction) AddAssociatedRegisteredNode(id uint64) *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	if tx.associatedRegisteredNodes == nil {
+		ids := []uint64{id}
+		tx.associatedRegisteredNodes = &ids
+	} else {
+		*tx.associatedRegisteredNodes = append(*tx.associatedRegisteredNodes, id)
+	}
+	return tx
+}
+
+// ClearAssociatedRegisteredNodes clears all associated registered nodes.
+func (tx *NodeUpdateTransaction) ClearAssociatedRegisteredNodes() *NodeUpdateTransaction {
+	tx._RequireNotFrozen()
+	ids := []uint64{}
+	tx.associatedRegisteredNodes = &ids
+	return tx
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx NodeUpdateTransaction) getName() string {
@@ -349,6 +395,12 @@ func (tx NodeUpdateTransaction) buildProtoBody() *services.NodeUpdateTransaction
 
 	if tx.declineReward != nil {
 		body.DeclineReward = wrapperspb.Bool(*tx.declineReward)
+	}
+
+	if tx.associatedRegisteredNodes != nil {
+		body.AssociatedRegisteredNodeList = &services.AssociatedRegisteredNodeList{
+			AssociatedRegisteredNode: *tx.associatedRegisteredNodes,
+		}
 	}
 
 	return body

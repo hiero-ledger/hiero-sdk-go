@@ -32,15 +32,16 @@ import (
  */
 type NodeCreateTransaction struct {
 	*Transaction[*NodeCreateTransaction]
-	accountID            *AccountID
-	description          string
-	gossipEndpoints      []Endpoint
-	serviceEndpoints     []Endpoint
-	gossipCaCertificate  []byte
-	grpcCertificateHash  []byte
-	adminKey             Key
-	declineReward        *bool
-	grpcWebProxyEndpoint *Endpoint
+	accountID                 *AccountID
+	description               string
+	gossipEndpoints           []Endpoint
+	serviceEndpoints          []Endpoint
+	gossipCaCertificate       []byte
+	grpcCertificateHash       []byte
+	adminKey                  Key
+	declineReward             *bool
+	grpcWebProxyEndpoint      *Endpoint
+	associatedRegisteredNodes []uint64
 }
 
 func NewNodeCreateTransaction() *NodeCreateTransaction {
@@ -76,15 +77,16 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 	gossipCaCertificate := pb.GetNodeCreate().GetGossipCaCertificate()
 
 	nodeCreateTransaction := NodeCreateTransaction{
-		accountID:            accountID,
-		description:          pb.GetNodeCreate().GetDescription(),
-		gossipEndpoints:      gossipEndpoints,
-		serviceEndpoints:     serviceEndpoints,
-		gossipCaCertificate:  gossipCaCertificate,
-		grpcCertificateHash:  pb.GetNodeCreate().GetGrpcCertificateHash(),
-		adminKey:             adminKey,
-		declineReward:        &declineReward,
-		grpcWebProxyEndpoint: grpcProxyEndpoint,
+		accountID:                 accountID,
+		description:               pb.GetNodeCreate().GetDescription(),
+		gossipEndpoints:           gossipEndpoints,
+		serviceEndpoints:          serviceEndpoints,
+		gossipCaCertificate:       gossipCaCertificate,
+		grpcCertificateHash:       pb.GetNodeCreate().GetGrpcCertificateHash(),
+		adminKey:                  adminKey,
+		declineReward:             &declineReward,
+		grpcWebProxyEndpoint:      grpcProxyEndpoint,
+		associatedRegisteredNodes: pb.GetNodeCreate().GetAssociatedRegisteredNode(),
 	}
 
 	tx.childTransaction = &nodeCreateTransaction
@@ -220,6 +222,25 @@ func (tx *NodeCreateTransaction) SetGrpcWebProxyEndpoint(grpcWebProxyEndpoint En
 	return tx
 }
 
+// GetAssociatedRegisteredNodes returns the list of associated registered node IDs.
+func (tx *NodeCreateTransaction) GetAssociatedRegisteredNodes() []uint64 {
+	return tx.associatedRegisteredNodes
+}
+
+// SetAssociatedRegisteredNodes sets the list of associated registered node IDs.
+func (tx *NodeCreateTransaction) SetAssociatedRegisteredNodes(ids []uint64) *NodeCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.associatedRegisteredNodes = ids
+	return tx
+}
+
+// AddAssociatedRegisteredNode adds a registered node ID to the association list.
+func (tx *NodeCreateTransaction) AddAssociatedRegisteredNode(id uint64) *NodeCreateTransaction {
+	tx._RequireNotFrozen()
+	tx.associatedRegisteredNodes = append(tx.associatedRegisteredNodes, id)
+	return tx
+}
+
 // ----------- Overridden functions ----------------
 
 func (tx NodeCreateTransaction) getName() string {
@@ -293,6 +314,10 @@ func (tx NodeCreateTransaction) buildProtoBody() *services.NodeCreateTransaction
 
 	if tx.declineReward != nil {
 		body.DeclineReward = *tx.declineReward
+	}
+
+	if len(tx.associatedRegisteredNodes) > 0 {
+		body.AssociatedRegisteredNode = tx.associatedRegisteredNodes
 	}
 
 	return body

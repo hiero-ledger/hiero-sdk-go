@@ -1,4 +1,4 @@
-//go:build all || unit || e2e || testnets || abnet
+//go:build all || unit || e2e || testnets || abnet || dab
 
 package hiero
 

@@ -31,6 +31,7 @@ type TransactionReceipt struct {
 	ScheduledTransactionID  *TransactionID
 	SerialNumbers           []int64
 	NodeID                  uint64
+	RegisteredNodeId        *uint64
 	Duplicates              []TransactionReceipt
 	Children                []TransactionReceipt
 	TransactionID           *TransactionID
@@ -45,6 +46,11 @@ func (receipt *TransactionReceipt) _ToMap() map[string]interface{} {
 		"totalSupply":             receipt.TotalSupply,
 		"serialNumbers":           receipt.SerialNumbers,
 		"nodeId":                  receipt.NodeID,
+	}
+	if receipt.RegisteredNodeId != nil {
+		m["registeredNodeId"] = *receipt.RegisteredNodeId
+	} else {
+		m["registeredNodeId"] = nil
 	}
 
 	// The real ExchangeRate struct has cents and ExpirationTime fields as private, so they can't be marshalled directly
@@ -181,6 +187,15 @@ func _TransactionReceiptFromProtobuf(protoResponse *services.TransactionGetRecei
 		}
 	}
 
+	// Match the JS SDK: only expose RegisteredNodeId when the wire value is
+	// non-zero, so callers can distinguish "no registered node assigned" from
+	// "registered node 0".
+	var registeredNodeId *uint64
+	if protoReceipt.RegisteredNodeId != 0 {
+		id := protoReceipt.RegisteredNodeId
+		registeredNodeId = &id
+	}
+
 	return TransactionReceipt{
 		Status:                  Status(protoReceipt.Status),
 		ExchangeRate:            rate,
@@ -198,6 +213,7 @@ func _TransactionReceiptFromProtobuf(protoResponse *services.TransactionGetRecei
 		ScheduledTransactionID:  scheduledTransactionID,
 		SerialNumbers:           protoReceipt.SerialNumbers,
 		NodeID:                  protoReceipt.NodeId,
+		RegisteredNodeId:        registeredNodeId,
 		Children:                childReceipts,
 		Duplicates:              duplicateReceipts,
 		TransactionID:           transactionID,
@@ -213,6 +229,9 @@ func (receipt TransactionReceipt) _ToProtobuf() *services.TransactionGetReceiptR
 		NewTotalSupply:          receipt.TotalSupply,
 		SerialNumbers:           receipt.SerialNumbers,
 		NodeId:                  receipt.NodeID,
+	}
+	if receipt.RegisteredNodeId != nil {
+		receiptFinal.RegisteredNodeId = *receipt.RegisteredNodeId
 	}
 
 	var currentExchangeRate *services.ExchangeRate

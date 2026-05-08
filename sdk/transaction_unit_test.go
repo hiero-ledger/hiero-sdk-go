@@ -469,6 +469,9 @@ func TestUnitTransactionSignSwitchCases(t *testing.T) {
 		NewTopicDeleteTransaction(),
 		NewTopicUpdateTransaction(),
 		NewTransferTransaction(),
+		NewRegisteredNodeCreateTransaction(),
+		NewRegisteredNodeUpdateTransaction(),
+		NewRegisteredNodeDeleteTransaction(),
 	}
 
 	for _, tx := range txs {
@@ -531,6 +534,9 @@ func TestUnitTransactionSignSwitchCasesPointers(t *testing.T) {
 		NewTopicDeleteTransaction(),
 		NewTopicUpdateTransaction(),
 		NewTransferTransaction(),
+		NewRegisteredNodeCreateTransaction(),
+		NewRegisteredNodeUpdateTransaction(),
+		NewRegisteredNodeDeleteTransaction(),
 	}
 
 	for _, tx := range txs {
@@ -601,6 +607,9 @@ func TestUnitTransactionAttributes(t *testing.T) {
 		NewTopicDeleteTransaction(),
 		NewTopicUpdateTransaction(),
 		NewTransferTransaction(),
+		NewRegisteredNodeCreateTransaction(),
+		NewRegisteredNodeUpdateTransaction(),
+		NewRegisteredNodeDeleteTransaction(),
 	}
 
 	for _, tx := range txs {
@@ -668,6 +677,9 @@ func TestUnitTransactionAttributesDereferanced(t *testing.T) {
 		NewTopicDeleteTransaction(),
 		NewTopicUpdateTransaction(),
 		NewTransferTransaction(),
+		NewRegisteredNodeCreateTransaction(),
+		NewRegisteredNodeUpdateTransaction(),
+		NewRegisteredNodeDeleteTransaction(),
 	}
 
 	for _, tx := range txs {
@@ -733,6 +745,9 @@ func TestUnitTransactionAttributesSerialization(t *testing.T) {
 		NewTopicDeleteTransaction(),
 		NewTopicUpdateTransaction(),
 		NewTransferTransaction(),
+		NewRegisteredNodeCreateTransaction(),
+		NewRegisteredNodeUpdateTransaction(),
+		NewRegisteredNodeDeleteTransaction(),
 	}
 
 	for _, tx := range txs {
