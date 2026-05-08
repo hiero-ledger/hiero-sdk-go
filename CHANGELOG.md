@@ -1,3 +1,8 @@
+## v2.80.0
+
+### Added
+- Support for HIP-1137: Block Node discoverability via on-chain registry. New `RegisteredNodeCreateTransaction`, `RegisteredNodeUpdateTransaction`, `RegisteredNodeDeleteTransaction`, and `RegisteredNodeAddressBookQuery`, plus typed service endpoints (`BlockNodeServiceEndpoint`, `MirrorNodeServiceEndpoint`, `RpcRelayServiceEndpoint`, `GeneralServiceEndpoint`) for registering and discovering non-consensus nodes via the on-chain address book [#1659](https://github.com/hiero-ledger/hiero-sdk-go/pull/1659)
+
 ## v2.79.0
 
 ### Added
