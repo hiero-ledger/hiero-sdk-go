@@ -7,130 +7,214 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+// How to transfer Hbar to an account with the receiver signature enabled.
+//
+// Demonstrates two-party signing across a byte serialization boundary:
+// the user signs locally, sends the bytes to an "exchange" (simulated in
+// this example by calling TransactionFromBytes / Sign / ToBytes), and the
+// operator submits the doubly-signed transaction.
 func main() {
-	// Our hypothetical primary service only knows the operator/sender's account ID and the recipient's accountID
-	operatorAccountID, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ID"))
-	if err != nil {
-		panic(fmt.Sprintf("%v : error converting string to AccountID", err))
-	}
+	fmt.Println("MultiApp Transfer Example Start!")
 
-	operatorPrivateKey, err := hiero.PrivateKeyFromString(os.Getenv("OPERATOR_KEY"))
-	if err != nil {
-		panic(fmt.Sprintf("%v : error converting string to PrivateKey", err))
-	}
-
-	recipientAccountID := hiero.AccountID{Account: 3}
-
-	// We create a client without a set operator
 	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
 
-	client.SetOperator(operatorAccountID, operatorPrivateKey)
+	operatorAccountID, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ID"))
+	if err != nil {
+		panic(fmt.Sprintf("%v : error converting string to AccountID", err))
+	}
 
-	// We must manually construct a TransactionID with the accountID of the operator/sender
-	// This is the account that will be charged the transaction fee
-	txID := hiero.TransactionIDGenerate(operatorAccountID)
+	operatorKey, err := hiero.PrivateKeyFromString(os.Getenv("OPERATOR_KEY"))
+	if err != nil {
+		panic(fmt.Sprintf("%v : error converting string to PrivateKey", err))
+	}
 
-	// The following steps are required for manually signing
-	transaction, err := hiero.NewTransferTransaction().
-		// 1. Manually set the transaction ID
-		SetTransactionID(txID).
-		// 2. Add your sender and amount to be send
-		AddHbarTransfer(operatorAccountID, hiero.NewHbar(-1)).
-		// 3. add the recipient(s) and amount to be received
-		AddHbarTransfer(recipientAccountID, hiero.NewHbar(1)).
-		SetTransactionMemo("go sdk example multi_app_transfer/main.go").
-		// 4. build the transaction using the client that does not have a set operator
+	client.SetOperator(operatorAccountID, operatorKey)
+
+	// Step 1: Generate ED25519 key pairs.
+	// The exchange should possess this key — we generate it here for demo only.
+	exchangePrivateKey, err := hiero.PrivateKeyGenerateEd25519()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error generating exchange PrivateKey", err))
+	}
+
+	// The user's key — the only key we should actually possess in real life.
+	userPrivateKey, err := hiero.PrivateKeyGenerateEd25519()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error generating user PrivateKey", err))
+	}
+
+	// Step 2: Create exchange and user accounts.
+	fmt.Println("Creating exchange and receiver accounts...")
+
+	exchangeCreateTx, err := hiero.NewAccountCreateTransaction().
+		SetReceiverSignatureRequired(true).
+		SetKeyWithoutAlias(exchangePrivateKey.PublicKey()).
 		FreezeWith(client)
-
 	if err != nil {
-		panic(fmt.Sprintf("%v : error freezing Transfer Transaction", err))
+		panic(fmt.Sprintf("%v : error freezing exchange account create transaction", err))
 	}
-
-	// Marshal your transaction to bytes
-	txBytes, err := transaction.ToBytes()
+	exchangeCreateTx.Sign(exchangePrivateKey)
+	exchangeCreateResponse, err := exchangeCreateTx.Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error converting transfer transaction to bytes", err))
+		panic(fmt.Sprintf("%v : error creating exchange account", err))
 	}
-
-	fmt.Printf("Marshalled the unsigned transaction to bytes \n%v\n", txBytes)
-
-	//
-	// Send the bytes to the application or service that acts as a signer for your transactions
-	//
-	signedTxBytes, err := signingService(txBytes)
-
+	exchangeReceipt, err := exchangeCreateResponse.GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error signing transfer transaction", err))
+		panic(fmt.Sprintf("%v : error retrieving exchange account creation receipt", err))
 	}
+	exchangeAccountID := *exchangeReceipt.AccountID
 
-	fmt.Printf("Received bytes for signed transaction: \n%v\n", signedTxBytes)
-
-	// Unmarshal your bytes into the signed transaction
-	var signedTx hiero.TransferTransaction
-	tx, err := hiero.TransactionFromBytes(signedTxBytes)
+	userCreateResponse, err := hiero.NewAccountCreateTransaction().
+		SetInitialBalance(hiero.NewHbar(2)).
+		SetKeyWithoutAlias(userPrivateKey.PublicKey()).
+		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error converting bytes to transfer transaction", err))
+		panic(fmt.Sprintf("%v : error creating user account", err))
 	}
-
-	// Converting from interface{} to TransferTransaction, if that's what we got
-	switch t := tx.(type) {
-	case hiero.TransferTransaction:
-		signedTx = t
-	default:
-		panic("Did not receive `TransferTransaction` back from signed bytes")
-	}
-
-	// Execute the transaction
-	response, err := signedTx.Execute(client)
-
+	userReceipt, err := userCreateResponse.GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing the transfer transaction", err))
+		panic(fmt.Sprintf("%v : error retrieving user account creation receipt", err))
 	}
+	userAccountID := *userReceipt.AccountID
 
-	// Get the receipt of the transaction to check the status
-	receipt, err := response.GetReceipt(client)
-
+	// Balances before
+	senderBalanceBefore, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(userAccountID).
+		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving transfer transaction receipt", err))
+		panic(fmt.Sprintf("%v : error querying user balance", err))
+	}
+	exchangeBalanceBefore, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(exchangeAccountID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying exchange balance", err))
+	}
+	fmt.Printf("User account (%v) balance: %v\n", userAccountID, senderBalanceBefore.Hbars)
+	fmt.Printf("Exchange account (%v) balance: %v\n", exchangeAccountID, exchangeBalanceBefore.Hbars)
+
+	// Step 3: Build the transfer; sign with the user; serialize; "send to exchange".
+	transferAmount := hiero.NewHbar(1)
+	transferTx, err := hiero.NewTransferTransaction().
+		AddHbarTransfer(userAccountID, transferAmount.Negated()).
+		AddHbarTransfer(exchangeAccountID, transferAmount).
+		// The exchange-provided memo required to validate the transaction.
+		SetTransactionMemo("https://some-exchange.com/user1/account1").
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing transfer transaction", err))
+	}
+	transferTx.Sign(userPrivateKey)
+
+	// The exchange must sign the transaction in order for it to be accepted by
+	// the network. In real life this would be a REST call to the exchange API.
+	userSignedBytes, err := transferTx.ToBytes()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error serializing transfer transaction", err))
 	}
 
-	// If Status Success is returned then everything is good
-	fmt.Printf("Crypto transfer status: %v\n", receipt.Status)
+	fmt.Println("Sending user-signed transaction bytes to exchange for countersignature...")
+	exchangeSignedBytes := exchangeSigningService(userSignedBytes, exchangePrivateKey)
+	fmt.Println("Exchange countersigned; received bytes back.")
+
+	// Parse the bytes returned from the exchange and execute.
+	finalTxIface, err := hiero.TransactionFromBytes(exchangeSignedBytes)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error deserializing signed transfer transaction", err))
+	}
+
+	finalTx, ok := finalTxIface.(hiero.TransferTransaction)
+	if !ok {
+		panic("did not receive TransferTransaction back from signed bytes")
+	}
+
+	fmt.Printf("Transferring %v from the user account to the exchange account...\n", transferAmount)
+	transferResponse, err := finalTx.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing transfer transaction", err))
+	}
+	if _, err := transferResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error retrieving transfer receipt", err))
+	}
+
+	// Step 4: Confirm balances after the transfer.
+	senderBalanceAfter, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(userAccountID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying user balance after", err))
+	}
+	exchangeBalanceAfter, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(exchangeAccountID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying exchange balance after", err))
+	}
+	fmt.Printf("User account (%v) balance: %v\n", userAccountID, senderBalanceAfter.Hbars)
+	fmt.Printf("Exchange account (%v) balance: %v\n", exchangeAccountID, exchangeBalanceAfter.Hbars)
+
+	// Cleanup: delete both accounts, returning balances to the operator.
+	exchangeDeleteTx, err := hiero.NewAccountDeleteTransaction().
+		SetAccountID(exchangeAccountID).
+		SetTransferAccountID(operatorAccountID).
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing exchange account delete", err))
+	}
+	exchangeDeleteTx.Sign(exchangePrivateKey)
+	exchangeDeleteResponse, err := exchangeDeleteTx.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing exchange account delete", err))
+	}
+	if _, err := exchangeDeleteResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error retrieving exchange account delete receipt", err))
+	}
+
+	userDeleteTx, err := hiero.NewAccountDeleteTransaction().
+		SetAccountID(userAccountID).
+		SetTransferAccountID(operatorAccountID).
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing user account delete", err))
+	}
+	userDeleteTx.Sign(userPrivateKey)
+	userDeleteResponse, err := userDeleteTx.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing user account delete", err))
+	}
+	if _, err := userDeleteResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error retrieving user account delete receipt", err))
+	}
+
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
+	}
+
+	fmt.Println("MultiApp Transfer Example Complete!")
 }
 
-// signingService represents an offline service which knows the private keys needed for signing
-// a transaction and returns the byte representation of the transaction
-func signingService(txBytes []byte) ([]byte, error) {
-	fmt.Println("\nSigning service has received the transaction")
-
-	// Your signing service is aware of the operator's private key
-	operatorPrivateKey, err := hiero.PrivateKeyFromString(os.Getenv("OPERATOR_KEY"))
-	if err != nil {
-		return txBytes, err
-	}
-
-	// Unmarshal the unsigned transaction's bytes
-	var unsignedTx hiero.TransferTransaction
+// exchangeSigningService simulates an offline exchange-side signing service:
+// it deserializes the transaction bytes, signs with the exchange's key, and
+// returns the re-serialized bytes.
+func exchangeSigningService(txBytes []byte, exchangePrivateKey hiero.PrivateKey) []byte {
 	tx, err := hiero.TransactionFromBytes(txBytes)
 	if err != nil {
-		return txBytes, err
+		panic(fmt.Sprintf("%v : exchange could not parse transaction", err))
 	}
 
-	// Converting from interface{} to TransferTransaction, if that's what we got
-	switch t := tx.(type) {
-	case hiero.TransferTransaction:
-		unsignedTx = t
-	default:
-		panic("Did not receive `TransferTransaction` back from signed bytes")
+	transferTx, ok := tx.(hiero.TransferTransaction)
+	if !ok {
+		panic("exchange expected TransferTransaction in bytes")
 	}
 
-	fmt.Printf("The Signing service is signing the transaction with key: %v\n", operatorPrivateKey)
+	signed := transferTx.Sign(exchangePrivateKey)
 
-	// sign your unsigned transaction and marshal back to bytes
-	return unsignedTx.
-		Sign(operatorPrivateKey).
-		ToBytes()
+	signedBytes, err := signed.ToBytes()
+	if err != nil {
+		panic(fmt.Sprintf("%v : exchange could not serialize signed transaction", err))
+	}
+	return signedBytes
 }
