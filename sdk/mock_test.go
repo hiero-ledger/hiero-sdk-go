@@ -7,6 +7,7 @@ package hiero
 
 import (
 	"context"
+	"errors"
 	"net"
 	"sync/atomic"
 	"testing"
@@ -944,7 +945,7 @@ func NewMockServer(responses []interface{}) (server *MockServer) {
 	}
 
 	go func() {
-		if err = server.server.Serve(server.listener); err != nil {
+		if err := server.server.Serve(server.listener); err != nil && !errors.Is(err, grpc.ErrServerStopped) {
 			panic(err)
 		}
 	}()
