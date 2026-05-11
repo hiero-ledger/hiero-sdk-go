@@ -7,190 +7,166 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+// How to schedule a transaction with a multi-sig account.
+//
+// Creates an account with a 3-key KeyList, schedules a transfer pre-signed
+// by one of the three keys, then later adds a second signature via
+// ScheduleSignTransaction. The schedule never executes (3-of-3 KeyList only
+// has 2 sigs) — the example demonstrates the progressive-signing pattern,
+// not full execution.
 func main() {
-	var client *hiero.Client
-	var err error
+	fmt.Println("Scheduled Transaction Multi-Sig Example Start!")
 
-	// Retrieving network type from environment variable HEDERA_NETWORK
-	client, err = hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
 
-	// Retrieving operator ID from environment variable OPERATOR_ID
 	operatorAccountID, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ID"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error converting string to AccountID", err))
 	}
 
-	// Retrieving operator key from environment variable OPERATOR_KEY
 	operatorKey, err := hiero.PrivateKeyFromString(os.Getenv("OPERATOR_KEY"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error converting string to PrivateKey", err))
 	}
 
-	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	keys := make([]hiero.PrivateKey, 3)
-	pubKeys := make([]hiero.PublicKey, 3)
-
-	fmt.Println("threshold key example")
-	fmt.Println("Keys: ")
-
-	// Loop to generate keys for the KeyList
-	for i := range keys {
-		newKey, err := hiero.GeneratePrivateKey()
-		if err != nil {
-			panic(fmt.Sprintf("%v : error generating PrivateKey}", err))
-		}
-
-		fmt.Printf("Key %v:\n", i)
-		fmt.Printf("private = %v\n", newKey)
-		fmt.Printf("public = %v\n", newKey.PublicKey())
-
-		keys[i] = newKey
-		pubKeys[i] = newKey.PublicKey()
+	// Step 1: generate three ED25519 private keys.
+	fmt.Println("Generating ED25519 private keys...")
+	privateKey1, err := hiero.PrivateKeyGenerateEd25519()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
+	}
+	privateKey2, err := hiero.PrivateKeyGenerateEd25519()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
+	}
+	privateKey3, err := hiero.PrivateKeyGenerateEd25519()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
 
-	// A threshold key with a threshold of 2 and length of 3 requires
-	// at least 2 of the 3 keys to sign anything modifying the account
+	// Step 2: build a KeyList from the three public keys.
+	// No threshold → default is "all keys required".
+	fmt.Println("Creating a Key List...")
 	keyList := hiero.NewKeyList().
-		AddAllPublicKeys(pubKeys)
+		AddAllPublicKeys([]hiero.PublicKey{
+			privateKey1.PublicKey(),
+			privateKey2.PublicKey(),
+			privateKey3.PublicKey(),
+		})
+	fmt.Printf("Created a Key List: %v\n", keyList)
 
-	// We are using all of these keys, so the scheduled transaction doesn't automatically go through
-	// It works perfectly fine with just one key
-	createResponse, err := hiero.NewAccountCreateTransaction().
-		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
-		// it must also sign any transfer into the account.
+	// Step 3: create a new account with the KeyList as its key.
+	fmt.Println("Creating new account...")
+	accountCreateResponse, err := hiero.NewAccountCreateTransaction().
 		SetKeyWithoutAlias(keyList).
-		SetInitialBalance(hiero.NewHbar(10)).
+		SetInitialBalance(hiero.NewHbar(2)).
 		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing create account transaction", err))
+		panic(fmt.Sprintf("%v : error creating account", err))
 	}
-
-	// Make sure the transaction succeeded
-	transactionReceipt, err := createResponse.GetReceipt(client)
+	accountReceipt, err := accountCreateResponse.GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error getting receipt", err))
+		panic(fmt.Sprintf("%v : error retrieving account creation receipt", err))
 	}
+	accountID := *accountReceipt.AccountID
+	fmt.Printf("Created new account with ID: %v\n", accountID)
 
-	// Pre-generating transaction id for the scheduled transaction so we can track it
-	transactionID := hiero.TransactionIDGenerate(client.GetOperatorAccountID())
-
-	println("transactionId for scheduled transaction = ", transactionID.String())
-
-	// Not really necessary as its client.GetOperatorAccountID()
-	newAccountID := *transactionReceipt.AccountID
-
-	fmt.Printf("account = %v\n", newAccountID)
-
-	// Creating a non frozen transaction for the scheduled transaction
-	// In this case its TransferTransaction
+	// Step 4: build a transfer, schedule it, pre-sign with privateKey2.
+	fmt.Println("Creating a token transfer transaction...")
 	transferTx := hiero.NewTransferTransaction().
-		SetTransactionID(transactionID).
-		AddHbarTransfer(newAccountID, hiero.HbarFrom(-1, hiero.HbarUnits.Hbar)).
-		AddHbarTransfer(client.GetOperatorAccountID(), hiero.HbarFrom(1, hiero.HbarUnits.Hbar))
+		AddHbarTransfer(accountID, hiero.NewHbar(1).Negated()).
+		AddHbarTransfer(operatorAccountID, hiero.NewHbar(1))
 
-	// Scheduling it, this gives us hiero.ScheduleCreateTransaction
-	scheduled, err := transferTx.Schedule()
+	fmt.Println("Scheduling the token transfer transaction...")
+	scheduledTx, err := transferTx.Schedule()
 	if err != nil {
-		panic(fmt.Sprintf("%v : error scheduling Transfer Transaction", err))
+		panic(fmt.Sprintf("%v : error creating scheduled transaction", err))
 	}
+	scheduledTx.
+		SetPayerAccountID(operatorAccountID).
+		SetAdminKey(operatorKey.PublicKey())
 
-	// Executing the scheduled transaction
-	scheduleResponse, err := scheduled.Execute(client)
+	frozenSchedule, err := scheduledTx.FreezeWith(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing schedule create", err))
+		panic(fmt.Sprintf("%v : error freezing schedule create transaction", err))
 	}
+	frozenSchedule.Sign(privateKey2)
 
-	// Make sure it executed successfully
+	scheduleResponse, err := frozenSchedule.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing schedule create transaction", err))
+	}
 	scheduleReceipt, err := scheduleResponse.GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error getting schedule create receipt", err))
+		panic(fmt.Sprintf("%v : error retrieving schedule create receipt", err))
 	}
-
-	// Taking out the schedule ID
 	scheduleID := *scheduleReceipt.ScheduleID
+	fmt.Printf("Schedule ID: %v\n", scheduleID)
 
-	// Using the schedule ID to get the schedule transaction info, which contains the whole scheduled transaction
-	info, err := hiero.NewScheduleInfoQuery().
-		SetNodeAccountIDs([]hiero.AccountID{createResponse.NodeID}).
+	// Step 5: query schedule info (should now have 1 signature from privateKey2).
+	infoBefore, err := hiero.NewScheduleInfoQuery().
 		SetScheduleID(scheduleID).
 		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error getting schedule info", err))
+		panic(fmt.Sprintf("%v : error querying schedule info", err))
 	}
+	fmt.Printf("Schedule info (before last signature): %v\n", infoBefore)
 
-	// Taking out the TransferTransaction from earlier
-	transfer, err := info.GetScheduledTransaction()
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting transaction from schedule info", err))
-	}
-
-	// Converting it from interface to hiero.TransferTransaction() and retrieving the amount of transfers
-	// to check if we have the right one, and that it's not empty
-	var transfers map[hiero.AccountID]hiero.Hbar
-	if tx, ok := transfer.(*hiero.TransferTransaction); ok {
-		transfers = tx.GetHbarTransfers()
-	}
-
-	if len(transfers) != 2 {
-		println("more transfers than expected")
-	}
-
-	// Checking if the Hbar values are correct
-	if transfers[newAccountID].AsTinybar() != -hiero.NewHbar(1).AsTinybar() {
-		println("transfer for ", newAccountID.String(), " is not whats is expected")
-	}
-
-	// Checking if the Hbar values are correct
-	if transfers[client.GetOperatorAccountID()].AsTinybar() != hiero.NewHbar(1).AsTinybar() {
-		println("transfer for ", client.GetOperatorAccountID().String(), " is not whats is expected")
-	}
-
-	println("sending schedule sign transaction")
-
-	// Creating a scheduled sign transaction, we have to sign with all of the keys in the KeyList
-	signTransaction, err := hiero.NewScheduleSignTransaction().
-		SetNodeAccountIDs([]hiero.AccountID{createResponse.NodeID}).
+	// Step 6: send a ScheduleSignTransaction signed with privateKey3.
+	// This is the 2nd of the 3 required signatures (privateKey1 is never
+	// added — the schedule needs all 3 for the transfer to execute, so it
+	// remains pending. That's the intended demonstration: progressive
+	// signing without full execution.)
+	fmt.Println("Appending private key #3 signature to a schedule transaction...")
+	signTx, err := hiero.NewScheduleSignTransaction().
 		SetScheduleID(scheduleID).
 		FreezeWith(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error freezing sign transaction", err))
+		panic(fmt.Sprintf("%v : error freezing schedule sign transaction", err))
 	}
+	signTx.Sign(privateKey3)
 
-	// Signing the scheduled transaction
-	signTransaction.Sign(keys[0])
-	signTransaction.Sign(keys[1])
-	signTransaction.Sign(keys[2])
-
-	resp, err := signTransaction.Execute(client)
+	signResponse, err := signTx.Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing schedule sign transaction", err))
 	}
-
-	// Getting the receipt to make sure the signing executed properly
-	_, err = resp.GetReceipt(client)
+	signReceipt, err := signResponse.GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing schedule sign receipt", err))
+		panic(fmt.Sprintf("%v : error retrieving schedule sign receipt", err))
 	}
+	fmt.Printf("A transaction that appends signature to a schedule transaction (private key #3) was complete with status: %v\n", signReceipt.Status)
 
-	// Making sure the scheduled transaction executed properly with schedule info query
-	info, err = hiero.NewScheduleInfoQuery().
+	// Step 7: query schedule info again (should now have 2 signatures).
+	infoAfter, err := hiero.NewScheduleInfoQuery().
 		SetScheduleID(scheduleID).
-		SetNodeAccountIDs([]hiero.AccountID{createResponse.NodeID}).
 		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving schedule info after signing", err))
+		panic(fmt.Sprintf("%v : error querying schedule info after sign", err))
+	}
+	fmt.Printf("Schedule info (after second signature): %v\n", infoAfter)
+
+	// Cleanup: delete the account. Requires all 3 keys to sign.
+	deleteFrozen, err := hiero.NewAccountDeleteTransaction().
+		SetAccountID(accountID).
+		SetTransferAccountID(operatorAccountID).
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing account delete", err))
+	}
+	deleteFrozen.Sign(privateKey1)
+	deleteFrozen.Sign(privateKey2)
+	deleteFrozen.Sign(privateKey3)
+	if _, err := deleteFrozen.Execute(client); err != nil {
+		panic(fmt.Sprintf("%v : error executing account delete", err))
 	}
 
-	// Checking if the scheduled transaction was executed and signed, and retrieving the signatories
-	if !info.ExecutedAt.IsZero() {
-		println("Singing success, signed at: ", info.ExecutedAt.String())
-		println("Signatories: ", info.Signatories.String())
-	} else {
-		panic("Signing failed")
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
 	}
+	fmt.Println("Scheduled Transaction Multi-Sig Example Complete!")
 }
