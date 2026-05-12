@@ -165,19 +165,19 @@ func (tx *NodeUpdateTransaction) SetDescription(description string) *NodeUpdateT
 	return tx
 }
 
-// SetDescription remove the description contents.
+// ClearDescription remove the description contents.
 func (tx *NodeUpdateTransaction) ClearDescription(description string) *NodeUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.description = ""
 	return tx
 }
 
-// GetServiceEndpoints the list of service endpoints for gossip.
+// GetGossipEndpoints the list of service endpoints for gossip.
 func (tx *NodeUpdateTransaction) GetGossipEndpoints() []Endpoint {
 	return tx.gossipEndpoints
 }
 
-// SetServiceEndpoints the list of service endpoints for gossip.
+// SetGossipEndpoints the list of service endpoints for gossip.
 func (tx *NodeUpdateTransaction) SetGossipEndpoints(gossipEndpoints []Endpoint) *NodeUpdateTransaction {
 	tx._RequireNotFrozen()
 	tx.gossipEndpoints = gossipEndpoints
