@@ -127,7 +127,7 @@ func (tx *NodeCreateTransaction) GetGossipEndpoints() []Endpoint {
 	return tx.gossipEndpoints
 }
 
-// SetServiceEndpoints the list of service endpoints for gossip.
+// SetGossipEndpoints the list of service endpoints for gossip.
 func (tx *NodeCreateTransaction) SetGossipEndpoints(gossipEndpoints []Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.gossipEndpoints = gossipEndpoints

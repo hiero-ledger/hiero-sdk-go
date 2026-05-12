@@ -91,7 +91,7 @@ func (transfer _TokenNftTransfer) ToBytes() []byte {
 	return data
 }
 
-// TokenNftTransfersFromBytes returns the TokenNftTransfer from a raw protobuf bytes representation
+// NftTransferFromBytes returns the TokenNftTransfer from a raw protobuf bytes representation
 func NftTransferFromBytes(data []byte) (_TokenNftTransfer, error) {
 	if data == nil {
 		return _TokenNftTransfer{}, errByteArrayNull
