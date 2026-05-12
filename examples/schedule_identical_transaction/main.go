@@ -15,6 +15,50 @@ import (
 // two return Status.IDENTICAL_SCHEDULE_ALREADY_CREATED with the same
 // scheduleId, and then add their signatures via ScheduleSignTransaction.
 // The schedule executes automatically when 2-of-3 signatures accumulate.
+
+func appendScheduleSignature(
+	subClient *hiero.Client,
+	scheduleID hiero.ScheduleID,
+) hiero.Status {
+	signTx, err := hiero.NewScheduleSignTransaction().
+		SetScheduleID(scheduleID).
+		FreezeWith(subClient)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing ScheduleSign", err))
+	}
+	signResponse, err := signTx.Execute(subClient)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing ScheduleSign", err))
+	}
+	signReceipt, err := hiero.NewTransactionReceiptQuery().
+		SetTransactionID(signResponse.TransactionID).
+		Execute(subClient)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error reading ScheduleSign receipt", err))
+	}
+	return signReceipt.Status
+}
+
+func deleteAccountWithKeys(
+	client *hiero.Client,
+	account, transferTo hiero.AccountID,
+	signers ...hiero.PrivateKey,
+) {
+	tx, err := hiero.NewAccountDeleteTransaction().
+		SetAccountID(account).
+		SetTransferAccountID(transferTo).
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing account delete", err))
+	}
+	for _, k := range signers {
+		tx.Sign(k)
+	}
+	if _, err := tx.Execute(client); err != nil {
+		panic(fmt.Sprintf("%v : error executing account delete", err))
+	}
+}
+
 func main() {
 	fmt.Println("Schedule Identical Transaction Example Start!")
 
@@ -150,23 +194,8 @@ func main() {
 			}
 			fmt.Printf("  Status: %v, scheduleId: %v\n", createReceipt.Status, *createReceipt.ScheduleID)
 
-			signTx, err := hiero.NewScheduleSignTransaction().
-				SetScheduleID(scheduleID).
-				FreezeWith(subClients[i])
-			if err != nil {
-				panic(fmt.Sprintf("%v : error freezing ScheduleSign", err))
-			}
-			signResponse, err := signTx.Execute(subClients[i])
-			if err != nil {
-				panic(fmt.Sprintf("%v : error executing ScheduleSign", err))
-			}
-			signReceipt, err := hiero.NewTransactionReceiptQuery().
-				SetTransactionID(signResponse.TransactionID).
-				Execute(subClients[i])
-			if err != nil {
-				panic(fmt.Sprintf("%v : error reading ScheduleSign receipt", err))
-			}
-			fmt.Printf("  ScheduleSign status: %v\n", signReceipt.Status)
+			signStatus := appendScheduleSignature(subClients[i], scheduleID)
+			fmt.Printf("  ScheduleSign status: %v\n", signStatus)
 		}
 	}
 
@@ -189,30 +218,11 @@ func main() {
 	fmt.Printf("Final ScheduleInfo: executed=%s signers=%d\n", executedAt, signers)
 
 	// Cleanup: delete the threshold account (requires 2-of-3 from threshold keys).
-	deleteThreshold, err := hiero.NewAccountDeleteTransaction().
-		SetAccountID(thresholdAccount).
-		SetTransferAccountID(operatorAccountID).
-		FreezeWith(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error freezing threshold delete", err))
-	}
-	deleteThreshold.Sign(keys[0]).Sign(keys[1])
-	if _, err := deleteThreshold.Execute(client); err != nil {
-		panic(fmt.Sprintf("%v : error executing threshold delete", err))
-	}
+	deleteAccountWithKeys(client, thresholdAccount, operatorAccountID, keys[0], keys[1])
 
 	// Cleanup: delete each sub-account, signing with its own key.
 	for i := 0; i < 3; i++ {
-		subDelete, err := hiero.NewAccountDeleteTransaction().
-			SetAccountID(accounts[i]).
-			SetTransferAccountID(operatorAccountID).
-			FreezeWith(client)
-		if err != nil {
-			panic(fmt.Sprintf("%v : error freezing sub-account delete", err))
-		}
-		if _, err := subDelete.Sign(keys[i]).Execute(client); err != nil {
-			panic(fmt.Sprintf("%v : error executing sub-account delete", err))
-		}
+		deleteAccountWithKeys(client, accounts[i], operatorAccountID, keys[i])
 		if err := subClients[i].Close(); err != nil {
 			panic(fmt.Sprintf("%v : error closing sub-client", err))
 		}
