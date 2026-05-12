@@ -31,7 +31,9 @@ func main() {
 
 	// Setting the client operator ID and key, plus a generous default tx fee.
 	client.SetOperator(operatorAccountID, operatorKey)
-	client.SetDefaultMaxTransactionFee(hiero.NewHbar(10))
+	if err := client.SetDefaultMaxTransactionFee(hiero.NewHbar(10)); err != nil {
+		panic(fmt.Sprintf("%v : error setting default max transaction fee", err))
+	}
 
 	// Step 1: Generate ED25519 key pairs.
 	fmt.Println("Generating ED25519 key pairs...")
