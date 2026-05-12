@@ -49,8 +49,12 @@ func main() {
 	// Step 2: Create a new account using privateKey1's public key.
 	fmt.Println("Creating new account...")
 	accountTxResponse, err := hiero.NewAccountCreateTransaction().
+		// The key that must sign each transfer out of the account. If
+		// receiverSigRequired is true, it must also sign any transfer into
+		// the account. A PublicKey, PrivateKey, or KeyList works here.
 		SetKeyWithoutAlias(privateKey1.PublicKey()).
 		SetInitialBalance(hiero.NewHbar(1)).
+		SetTransactionMemo("go sdk example update_account_public_key/main.go").
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating account", err))
@@ -69,12 +73,14 @@ func main() {
 	fmt.Printf("Updating public key of new account...(Setting key: %v).\n", privateKey2.PublicKey())
 	accountUpdateTx, err := hiero.NewAccountUpdateTransaction().
 		SetAccountID(accountID).
+		// The new key.
 		SetKey(privateKey2.PublicKey()).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing account update transaction", err))
 	}
 
+	// Sign with both keys — the previous key authorizes the change, the new key proves possession.
 	accountUpdateTx.Sign(privateKey1)
 	accountUpdateTx.Sign(privateKey2)
 
