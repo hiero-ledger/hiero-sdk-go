@@ -33,15 +33,15 @@ func main() {
 
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// Step 1: Generate ED25519 key pairs.
+	// Step 1: Generate ECDSA key pairs.
 	// The exchange should possess this key — we generate it here for demo only.
-	exchangePrivateKey, err := hiero.PrivateKeyGenerateEd25519()
+	exchangePrivateKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating exchange PrivateKey", err))
 	}
 
 	// The user's key — the only key we should actually possess in real life.
-	userPrivateKey, err := hiero.PrivateKeyGenerateEd25519()
+	userPrivateKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating user PrivateKey", err))
 	}

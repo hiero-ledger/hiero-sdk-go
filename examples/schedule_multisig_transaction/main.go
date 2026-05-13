@@ -34,17 +34,17 @@ func main() {
 
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// Step 1: generate three ED25519 private keys.
-	fmt.Println("Generating ED25519 private keys...")
-	privateKey1, err := hiero.PrivateKeyGenerateEd25519()
+	// Step 1: generate three ECDSA private keys.
+	fmt.Println("Generating ECDSA private keys...")
+	privateKey1, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
-	privateKey2, err := hiero.PrivateKeyGenerateEd25519()
+	privateKey2, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
-	privateKey3, err := hiero.PrivateKeyGenerateEd25519()
+	privateKey3, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}

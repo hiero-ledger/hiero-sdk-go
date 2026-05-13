@@ -14,7 +14,7 @@ const TotalMessages = 5
 
 // How to operate with a private HCS topic.
 //
-// Create a new HCS topic with a single ED25519 Submit Key,
+// Create a new HCS topic with a single ECDSA Submit Key,
 // publish a number of messages to the topic signed by the Submit Key
 // and subscribe to the topic (no key required).
 func main() {
@@ -41,9 +41,9 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// Step 1: Generate ED25519 key pair (Submit Key for the topic).
-	fmt.Println("Generating ED25519 key pair...")
-	submitKey, err := hiero.PrivateKeyGenerateEd25519()
+	// Step 1: Generate ECDSA key pair (Submit Key for the topic).
+	fmt.Println("Generating ECDSA key pair...")
+	submitKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
@@ -66,7 +66,7 @@ func main() {
 	}
 
 	topicID := *transactionReceipt.TopicID
-	fmt.Printf("Created topic with ID: %v and public ED25519 submit key: %v\n", topicID, submitKey)
+	fmt.Printf("Created topic with ID: %v and public ECDSA submit key: %v\n", topicID, submitKey)
 
 	// Step 3: Wait for the new topic to propagate to mirror nodes.
 	fmt.Println("Wait 5 seconds (to ensure data propagated to mirror nodes) ...")
