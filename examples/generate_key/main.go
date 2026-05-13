@@ -10,7 +10,7 @@ import (
 //
 // ECDSA keys with an EVM address derived from the public key are the recommended choice for new
 // Hedera accounts when you want compatibility with Ethereum tooling (wallets, Hardhat, ethers.js,
-// etc.). For legacy Hedera-only flows you can still use hiero.PrivateKeyGenerateEd25519().
+// etc.).
 func main() {
 	fmt.Println("Generate ECDSA key pair and EVM address example start")
 

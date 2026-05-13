@@ -35,13 +35,13 @@ func main() {
 		panic(fmt.Sprintf("%v : error setting default max transaction fee", err))
 	}
 
-	// Step 1: Generate ED25519 key pairs.
-	fmt.Println("Generating ED25519 key pairs...")
-	privateKey1, err := hiero.PrivateKeyGenerateEd25519()
+	// Step 1: Generate ECDSA key pairs.
+	fmt.Println("Generating ECDSA key pairs...")
+	privateKey1, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
-	privateKey2, err := hiero.PrivateKeyGenerateEd25519()
+	privateKey2, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}

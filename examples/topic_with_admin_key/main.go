@@ -36,10 +36,10 @@ func main() {
 	client.SetOperator(operatorAccountID, operatorKey)
 
 	// Step 1: Generate the initial admin key pairs (3 keys, 2-of-3 threshold).
-	fmt.Println("Generating ED25519 key pairs...")
+	fmt.Println("Generating ECDSA key pairs...")
 	initialAdminKeys := make([]hiero.PrivateKey, 3)
 	for i := range initialAdminKeys {
-		key, err := hiero.PrivateKeyGenerateEd25519()
+		key, err := hiero.PrivateKeyGenerateEcdsa()
 		if err != nil {
 			panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 		}
@@ -84,10 +84,10 @@ func main() {
 	fmt.Printf("Created new topic (%v) with 2-of-3 threshold key as admin key.\n", topicID)
 
 	// Step 6: Generate the new admin key pairs (4 keys, 3-of-4 threshold).
-	fmt.Println("Generating new ED25519 key pairs...")
+	fmt.Println("Generating new ECDSA key pairs...")
 	newAdminKeys := make([]hiero.PrivateKey, 4)
 	for i := range newAdminKeys {
-		key, err := hiero.PrivateKeyGenerateEd25519()
+		key, err := hiero.PrivateKeyGenerateEcdsa()
 		if err != nil {
 			panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 		}

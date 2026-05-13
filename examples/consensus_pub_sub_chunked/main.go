@@ -38,9 +38,9 @@ func main() {
 
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// Step 1: Generate ED25519 key pair (Submit Key for the topic).
-	fmt.Println("Generating ED25519 key pair...")
-	submitKey, err := hiero.PrivateKeyGenerateEd25519()
+	// Step 1: Generate ECDSA key pair (Submit Key for the topic).
+	fmt.Println("Generating ECDSA key pair...")
+	submitKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating submit PrivateKey", err))
 	}
