@@ -31,5 +31,5 @@ func (freezeType FreezeType) String() string {
 		return "TELEMETRY_UPGRADE"
 	}
 
-	panic(fmt.Sprintf("unreacahble: FreezeType.String() switch statement is non-exhaustive. Status: %v", uint32(freezeType)))
+	panic(fmt.Sprintf("unreachable: FreezeType.String() switch statement is non-exhaustive. Status: %v", uint32(freezeType)))
 }
