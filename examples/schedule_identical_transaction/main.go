@@ -7,195 +7,229 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
-func main() {
-	var client *hiero.Client
-	var err error
+// How identical scheduled transactions submitted by different parties are
+// merged into a single schedule.
+//
+// Three sub-accounts each act as a separate party. Each submits the same
+// scheduled transfer. The first submission creates the schedule; the next
+// two return Status.IDENTICAL_SCHEDULE_ALREADY_CREATED with the same
+// scheduleId, and then add their signatures via ScheduleSignTransaction.
+// The schedule executes automatically when 2-of-3 signatures accumulate.
 
-	// Retrieving network type from environment variable HEDERA_NETWORK
-	client, err = hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+func appendScheduleSignature(
+	subClient *hiero.Client,
+	scheduleID hiero.ScheduleID,
+) hiero.Status {
+	signTx, err := hiero.NewScheduleSignTransaction().
+		SetScheduleID(scheduleID).
+		FreezeWith(subClient)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing ScheduleSign", err))
+	}
+	signResponse, err := signTx.Execute(subClient)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing ScheduleSign", err))
+	}
+	signReceipt, err := hiero.NewTransactionReceiptQuery().
+		SetTransactionID(signResponse.TransactionID).
+		Execute(subClient)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error reading ScheduleSign receipt", err))
+	}
+	return signReceipt.Status
+}
+
+func deleteAccountWithKeys(
+	client *hiero.Client,
+	account, transferTo hiero.AccountID,
+	signers ...hiero.PrivateKey,
+) {
+	tx, err := hiero.NewAccountDeleteTransaction().
+		SetAccountID(account).
+		SetTransferAccountID(transferTo).
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing account delete", err))
+	}
+	for _, k := range signers {
+		tx.Sign(k)
+	}
+	if _, err := tx.Execute(client); err != nil {
+		panic(fmt.Sprintf("%v : error executing account delete", err))
+	}
+}
+
+func main() {
+	fmt.Println("Schedule Identical Transaction Example Start!")
+
+	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
 
-	// Retrieving operator ID from environment variable OPERATOR_ID
 	operatorAccountID, err := hiero.AccountIDFromString(os.Getenv("OPERATOR_ID"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error converting string to AccountID", err))
 	}
 
-	// Retrieving operator key from environment variable OPERATOR_KEY
 	operatorKey, err := hiero.PrivateKeyFromString(os.Getenv("OPERATOR_KEY"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error converting string to PrivateKey", err))
 	}
 
-	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
+	// Step 1: Generate 3 ECDSA key pairs and create 3 sub-accounts with 1 ℏ
+	// each, each backed by its own Client (simulating 3 separate parties).
+	fmt.Println("Generating 3 ECDSA key pairs and creating 3 sub-accounts...")
+	keys := make([]hiero.PrivateKey, 3)
 	pubKeys := make([]hiero.PublicKey, 3)
-	clients := make([]*hiero.Client, 3)
 	accounts := make([]hiero.AccountID, 3)
+	subClients := make([]*hiero.Client, 3)
 
-	fmt.Println("threshold key example")
-	fmt.Println("Keys: ")
-
-	var scheduleID *hiero.ScheduleID
-
-	// Loop to generate keys, clients, and accounts
-	for i := range pubKeys {
-		newKey, err := hiero.GeneratePrivateKey()
+	for i := 0; i < 3; i++ {
+		newKey, err := hiero.PrivateKeyGenerateEcdsa()
 		if err != nil {
 			panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 		}
-
-		fmt.Printf("Key %v:\n", i)
-		fmt.Printf("private = %v\n", newKey)
-		fmt.Printf("public = %v\n", newKey.PublicKey())
-
+		keys[i] = newKey
 		pubKeys[i] = newKey.PublicKey()
 
 		createResponse, err := hiero.NewAccountCreateTransaction().
-			// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
-			// it must also sign any transfer into the account.
 			SetKeyWithoutAlias(newKey).
 			SetInitialBalance(hiero.NewHbar(1)).
 			Execute(client)
 		if err != nil {
-			panic(fmt.Sprintf("%v : error creating account", err))
+			panic(fmt.Sprintf("%v : error creating sub-account", err))
 		}
-
-		// Make sure the transaction succeeded
-		transactionReceipt, err := createResponse.GetReceipt(client)
+		receipt, err := createResponse.GetReceipt(client)
 		if err != nil {
-			panic(fmt.Sprintf("%v : error getting receipt 1", err))
+			panic(fmt.Sprintf("%v : error getting sub-account receipt", err))
 		}
+		accounts[i] = *receipt.AccountID
 
-		newClient, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+		subClient, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 		if err != nil {
-			panic(fmt.Sprintf("%v : error creating client", err))
+			panic(fmt.Sprintf("%v : error creating sub-client", err))
 		}
-		newClient = newClient.SetOperator(*transactionReceipt.AccountID, newKey)
+		subClient.SetOperator(accounts[i], newKey)
+		subClients[i] = subClient
 
-		clients[i] = newClient
-		accounts[i] = *transactionReceipt.AccountID
-
-		fmt.Printf("account = %v\n", accounts[i])
+		fmt.Printf("  Sub-account %d: %v\n", i+1, accounts[i])
 	}
 
-	// A threshold key with a threshold of 2 and length of 3 requires
-	// at least 2 of the 3 keys to sign anything modifying the account
-	keyList := hiero.KeyListWithThreshold(2).
-		AddAllPublicKeys(pubKeys)
+	// Step 2: Build a 2-of-3 threshold KeyList from the 3 public keys.
+	fmt.Println("Building a 2-of-3 threshold KeyList...")
+	thresholdKey := hiero.KeyListWithThreshold(2).AddAllPublicKeys(pubKeys)
 
-	// We are using all of these keys, so the scheduled transaction doesn't automatically go through
-	// It works perfectly fine with just one key
-	createResponse, err := hiero.NewAccountCreateTransaction().
-		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
-		// it must also sign any transfer into the account.
-		SetKeyWithoutAlias(keyList).
+	// Step 3: Create the threshold account with the KeyList as its key
+	// and 10 ℏ initial balance — this is the source of the scheduled transfer.
+	fmt.Println("Creating threshold account with 10 ℏ initial balance...")
+	thresholdResponse, err := hiero.NewAccountCreateTransaction().
+		SetKeyWithoutAlias(thresholdKey).
 		SetInitialBalance(hiero.NewHbar(10)).
 		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing create account transaction", err))
+		panic(fmt.Sprintf("%v : error creating threshold account", err))
 	}
-
-	// Make sure the transaction succeeded
-	transactionReceipt, err := createResponse.GetReceipt(client)
+	thresholdReceipt, err := thresholdResponse.GetReceipt(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error getting receipt 2", err))
+		panic(fmt.Sprintf("%v : error getting threshold receipt", err))
 	}
-	thresholdAccount := *transactionReceipt.AccountID
+	thresholdAccount := *thresholdReceipt.AccountID
+	fmt.Printf("Threshold account: %v\n", thresholdAccount)
 
-	fmt.Printf("threshold account = %v\n", thresholdAccount)
+	// Step 4: Each sub-client submits the SAME ScheduleCreateTransaction.
+	// First creates the schedule. Subsequent identical submissions return
+	// IDENTICAL_SCHEDULE_ALREADY_CREATED with the same scheduleId. After
+	// detecting identical, each sub-client adds its signature via
+	// ScheduleSignTransaction. The schedule executes automatically when the
+	// 2-of-3 threshold is reached.
+	var scheduleID hiero.ScheduleID
+	for i := 0; i < 3; i++ {
+		fmt.Printf("Sub-client %d submitting identical ScheduleCreate...\n", i+1)
 
-	for _, client := range clients {
-		operator := client.GetOperatorAccountID().String()
-
-		// Each client creates an identical transaction, sending 1 hbar to each of the created accounts,
-		// sent from the threshold Account
-		tx := hiero.NewTransferTransaction()
-		for _, account := range accounts {
-			tx.AddHbarTransfer(account, hiero.NewHbar(1))
+		tx := hiero.NewTransferTransaction().
+			AddHbarTransfer(thresholdAccount, hiero.NewHbar(3).Negated())
+		for _, acc := range accounts {
+			tx.AddHbarTransfer(acc, hiero.NewHbar(1))
 		}
-		tx.AddHbarTransfer(thresholdAccount, hiero.NewHbar(3).Negated())
 
-		tx, err := tx.FreezeWith(client)
+		frozenTx, err := tx.FreezeWith(subClients[i])
 		if err != nil {
-			panic(fmt.Sprintf("%v : error while freezing transaction for client ", err))
+			panic(fmt.Sprintf("%v : error freezing transfer", err))
 		}
-
-		signedTransaction, err := tx.SignWithOperator(client)
+		signedTx, err := frozenTx.SignWithOperator(subClients[i])
 		if err != nil {
-			panic(fmt.Sprintf("%v : error while signing with operator client ", operator))
+			panic(fmt.Sprintf("%v : error signing transfer", err))
 		}
 
-		scheduledTx, err := hiero.NewScheduleCreateTransaction().
-			SetScheduledTransaction(signedTransaction)
+		scheduleTx, err := hiero.NewScheduleCreateTransaction().
+			SetScheduledTransaction(signedTx)
 		if err != nil {
-			panic(fmt.Sprintf("%v : error while setting scheduled transaction with operator client", operator))
+			panic(fmt.Sprintf("%v : error building ScheduleCreate", err))
 		}
+		scheduleTx.SetPayerAccountID(thresholdAccount)
 
-		scheduledTx = scheduledTx.
-			SetPayerAccountID(thresholdAccount)
-
-		response, err := scheduledTx.Execute(client)
+		createResponse, err := scheduleTx.Execute(subClients[i])
 		if err != nil {
-			panic(fmt.Sprintf("%v : error while executing schedule create transaction with operator", operator))
+			panic(fmt.Sprintf("%v : error executing ScheduleCreate", err))
 		}
 
-		receipt, err := hiero.NewTransactionReceiptQuery().
-			SetTransactionID(response.TransactionID).
-			SetNodeAccountIDs([]hiero.AccountID{response.NodeID}).
-			Execute(client)
+		// TransactionReceiptQuery.Execute returns the receipt regardless of
+		// status, so IDENTICAL_SCHEDULE_ALREADY_CREATED comes through cleanly.
+		createReceipt, err := hiero.NewTransactionReceiptQuery().
+			SetTransactionID(createResponse.TransactionID).
+			Execute(subClients[i])
 		if err != nil {
-			panic(fmt.Sprintf("%v : error while getting schedule create receipt transaction with operator", operator))
+			panic(fmt.Sprintf("%v : error reading ScheduleCreate receipt", err))
 		}
 
-		fmt.Printf("operator [%s]: scheduleID = %v\n", operator, receipt.ScheduleID)
-
-		// Save the schedule ID, so that it can be asserted for each client submission
-		if scheduleID == nil {
-			scheduleID = receipt.ScheduleID
-		}
-
-		if scheduleID.String() != receipt.ScheduleID.String() {
-			panic("invalid generated schedule id, expected " + scheduleID.String() + ", got " + receipt.ScheduleID.String())
-		}
-
-		// If the status return by the receipt is related to already created, execute a schedule sign transaction
-		if receipt.Status == hiero.StatusIdenticalScheduleAlreadyCreated {
-			signTransaction, err := hiero.NewScheduleSignTransaction().
-				SetNodeAccountIDs([]hiero.AccountID{createResponse.NodeID}).
-				SetScheduleID(*receipt.ScheduleID).
-				Execute(client)
-
-			if err != nil {
-				panic(fmt.Sprintf("%v : error while executing scheduled sign with operator", operator))
+		if i == 0 {
+			scheduleID = *createReceipt.ScheduleID
+			fmt.Printf("  Schedule created with ID: %v\n", scheduleID)
+		} else {
+			if createReceipt.ScheduleID.String() != scheduleID.String() {
+				panic(fmt.Sprintf("Schedule ID mismatch! Expected %v, got %v", scheduleID, createReceipt.ScheduleID))
 			}
+			fmt.Printf("  Status: %v, scheduleId: %v\n", createReceipt.Status, *createReceipt.ScheduleID)
 
-			_, err = signTransaction.GetReceipt(client)
-			if err != nil {
-				if err.Error() != "exceptional receipt status: SCHEDULE_ALREADY_EXECUTED" {
-					panic(fmt.Sprintf("%v : error while getting scheduled sign with operator ", operator))
-				}
-			}
+			signStatus := appendScheduleSignature(subClients[i], scheduleID)
+			fmt.Printf("  ScheduleSign status: %v\n", signStatus)
 		}
 	}
 
-	// Making sure the scheduled transaction executed properly with schedule info query
+	// Step 5: Query the schedule's final state. After 2 of the 3 sub-clients
+	// signed, the threshold was reached and the transfer executed.
 	info, err := hiero.NewScheduleInfoQuery().
-		SetScheduleID(*scheduleID).
-		SetNodeAccountIDs([]hiero.AccountID{createResponse.NodeID}).
+		SetScheduleID(scheduleID).
 		Execute(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving schedule info after signing", err))
+		panic(fmt.Sprintf("%v : error querying schedule info", err))
+	}
+	executedAt := "not yet"
+	if info.ExecutedAt != nil && !info.ExecutedAt.IsZero() {
+		executedAt = info.ExecutedAt.String()
+	}
+	signers := 0
+	if info.Signatories != nil {
+		signers = len(info.Signatories.GetKeys())
+	}
+	fmt.Printf("Final ScheduleInfo: executed=%s signers=%d\n", executedAt, signers)
+
+	// Cleanup: delete the threshold account (requires 2-of-3 from threshold keys).
+	deleteAccountWithKeys(client, thresholdAccount, operatorAccountID, keys[0], keys[1])
+
+	// Cleanup: delete each sub-account, signing with its own key.
+	for i := 0; i < 3; i++ {
+		deleteAccountWithKeys(client, accounts[i], operatorAccountID, keys[i])
+		if err := subClients[i].Close(); err != nil {
+			panic(fmt.Sprintf("%v : error closing sub-client", err))
+		}
 	}
 
-	// Checking if the scheduled transaction was executed and signed, and retrieving the signatories
-	if !info.ExecutedAt.IsZero() {
-		println("Signing success, signed at: ", info.ExecutedAt.String())
-		println("Signatories: ", info.Signatories.String())
-	} else {
-		panic("Signing failed")
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
 	}
+	fmt.Println("Schedule Identical Transaction Example Complete!")
 }

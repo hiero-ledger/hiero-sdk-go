@@ -56,5 +56,18 @@ func main() {
 	}
 
 	// Get and then display the file ID from the receipt
-	fmt.Printf("file = %v\n", *transactionReceipt.FileID)
+	newFileID := *transactionReceipt.FileID
+	fmt.Printf("file = %v\n", newFileID)
+
+	// Clean up: delete the created file.
+	deleteResponse, err := hiero.NewFileDeleteTransaction().
+		SetFileID(newFileID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing file delete transaction", err))
+	}
+
+	if _, err := deleteResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error retrieving file delete receipt", err))
+	}
 }
