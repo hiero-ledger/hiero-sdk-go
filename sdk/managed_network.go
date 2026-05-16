@@ -100,7 +100,11 @@ func (mn *_ManagedNetwork) _ReadmitNodes() {
 	mn.healthyNodesMutex.Lock()
 	defer mn.healthyNodesMutex.Unlock()
 
-	if mn.earliestReadmitTime.Before(now) {
+	mn._ReadmitNodesLocked(now)
+}
+
+func (mn *_ManagedNetwork) _ReadmitNodesLocked(now time.Time) {
+	if !mn.earliestReadmitTime.After(now) {
 		nextEarliestReadmitTime := now.Add(mn.maxNodeReadmitPeriod)
 
 		for _, node := range mn.nodes {
@@ -122,7 +126,7 @@ func (mn *_ManagedNetwork) _ReadmitNodes() {
 				}
 			}
 
-			if node._GetReadmitTime().Before(now) {
+			if !node._GetReadmitTime().After(now) {
 				mn.healthyNodes = append(mn.healthyNodes, node)
 			}
 		}
@@ -177,17 +181,20 @@ func (mn *_ManagedNetwork) _SetMinBackoff(minBackoff time.Duration) {
 }
 
 func (mn *_ManagedNetwork) _GetNode() _IManagedNode {
-	mn._ReadmitNodes()
-	mn.healthyNodesMutex.RLock()
-	defer mn.healthyNodesMutex.RUnlock()
+	mn.healthyNodesMutex.Lock()
+	mn._ReadmitNodesLocked(time.Now())
 
 	if len(mn.healthyNodes) == 0 {
+		mn.healthyNodesMutex.Unlock()
 		panic("failed to find a healthy working node")
 	}
 
-	bg := big.NewInt(int64(len(mn.healthyNodes)))
+	healthyNodes := slices.Clone(mn.healthyNodes)
+	mn.healthyNodesMutex.Unlock()
+
+	bg := big.NewInt(int64(len(healthyNodes)))
 	index, _ := rand.Int(rand.Reader, bg)
-	return mn.healthyNodes[index.Int64()]
+	return healthyNodes[index.Int64()]
 }
 
 func (mn *_ManagedNetwork) _GetMinBackoff() time.Duration {
