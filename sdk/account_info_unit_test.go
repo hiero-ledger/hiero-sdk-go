@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// The function checks the conversation methods on the AccountInfo struct. We check wether it is correctly converted to protobuf and back.
+// The function checks the conversation methods on the AccountInfo struct. We check whether it is correctly converted to protobuf and back.
 func TestUnitAccountInfoToBytes(t *testing.T) {
 	t.Parallel()
 

@@ -22,7 +22,7 @@ type AccountService struct {
 // Variable to be set to `SetGrpcDeadline` for all transactions
 var threeSecondsDuration = time.Second * 3
 
-// SetSdkService We set object, which is holding our client param. Pass it by referance, because TCK is dynamically updating it
+// SetSdkService We set object, which is holding our client param. Pass it by reference, because TCK is dynamically updating it
 func (a *AccountService) SetSdkService(service *SDKService) {
 	a.sdkService = service
 }
