@@ -10,7 +10,7 @@ import (
 
 // SPDX-License-Identifier: Apache-2.0
 
-// The test checks the conversation methods on the AssessedCustomFee struct. We check wether it is correctly converted to protobuf and back.
+// The test checks the conversation methods on the AssessedCustomFee struct. We check whether it is correctly converted to protobuf and back.
 func TestUnitassessedCustomFee(t *testing.T) {
 	t.Parallel()
 	assessedFeeOriginal := _MockAssessedCustomFee()
