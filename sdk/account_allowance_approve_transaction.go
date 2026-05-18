@@ -214,16 +214,6 @@ func (tx *AccountAllowanceApproveTransaction) _ApproveTokenNftAllowanceAllSerial
 }
 
 func (tx *AccountAllowanceApproveTransaction) _DeleteTokenNftAllowanceAllSerials(tokenID TokenID, ownerAccountID *AccountID, spenderAccount AccountID) *AccountAllowanceApproveTransaction {
-	for _, t := range tx.nftAllowances {
-		if t.TokenID.String() == tokenID.String() {
-			if t.SpenderAccountID.String() == spenderAccount.String() {
-				t.SerialNumbers = []int64{}
-				t.AllSerials = true
-				return tx
-			}
-		}
-	}
-
 	tx.nftAllowances = append(tx.nftAllowances, &TokenNftAllowance{
 		TokenID:          &tokenID,
 		SpenderAccountID: &spenderAccount,

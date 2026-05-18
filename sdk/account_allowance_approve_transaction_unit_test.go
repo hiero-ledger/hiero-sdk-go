@@ -301,3 +301,71 @@ func TestUnitDeleteTokenNftAllowanceAllSerials(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitDeleteTokenNftAllowanceAllSerialsPreservesPriorSerialApproval(t *testing.T) {
+	t.Parallel()
+
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	transaction, err := NewAccountAllowanceApproveTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		ApproveTokenNftAllowance(nftID1, owner, spenderAccountID1).
+		DeleteTokenNftAllowanceAllSerials(tokenID2, owner, spenderAccountID1).
+		Freeze()
+	require.NoError(t, err)
+
+	data := transaction.build()
+
+	switch d := data.Data.(type) {
+	case *services.TransactionBody_CryptoApproveAllowance:
+		require.Equal(t, d.CryptoApproveAllowance.NftAllowances, []*services.NftAllowance{
+			{
+				TokenId:           tokenID2._ToProtobuf(),
+				Owner:             owner._ToProtobuf(),
+				Spender:           spenderAccountID1._ToProtobuf(),
+				SerialNumbers:     []int64{serialNumber1},
+				ApprovedForAll:    &wrapperspb.BoolValue{Value: false},
+				DelegatingSpender: nil,
+			},
+			{
+				TokenId:           tokenID2._ToProtobuf(),
+				Owner:             owner._ToProtobuf(),
+				Spender:           spenderAccountID1._ToProtobuf(),
+				SerialNumbers:     []int64{},
+				ApprovedForAll:    &wrapperspb.BoolValue{Value: false},
+				DelegatingSpender: nil,
+			},
+		})
+	}
+}
+
+func TestUnitDeleteTokenNftAllowanceAllSerialsAppendsPerCall(t *testing.T) {
+	t.Parallel()
+
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+
+	transaction, err := NewAccountAllowanceApproveTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		DeleteTokenNftAllowanceAllSerials(tokenID2, owner, spenderAccountID1).
+		DeleteTokenNftAllowanceAllSerials(tokenID2, owner, spenderAccountID1).
+		Freeze()
+	require.NoError(t, err)
+
+	data := transaction.build()
+
+	switch d := data.Data.(type) {
+	case *services.TransactionBody_CryptoApproveAllowance:
+		revoke := &services.NftAllowance{
+			TokenId:           tokenID2._ToProtobuf(),
+			Owner:             owner._ToProtobuf(),
+			Spender:           spenderAccountID1._ToProtobuf(),
+			SerialNumbers:     []int64{},
+			ApprovedForAll:    &wrapperspb.BoolValue{Value: false},
+			DelegatingSpender: nil,
+		}
+		require.Equal(t, d.CryptoApproveAllowance.NftAllowances, []*services.NftAllowance{revoke, revoke})
+	}
+}
+
