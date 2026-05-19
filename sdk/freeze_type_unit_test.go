@@ -27,7 +27,6 @@ func TestUnitFreezeTypeString(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			require.Equal(t, test.want, test.ft.String(), "FreezeType(%d).String()", test.ft)
