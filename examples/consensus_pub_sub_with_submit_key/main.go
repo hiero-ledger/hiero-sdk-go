@@ -51,6 +51,7 @@ func main() {
 	// Step 2: Create the topic with admin + submit keys.
 	fmt.Println("Creating new HCS topic...")
 	transactionResponse, err := hiero.NewTopicCreateTransaction().
+		SetTransactionMemo("go sdk example consensus_pub_sub_with_submit_key/main.go").
 		SetTopicMemo("HCS topic with Submit Key").
 		SetAdminKey(client.GetOperatorPublicKey()).
 		// Access control for TopicSubmitMessage. Submitters must sign with this key.

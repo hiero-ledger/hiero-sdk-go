@@ -48,6 +48,7 @@ func main() {
 	// Step 2: Create the topic with admin + submit keys.
 	fmt.Println("Creating new topic...")
 	topicCreateResponse, err := hiero.NewTopicCreateTransaction().
+		SetTransactionMemo("go sdk example consensus_pub_sub_chunked/main.go").
 		SetTopicMemo("hedera-sdk-go/ConsensusPubSubChunkedExample").
 		SetAdminKey(client.GetOperatorPublicKey()).
 		SetSubmitKey(submitKey.PublicKey()).

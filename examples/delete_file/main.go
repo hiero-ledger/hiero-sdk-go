@@ -10,6 +10,8 @@ import (
 // How to create a file under a non-operator key, delete it (signing with that
 // key), and verify the deletion via FileInfoQuery.
 func main() {
+	fmt.Println("Delete File Example Start!")
+
 	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
@@ -92,4 +94,6 @@ func main() {
 	if err := client.Close(); err != nil {
 		panic(fmt.Sprintf("%v : error closing client", err))
 	}
+
+	fmt.Println("Delete File Example Complete!")
 }

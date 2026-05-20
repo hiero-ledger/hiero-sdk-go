@@ -57,6 +57,7 @@ func main() {
 	// Step 3: Create the topic create transaction.
 	fmt.Println("Creating topic create transaction...")
 	topicCreateTx, err := hiero.NewTopicCreateTransaction().
+		SetTransactionMemo("go sdk example topic_with_admin_key/main.go").
 		SetTopicMemo("demo topic").
 		SetAdminKey(keyList).
 		FreezeWith(client)

@@ -7,7 +7,7 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
-// HEDERA_NETWORK How to construct and configure a client in different ways.
+// How to construct and configure a client in different ways.
 //
 // A client has a network and an operator.
 //
@@ -26,8 +26,6 @@ import (
 //
 // A Client has an operator, which has an AccountID and a PublicKey, and which can
 // sign requests. A client's operator can also be configured.
-const HEDERA_NETWORK = "testnet"
-
 func main() {
 	fmt.Println("Construct Client Example Start!")
 
@@ -41,7 +39,7 @@ func main() {
 	// We can also construct a client for testnet, previewnet or mainnet depending on the value of a
 	// network name string. If, for example, the input string equals "testnet", this client will be
 	// configured to connect to testnet.
-	namedNetworkClient, err := hiero.ClientForName(HEDERA_NETWORK)
+	namedNetworkClient, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client for name", err))
 	}
