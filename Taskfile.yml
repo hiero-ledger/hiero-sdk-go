@@ -11,24 +11,24 @@ tasks:
         cmds:
             - |
               for example in examples/*; do
-                  dir_name=$(basename "$example")
-                  case "$dir_name" in
-                      consensus_pub_sub | \
-                      consensus_pub_sub_chunked | \
-                      consensus_pub_sub_with_submit_key | \
-                      initialize-client-with-mirror-node-adress-book | \
-                      batch_transaction | \
-                      long_term_scheduled_transactions | \
-                      mirror_node_contract_queries | \
-                      fee_estimate_query)
-                          echo "Skipping $example"
-                          continue
-                          ;;
-                  esac
-                  if [ -d "$example" ] && [ -f "$example/main.go" ]; then
-                      echo "Running $example/main.go"
+                 dir_name=$(basename "$example")
+                  # Skip the consensus_pub_sub_chunked directory
+                  if [ "$dir_name" == "consensus_pub_sub_chunked" ] || [ "$dir_name" == "initialize-client-with-mirror-node-adress-book" ] || [ "$dir_name" == "batch_transaction" ] || [ "$dir_name" == "long_term_scheduled_transactions" ] || [ "$dir_name" == "mirror_node_contract_queries" ]; then
+                      echo "Skipping $example"
+                      continue
+                  fi
+                  # fee_estimate_query is flaky on a fresh local mirror node.
+                  if [ "$dir_name" == "fee_estimate_query" ]; then
+                      echo "Skipping $example (mirror node sync flake)"
+                      continue
+                  fi
+                  if [ -d "$example" ]; then
+
                       pushd "$example" > /dev/null
-                      HEDERA_NETWORK="localhost" go run main.go
+                      if [ -f main.go ]; then
+                          echo "Running $example/main.go"
+                          HEDERA_NETWORK="localhost" go run main.go
+                      fi
                       popd > /dev/null
                   fi
               done
