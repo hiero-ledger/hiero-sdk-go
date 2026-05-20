@@ -77,12 +77,12 @@ func main() {
 	fmt.Printf("Created new account with ID: %v\n", accountID)
 
 	// Step 4: build a transfer, schedule it, pre-sign with privateKey2.
-	fmt.Println("Creating a token transfer transaction...")
+	fmt.Println("Creating an HBAR transfer transaction...")
 	transferTx := hiero.NewTransferTransaction().
 		AddHbarTransfer(accountID, hiero.NewHbar(1).Negated()).
 		AddHbarTransfer(operatorAccountID, hiero.NewHbar(1))
 
-	fmt.Println("Scheduling the token transfer transaction...")
+	fmt.Println("Scheduling the HBAR transfer transaction...")
 	scheduledTx, err := transferTx.Schedule()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating scheduled transaction", err))
