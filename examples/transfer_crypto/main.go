@@ -7,12 +7,12 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+// How to transfer Hbar between accounts.
 func main() {
-	var client *hiero.Client
-	var err error
+	fmt.Println("Transfer Crypto Example Start!")
 
 	// Retrieving network type from environment variable HEDERA_NETWORK
-	client, err = hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
@@ -32,28 +32,68 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	fmt.Println("Crypto Transfer Example")
+	recipientID := hiero.AccountID{Account: 3}
 
-	fmt.Printf("Transferring 1 hbar from %v to 0.0.3\n", client.GetOperatorAccountID())
-
-	transactionResponse, err := hiero.NewTransferTransaction().
-		// Hbar has to be negated to denote we are taking out from that account
-		AddHbarTransfer(client.GetOperatorAccountID(), hiero.NewHbar(-1)).
-		// If the amount of these 2 transfers is not the same, the transaction will throw an error
-		AddHbarTransfer(hiero.AccountID{Account: 3}, hiero.NewHbar(1)).
-		SetTransactionMemo("go sdk example send_hbar/main.go").
+	// Step 1: Check Hbar balance of sender and recipient.
+	senderBalanceBefore, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(operatorAccountID).
 		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying sender balance", err))
+	}
 
+	recipientBalanceBefore, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(recipientID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying recipient balance", err))
+	}
+
+	fmt.Printf("Sender (%v) balance before transfer: %v\n", operatorAccountID, senderBalanceBefore.Hbars)
+	fmt.Printf("Recipient (%v) balance before transfer: %v\n", recipientID, recipientBalanceBefore.Hbars)
+
+	// Step 2: Execute the transfer transaction to send Hbars from operator to recipient.
+	fmt.Println("Executing the transfer transaction...")
+	transferAmount := hiero.NewHbar(1)
+	transferResponse, err := hiero.NewTransferTransaction().
+		// AddHbarTransfer can be called as many times as you want as long as the total
+		// sum of inputs and outputs is zero.
+		AddHbarTransfer(operatorAccountID, transferAmount.Negated()).
+		AddHbarTransfer(recipientID, transferAmount).
+		SetTransactionMemo("Transfer example").
+		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing transfer", err))
 	}
 
-	// Retrieve the receipt to make sure the transaction went through
-	transactionReceipt, err := transactionResponse.GetReceipt(client)
-
+	record, err := transferResponse.GetRecord(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving transfer receipt", err))
+		panic(fmt.Sprintf("%v : error retrieving transfer record", err))
 	}
 
-	fmt.Printf("crypto transfer status: %v\n", transactionReceipt.Status)
+	fmt.Printf("Transferred %v\n", transferAmount)
+	fmt.Printf("Transfer memo: %v\n", record.TransactionMemo)
+
+	// Step 3: Check Hbar balance of sender and recipient after the transfer.
+	senderBalanceAfter, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(operatorAccountID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying sender balance after", err))
+	}
+
+	recipientBalanceAfter, err := hiero.NewAccountBalanceQuery().
+		SetAccountID(recipientID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying recipient balance after", err))
+	}
+
+	fmt.Printf("Sender (%v) balance after transfer: %v\n", operatorAccountID, senderBalanceAfter.Hbars)
+	fmt.Printf("Recipient (%v) balance after transfer: %v\n", recipientID, recipientBalanceAfter.Hbars)
+
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
+	}
+	fmt.Println("Example complete!")
 }

@@ -7,12 +7,12 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+// How to update an account's key.
 func main() {
-	var client *hiero.Client
-	var err error
+	fmt.Println("Update Account Public Key Example Start!")
 
 	// Retrieving network type from environment variable HEDERA_NETWORK
-	client, err = hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
@@ -29,86 +29,100 @@ func main() {
 		panic(fmt.Sprintf("%v : error converting string to PrivateKey", err))
 	}
 
-	// Setting the client operator ID and key
+	// Setting the client operator ID and key, plus a generous default tx fee.
 	client.SetOperator(operatorAccountID, operatorKey)
+	if err := client.SetDefaultMaxTransactionFee(hiero.NewHbar(10)); err != nil {
+		panic(fmt.Sprintf("%v : error setting default max transaction fee", err))
+	}
 
-	// Generating key for the new account
-	key1, err := hiero.GeneratePrivateKey()
+	// Step 1: Generate ECDSA key pairs.
+	fmt.Println("Generating ECDSA key pairs...")
+	privateKey1, err := hiero.PrivateKeyGenerateEcdsa()
+	if err != nil {
+		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
+	}
+	privateKey2, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
 
-	// Generating the key to update to
-	key2, err := hiero.GeneratePrivateKey()
-	if err != nil {
-		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
-	}
-
-	// Creating new account
+	// Step 2: Create a new account using privateKey1's public key.
+	fmt.Println("Creating new account...")
 	accountTxResponse, err := hiero.NewAccountCreateTransaction().
-		// The key that must sign each transfer out of the account. If receiverSigRequired is true, then
-		// it must also sign any transfer into the account.
-		// Using the public key for this, but a PrivateKey or a KeyList can also be used
-		SetKeyWithoutAlias(key1.PublicKey()).
-		SetInitialBalance(hiero.ZeroHbar).
-		SetTransactionID(hiero.TransactionIDGenerate(client.GetOperatorAccountID())).
-		SetTransactionMemo("sdk example create_account__with_manual_signing/main.go").
+		// The key that must sign each transfer out of the account. If
+		// receiverSigRequired is true, it must also sign any transfer into
+		// the account. A PublicKey, PrivateKey, or KeyList works here.
+		SetKeyWithoutAlias(privateKey1.PublicKey()).
+		SetInitialBalance(hiero.NewHbar(1)).
+		SetTransactionMemo("go sdk example update_account_public_key/main.go").
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating account", err))
 	}
 
-	println("transaction ID:", accountTxResponse.TransactionID.String())
-
-	// Get the receipt making sure transaction worked
 	accountTxReceipt, err := accountTxResponse.GetReceipt(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error retrieving account creation receipt", err))
 	}
-
-	// Retrieve the account ID out of the Receipt
 	accountID := *accountTxReceipt.AccountID
-	println("account =", accountID.String())
-	println("key =", key1.PublicKey().String())
-	println(":: update public key of account", accountID.String())
-	println("set key =", key2.PublicKey().String())
+	fmt.Printf("Created new account with ID: %v and public key: %v\n", accountID, privateKey1.PublicKey())
 
-	// Updating the account with the new key
+	// Step 3: Update the account's key to privateKey2's public key.
+	// Both signatures are required: the previous key authorizes the change,
+	// the new key proves possession.
+	fmt.Printf("Updating public key of new account...(Setting key: %v).\n", privateKey2.PublicKey())
 	accountUpdateTx, err := hiero.NewAccountUpdateTransaction().
 		SetAccountID(accountID).
-		// The new key
-		SetKey(key2.PublicKey()).
+		// The new key.
+		SetKey(privateKey2.PublicKey()).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing account update transaction", err))
 	}
 
-	// Have to sign with both keys, the initial key first
-	accountUpdateTx.Sign(key1)
-	accountUpdateTx.Sign(key2)
+	// Sign with both keys — the previous key authorizes the change, the new key proves possession.
+	accountUpdateTx.Sign(privateKey1)
+	accountUpdateTx.Sign(privateKey2)
 
-	// Executing the account update transaction
 	accountUpdateTxResponse, err := accountUpdateTx.Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error updating account", err))
 	}
 
-	println("transaction ID:", accountUpdateTxResponse.TransactionID.String())
-
-	// Make sure the transaction went through
-	_, err = accountUpdateTxResponse.GetReceipt(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting the transaction receipt", err))
+	if _, err := accountUpdateTxResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error getting account update receipt", err))
 	}
 
-	println(":: getAccount and check our current key")
+	// Step 4: Confirm the key was changed via AccountInfoQuery.
 	info, err := hiero.NewAccountInfoQuery().
 		SetAccountID(accountID).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing account info query", err))
 	}
+	fmt.Printf("New account public key: %v\n", info.Key)
 
-	// This should be same as key2
-	println("key =", info.Key.String())
+	// Cleanup: delete the created account, transferring remaining funds back to the operator.
+	deleteTx, err := hiero.NewAccountDeleteTransaction().
+		SetAccountID(accountID).
+		SetTransferAccountID(operatorAccountID).
+		FreezeWith(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error freezing account delete transaction", err))
+	}
+
+	deleteTx.Sign(privateKey2)
+
+	deleteResponse, err := deleteTx.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing account delete", err))
+	}
+	if _, err := deleteResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error getting account delete receipt", err))
+	}
+
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
+	}
+	fmt.Println("Update Account Public Key Example Complete!")
 }

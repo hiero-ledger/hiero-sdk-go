@@ -10,12 +10,18 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+const TotalMessages = 5
+
+// How to operate with a private HCS topic.
+//
+// Create a new HCS topic with a single ECDSA Submit Key,
+// publish a number of messages to the topic signed by the Submit Key
+// and subscribe to the topic (no key required).
 func main() {
-	var client *hiero.Client
-	var err error
+	fmt.Println("Consensus Service Submit Message To The Private Topic And Subscribe Example Start!")
 
 	// Retrieving network type from environment variable HEDERA_NETWORK
-	client, err = hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
@@ -35,88 +41,107 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// generate new submit key
-	submitKey, err := hiero.GeneratePrivateKey()
+	// Step 1: Generate ECDSA key pair (Submit Key for the topic).
+	fmt.Println("Generating ECDSA key pair...")
+	submitKey, err := hiero.PrivateKeyGenerateEcdsa()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 	}
 
-	println("acc", client.GetOperatorAccountID().String())
-
-	// Create new topic ID
+	// Step 2: Create the topic with admin + submit keys.
+	fmt.Println("Creating new HCS topic...")
 	transactionResponse, err := hiero.NewTopicCreateTransaction().
-		// You don't need any of this to create a topic
-		// If key is not set all submissions are allowed
-		SetTransactionMemo("HCS topic with submit key").
-		// Access control for TopicSubmitMessage.
-		// If unspecified, no access control is performed, all submissions are allowed.
+		SetTransactionMemo("go sdk example consensus_pub_sub_with_submit_key/main.go").
+		SetTopicMemo("HCS topic with Submit Key").
+		SetAdminKey(client.GetOperatorPublicKey()).
+		// Access control for TopicSubmitMessage. Submitters must sign with this key.
 		SetSubmitKey(submitKey.PublicKey()).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating topic", err))
 	}
 
-	// Get receipt
 	transactionReceipt, err := transactionResponse.GetReceipt(client)
-
 	if err != nil {
 		panic(fmt.Sprintf("%v : error retrieving topic create transaction receipt", err))
 	}
 
-	// Get topic ID from receipt
 	topicID := *transactionReceipt.TopicID
+	fmt.Printf("Created topic with ID: %v and public ECDSA submit key: %v\n", topicID, submitKey)
 
-	println("Created new topic", topicID.String(), "with ED25519 submitKey of", submitKey.String())
-
+	// Step 3: Wait for the new topic to propagate to mirror nodes.
+	fmt.Println("Wait 5 seconds (to ensure data propagated to mirror nodes) ...")
 	time.Sleep(5 * time.Second)
 
-	// Setup a mirror client to print out messages as we receive them
+	// Step 4: Subscribe to the topic. Each received message decrements the latch.
+	fmt.Println("Setting up a mirror client...")
+	done := make(chan struct{}, TotalMessages)
 	_, err = hiero.NewTopicMessageQuery().
-		// Sets for which topic
 		SetTopicID(topicID).
-		// Set when the query starts
 		SetStartTime(time.Unix(0, 0)).
-		// What to do when messages are received
 		Subscribe(client, func(message hiero.TopicMessage) {
-			// Print out the timestamp and the message
-			println(message.ConsensusTimestamp.String(), " received topic message:", string(message.Contents))
+			fmt.Printf("Topic message received! | Time: %v | Content: %s\n",
+				message.ConsensusTimestamp, string(message.Contents))
+			done <- struct{}{}
 		})
 	if err != nil {
 		panic(fmt.Sprintf("%v : error subscribing", err))
 	}
 
-	for i := 0; i < 3; i++ {
+	// Step 5: Publish messages, signing each with the submit key.
+	for i := 0; i < TotalMessages; i++ {
 		message := "random message " + strconv.Itoa(rand.Int()) //nolint:gosec
+		fmt.Printf("Publishing message to the topic: %s\n", message)
 
-		println("Publishing message:", message)
-
-		// Prepare a message send transaction that requires a submit key from "somewhere else"
 		submitTx, err := hiero.NewTopicMessageSubmitTransaction().
-			// Sets the topic ID we want to send to
 			SetTopicID(topicID).
-			// Sets the message
 			SetMessage([]byte(message)).
 			FreezeWith(client)
 		if err != nil {
 			panic(fmt.Sprintf("%v : error freezing topic message submit transaction", err))
 		}
 
-		// Sign with that submit key we gave the topic
+		// The transaction is implicitly signed by the operator (payer).
+		// The topic has a submitKey requirement — sign with that key too.
 		submitTx.Sign(submitKey)
 
-		// Now actually submit the transaction
 		submitTxResponse, err := submitTx.Execute(client)
 		if err != nil {
 			panic(fmt.Sprintf("%v : error executing topic message submit transaction", err))
 		}
 
-		// Get the receipt to ensure there were no errors
-		_, err = submitTxResponse.GetReceipt(client)
-		if err != nil {
+		if _, err := submitTxResponse.GetReceipt(client); err != nil {
 			panic(fmt.Sprintf("%v : error retrieving topic message submit transaction receipt", err))
 		}
 
-		// Wait a bit for it to propagate
-		time.Sleep(5 * time.Second)
+		time.Sleep(2 * time.Second)
 	}
+
+	// Wait up to 60s for all messages to arrive via the subscription, fail otherwise.
+	timeout := time.After(60 * time.Second)
+	for i := 0; i < TotalMessages; i++ {
+		select {
+		case <-done:
+			// got one
+		case <-timeout:
+			panic("Not all topic messages were received! (Fail)")
+		}
+	}
+
+	// Cleanup: delete created topic.
+	deleteResponse, err := hiero.NewTopicDeleteTransaction().
+		SetTopicID(topicID).
+		Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing topic delete transaction", err))
+	}
+	if _, err := deleteResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error retrieving topic delete receipt", err))
+	}
+
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
+	}
+
+	fmt.Println("Consensus Service Submit Message To The Private Topic And Subscribe Example Complete!")
 }

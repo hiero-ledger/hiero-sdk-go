@@ -7,12 +7,16 @@ import (
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
+// How to create and manage an HCS topic using a threshold key as the adminKey
+// and going through a key rotation to a new set of keys.
+//
+// Create a new HCS topic with a 2-of-3 threshold key for the Admin Key and
+// update the HCS topic to a 3-of-4 threshold key for the adminKey.
 func main() {
-	var client *hiero.Client
-	var err error
+	fmt.Println("Topic With Admin (Threshold) Key Example Start!")
 
 	// Retrieving network type from environment variable HEDERA_NETWORK
-	client, err = hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
+	client, err := hiero.ClientForName(os.Getenv("HEDERA_NETWORK"))
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
@@ -29,122 +33,130 @@ func main() {
 		panic(fmt.Sprintf("%v : error converting string to PrivateKey", err))
 	}
 
-	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
+	// Step 1: Generate the initial admin key pairs (3 keys, 2-of-3 threshold).
+	fmt.Println("Generating ECDSA key pairs...")
 	initialAdminKeys := make([]hiero.PrivateKey, 3)
-
-	// Generating the keys for the KeyList
 	for i := range initialAdminKeys {
-		key, err := hiero.GeneratePrivateKey()
+		key, err := hiero.PrivateKeyGenerateEcdsa()
 		if err != nil {
 			panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 		}
 		initialAdminKeys[i] = key
 	}
 
-	// Creating KeyList with a threshold 2
+	// Step 2: Build the threshold key.
+	fmt.Println("Creating a Key List (threshold key)...")
 	keyList := hiero.KeyListWithThreshold(2)
 	for _, key := range initialAdminKeys {
 		keyList.Add(key.PublicKey())
 	}
+	fmt.Printf("Created a Key List: %v\n", keyList)
 
-	topicTx, err := hiero.NewTopicCreateTransaction().
+	// Step 3: Create the topic create transaction.
+	fmt.Println("Creating topic create transaction...")
+	topicCreateTx, err := hiero.NewTopicCreateTransaction().
+		SetTransactionMemo("go sdk example topic_with_admin_key/main.go").
 		SetTopicMemo("demo topic").
-		// Access control for UpdateTopicTransaction/DeleteTopicTransaction.
-		// Anyone can increase the topic's expirationTime via UpdateTopicTransaction, regardless of the adminKey.
-		// If no adminKey is specified, UpdateTopicTransaction may only be used to extend the topic's expirationTime,
-		// and DeleteTopicTransaction is disallowed.
 		SetAdminKey(keyList).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing topic create transaction", err))
 	}
 
-	// Signing ConsensusTopicCreateTransaction with initialAdminKeys
+	// Step 4: Sign with 2 of 3 admin keys.
 	for i := 0; i < 2; i++ {
-		println("Signing ConsensusTopicCreateTransaction with key ", initialAdminKeys[i].String())
-		topicTx.Sign(initialAdminKeys[i])
+		fmt.Printf("Signing topic create transaction with key %v\n", initialAdminKeys[i])
+		topicCreateTx.Sign(initialAdminKeys[i])
 	}
 
-	// Executing ConsensusTopicCreateTransaction
-	response, err := topicTx.Execute(client)
+	// Step 5: Execute.
+	topicCreateResponse, err := topicCreateTx.Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating topic", err))
 	}
 
-	// Make sure it executed properly
-	receipt, err := response.GetReceipt(client)
+	topicCreateReceipt, err := topicCreateResponse.GetReceipt(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error retrieving topic creation receipt", err))
 	}
+	topicID := *topicCreateReceipt.TopicID
+	fmt.Printf("Created new topic (%v) with 2-of-3 threshold key as admin key.\n", topicID)
 
-	// Get the topic ID out of the receipt
-	topicID := *receipt.TopicID
-
-	println("Created new topic ", topicID.String(), " with 2-of-3 threshold key as adminKey.")
-
+	// Step 6: Generate the new admin key pairs (4 keys, 3-of-4 threshold).
+	fmt.Println("Generating new ECDSA key pairs...")
 	newAdminKeys := make([]hiero.PrivateKey, 4)
-
-	// Generating the keys
 	for i := range newAdminKeys {
-		key, err := hiero.GeneratePrivateKey()
+		key, err := hiero.PrivateKeyGenerateEcdsa()
 		if err != nil {
 			panic(fmt.Sprintf("%v : error generating PrivateKey", err))
 		}
 		newAdminKeys[i] = key
 	}
 
-	// Creating KeyList with a threshold 3
-	keyList = hiero.KeyListWithThreshold(3)
+	// Step 7: Build the new threshold key.
+	fmt.Println("Creating new Key List (threshold key)...")
+	newKeyList := hiero.KeyListWithThreshold(3)
 	for _, key := range newAdminKeys {
-		keyList.Add(key.PublicKey())
+		newKeyList.Add(key.PublicKey())
 	}
+	fmt.Printf("Created new Key List: %v\n", newKeyList)
 
-	topicUpdate, err := hiero.NewTopicUpdateTransaction().
+	// Step 8: Create the topic update transaction.
+	fmt.Println("Creating topic update transaction...")
+	topicUpdateTx, err := hiero.NewTopicUpdateTransaction().
 		SetTopicID(topicID).
-		SetTopicMemo("updated topic demo").
-		// Updating with new KeyList here
-		SetAdminKey(keyList).
+		SetTopicMemo("This topic will be updated").
+		SetAdminKey(newKeyList).
 		FreezeWith(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error freezing topic update transaction", err))
 	}
 
-	// Have to sign with the initial admin keys first
+	// Step 9a: Sign with 2 of the OLD admin keys (authorize the change).
 	for i := 0; i < 2; i++ {
-		println("Signing ConsensusTopicCreateTransaction with initial admin key ", initialAdminKeys[i].String())
-		topicUpdate.Sign(initialAdminKeys[i])
+		fmt.Printf("Signing topic update transaction with initial admin key %v\n", initialAdminKeys[i])
+		topicUpdateTx.Sign(initialAdminKeys[i])
 	}
 
-	// Then the new ones we updated the topic with
+	// Step 9b: Sign with 3 of the NEW admin keys (prove possession).
 	for i := 0; i < 3; i++ {
-		println("Signing ConsensusTopicCreateTransaction with new admin key ", newAdminKeys[i].String())
-		topicUpdate.Sign(newAdminKeys[i])
+		fmt.Printf("Signing topic update transaction with new admin key %v\n", newAdminKeys[i])
+		topicUpdateTx.Sign(newAdminKeys[i])
 	}
 
-	// Now to execute the topic update transaction
-	response, err = topicUpdate.Execute(client)
+	// Step 10: Execute.
+	topicUpdateResponse, err := topicUpdateTx.Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error updating topic", err))
 	}
-
-	// Make sure the transaction ran properly
-	receipt, err = response.GetReceipt(client)
-	if err != nil {
+	if _, err := topicUpdateResponse.GetReceipt(client); err != nil {
 		panic(fmt.Sprintf("%v : error retrieving topic update receipt", err))
 	}
+	fmt.Printf("Updated topic (%v) with 3-of-4 threshold key as admin key.\n", topicID)
 
-	println("Updated topic ", topicID.String(), " with 3-of-4 threshold key as adminKey")
-
-	// Make sure everything worked by checking the topic memo
-	topicInfo, err := hiero.NewTopicInfoQuery().
+	// Cleanup: delete the topic, signed with 3 of 4 new admin keys.
+	topicDeleteTx, err := hiero.NewTopicDeleteTransaction().
 		SetTopicID(topicID).
-		Execute(client)
+		FreezeWith(client)
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing topic info query", err))
+		panic(fmt.Sprintf("%v : error freezing topic delete transaction", err))
+	}
+	for i := 0; i < 3; i++ {
+		topicDeleteTx.Sign(newAdminKeys[i])
+	}
+	deleteResponse, err := topicDeleteTx.Execute(client)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error executing topic delete transaction", err))
+	}
+	if _, err := deleteResponse.GetReceipt(client); err != nil {
+		panic(fmt.Sprintf("%v : error retrieving topic delete receipt", err))
 	}
 
-	// Should be "updated topic demo"
-	println(topicInfo.TopicMemo)
+	if err := client.Close(); err != nil {
+		panic(fmt.Sprintf("%v : error closing client", err))
+	}
+
+	fmt.Println("Topic With Admin (Threshold) Key Example Complete!")
 }
