@@ -211,7 +211,7 @@ func (query *TopicMessageQuery) Subscribe(client *Client, onNext func(TopicMessa
 					if grpcErr, ok := status.FromError(streamResult.err); ok {
 						query.errorHandler(*grpcErr)
 					} else {
-						query.errorHandler(*status.New(codes.Unknown, "Unknown error ocurred"))
+						query.errorHandler(*status.New(codes.Unknown, "Unknown error occurred"))
 					}
 					return
 				}

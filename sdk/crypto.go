@@ -866,7 +866,7 @@ func (pk PublicKey) _ToSignaturePairProtobuf(signature []byte) *services.Signatu
 	return &services.SignaturePair{}
 }
 
-// SignTransaction signes the transaction and adds the signature to the transaction
+// SignTransaction signs the transaction and adds the signature to the transaction
 func (sk PrivateKey) SignTransaction(tx TransactionInterface) ([]byte, error) {
 	baseTx := tx.getBaseTransaction()
 
