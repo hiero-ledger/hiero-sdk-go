@@ -105,7 +105,6 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
 
-
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
 		SetMode(FeeEstimateModeState).
