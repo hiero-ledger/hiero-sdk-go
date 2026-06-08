@@ -1730,12 +1730,12 @@ func (tx *Transaction[T]) SetMaxRetry(max int) T {
 	return tx.childTransaction
 }
 
-// GetNodeAccountIDs returns the node AccountID for this transaction.
+// GetLogLevel returns the log level for this transaction.
 func (tx *Transaction[T]) GetLogLevel() *LogLevel {
 	return tx.logLevel
 }
 
-// SetNodeAccountIDs sets the node AccountID for this transaction.
+// SetLogLevel sets the log level for this transaction.
 func (tx *Transaction[T]) SetLogLevel(level LogLevel) T {
 	tx.logLevel = &level
 	return tx.childTransaction
