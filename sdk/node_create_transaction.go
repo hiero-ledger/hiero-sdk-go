@@ -94,7 +94,7 @@ func _NodeCreateTransactionFromProtobuf(tx Transaction[*NodeCreateTransaction], 
 	return nodeCreateTransaction
 }
 
-// GetAccountID AccountID of the node
+// GetAccountID returns AccountID of the node.
 func (tx *NodeCreateTransaction) GetAccountID() AccountID {
 	if tx.accountID == nil {
 		return AccountID{}
@@ -103,69 +103,69 @@ func (tx *NodeCreateTransaction) GetAccountID() AccountID {
 	return *tx.accountID
 }
 
-// SetAccountID get the AccountID of the node
+// SetAccountID sets the AccountID of the node.
 func (tx *NodeCreateTransaction) SetAccountID(accountID AccountID) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.accountID = &accountID
 	return tx
 }
 
-// GetDescription get the description of the node
+// GetDescription returns the description of the node.
 func (tx *NodeCreateTransaction) GetDescription() string {
 	return tx.description
 }
 
-// SetDescription set the description of the node
+// SetDescription sets the description of the node.
 func (tx *NodeCreateTransaction) SetDescription(description string) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.description = description
 	return tx
 }
 
-// GetServiceEndpoints the list of service endpoints for gossip.
+// GetGossipEndpoints returns the list of service endpoints for gossip.
 func (tx *NodeCreateTransaction) GetGossipEndpoints() []Endpoint {
 	return tx.gossipEndpoints
 }
 
-// SetGossipEndpoints the list of service endpoints for gossip.
+// SetGossipEndpoints sets the list of service endpoints for gossip.
 func (tx *NodeCreateTransaction) SetGossipEndpoints(gossipEndpoints []Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.gossipEndpoints = gossipEndpoints
 	return tx
 }
 
-// AddGossipEndpoint add an endpoint for gossip to the list of service endpoints for gossip.
+// AddGossipEndpoint adds an endpoint for gossip to the list of service endpoints for gossip.
 func (tx *NodeCreateTransaction) AddGossipEndpoint(endpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.gossipEndpoints = append(tx.gossipEndpoints, endpoint)
 	return tx
 }
 
-// GetServiceEndpoints the list of service endpoints for gRPC calls.
+// GetServiceEndpoints returns the list of service endpoints for gRPC calls.
 func (tx *NodeCreateTransaction) GetServiceEndpoints() []Endpoint {
 	return tx.serviceEndpoints
 }
 
-// SetServiceEndpoints the list of service endpoints for gRPC calls.
+// SetServiceEndpoints sets the list of service endpoints for gRPC calls.
 func (tx *NodeCreateTransaction) SetServiceEndpoints(serviceEndpoints []Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.serviceEndpoints = serviceEndpoints
 	return tx
 }
 
-// AddServiceEndpoint the list of service endpoints for gRPC calls.
+// AddServiceEndpoint adds the list of service endpoints for gRPC calls.
 func (tx *NodeCreateTransaction) AddServiceEndpoint(endpoint Endpoint) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.serviceEndpoints = append(tx.serviceEndpoints, endpoint)
 	return tx
 }
 
-// GetGossipCaCertificate the certificate used to sign gossip events.
+// GetGossipCaCertificate returns the certificate used to sign gossip events.
 func (tx *NodeCreateTransaction) GetGossipCaCertificate() []byte {
 	return tx.gossipCaCertificate
 }
 
-// SetGossipCaCertificate the certificate used to sign gossip events.
+// SetGossipCaCertificate sets the certificate used to sign gossip events.
 // This value MUST be the DER encoding of the certificate presented.
 func (tx *NodeCreateTransaction) SetGossipCaCertificate(gossipCaCertificate []byte) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
@@ -173,12 +173,12 @@ func (tx *NodeCreateTransaction) SetGossipCaCertificate(gossipCaCertificate []by
 	return tx
 }
 
-// GetGrpcCertificateHash the hash of the node gRPC TLS certificate.
+// GetGrpcCertificateHash returns the hash of the node gRPC TLS certificate.
 func (tx *NodeCreateTransaction) GetGrpcCertificateHash() []byte {
 	return tx.grpcCertificateHash
 }
 
-// SetGrpcCertificateHash the hash of the node gRPC TLS certificate.
+// SetGrpcCertificateHash sets the hash of the node gRPC TLS certificate.
 // This value MUST be a SHA-384 hash.
 func (tx *NodeCreateTransaction) SetGrpcCertificateHash(grpcCertificateHash []byte) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
@@ -186,19 +186,19 @@ func (tx *NodeCreateTransaction) SetGrpcCertificateHash(grpcCertificateHash []by
 	return tx
 }
 
-// GetAdminKey an administrative key controlled by the node operator.
+// GetAdminKey returns an administrative key controlled by the node operator.
 func (tx *NodeCreateTransaction) GetAdminKey() Key {
 	return tx.adminKey
 }
 
-// SetAdminKey an administrative key controlled by the node operator.
+// SetAdminKey sets an administrative key controlled by the node operator.
 func (tx *NodeCreateTransaction) SetAdminKey(adminKey Key) *NodeCreateTransaction {
 	tx._RequireNotFrozen()
 	tx.adminKey = adminKey
 	return tx
 }
 
-// GetDeclineReward Gets whether this node declines rewards.
+// GetDeclineReward returns whether this node declines rewards.
 func (tx *NodeCreateTransaction) GetDeclineReward() bool {
 	return *tx.declineReward
 }
@@ -210,7 +210,7 @@ func (tx *NodeCreateTransaction) SetDeclineReward(declineReward bool) *NodeCreat
 	return tx
 }
 
-// GetGrpcWebProxyEndpoint Gets the gRPC proxy endpoint.
+// GetGrpcWebProxyEndpoint returns the gRPC proxy endpoint.
 func (tx *NodeCreateTransaction) GetGrpcWebProxyEndpoint() Endpoint {
 	return *tx.grpcWebProxyEndpoint
 }
