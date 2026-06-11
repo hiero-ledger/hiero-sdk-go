@@ -1599,3 +1599,63 @@ func TestUnitGetRecoveryIdEd25519Key(t *testing.T) {
 	recoveryId := privateKey.GetRecoveryId(r, s, message)
 	require.Equal(t, -1, recoveryId)
 }
+
+func TestUnitECDSAPublicKeyVerifyInvalidSignatureFails(t *testing.T) {
+	t.Parallel()
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	var nodeAccountID = []AccountID{{Account: 10}}
+
+	invalidSig := "123456"
+	sig, err := hex.DecodeString(invalidSig)
+	require.NoError(t, err)
+
+	key, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	tx1, err := NewTransferTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+
+	tx1.AddSignature(key.PublicKey(), sig)
+	require.False(t, key.PublicKey().VerifyTransaction(tx1))
+
+	nodeAccountID = []AccountID{{Account: 10}, {Account: 11}}
+	tx2, err := NewTransferTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+
+	tx2.AddSignatureV2(key.PublicKey(), sig, transactionID, AccountID{Account: 10})
+	require.False(t, key.PublicKey().VerifyTransaction(tx2))
+}
+
+func TestUnitEDPublicKeyVerifyInvalidSignatureFails(t *testing.T) {
+	t.Parallel()
+	transactionID := TransactionIDGenerate(AccountID{Account: 324})
+	var nodeAccountID = []AccountID{{Account: 10}}
+
+	invalidSig := "123456"
+	sig, err := hex.DecodeString(invalidSig)
+	require.NoError(t, err)
+
+	key, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	tx1, err := NewTransferTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+
+	tx1.AddSignature(key.PublicKey(), sig)
+	require.False(t, key.PublicKey().VerifyTransaction(tx1))
+
+	nodeAccountID = []AccountID{{Account: 10}, {Account: 11}}
+	tx2, err := NewTransferTransaction().
+		SetTransactionID(transactionID).
+		SetNodeAccountIDs(nodeAccountID).
+		Freeze()
+
+	tx2.AddSignatureV2(key.PublicKey(), sig, transactionID, AccountID{Account: 10})
+	require.False(t, key.PublicKey().VerifyTransaction(tx2))
+}
