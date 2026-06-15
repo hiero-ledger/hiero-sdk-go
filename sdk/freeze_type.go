@@ -29,7 +29,7 @@ func (freezeType FreezeType) String() string {
 		return "FREEZE_ABORT"
 	case FreezeTypeTelemetryUpgrade:
 		return "TELEMETRY_UPGRADE"
+	default:
+		return fmt.Sprintf("UNKNOWN_FREEZE_TYPE(%d)", freezeType)
 	}
-
-	panic(fmt.Sprintf("unreachable: FreezeType.String() switch statement is non-exhaustive. Status: %v", uint32(freezeType)))
 }
