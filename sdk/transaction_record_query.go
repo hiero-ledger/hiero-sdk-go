@@ -263,10 +263,8 @@ func (q *TransactionRecordQuery) shouldRetry(_ Executable, response interface{})
 	switch status {
 	case StatusBusy, StatusUnknown, StatusOk, StatusReceiptNotFound, StatusRecordNotFound, StatusPlatformNotActive:
 		return executionStateRetry
-	case StatusSuccess:
-		return executionStateFinished
 	default:
-		return executionStateError
+		return executionStateFinished
 	}
 }
 
