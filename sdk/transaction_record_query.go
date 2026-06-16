@@ -21,6 +21,7 @@ type TransactionRecordQuery struct {
 	transactionID       *TransactionID
 	includeChildRecords *bool
 	duplicates          *bool
+	validateStatus      bool
 }
 
 // NewTransactionRecordQuery creates TransactionRecordQuery which
@@ -34,8 +35,21 @@ type TransactionRecordQuery struct {
 func NewTransactionRecordQuery() *TransactionRecordQuery {
 	header := services.QueryHeader{}
 	return &TransactionRecordQuery{
-		Query: _NewQuery(true, &header),
+		Query:          _NewQuery(true, &header),
+		validateStatus: true,
 	}
+}
+
+// SetValidateStatus sets whether Execute returns an error when the record's
+// receipt status is not SUCCESS. Defaults to true.
+func (q *TransactionRecordQuery) SetValidateStatus(validate bool) *TransactionRecordQuery {
+	q.validateStatus = validate
+	return q
+}
+
+// GetValidateStatus returns whether Execute validates the record's receipt status.
+func (q *TransactionRecordQuery) GetValidateStatus() bool {
+	return q.validateStatus
 }
 
 // When execution is attempted, a single attempt will timeout when this deadline is reached. (The SDK may subsequently retry the execution.)
@@ -96,7 +110,9 @@ func (q *TransactionRecordQuery) Execute(client *Client) (TransactionRecord, err
 		return TransactionRecord{}, err
 	}
 
-	return _TransactionRecordFromProtobuf(resp.GetTransactionGetRecord(), q.transactionID), nil
+	record := _TransactionRecordFromProtobuf(resp.GetTransactionGetRecord(), q.transactionID)
+
+	return record, record.Receipt.ValidateStatus(q.validateStatus)
 }
 
 // SetTransactionID sets the TransactionID for this TransactionRecordQuery.
