@@ -126,14 +126,14 @@ jobs:
 
             - name: Upload unit test coverage to Codecov
               if: success() && matrix.test-type == 'unit'
-              uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+              uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
               with:
                 token: ${{ secrets.CODECOV_TOKEN }}
                 files: ./unit.out
 
             - name: Upload e2e test coverage to Codecov
               if: success() && matrix.test-type == 'e2e'
-              uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+              uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
               with:
                 token: ${{ secrets.CODECOV_TOKEN }}
                 files: ./e2e.out
@@ -191,7 +191,7 @@ jobs:
 
             - name: Upload dab test coverage to Codecov
               if: success()
-              uses: codecov/codecov-action@e79a6962e0d4c0c17b229090214935d2e33f8354 # v6.0.1
+              uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
               with:
                 token: ${{ secrets.CODECOV_TOKEN }}
                 files: ./dab.out
