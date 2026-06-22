@@ -144,3 +144,25 @@ func TestUnitAccessListItemEmptyList(t *testing.T) {
 	tx.SetAccessListItems(nil)
 	assert.Equal(t, 0, len(tx.GetAccessListItems()))
 }
+
+func TestUnitAccessListItemString(t *testing.T) {
+	t.Parallel()
+
+	item := NewAccessListItem([]byte{0xab, 0xcd}, [][]byte{{0x01}, {0x02}})
+	s := item.String()
+	assert.Contains(t, s, "abcd")
+	assert.Contains(t, s, "Address:")
+	assert.Contains(t, s, "StorageKeys:")
+}
+
+func TestUnitAccessListItemFromBytesError(t *testing.T) {
+	t.Parallel()
+
+	// A value (non-list) RLP payload is not a valid [address, storageKeys] entry.
+	value := NewRLPItem(VALUE_TYPE).AssignValue([]byte{0x01})
+	notAList, err := value.Write()
+	require.NoError(t, err)
+
+	_, err = _accessListItemFromBytes(notAList)
+	assert.Error(t, err)
+}

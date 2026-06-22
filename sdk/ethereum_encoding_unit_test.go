@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestUnitUint64EthBytesRoundTrip(t *testing.T) {
@@ -64,86 +63,15 @@ func TestUnitBigIntEthBytesRoundTrip(t *testing.T) {
 	}
 }
 
-func TestUnitEIP1559NumberAccessors(t *testing.T) {
+func TestUnitEthBytesEncodingEdgeCases(t *testing.T) {
 	t.Parallel()
 
-	gasPrice := new(big.Int).SetUint64(900_000_000_000) // 0xd1385c7bf0
-	tx := (&EthereumEIP1559Transaction{}).
-		SetChainId(298).
-		SetNonce(42).
-		SetGasLimit(150_000).
-		SetMaxGas(gasPrice).
-		SetMaxPriorityGas(big.NewInt(0)).
-		SetValue(big.NewInt(1_000_000)).
-		SetRecoveryId(1)
+	// Decoding truncates inputs longer than 8 bytes to the low 8.
+	assert.Equal(t, uint64(0x0102030405060708),
+		_ethBytesToUint64([]byte{0xFF, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08}))
 
-	assert.Equal(t, uint64(298), tx.GetChainId())
-	assert.Equal(t, uint64(42), tx.GetNonce())
-	assert.Equal(t, uint64(150_000), tx.GetGasLimit())
-	assert.Equal(t, 0, gasPrice.Cmp(tx.GetMaxGas()))
-	assert.Equal(t, 0, tx.GetMaxPriorityGas().Sign())
-	assert.Equal(t, int64(1_000_000), tx.GetValue().Int64())
-	assert.Equal(t, 1, tx.GetRecoveryId())
-
-	// Underlying bytes match canonical encoding.
-	require.Equal(t, []byte{0x01, 0x2a}, tx.ChainId)
-	require.Equal(t, []byte{0x2a}, tx.Nonce)
-	require.Equal(t, []byte{}, tx.MaxPriorityGas)
-}
-
-func TestUnitEIP2930NumberAccessors(t *testing.T) {
-	t.Parallel()
-
-	tx := (&EthereumEIP2930Transaction{}).
-		SetChainId(1).
-		SetNonce(7).
-		SetGasPrice(big.NewInt(20_000_000_000)).
-		SetGasLimit(21_000).
-		SetValue(big.NewInt(0)).
-		SetRecoveryId(0)
-
-	assert.Equal(t, uint64(1), tx.GetChainId())
-	assert.Equal(t, uint64(7), tx.GetNonce())
-	assert.Equal(t, int64(20_000_000_000), tx.GetGasPrice().Int64())
-	assert.Equal(t, uint64(21_000), tx.GetGasLimit())
-	assert.Equal(t, 0, tx.GetValue().Sign())
-	assert.Equal(t, 0, tx.GetRecoveryId())
-	assert.Equal(t, []byte{}, tx.Value)
-}
-
-func TestUnitEIP7702NumberAccessors(t *testing.T) {
-	t.Parallel()
-
-	tx := (&EthereumEIP7702Transaction{}).
-		SetChainId(298).
-		SetNonce(0).
-		SetMaxGas(big.NewInt(0x05)).
-		SetMaxPriorityGas(big.NewInt(0x02)).
-		SetGasLimit(150_000).
-		SetValue(big.NewInt(0))
-
-	assert.Equal(t, uint64(298), tx.GetChainId())
-	assert.Equal(t, uint64(0), tx.GetNonce())
-	assert.Equal(t, int64(5), tx.GetMaxGas().Int64())
-	assert.Equal(t, int64(2), tx.GetMaxPriorityGas().Int64())
-	assert.Equal(t, uint64(150_000), tx.GetGasLimit())
-}
-
-func TestUnitLegacyNumberAccessors(t *testing.T) {
-	t.Parallel()
-
-	tx := (&EthereumLegacyTransaction{}).
-		SetNonce(3).
-		SetGasPrice(big.NewInt(20_000_000_000)).
-		SetGasLimit(21_000).
-		SetValue(big.NewInt(500)).
-		SetV(27)
-
-	assert.Equal(t, uint64(3), tx.GetNonce())
-	assert.Equal(t, int64(20_000_000_000), tx.GetGasPrice().Int64())
-	assert.Equal(t, uint64(21_000), tx.GetGasLimit())
-	assert.Equal(t, int64(500), tx.GetValue().Int64())
-	assert.Equal(t, uint64(27), tx.GetV())
+	// A negative big.Int encodes its absolute value.
+	assert.Equal(t, []byte{0x05}, _bigIntToEthBytes(big.NewInt(-5)))
 }
 
 func TestUnitNumberAccessorsAgreeWithRawBytes(t *testing.T) {
