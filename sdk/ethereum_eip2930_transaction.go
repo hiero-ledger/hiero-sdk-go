@@ -44,8 +44,7 @@ func NewEthereumEIP2930Transaction(
 	}
 }
 
-// EthereumEIP2930TransactionFromBytes decodes signed EIP-2930 RLP bytes
-// (leading 0x01 prefix + list of 11 elements) into a transaction.
+// EthereumEIP2930TransactionFromBytes decodes signed EIP-2930 RLP bytes into a transaction.
 func EthereumEIP2930TransactionFromBytes(bytes []byte) (*EthereumEIP2930Transaction, error) {
 	if len(bytes) == 0 || bytes[0] != 0x01 {
 		return nil, errors.New("input byte array is malformed; it should start with 0x01 followed by 11 RLP-encoded elements")

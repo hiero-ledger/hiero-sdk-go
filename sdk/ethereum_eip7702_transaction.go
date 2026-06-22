@@ -52,13 +52,12 @@ func NewEthereumEIP7702Transaction(
 	}
 }
 
-// FromBytes decodes the RLP encoded bytes into an EthereumEIP7702Transaction.
+// EthereumEIP7702TransactionFromBytes decodes signed EIP-7702 RLP bytes into a transaction.
 func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transaction, error) {
 	if len(bytes) == 0 || bytes[0] != 0x04 {
 		return nil, errors.New("input byte array is malformed; it should start with 0x04 followed by 13 RLP-encoded elements")
 	}
 
-	// Remove the prefix byte (0x04)
 	item := NewRLPItem(LIST_TYPE)
 	if err := item.Read(bytes[1:]); err != nil {
 		return nil, errors.Wrap(err, "failed to read RLP data")
@@ -68,13 +67,12 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 		return nil, errors.New("input byte array is malformed; it should be a list of 13 RLP-encoded elements")
 	}
 
-	// Handle the access list
 	var accessListValues [][]byte
 	for _, child := range item.childItems[8].childItems {
 		accessListValues = append(accessListValues, child.itemValue)
 	}
 
-	// Handle the authorization list: array of [chainId, contractAddress, nonce, yParity, r, s] tuples
+	// Each authorization entry is a [chainId, contractAddress, nonce, yParity, r, s] tuple.
 	var authorizationListValues []AuthorizationTuple
 	if item.childItems[9].itemType != LIST_TYPE {
 		return nil, errors.New("authorization list must be an array")
@@ -93,7 +91,6 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 		authorizationListValues = append(authorizationListValues, tuple)
 	}
 
-	// Extract values from the RLP item
 	return NewEthereumEIP7702Transaction(
 		item.childItems[0].itemValue,
 		item.childItems[1].itemValue,
@@ -169,7 +166,6 @@ func (txn *EthereumEIP7702Transaction) Sign(key PrivateKey) ([]byte, error) {
 
 // String returns a string representation of the EthereumEIP7702Transaction.
 func (txn *EthereumEIP7702Transaction) String() string {
-	// Encode each element in the AccessList slice individually
 	var encodedAccessList []string
 	for _, entry := range txn.AccessList {
 		encodedAccessList = append(encodedAccessList, hex.EncodeToString(entry))
@@ -177,7 +173,6 @@ func (txn *EthereumEIP7702Transaction) String() string {
 
 	accessListStr := "[" + strings.Join(encodedAccessList, ", ") + "]"
 
-	// Encode each authorization tuple in the AuthorizationList
 	var encodedAuthorizationList []string
 	for _, authTuple := range txn.AuthorizationList {
 		var tupleParts []string

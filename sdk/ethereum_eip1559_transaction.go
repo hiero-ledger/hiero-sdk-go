@@ -47,13 +47,12 @@ func NewEthereumEIP1559Transaction(
 	}
 }
 
-// FromBytes decodes the RLP encoded bytes into an EthereumEIP1559Transaction.
+// EthereumEIP1559TransactionFromBytes decodes signed EIP-1559 RLP bytes into a transaction.
 func EthereumEIP1559TransactionFromBytes(bytes []byte) (*EthereumEIP1559Transaction, error) {
 	if len(bytes) == 0 || bytes[0] != 0x02 {
 		return nil, errors.New("input byte array is malformed; it should start with 0x02 followed by 12 RLP-encoded elements")
 	}
 
-	// Remove the prefix byte (0x02)
 	item := NewRLPItem(LIST_TYPE)
 	if err := item.Read(bytes[1:]); err != nil {
 		return nil, errors.Wrap(err, "failed to read RLP data")
@@ -63,13 +62,11 @@ func EthereumEIP1559TransactionFromBytes(bytes []byte) (*EthereumEIP1559Transact
 		return nil, errors.New("input byte array is malformed; it should be a list of 12 RLP-encoded elements")
 	}
 
-	// Handle the access list
 	var accessListValues [][]byte
 	for _, child := range item.childItems[8].childItems {
 		accessListValues = append(accessListValues, child.itemValue)
 	}
 
-	// Extract values from the RLP item
 	return NewEthereumEIP1559Transaction(
 		item.childItems[0].itemValue,
 		item.childItems[1].itemValue,
@@ -133,7 +130,6 @@ func (txn *EthereumEIP1559Transaction) Sign(key PrivateKey) ([]byte, error) {
 
 // String returns a string representation of the EthereumEIP1559Transaction.
 func (txn *EthereumEIP1559Transaction) String() string {
-	// Encode each element in the AccessList slice individually
 	var encodedAccessList []string
 	for _, entry := range txn.AccessList {
 		encodedAccessList = append(encodedAccessList, hex.EncodeToString(entry))
