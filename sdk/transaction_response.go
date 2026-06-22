@@ -113,6 +113,7 @@ func (response *TransactionResponse) GetRecord(client *Client) (TransactionRecor
 	return NewTransactionRecordQuery().
 		SetTransactionID(response.TransactionID).
 		SetNodeAccountIDs(nodeAccountIDs).
+		SetValidateStatus(response.ValidateStatus).
 		Execute(client)
 }
 
