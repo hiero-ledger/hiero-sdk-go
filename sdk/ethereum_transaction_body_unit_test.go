@@ -207,3 +207,109 @@ func TestUnitEthereumEIP1559SignWithNonEcdsaKeyFails(t *testing.T) {
 	_, err = tx.Sign(edKey)
 	assert.Error(t, err)
 }
+
+func TestUnitEthereumLegacySignWithNonEcdsaKeyFails(t *testing.T) {
+	t.Parallel()
+	edKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	tx := (&EthereumLegacyTransaction{}).
+		SetNonce(0).
+		SetGasLimit(21_000).
+		SetTo(make([]byte, 20)).
+		SetValue(big.NewInt(0))
+
+	_, err = tx.Sign(edKey)
+	assert.Error(t, err)
+}
+
+func TestUnitEthereumEIP7702SignWithEmptyAuthorizationList(t *testing.T) {
+	t.Parallel()
+	key := newTestEcdsaKey(t)
+
+	tx := (&EthereumEIP7702Transaction{}).
+		SetChainId(298).
+		SetNonce(0).
+		SetMaxPriorityGas(big.NewInt(0)).
+		SetMaxGas(big.NewInt(5)).
+		SetGasLimit(150_000).
+		SetTo(make([]byte, 20)).
+		SetValue(big.NewInt(0)).
+		SetCallData(nil)
+
+	signed, err := tx.Sign(key)
+	require.NoError(t, err)
+	assert.Equal(t, byte(0x04), signed[0])
+
+	roundTrip, err := EthereumTransactionDataFromBytes(signed)
+	require.NoError(t, err)
+	body, ok := roundTrip.GetTransaction().(*EthereumEIP7702Transaction)
+	require.True(t, ok)
+	assert.Equal(t, 0, len(body.GetAuthorizationList()))
+}
+
+func TestUnitEthereumEIP1559AccessListSurvivesSign(t *testing.T) {
+	t.Parallel()
+	key := newTestEcdsaKey(t)
+
+	addr1, _ := hex.DecodeString("000000000000000000000000000000000000041d")
+	addr2, _ := hex.DecodeString("00000000000000000000000000000000000004de")
+
+	tx := (&EthereumEIP1559Transaction{}).
+		SetChainId(298).
+		SetNonce(0).
+		SetMaxPriorityGas(big.NewInt(0)).
+		SetMaxGas(big.NewInt(5)).
+		SetGasLimit(150_000).
+		SetTo(addr1).
+		SetValue(big.NewInt(0)).
+		SetCallData(nil).
+		AddAccessListItem(NewAccessListItem(addr1, [][]byte{{0x01}, {0x02}})).
+		AddAccessListItem(NewAccessListItem(addr2, [][]byte{{0x03}}))
+
+	signed, err := tx.Sign(key)
+	require.NoError(t, err)
+
+	roundTrip, err := EthereumTransactionDataFromBytes(signed)
+	require.NoError(t, err)
+	body, ok := roundTrip.GetTransaction().(*EthereumEIP1559Transaction)
+	require.True(t, ok)
+
+	items := body.GetAccessListItems()
+	require.Equal(t, 2, len(items))
+	assert.Equal(t, addr1, items[0].GetAddress())
+	assert.Equal(t, [][]byte{{0x01}, {0x02}}, items[0].GetStorageKeys())
+	assert.Equal(t, addr2, items[1].GetAddress())
+	assert.Equal(t, [][]byte{{0x03}}, items[1].GetStorageKeys())
+}
+
+func TestUnitEthereumSetEthereumDataFromBody(t *testing.T) {
+	t.Parallel()
+	key := newTestEcdsaKey(t)
+
+	body := (&EthereumEIP1559Transaction{}).
+		SetChainId(298).
+		SetNonce(0).
+		SetMaxPriorityGas(big.NewInt(0)).
+		SetMaxGas(big.NewInt(5)).
+		SetGasLimit(150_000).
+		SetTo(make([]byte, 20)).
+		SetValue(big.NewInt(0)).
+		SetCallData([]byte{0xCA, 0xFE})
+
+	// Unsigned body is rejected — never submitted silently.
+	_, err := NewEthereumTransaction().SetEthereumDataFromBody(body)
+	assert.Error(t, err)
+
+	// nil body is rejected.
+	_, err = NewEthereumTransaction().SetEthereumDataFromBody(nil)
+	assert.Error(t, err)
+
+	// Signed body sets the raw data to the signed RLP.
+	signed, err := body.Sign(key)
+	require.NoError(t, err)
+
+	tx, err := NewEthereumTransaction().SetEthereumDataFromBody(body)
+	require.NoError(t, err)
+	assert.Equal(t, signed, tx.GetEthereumData())
+}

@@ -168,6 +168,22 @@ func (ethereumTxData *EthereumTransactionData) SetData(data []byte) *EthereumTra
 	return ethereumTxData
 }
 
+// _ethereumBodyIsSigned reports whether body carries a populated R/S signature.
+func _ethereumBodyIsSigned(body EthereumTransactionBody) bool {
+	switch b := body.(type) {
+	case *EthereumLegacyTransaction:
+		return len(b.R) > 0 && len(b.S) > 0
+	case *EthereumEIP2930Transaction:
+		return len(b.R) > 0 && len(b.S) > 0
+	case *EthereumEIP1559Transaction:
+		return len(b.R) > 0 && len(b.S) > 0
+	case *EthereumEIP7702Transaction:
+		return len(b.R) > 0 && len(b.S) > 0
+	default:
+		return false
+	}
+}
+
 // _signTypedTransaction serializes the unsigned RLP list with the given
 // type prefix, signs it with key, and returns the signature components.
 // Shared by the three typed variants (EIP-1559, EIP-2930, EIP-7702).
