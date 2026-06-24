@@ -11,9 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-// AuthorizationTuple represents a single authorization entry: [chainId, contractAddress, nonce, yParity, r, s]
-type AuthorizationTuple [6][]byte
-
 // EthereumEIP7702Transaction represents the EIP-7702 Ethereum transaction data.
 type EthereumEIP7702Transaction struct {
 	ChainId           []byte
@@ -25,7 +22,7 @@ type EthereumEIP7702Transaction struct {
 	Value             []byte
 	CallData          []byte
 	AccessList        [][]byte
-	AuthorizationList []AuthorizationTuple
+	AuthorizationList []Authorization
 	RecoveryId        []byte
 	R                 []byte
 	S                 []byte
@@ -34,7 +31,7 @@ type EthereumEIP7702Transaction struct {
 // nolint
 // NewEthereumEIP7702Transaction creates a new EthereumEIP7702Transaction with the provided fields.
 func NewEthereumEIP7702Transaction(
-	chainId, nonce, maxPriorityGas, maxGas, gasLimit, to, value, callData, recoveryId, r, s []byte, accessList [][]byte, authorizationList []AuthorizationTuple) *EthereumEIP7702Transaction {
+	chainId, nonce, maxPriorityGas, maxGas, gasLimit, to, value, callData, recoveryId, r, s []byte, accessList [][]byte, authorizationList []Authorization) *EthereumEIP7702Transaction {
 	return &EthereumEIP7702Transaction{
 		ChainId:           chainId,
 		Nonce:             nonce,
@@ -72,23 +69,16 @@ func EthereumEIP7702TransactionFromBytes(bytes []byte) (*EthereumEIP7702Transact
 		accessListValues = append(accessListValues, child.itemValue)
 	}
 
-	// Each authorization entry is a [chainId, contractAddress, nonce, yParity, r, s] tuple.
-	var authorizationListValues []AuthorizationTuple
+	var authorizationListValues []Authorization
 	if item.childItems[9].itemType != LIST_TYPE {
 		return nil, errors.New("authorization list must be an array")
 	}
 	for _, authTupleItem := range item.childItems[9].childItems {
-		if authTupleItem.itemType != LIST_TYPE {
-			return nil, errors.New("invalid authorization list entry: must be a list")
+		auth, err := _authorizationFromRLPItem(authTupleItem)
+		if err != nil {
+			return nil, err
 		}
-		if len(authTupleItem.childItems) != 6 {
-			return nil, errors.New("invalid authorization list entry: must be [chainId, contractAddress, nonce, yParity, r, s]")
-		}
-		var tuple AuthorizationTuple
-		for i := 0; i < 6; i++ {
-			tuple[i] = authTupleItem.childItems[i].itemValue
-		}
-		authorizationListValues = append(authorizationListValues, tuple)
+		authorizationListValues = append(authorizationListValues, auth)
 	}
 
 	return NewEthereumEIP7702Transaction(
@@ -125,13 +115,8 @@ func (txn *EthereumEIP7702Transaction) _toUnsignedRLP() *RLPItem {
 	}
 	item.PushBack(accessListItem)
 	authorizationListItem := NewRLPItem(LIST_TYPE)
-	for _, authTuple := range txn.AuthorizationList {
-		// Each authorization entry is a tuple: [chainId, contractAddress, nonce, yParity, r, s]
-		authTupleItem := NewRLPItem(LIST_TYPE)
-		for i := 0; i < 6; i++ {
-			authTupleItem.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(authTuple[i]))
-		}
-		authorizationListItem.PushBack(authTupleItem)
+	for _, auth := range txn.AuthorizationList {
+		authorizationListItem.PushBack(auth._toRLPItem())
 	}
 	item.PushBack(authorizationListItem)
 	return item
@@ -174,12 +159,8 @@ func (txn *EthereumEIP7702Transaction) String() string {
 	accessListStr := "[" + strings.Join(encodedAccessList, ", ") + "]"
 
 	var encodedAuthorizationList []string
-	for _, authTuple := range txn.AuthorizationList {
-		var tupleParts []string
-		for i := 0; i < 6; i++ {
-			tupleParts = append(tupleParts, hex.EncodeToString(authTuple[i]))
-		}
-		encodedAuthorizationList = append(encodedAuthorizationList, "["+strings.Join(tupleParts, ", ")+"]")
+	for _, auth := range txn.AuthorizationList {
+		encodedAuthorizationList = append(encodedAuthorizationList, auth.String())
 	}
 
 	authorizationListStr := "[" + strings.Join(encodedAuthorizationList, ", ") + "]"
@@ -402,18 +383,18 @@ func (txn *EthereumEIP7702Transaction) AddAccessListItem(item AccessListItem) *E
 }
 
 // GetAuthorizationList returns the EIP-7702 authorization list.
-func (txn *EthereumEIP7702Transaction) GetAuthorizationList() []AuthorizationTuple {
+func (txn *EthereumEIP7702Transaction) GetAuthorizationList() []Authorization {
 	return txn.AuthorizationList
 }
 
 // SetAuthorizationList replaces the EIP-7702 authorization list.
-func (txn *EthereumEIP7702Transaction) SetAuthorizationList(list []AuthorizationTuple) *EthereumEIP7702Transaction {
+func (txn *EthereumEIP7702Transaction) SetAuthorizationList(list []Authorization) *EthereumEIP7702Transaction {
 	txn.AuthorizationList = list
 	return txn
 }
 
-// AddAuthorization appends a single authorization tuple to the list.
-func (txn *EthereumEIP7702Transaction) AddAuthorization(tuple AuthorizationTuple) *EthereumEIP7702Transaction {
-	txn.AuthorizationList = append(txn.AuthorizationList, tuple)
+// AddAuthorization appends a single authorization to the list.
+func (txn *EthereumEIP7702Transaction) AddAuthorization(authorization Authorization) *EthereumEIP7702Transaction {
+	txn.AuthorizationList = append(txn.AuthorizationList, authorization)
 	return txn
 }
