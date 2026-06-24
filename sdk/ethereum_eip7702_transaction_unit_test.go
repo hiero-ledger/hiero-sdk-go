@@ -77,10 +77,10 @@ func TestUnitEthereumEIP7702AuthorizationList(t *testing.T) {
 	t.Parallel()
 
 	to, _ := hex.DecodeString("000000000000000000000000000000000000041d")
-	auth1 := AuthorizationTuple{{0x01, 0x2a}, to, {0x00}, {0x00}, make([]byte, 32), make([]byte, 32)}
-	auth2 := AuthorizationTuple{{0x01, 0x2a}, to, {0x01}, {0x01}, make([]byte, 32), make([]byte, 32)}
+	auth1 := NewAuthorization([]byte{0x01, 0x2a}, to, 0, 0, make([]byte, 32), make([]byte, 32))
+	auth2 := NewAuthorization([]byte{0x01, 0x2a}, to, 1, 1, make([]byte, 32), make([]byte, 32))
 
-	tx := (&EthereumEIP7702Transaction{}).SetAuthorizationList([]AuthorizationTuple{auth1})
+	tx := (&EthereumEIP7702Transaction{}).SetAuthorizationList([]Authorization{auth1})
 	require.Equal(t, 1, len(tx.GetAuthorizationList()))
 
 	tx.AddAuthorization(auth2)
@@ -101,8 +101,8 @@ func TestUnitEthereumEIP7702ToBytesRoundTripWithAuthList(t *testing.T) {
 	t.Parallel()
 
 	to, _ := hex.DecodeString("000000000000000000000000000000000000041d")
-	// Canonical (non-zero / minimal) field bytes so the RLP round-trip is exact.
-	auth := AuthorizationTuple{{0x01, 0x2a}, to, {0x05}, {0x01}, make([]byte, 32), make([]byte, 32)}
+	// Canonical (non-zero / minimal) field values so the RLP round-trip is exact.
+	auth := NewAuthorization([]byte{0x01, 0x2a}, to, 5, 1, make([]byte, 32), make([]byte, 32))
 
 	tx := (&EthereumEIP7702Transaction{}).
 		SetChainId(298).
@@ -132,7 +132,7 @@ func TestUnitEthereumEIP7702String(t *testing.T) {
 	to, _ := hex.DecodeString("000000000000000000000000000000000000041d")
 	tx := (&EthereumEIP7702Transaction{}).
 		SetChainId(1).
-		AddAuthorization(AuthorizationTuple{{0x01}, to, {0x00}, {0x00}, {0x11}, {0x22}})
+		AddAuthorization(NewAuthorization([]byte{0x01}, to, 0, 0, []byte{0x11}, []byte{0x22}))
 	s := tx.String()
 	assert.Contains(t, s, "ChainId:")
 	assert.Contains(t, s, "AuthorizationList:")

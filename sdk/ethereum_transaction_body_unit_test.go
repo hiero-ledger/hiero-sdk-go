@@ -92,14 +92,7 @@ func TestUnitEthereumEIP7702BuilderAndSign(t *testing.T) {
 	key := newTestEcdsaKey(t)
 
 	to, _ := hex.DecodeString("000000000000000000000000000000000000041d")
-	authTuple := AuthorizationTuple{
-		{0x01, 0x2a},
-		to,
-		{0x00},
-		{0x00},
-		make([]byte, 32),
-		make([]byte, 32),
-	}
+	auth := NewAuthorization([]byte{0x01, 0x2a}, to, 0, 0, make([]byte, 32), make([]byte, 32))
 
 	tx := (&EthereumEIP7702Transaction{}).
 		SetChainId(298).
@@ -110,7 +103,7 @@ func TestUnitEthereumEIP7702BuilderAndSign(t *testing.T) {
 		SetTo(to).
 		SetValue(big.NewInt(0)).
 		SetCallData([]byte{0x01, 0x02}).
-		AddAuthorization(authTuple)
+		AddAuthorization(auth)
 
 	signed, err := tx.Sign(key)
 	require.NoError(t, err)
