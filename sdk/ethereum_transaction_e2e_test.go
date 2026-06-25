@@ -320,21 +320,10 @@ func TestIntegrationEthereumEIP7702Transaction(t *testing.T) {
 	authR := authSignedBytes[0:32]
 	authS := authSignedBytes[32:64]
 	authRecoveryId := ecdsaPrivateKey.GetRecoveryId(authR, authS, authMessage)
-	authYParity := []byte{}
-	if authRecoveryId != 0 {
-		authYParity = []byte{byte(authRecoveryId)}
-	}
 
-	// Create authorization tuple: [chainId, contractAddress, nonce, yParity, r, s]
-	authorizationTuple := AuthorizationTuple{
-		chainId,
-		contractAddressForAuthorization,
-		nonce,
-		authYParity,
-		authR,
-		authS,
-	}
-	authorizationList := []AuthorizationTuple{authorizationTuple}
+	// Create authorization: [chainId, address, nonce, yParity, r, s]
+	authorization := NewAuthorization(chainId, contractAddressForAuthorization, _ethBytesToUint64(nonce), uint32(authRecoveryId), authR, authS)
+	authorizationList := []Authorization{authorization}
 
 	messageBytes, err := getEIP7702CallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes, accessList, authorizationList, ecdsaPrivateKey)
 	require.NoError(t, err)
@@ -365,7 +354,7 @@ func TestIntegrationEthereumEIP7702Transaction(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func getEIP7702CallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes []byte, accessList [][]byte, authorizationList []AuthorizationTuple, ecdsaPrivateKey PrivateKey) ([]byte, error) {
+func getEIP7702CallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, contractBytes, value, callDataBytes []byte, accessList [][]byte, authorizationList []Authorization, ecdsaPrivateKey PrivateKey) ([]byte, error) {
 	objectsList := &RLPItem{}
 	objectsList.AssignList()
 	objectsList.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(chainId))
@@ -384,15 +373,10 @@ func getEIP7702CallData(chainId, nonce, maxPriorityGas, maxGas, gasLimitBytes, c
 	}
 	objectsList.PushBack(accessListItem)
 
-	// Add authorization list: array of [chainId, contractAddress, nonce, yParity, r, s] tuples
+	// Add authorization list: array of [chainId, address, nonce, yParity, r, s] tuples
 	authorizationListItem := NewRLPItem(LIST_TYPE)
-	for _, authTuple := range authorizationList {
-		// Each authorization entry is a tuple: [chainId, contractAddress, nonce, yParity, r, s]
-		authTupleItem := NewRLPItem(LIST_TYPE)
-		for i := 0; i < 6; i++ {
-			authTupleItem.PushBack(NewRLPItem(VALUE_TYPE).AssignValue(authTuple[i]))
-		}
-		authorizationListItem.PushBack(authTupleItem)
+	for _, auth := range authorizationList {
+		authorizationListItem.PushBack(auth._toRLPItem())
 	}
 	objectsList.PushBack(authorizationListItem)
 

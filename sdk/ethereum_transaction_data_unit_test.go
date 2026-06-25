@@ -6,6 +6,7 @@ package hiero
 
 import (
 	"encoding/hex"
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -44,5 +45,112 @@ func TestUnitEthereumEIP2930TransactionData(t *testing.T) {
 
 	for i, validRlpHex := range validRlpHexes {
 		require.Equal(t, validRlpHex, validRlpHexesOut[i])
+	}
+}
+
+func TestUnitEthereumTransactionDataGetSetDataPerVariant(t *testing.T) {
+	t.Parallel()
+
+	variants := []EthereumTransactionBody{
+		(&EthereumEIP1559Transaction{}).SetCallData([]byte{0x01}),
+		(&EthereumEIP2930Transaction{}).SetCallData([]byte{0x02}),
+		(&EthereumEIP7702Transaction{}).SetCallData([]byte{0x03}),
+		(&EthereumLegacyTransaction{}).SetCallData([]byte{0x04}),
+	}
+
+	for _, v := range variants {
+		data := NewEthereumTransactionData(v)
+		require.NotNil(t, data)
+		require.NotEmpty(t, data.GetData())
+
+		data.SetData([]byte{0xFF})
+		assert.Equal(t, []byte{0xFF}, data.GetData())
+	}
+}
+
+func TestUnitEthereumTransactionDataFromBytesDispatch(t *testing.T) {
+	t.Parallel()
+	key := newTestEcdsaKey(t)
+	to := make([]byte, 20)
+
+	eip1559, err := (&EthereumEIP1559Transaction{}).SetChainId(1).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)).Sign(key)
+	require.NoError(t, err)
+	eip2930, err := (&EthereumEIP2930Transaction{}).SetChainId(1).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)).Sign(key)
+	require.NoError(t, err)
+	eip7702, err := (&EthereumEIP7702Transaction{}).SetChainId(1).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)).Sign(key)
+	require.NoError(t, err)
+	legacy, err := (&EthereumLegacyTransaction{}).SetNonce(0).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)).Sign(key)
+	require.NoError(t, err)
+
+	cases := []struct {
+		name    string
+		payload []byte
+		isType  func(EthereumTransactionBody) bool
+	}{
+		{"eip1559", eip1559, func(b EthereumTransactionBody) bool { _, ok := b.(*EthereumEIP1559Transaction); return ok }},
+		{"eip2930", eip2930, func(b EthereumTransactionBody) bool { _, ok := b.(*EthereumEIP2930Transaction); return ok }},
+		{"eip7702", eip7702, func(b EthereumTransactionBody) bool { _, ok := b.(*EthereumEIP7702Transaction); return ok }},
+		{"legacy", legacy, func(b EthereumTransactionBody) bool { _, ok := b.(*EthereumLegacyTransaction); return ok }},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			data, err := EthereumTransactionDataFromBytes(tc.payload)
+			require.NoError(t, err)
+			assert.True(t, tc.isType(data.GetTransaction()), "unexpected concrete type for %s", tc.name)
+
+			// The wrapper's ToBytes round-trips back to the original payload.
+			out, err := data.ToBytes()
+			require.NoError(t, err)
+			assert.Equal(t, tc.payload, out)
+		})
+	}
+}
+
+func TestUnitEthereumTransactionDataEmpty(t *testing.T) {
+	t.Parallel()
+	key := newTestEcdsaKey(t)
+
+	empty := &EthereumTransactionData{}
+	assert.Nil(t, empty.GetTransaction())
+
+	_, err := empty.ToBytes()
+	assert.Error(t, err)
+
+	_, err = empty.Sign(key)
+	assert.Error(t, err)
+
+	_, err = EthereumTransactionDataFromBytes(nil)
+	assert.Error(t, err)
+
+	// A recognized prefix (0x01) wrapping a valid but wrong-length RLP list
+	// surfaces the variant decode error through the dispatcher.
+	list := NewRLPItem(LIST_TYPE)
+	list.PushBack(NewRLPItem(VALUE_TYPE).AssignValue([]byte{0x01}))
+	body, err := list.Write()
+	require.NoError(t, err)
+	_, err = EthereumTransactionDataFromBytes(append([]byte{0x01}, body...))
+	assert.Error(t, err)
+}
+
+func TestUnitEthereumSetEthereumDataFromBodyAllVariants(t *testing.T) {
+	t.Parallel()
+	key := newTestEcdsaKey(t)
+	to := make([]byte, 20)
+
+	bodies := []EthereumTransactionBody{
+		(&EthereumEIP1559Transaction{}).SetChainId(1).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)),
+		(&EthereumEIP2930Transaction{}).SetChainId(1).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)),
+		(&EthereumEIP7702Transaction{}).SetChainId(1).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)),
+		(&EthereumLegacyTransaction{}).SetNonce(0).SetGasLimit(21_000).SetTo(to).SetValue(big.NewInt(0)),
+	}
+
+	for _, body := range bodies {
+		_, err := body.Sign(key)
+		require.NoError(t, err)
+
+		tx, err := NewEthereumTransaction().SetEthereumDataFromBody(body)
+		require.NoError(t, err)
+		assert.NotEmpty(t, tx.GetEthereumData())
 	}
 }
