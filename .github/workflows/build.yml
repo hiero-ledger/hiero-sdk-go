@@ -42,7 +42,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+              uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -92,7 +92,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+              uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -163,7 +163,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+              uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -221,7 +221,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+              uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -265,7 +265,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
+              uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
