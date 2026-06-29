@@ -1,3 +1,12 @@
+## v2.81.0
+
+### Added
+- Native Ethereum transaction data construction and signing for all four formats — Legacy, EIP-2930, EIP-1559, and EIP-7702. Build and sign an Ethereum transaction inside the SDK and submit it through the existing `EthereumTransaction`, with typed and raw-bytes accessors for every field, a structured `AccessListItem` type for typed access lists, and a structured `Authorization` type for EIP-7702 authorization lists. Implements the cross-SDK [native Ethereum transaction data proposal](https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/native-ethereum-transaction-data.md) [#1678](https://github.com/hiero-ledger/hiero-sdk-go/pull/1678)
+
+### Fixed
+- `TransactionRecordQuery.Execute` and `TransactionResponse.GetRecord` now return the populated `TransactionRecord` alongside the status error on a non-SUCCESS receipt instead of discarding it, so contract/Ethereum revert data (carried in `ContractFunctionResult.ErrorMessage`) remains reachable. Adds `SetValidateStatus`/`GetValidateStatus` (default `true`) to opt out of the status error and read failed outcomes directly [#1747](https://github.com/hiero-ledger/hiero-sdk-go/pull/1747)
+- `DeleteTokenNftAllowanceAllSerials` no longer emits `approved_for_all = true` (an unintended approve-for-all grant) when chained with `ApproveTokenNftAllowance` on the same `(token, spender)` pair; the merge path now correctly revokes the allowance [#1723](https://github.com/hiero-ledger/hiero-sdk-go/pull/1723)
+
 ## v2.80.0
 
 ### Added
