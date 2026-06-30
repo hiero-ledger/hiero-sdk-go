@@ -17,11 +17,6 @@ tasks:
                       echo "Skipping $example"
                       continue
                   fi
-                  # fee_estimate_query is flaky on a fresh local mirror node.
-                  if [ "$dir_name" == "fee_estimate_query" ]; then
-                      echo "Skipping $example (mirror node sync flake)"
-                      continue
-                  fi
                   if [ -d "$example" ]; then
 
                       pushd "$example" > /dev/null
