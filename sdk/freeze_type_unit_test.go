@@ -34,14 +34,7 @@ func TestUnitFreezeTypeString(t *testing.T) {
 	}
 }
 
-func TestUnitFreezeTypeStringPanicsOnUnknownValue(t *testing.T) {
+func TestUnitFreezeTypeStringFallbackUnknownValue(t *testing.T) {
 	t.Parallel()
-
-	require.PanicsWithValue(
-		t,
-		"unreachable: FreezeType.String() switch statement is non-exhaustive. Status: 6",
-		func() {
-			_ = FreezeType(6).String()
-		},
-	)
+	require.Equal(t, "UNKNOWN_FREEZE_TYPE(6)", FreezeType(6).String())
 }

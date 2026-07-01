@@ -5,6 +5,8 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/hex"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -383,6 +385,112 @@ func DisabledTestIntegrationTokenNftTransferRecordQuery(t *testing.T) { // nolin
 
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+}
+
+// deployReverterContract deploys a contract with two always-reverting functions:
+//
+//	error InsufficientBalance(uint256 available, uint256 required);
+//	function revertWithReason() external pure { revert("This should fail"); }
+//	function revertWithCustomError() external pure { revert InsufficientBalance(5, 10); }
+//
+// Compiled with solc 0.8.30 --optimize.
+func deployReverterContract(t *testing.T, env IntegrationTestEnv) (ContractID, AccountID) {
+	reverterBytecode := []byte(`6080604052348015600e575f5ffd5b5060da80601a5f395ff3fe6080604052348015600e575f5ffd5b50600436106030575f3560e01c806346fc4bb11460345780635b2dd10014603c575b5f5ffd5b603a6042565b005b603a606a565b60405163cf47918160e01b815260056004820152600a60248201526044015b60405180910390fd5b60405162461bcd60e51b815260206004820152601060248201526f151a1a5cc81cda1bdd5b190819985a5b60821b6044820152606401606156fea26469706673582212204ff1c43253f237119979541db455673b8e183cb981eee17e42a787a4f1b35fcb64736f6c634300081e0033`)
+
+	resp, err := NewFileCreateTransaction().
+		SetKeys(env.Client.GetOperatorPublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		SetContents(reverterBytecode).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	resp, err = NewContractCreateTransaction().
+		SetAdminKey(env.Client.GetOperatorPublicKey()).
+		SetGas(contractDeployGas).
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetBytecodeFileID(*receipt.FileID).
+		SetContractMemo("hiero-sdk-go::TestTransactionRecordQueryContractRevert").
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	return *receipt.ContractID, resp.NodeID
+}
+
+func TestIntegrationTransactionRecordQueryContractRevertReturnsRecord(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	contractID, nodeID := deployReverterContract(t, env)
+
+	resp, err := NewContractExecuteTransaction().
+		SetContractID(contractID).
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		SetGas(contractDeployGas).
+		SetFunction("revertWithReason", nil).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	record, err := resp.GetRecord(env.Client)
+	var receiptErr ErrHederaReceiptStatus
+	require.ErrorAs(t, err, &receiptErr)
+	assert.Equal(t, StatusContractRevertExecuted, receiptErr.Status)
+
+	require.Equal(t, StatusContractRevertExecuted, record.Receipt.Status)
+	result, err := record.GetContractExecuteResult()
+	require.NoError(t, err)
+
+	// ErrorMessage is the hex-encoded Error(string) revert data (selector 0x08c379a0).
+	require.True(t, strings.HasPrefix(result.ErrorMessage, "0x08c379a0"))
+	payload, err := hex.DecodeString(strings.TrimPrefix(result.ErrorMessage, "0x"))
+	require.NoError(t, err)
+	assert.Contains(t, string(payload), "This should fail")
+
+	// A direct TransactionRecordQuery behaves the same.
+	record, err = NewTransactionRecordQuery().
+		SetTransactionID(resp.TransactionID).
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		Execute(env.Client)
+	require.Error(t, err)
+	require.NotNil(t, record.CallResult)
+	assert.Equal(t, result.ErrorMessage, record.CallResult.ErrorMessage)
+}
+
+func TestIntegrationTransactionRecordQueryContractRevertValidateStatusFalse(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	contractID, nodeID := deployReverterContract(t, env)
+
+	resp, err := NewContractExecuteTransaction().
+		SetContractID(contractID).
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		SetGas(contractDeployGas).
+		SetFunction("revertWithCustomError", nil).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	record, err := resp.SetValidateStatus(false).GetRecord(env.Client)
+	require.NoError(t, err)
+
+	require.Equal(t, StatusContractRevertExecuted, record.Receipt.Status)
+	result, err := record.GetContractExecuteResult()
+	require.NoError(t, err)
+
+	// Custom error InsufficientBalance(uint256,uint256): selector 0xcf479181 + args (5, 10).
+	require.True(t, strings.HasPrefix(result.ErrorMessage, "0xcf479181"))
+	payload, err := hex.DecodeString(strings.TrimPrefix(result.ErrorMessage, "0x"))
+	require.NoError(t, err)
+	require.Equal(t, 4+32+32, len(payload))
+	assert.Equal(t, byte(5), payload[4+31])
+	assert.Equal(t, byte(10), payload[4+63])
 }
 
 func TestIntegrationTransactionRecordQueryGetScheduleRef(t *testing.T) {

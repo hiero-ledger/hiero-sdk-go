@@ -22,7 +22,6 @@ import (
 )
 
 const (
-	mirrorSyncDelay            = 2 * time.Second
 	feeEstimationProbeInterval = 5 * time.Second
 	feeEstimationProbeTimeout  = 10 * time.Minute
 )
@@ -31,10 +30,6 @@ var (
 	feeEstimationReadyOnce sync.Once
 	feeEstimationReadyErr  error
 )
-
-func waitForMirrorNodeSync() {
-	time.Sleep(mirrorSyncDelay)
-}
 
 // waitForFeeEstimationServiceReady blocks until the mirror node's
 // FeeEstimationService can answer a known-good probe query. Re-issues
@@ -110,8 +105,6 @@ func TestIntegrationFeeEstimateQueryTokenCreateTransaction(t *testing.T) {
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
 
-	waitForMirrorNodeSync()
-
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
 		SetMode(FeeEstimateModeState).
@@ -137,8 +130,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionStateMode(t *testing.T) {
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
 
-	waitForMirrorNodeSync()
-
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
 		SetMode(FeeEstimateModeState).
@@ -160,8 +151,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionIntrinsicMode(t *testing.
 		AddHbarTransfer(AccountID{Account: 3}, NewHbar(1)).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
-
-	waitForMirrorNodeSync()
 
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
@@ -188,8 +177,6 @@ func TestIntegrationFeeEstimateQueryTransferTransactionDefaultModeIsIntrinsic(t 
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
 
-	waitForMirrorNodeSync()
-
 	query := NewFeeEstimateQuery().SetTransaction(transaction)
 	require.Equal(t, FeeEstimateModeIntrinsic, query.GetMode())
 
@@ -211,8 +198,6 @@ func TestIntegrationFeeEstimateQueryTokenMintTransaction(t *testing.T) {
 		SetAmount(10).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
-
-	waitForMirrorNodeSync()
 
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
@@ -238,8 +223,6 @@ func TestIntegrationFeeEstimateQueryTopicCreateTransaction(t *testing.T) {
 
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
-
-	waitForMirrorNodeSync()
 
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
@@ -267,8 +250,6 @@ func TestIntegrationFeeEstimateQueryContractCreateTransaction(t *testing.T) {
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
 
-	waitForMirrorNodeSync()
-
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
 		SetMode(FeeEstimateModeState).
@@ -294,8 +275,6 @@ func TestIntegrationFeeEstimateQueryFileCreateTransaction(t *testing.T) {
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
 
-	waitForMirrorNodeSync()
-
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
 		SetMode(FeeEstimateModeState).
@@ -317,8 +296,6 @@ func TestIntegrationFeeEstimateQueryFileAppendTransactionAggregatesChunks(t *tes
 		SetContents(make([]byte, 5000)).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
-
-	waitForMirrorNodeSync()
 
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
@@ -342,8 +319,6 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitSingleChunk(t *testing.T) 
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
-	waitForMirrorNodeSync()
-
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
 		SetMode(FeeEstimateModeIntrinsic).
@@ -365,8 +340,6 @@ func TestIntegrationFeeEstimateQueryTopicMessageSubmitMultipleChunk(t *testing.T
 		SetMessage(make([]byte, 5000)).
 		FreezeWith(env.Client)
 	require.NoError(t, err)
-
-	waitForMirrorNodeSync()
 
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).
@@ -404,8 +377,6 @@ func TestIntegrationFeeEstimateQueryWithHighVolumeThrottle(t *testing.T) {
 
 	_, err = transaction.SignWithOperator(env.Client)
 	require.NoError(t, err)
-
-	waitForMirrorNodeSync()
 
 	response, err := NewFeeEstimateQuery().
 		SetTransaction(transaction).

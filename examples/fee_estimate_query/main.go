@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -31,6 +32,14 @@ func main() {
 	client.SetOperator(operatorAccountID, operatorKey)
 
 	fmt.Println("FeeEstimateQuery Example (HIP-1261)")
+
+	// On a fresh solo deployment the mirror node's FeeEstimationService races
+	// the importer ingesting the genesis fee schedule, so the first few calls
+	// return HTTP 400 "Unknown transaction type". Poll until it answers or 10
+	// minutes have elapsed.
+	if err := waitForFeeEstimationService(client); err != nil {
+		panic(fmt.Sprintf("%v : fee estimation service never became ready", err))
+	}
 
 	// Step 1: Create and freeze a transfer transaction. The query auto-freezes
 	// if the transaction is not already frozen, but freezing up front lets us
@@ -81,6 +90,26 @@ func main() {
 	}
 	printEstimate("INTRINSIC (high-volume 50%)", helperEstimate)
 	fmt.Printf("  high_volume_multiplier: %d\n", helperEstimate.HighVolumeMultiplier)
+}
+
+func waitForFeeEstimationService(client *hiero.Client) error {
+	probe := hiero.NewTransferTransaction().
+		AddHbarTransfer(client.GetOperatorAccountID(), hiero.NewHbar(-1)).
+		AddHbarTransfer(client.GetOperatorAccountID(), hiero.NewHbar(1))
+
+	deadline := time.Now().Add(10 * time.Minute)
+	for time.Now().Before(deadline) {
+		_, err := hiero.NewFeeEstimateQuery().
+			SetMode(hiero.FeeEstimateModeIntrinsic).
+			SetTransaction(probe).
+			SetMaxAttempts(1).
+			Execute(client)
+		if err == nil {
+			return nil
+		}
+		time.Sleep(5 * time.Second)
+	}
+	return fmt.Errorf("timed out after 10 minutes")
 }
 
 func printEstimate(label string, response hiero.FeeEstimateResponse) {

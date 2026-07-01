@@ -6,6 +6,8 @@ package hiero
 
 import (
 	"encoding/hex"
+	"math/big"
+	"strings"
 	"testing"
 	"time"
 
@@ -246,6 +248,252 @@ func TestUnitTransactionRecordReceiptNotFound(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "exceptional precheck status RECEIPT_NOT_FOUND", err.Error())
 	require.Equal(t, StatusReceiptNotFound, record.Receipt.Status)
+}
+
+// _encodeErrorString builds the ABI revert payload for a Solidity Error(string)
+// revert: the 0x08c379a0 selector followed by offset || length || padded utf8 bytes.
+func _encodeErrorString(reason string) []byte {
+	out := []byte{0x08, 0xc3, 0x79, 0xa0}
+
+	offset := make([]byte, 32)
+	offset[31] = 0x20 // the string data begins 32 bytes after the head
+	out = append(out, offset...)
+
+	length := make([]byte, 32)
+	big.NewInt(int64(len(reason))).FillBytes(length)
+	out = append(out, length...)
+
+	data := []byte(reason)
+	padded := ((len(data) + 31) / 32) * 32
+	buf := make([]byte, padded)
+	copy(buf, data)
+	return append(out, buf...)
+}
+
+// _contractRevertRecordResponse is a reverting record response. As the node does, the
+// Error(string) payload is hex-encoded into ErrorMessage.
+func _contractRevertRecordResponse(reason string) *services.Response {
+	return &services.Response{
+		Response: &services.Response_TransactionGetRecord{
+			TransactionGetRecord: &services.TransactionGetRecordResponse{
+				Header: &services.ResponseHeader{
+					Cost:         0,
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				TransactionRecord: &services.TransactionRecord{
+					Receipt: &services.TransactionReceipt{
+						Status: services.ResponseCodeEnum_CONTRACT_REVERT_EXECUTED,
+					},
+					Body: &services.TransactionRecord_ContractCallResult{
+						ContractCallResult: &services.ContractFunctionResult{
+							ErrorMessage: "0x" + hex.EncodeToString(_encodeErrorString(reason)),
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+// _contractRevertResponses builds the mock flow for a transfer that reverts with reason.
+func _contractRevertResponses(reason string) [][]interface{} {
+	inner := []interface{}{
+		&services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		},
+		&services.Response{
+			Response: &services.Response_TransactionGetReceipt{
+				TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+					Header: &services.ResponseHeader{
+						Cost:         0,
+						ResponseType: services.ResponseType_ANSWER_ONLY,
+					},
+					Receipt: &services.TransactionReceipt{
+						Status: services.ResponseCodeEnum_CONTRACT_REVERT_EXECUTED,
+					},
+				},
+			},
+		},
+	}
+	// record query: cost query first, then the record carrying the revert
+	inner = append(inner, _costAnswerRecordResponse(), _contractRevertRecordResponse(reason))
+	return [][]interface{}{inner}
+}
+
+// _costAnswerRecordResponse is the COST_ANSWER reply for the record query's cost query.
+func _costAnswerRecordResponse() *services.Response {
+	return &services.Response{
+		Response: &services.Response_TransactionGetRecord{
+			TransactionGetRecord: &services.TransactionGetRecordResponse{
+				Header: &services.ResponseHeader{
+					Cost:         0,
+					ResponseType: services.ResponseType_COST_ANSWER,
+				},
+			},
+		},
+	}
+}
+
+func TestUnitTransactionRecordQueryContractRevertReturnsRecord(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer(_contractRevertResponses("insufficient balance"))
+	defer server.Close()
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		Execute(client)
+	require.NoError(t, err)
+
+	record, err := tx.GetRecord(client)
+	var receiptErr ErrHederaReceiptStatus
+	require.ErrorAs(t, err, &receiptErr)
+	require.Equal(t, StatusContractRevertExecuted, receiptErr.Status)
+
+	// record is populated despite the error, so the revert reason is reachable
+	require.Equal(t, StatusContractRevertExecuted, record.Receipt.Status)
+	result, resErr := record.GetContractExecuteResult()
+	require.NoError(t, resErr)
+	require.True(t, strings.HasPrefix(result.ErrorMessage, "0x08c379a0"))
+	payload, decErr := hex.DecodeString(strings.TrimPrefix(result.ErrorMessage, "0x"))
+	require.NoError(t, decErr)
+	require.Contains(t, string(payload), "insufficient balance")
+}
+
+func TestUnitTransactionRecordQueryContractRevertValidateStatusFalse(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer(_contractRevertResponses("nope"))
+	defer server.Close()
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		Execute(client)
+	require.NoError(t, err)
+
+	record, err := tx.SetValidateStatus(false).GetRecord(client)
+	require.NoError(t, err)
+	require.Equal(t, StatusContractRevertExecuted, record.Receipt.Status)
+	result, resErr := record.GetContractExecuteResult()
+	require.NoError(t, resErr)
+	require.True(t, strings.HasPrefix(result.ErrorMessage, "0x08c379a0"))
+	payload, decErr := hex.DecodeString(strings.TrimPrefix(result.ErrorMessage, "0x"))
+	require.NoError(t, decErr)
+	require.Contains(t, string(payload), "nope")
+}
+
+// validateStatus=false must not swallow a retry-exhaustion error.
+func TestUnitTransactionRecordQueryRetryExhaustedValidateStatusFalse(t *testing.T) {
+	t.Parallel()
+
+	busyRecordResponse := &services.Response{
+		Response: &services.Response_TransactionGetRecord{
+			TransactionGetRecord: &services.TransactionGetRecordResponse{
+				Header: &services.ResponseHeader{
+					NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY,
+					ResponseType:                services.ResponseType_ANSWER_ONLY,
+				},
+			},
+		},
+	}
+	inner := []interface{}{
+		&services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		},
+		&services.Response{
+			Response: &services.Response_TransactionGetReceipt{
+				TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+					Header: &services.ResponseHeader{
+						Cost:         0,
+						ResponseType: services.ResponseType_ANSWER_ONLY,
+					},
+					Receipt: &services.TransactionReceipt{
+						Status: services.ResponseCodeEnum_CONTRACT_REVERT_EXECUTED,
+					},
+				},
+			},
+		},
+		_costAnswerRecordResponse(),
+		busyRecordResponse,
+		busyRecordResponse,
+	}
+
+	client, server := NewMockClientAndServer([][]interface{}{inner})
+	defer server.Close()
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		Execute(client)
+	require.NoError(t, err)
+
+	client.SetMaxAttempts(2)
+	_, err = tx.SetValidateStatus(false).GetRecord(client)
+	require.Error(t, err)
+}
+
+// The populated-record-on-failure behavior is generic, not contract-specific.
+func TestUnitTransactionRecordQueryNonContractFailureReturnsRecord(t *testing.T) {
+	t.Parallel()
+
+	failedRecord := &services.Response{
+		Response: &services.Response_TransactionGetRecord{
+			TransactionGetRecord: &services.TransactionGetRecordResponse{
+				Header: &services.ResponseHeader{
+					Cost:         0,
+					ResponseType: services.ResponseType_ANSWER_ONLY,
+				},
+				TransactionRecord: &services.TransactionRecord{
+					Receipt: &services.TransactionReceipt{
+						Status: services.ResponseCodeEnum_INSUFFICIENT_ACCOUNT_BALANCE,
+					},
+				},
+			},
+		},
+	}
+	inner := []interface{}{
+		&services.TransactionResponse{
+			NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+		},
+		&services.Response{
+			Response: &services.Response_TransactionGetReceipt{
+				TransactionGetReceipt: &services.TransactionGetReceiptResponse{
+					Header: &services.ResponseHeader{
+						Cost:         0,
+						ResponseType: services.ResponseType_ANSWER_ONLY,
+					},
+					Receipt: &services.TransactionReceipt{
+						Status: services.ResponseCodeEnum_INSUFFICIENT_ACCOUNT_BALANCE,
+					},
+				},
+			},
+		},
+		_costAnswerRecordResponse(),
+		failedRecord,
+	}
+
+	client, server := NewMockClientAndServer([][]interface{}{inner})
+	defer server.Close()
+
+	tx, err := NewTransferTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		Execute(client)
+	require.NoError(t, err)
+
+	record, err := tx.GetRecord(client)
+	var receiptErr ErrHederaReceiptStatus
+	require.ErrorAs(t, err, &receiptErr)
+	require.Equal(t, StatusInsufficientAccountBalance, receiptErr.Status)
+
+	require.Equal(t, StatusInsufficientAccountBalance, record.Receipt.Status)
+	require.Nil(t, record.CallResult)
 }
 
 func TestUnitTransactionRecordQueryMarshalJSON(t *testing.T) {

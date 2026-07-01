@@ -52,6 +52,25 @@ func (tx *EthereumTransaction) GetEthereumData() []byte {
 	return tx.ethereumData
 }
 
+// SetEthereumDataFromBody serializes a signed Ethereum transaction body
+// (Legacy, EIP-1559, EIP-2930, or EIP-7702) and sets it as the raw Ethereum
+// data. It returns an error if the body is unsigned.
+func (tx *EthereumTransaction) SetEthereumDataFromBody(body EthereumTransactionBody) (*EthereumTransaction, error) {
+	tx._RequireNotFrozen()
+	if body == nil {
+		return tx, errors.New("ethereum transaction body is nil")
+	}
+	if !_ethereumBodyIsSigned(body) {
+		return tx, errors.New("ethereum transaction body is not signed; call Sign before SetEthereumDataFromBody")
+	}
+	data, err := body.ToBytes()
+	if err != nil {
+		return tx, err
+	}
+	tx.ethereumData = data
+	return tx, nil
+}
+
 // Deprecated
 func (tx *EthereumTransaction) SetCallData(file FileID) *EthereumTransaction {
 	tx._RequireNotFrozen()
