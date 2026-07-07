@@ -75,10 +75,7 @@ func (mn *_ManagedNetwork) _SetNetwork(network map[string]_IManagedNode) error {
 	}
 
 	for key, value := range network {
-		_, keyOk := newNodeKeys[key]
-		_, valueOk := newNodeValues[value._GetAddress()]
-
-		if keyOk && valueOk {
+		if newNodeKeys[value._GetKey()] && newNodeValues[key] {
 			continue
 		}
 
@@ -284,7 +281,8 @@ func _GetNodesToRemove(network map[string]_IManagedNode, nodes []_IManagedNode) 
 	nodeIndices := []int{}
 
 	for i, v := range slices.Backward(nodes) {
-		if _, ok := network[v._GetKey()]; !ok {
+		incoming, ok := network[v._GetAddress()]
+		if !ok || incoming._GetKey() != v._GetKey() {
 			nodeIndices = append(nodeIndices, i)
 		}
 	}
