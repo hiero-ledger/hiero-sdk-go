@@ -153,3 +153,85 @@ func TestUnitConcurrentNodeGetChannel(t *testing.T) {
 	network._ReadmitNodes()
 	require.Equal(t, len(nodes), len(network.healthyNodes))
 }
+
+// Re-applying an unchanged network must keep the existing nodes and their open
+// connections rather than closing and recreating them.
+
+func TestUnitNetworkRefreshRemovesNoNodesWhenUnchanged(t *testing.T) {
+	t.Parallel()
+
+	network := _NewNetwork()
+	err := network.SetNetwork(newNetworkMockNodes())
+	require.NoError(t, err)
+
+	// Incoming address book identical to the installed nodes, keyed by address
+	// the same way _Network.SetNetwork builds it.
+	incoming := make(map[string]_IManagedNode, len(network.nodes))
+	for _, node := range network.nodes {
+		incoming[node._GetAddress()] = node
+	}
+
+	require.Empty(t, _GetNodesToRemove(incoming, network.nodes),
+		"an unchanged address book must not mark any node for removal")
+}
+
+func TestUnitNetworkRefreshPreservesNodeObjects(t *testing.T) {
+	t.Parallel()
+
+	nodes := newNetworkMockNodes()
+	network := _NewNetwork()
+	err := network.SetNetwork(nodes)
+	require.NoError(t, err)
+
+	before := nodesByAccount(&network)
+
+	// Re-apply the identical address book, as the scheduled network update does.
+	err = network.SetNetwork(nodes)
+	require.NoError(t, err)
+
+	after := nodesByAccount(&network)
+
+	require.Equal(t, len(before), len(after))
+	for account, node := range before {
+		require.Samef(t, node, after[account],
+			"node 0.0.%d was recreated by an unchanged refresh", account)
+	}
+}
+
+func TestUnitNetworkRefreshPreservesNodeConnections(t *testing.T) {
+	t.Parallel()
+
+	nodes := newNetworkMockNodes()
+	network := _NewNetwork()
+	err := network.SetNetwork(nodes)
+	require.NoError(t, err)
+
+	// Open a node's channel, standing in for an in-flight request holding a live
+	// connection. grpc.NewClient is lazy, so nothing is dialed.
+	account := AccountID{0, 0, 3, nil, nil, nil}
+	node, ok := network._GetNodeForAccountID(account)
+	require.True(t, ok)
+	_, err = node._GetChannel(NewLogger("", LoggerLevelError))
+	require.NoError(t, err)
+	require.NotNil(t, node.channel)
+
+	err = network.SetNetwork(nodes)
+	require.NoError(t, err)
+
+	refreshed, ok := network._GetNodeForAccountID(account)
+	require.True(t, ok)
+	require.Same(t, node, refreshed,
+		"unchanged refresh replaced the node and dropped its open connection")
+	require.NotNil(t, refreshed.channel,
+		"unchanged refresh closed the node's open connection")
+}
+
+func nodesByAccount(network *_Network) map[uint64]*_Node {
+	byAccount := make(map[uint64]*_Node, len(network.nodes))
+	for _, node := range network.nodes {
+		if n, ok := node.(*_Node); ok {
+			byAccount[n.accountID.Account] = n
+		}
+	}
+	return byAccount
+}
