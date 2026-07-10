@@ -100,33 +100,31 @@ func TestUnitFeeEstimateQueryExecuteWithoutClient(t *testing.T) {
 func TestUnitFeeEstimateQueryShouldRetry(t *testing.T) {
 	t.Parallel()
 
-	query := NewFeeEstimateQuery()
-
-	require.False(t, query.shouldRetry(nil, nil))
+	require.False(t, mirrorNodeShouldRetry(nil, nil))
 
 	resp200 := &http.Response{StatusCode: http.StatusOK}
-	require.False(t, query.shouldRetry(nil, resp200))
+	require.False(t, mirrorNodeShouldRetry(nil, resp200))
 
 	resp500 := &http.Response{StatusCode: http.StatusInternalServerError}
-	require.True(t, query.shouldRetry(nil, resp500))
+	require.True(t, mirrorNodeShouldRetry(nil, resp500))
 
 	resp503 := &http.Response{StatusCode: http.StatusServiceUnavailable}
-	require.True(t, query.shouldRetry(nil, resp503))
+	require.True(t, mirrorNodeShouldRetry(nil, resp503))
 
 	resp429 := &http.Response{StatusCode: http.StatusTooManyRequests}
-	require.True(t, query.shouldRetry(nil, resp429))
+	require.True(t, mirrorNodeShouldRetry(nil, resp429))
 
 	resp400 := &http.Response{StatusCode: http.StatusBadRequest}
-	require.False(t, query.shouldRetry(nil, resp400))
+	require.False(t, mirrorNodeShouldRetry(nil, resp400))
 
 	resp404 := &http.Response{StatusCode: http.StatusNotFound}
-	require.False(t, query.shouldRetry(nil, resp404))
+	require.False(t, mirrorNodeShouldRetry(nil, resp404))
 
 	err := errors.New("connection refused")
-	require.True(t, query.shouldRetry(err, nil))
+	require.True(t, mirrorNodeShouldRetry(err, nil))
 
 	err = errors.New("timeout")
-	require.True(t, query.shouldRetry(err, nil))
+	require.True(t, mirrorNodeShouldRetry(err, nil))
 }
 
 func TestUnitFeeEstimateResponseFromREST(t *testing.T) {

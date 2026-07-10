@@ -3,13 +3,11 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/pkg/errors"
@@ -195,52 +193,21 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 		url = fmt.Sprintf("%s&high_volume_throttle=%d", url, q.highVolumeThrottle)
 	}
 
-	var lastErr error
-	var resp *http.Response
-
-	for attempt := uint64(0); attempt < q.maxAttempts; attempt++ {
-		resp, err = http.Post(url, "application/protobuf", bytes.NewBuffer(txBytes)) // #nosec
-		if err == nil && resp != nil && resp.StatusCode == http.StatusOK {
-			break
-		}
-
-		switch {
-		case err != nil:
-			lastErr = err
-		case resp != nil:
-			body, readErr := io.ReadAll(resp.Body)
-			resp.Body.Close()
-			if readErr == nil {
-				lastErr = fmt.Errorf("received non-200 response: %d, details: %s", resp.StatusCode, body)
-			} else {
-				lastErr = fmt.Errorf("received non-200 response: %d", resp.StatusCode)
-			}
-		default:
-			lastErr = fmt.Errorf("received nil response")
-		}
-
-		// Check if we should retry
-		if !q.shouldRetry(err, resp) {
-			return FeeEstimateResponse{}, errors.Wrap(lastErr, "failed to call fee estimate API")
-		}
-
-		// Exponential backoff capped at 8s; exp is clamped to avoid shift overflow.
-		exp := min(attempt, uint64(5))
-		delayMs := 250.0 * float64(uint64(1)<<exp)
-		if delayMs > 8000 {
-			delayMs = 8000
-		}
-
-		// Wait before retry
-		select {
-		case <-client.networkUpdateContext.Done():
-			return FeeEstimateResponse{}, client.networkUpdateContext.Err()
-		case <-time.After(time.Duration(delayMs) * time.Millisecond):
-		}
+	// Timeout 0 preserves the previous no-per-request-timeout behaviour.
+	resp, err := mirrorNodePostWithRetry(client, url, "application/protobuf", txBytes, q.maxAttempts, 0)
+	if err != nil {
+		return FeeEstimateResponse{}, errors.Wrapf(err, "failed to call fee estimate API after %d attempts", q.maxAttempts)
 	}
-
 	if resp == nil {
-		return FeeEstimateResponse{}, errors.Wrapf(lastErr, "failed to call fee estimate API after %d attempts", q.maxAttempts)
+		return FeeEstimateResponse{}, errors.Wrap(errors.New("received nil response"), "failed to call fee estimate API")
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+		if readErr == nil {
+			return FeeEstimateResponse{}, errors.Wrap(fmt.Errorf("received non-200 response: %d, details: %s", resp.StatusCode, body), "failed to call fee estimate API")
+		}
+		return FeeEstimateResponse{}, errors.Wrap(fmt.Errorf("received non-200 response: %d", resp.StatusCode), "failed to call fee estimate API")
 	}
 
 	defer resp.Body.Close()
@@ -256,24 +223,6 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 	}
 
 	return response, nil
-}
-
-// shouldRetry determines if an error should be retried
-func (q *FeeEstimateQuery) shouldRetry(err error, resp *http.Response) bool {
-	if err == nil && resp != nil {
-		if resp.StatusCode >= 500 || resp.StatusCode == http.StatusTooManyRequests {
-			return true
-		}
-		if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-			return false
-		}
-	}
-
-	if err == nil {
-		return false
-	}
-
-	return true
 }
 
 // validateNetworkOnIDs validates network and IDs on the query
