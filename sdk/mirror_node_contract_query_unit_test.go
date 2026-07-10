@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -203,6 +204,107 @@ func stringPtr(s string) *string {
 
 func int64Ptr(i int64) *int64 {
 	return &i
+}
+
+func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+	const domain = "retrytransient.example.com:443"
+
+	var attempts int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Transient 5xx on the first two attempts, then succeed (issue #1752).
+		if atomic.AddInt32(&attempts, 1) < 3 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{"result": "0x5208"}))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain(domain, server.URL)
+	defer cleanup()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{domain})
+
+	gas, err := NewMirrorNodeContractEstimateGasQuery().
+		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
+		SetFunction("testFunction", NewContractFunctionParameters().AddString("test")).
+		Execute(client)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(21000), gas)
+	assert.Equal(t, int32(3), atomic.LoadInt32(&attempts), "transient failures should be retried until success")
+}
+
+func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+	const domain = "retrytransport.example.com:443"
+
+	var attempts int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Drop the connection on the first two attempts, surfacing as a transport error
+		// (EOF) — the failure mode from issue #1752 — then succeed on the third.
+		if atomic.AddInt32(&attempts, 1) < 3 {
+			hj, ok := w.(http.Hijacker)
+			require.True(t, ok, "test server must support connection hijacking")
+			conn, _, hijackErr := hj.Hijack()
+			require.NoError(t, hijackErr)
+			_ = conn.Close()
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{"result": "0x5208"}))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain(domain, server.URL)
+	defer cleanup()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{domain})
+
+	gas, err := NewMirrorNodeContractEstimateGasQuery().
+		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
+		SetFunction("testFunction", NewContractFunctionParameters().AddString("test")).
+		Execute(client)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(21000), gas)
+	assert.Equal(t, int32(3), atomic.LoadInt32(&attempts), "transport errors should be retried until success")
+}
+
+func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+	const domain = "no4xxretry.example.com:443"
+
+	var attempts int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&attempts, 1)
+		// A 4xx (e.g. gas limit too low) is a genuine result, not a transient failure,
+		// so it must be returned without retrying.
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"_status":{"messages":[{"message":"gas limit too low"}]}}`))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain(domain, server.URL)
+	defer cleanup()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{domain})
+
+	_, err = NewMirrorNodeContractEstimateGasQuery().
+		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
+		SetFunction("testFunction", NewContractFunctionParameters().AddString("test")).
+		Execute(client)
+	require.ErrorContains(t, err, "received non-200 response from Mirror Node")
+	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts), "non-200 responses must not be retried")
 }
 
 func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {

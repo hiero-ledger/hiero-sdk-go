@@ -1,7 +1,6 @@
 package hiero
 
 import (
-	"bytes"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -215,9 +214,12 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMir
 
 	mirrorUrl = fmt.Sprintf("%s/contracts/call", mirrorUrl)
 
-	resp, err := http.Post(mirrorUrl, "application/json", bytes.NewBuffer([]byte(jsonPayload))) // #nosec
+	resp, err := mirrorNodePostWithRetry(client, mirrorUrl, "application/json", []byte(jsonPayload), mirrorNodeDefaultMaxAttempts, mirrorNodeDefaultTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	if resp == nil {
+		return nil, errors.New("received nil response from Mirror Node")
 	}
 
 	defer resp.Body.Close()

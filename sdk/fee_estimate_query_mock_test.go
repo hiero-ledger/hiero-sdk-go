@@ -231,6 +231,37 @@ func TestUnitFeeEstimateQuerySendsHighVolumeThrottle(t *testing.T) {
 		"highVolumeMultiplier should be >= 1 when throttle is non-zero")
 }
 
+func TestUnitFeeEstimateQueryReturnsErrorAfterTransportFailures(t *testing.T) {
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		// Drop the connection on every attempt, surfacing as a transport error (EOF).
+		// After the retries are exhausted the query must return a wrapped error rather
+		// than a response.
+		hj, ok := w.(http.Hijacker)
+		require.True(t, ok, "test server must support connection hijacking")
+		conn, _, hijackErr := hj.Hijack()
+		require.NoError(t, hijackErr)
+		_ = conn.Close()
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
+	defer cleanup()
+
+	client := newMockClientForREST()
+
+	tx := NewTransferTransaction()
+
+	_, err := NewFeeEstimateQuery().
+		SetTransaction(tx).
+		SetMaxAttempts(2).
+		Execute(client)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to call fee estimate API after 2 attempts")
+	assert.Equal(t, 2, requestCount, "transport errors should be retried up to maxAttempts")
+}
+
 func TestUnitFeeEstimateQueryDoesNotRetryOn400(t *testing.T) {
 	requestCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
