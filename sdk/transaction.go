@@ -870,39 +870,51 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 	originalBody := services.TransactionBody{}
 	_ = protobuf.Unmarshal(signedTx.BodyBytes, &originalBody)
 
-	if originalBody.NodeAccountID == nil {
-		originalBody.NodeAccountID = tx.nodeAccountIDs._GetCurrent().(AccountID)._ToProtobuf()
+	// Apply updates to a clone so we can skip re-marshalling an unchanged body,
+	// since non-deterministic serialization would otherwise invalidate signatures.
+	updatedBodyProto := protobuf.Clone(&originalBody).(*services.TransactionBody)
+
+	if updatedBodyProto.NodeAccountID == nil {
+		updatedBodyProto.NodeAccountID = tx.nodeAccountIDs._GetCurrent().(AccountID)._ToProtobuf()
 	}
 
-	if originalBody.TransactionID.String() != txID._ToProtobuf().String() {
-		originalBody.TransactionID = txID._ToProtobuf()
+	if updatedBodyProto.TransactionID.String() != txID._ToProtobuf().String() {
+		updatedBodyProto.TransactionID = txID._ToProtobuf()
 	}
 
-	originalBody.Memo = tx.memo
-	originalBody.HighVolume = tx.highVolume
+	updatedBodyProto.Memo = tx.memo
+	updatedBodyProto.HighVolume = tx.highVolume
 	if tx.transactionFee != 0 {
-		originalBody.TransactionFee = tx.transactionFee
+		updatedBodyProto.TransactionFee = tx.transactionFee
 	} else {
-		originalBody.TransactionFee = tx.defaultMaxTransactionFee
+		updatedBodyProto.TransactionFee = tx.defaultMaxTransactionFee
 	}
 
 	if tx.customFeeLimits != nil {
+		updatedBodyProto.MaxCustomFees = make([]*services.CustomFeeLimit, 0, len(tx.customFeeLimits))
 		for _, customFeeLimit := range tx.customFeeLimits {
-			originalBody.MaxCustomFees = append(originalBody.MaxCustomFees, customFeeLimit.toProtobuf())
+			updatedBodyProto.MaxCustomFees = append(updatedBodyProto.MaxCustomFees, customFeeLimit.toProtobuf())
 		}
 	}
 
 	if tx.batchKey != nil {
-		originalBody.BatchKey = tx.batchKey._ToProtoKey()
+		updatedBodyProto.BatchKey = tx.batchKey._ToProtoKey()
 	}
 
-	updatedBody, err := protobuf.Marshal(&originalBody)
-	if err != nil {
-		return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
+	// Only re-serialize the body when a field actually changed. When nothing
+	// changed, reuse the original bytes verbatim so existing signatures stay valid.
+	bodyChanged := !protobuf.Equal(&originalBody, updatedBodyProto)
+	updatedBody := signedTx.BodyBytes
+	if bodyChanged {
+		var err error
+		updatedBody, err = protobuf.Marshal(updatedBodyProto)
+		if err != nil {
+			return &services.Transaction{}, errors.Wrap(err, "failed to update tx ID")
+		}
 	}
 
 	// Below are checks whether we need to sign the transaction or we already have the same signed
-	if bytes.Equal(signedTx.BodyBytes, updatedBody) {
+	if !bodyChanged {
 		sigPairLen := len(signedTx.SigMap.GetSigPair())
 		// For cases where we need more than 1 signature
 		if sigPairLen > 0 && sigPairLen == len(tx.publicKeys) {
