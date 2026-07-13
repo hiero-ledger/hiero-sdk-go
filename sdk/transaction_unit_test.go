@@ -12,6 +12,7 @@ import (
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/sdk"
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+	"google.golang.org/protobuf/encoding/protowire"
 	protobuf "google.golang.org/protobuf/proto"
 
 	"github.com/stretchr/testify/assert"
@@ -274,6 +275,125 @@ func TestUnitTransactionToFromBytes(t *testing.T) {
 				Amount:    100000000,
 			},
 		})
+}
+
+func TestUnitTransactionReserializePreservesSignedBodyAndSignatures(t *testing.T) {
+	t.Parallel()
+
+	key1, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	key2, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	// Build and freeze a transaction to get a valid body.
+	tx, err := NewTransferTransaction().
+		SetTransactionID(testTransactionID).
+		SetNodeAccountIDs([]AccountID{{Account: 4}}).
+		AddHbarTransfer(AccountID{Account: 5}, NewHbar(-1)).
+		AddHbarTransfer(AccountID{Account: 4}, NewHbar(1)).
+		SetTransactionMemo("determinism-check").
+		Freeze()
+	require.NoError(t, err)
+
+	// Emulate bytes from another SDK: appending a duplicate memo field (field 6)
+	// keeps the decoded message identical but differs from Go's canonical encoding.
+	canonical := tx.signedTransactions._Get(0).(*services.SignedTransaction).GetBodyBytes()
+	var body services.TransactionBody
+	require.NoError(t, protobuf.Unmarshal(canonical, &body))
+	nonCanonical := protowire.AppendString(protowire.AppendTag(append([]byte{}, canonical...), 6, protowire.BytesType), body.Memo)
+	require.NotEqual(t, canonical, nonCanonical)
+
+	var decoded services.TransactionBody
+	require.NoError(t, protobuf.Unmarshal(nonCanonical, &decoded))
+	require.True(t, protobuf.Equal(&body, &decoded), "non-canonical bytes must decode to the same message")
+
+	// Two parties sign the same non-canonical body bytes.
+	signedTx := &services.SignedTransaction{
+		BodyBytes: nonCanonical,
+		SigMap: &services.SignatureMap{
+			SigPair: []*services.SignaturePair{
+				key1.PublicKey()._ToSignaturePairProtobuf(key1.Sign(nonCanonical)),
+				key2.PublicKey()._ToSignaturePairProtobuf(key2.Sign(nonCanonical)),
+			},
+		},
+	}
+	signedTxBytes, err := protobuf.Marshal(signedTx)
+	require.NoError(t, err)
+	listBytes, err := protobuf.Marshal(&sdk.TransactionList{
+		TransactionList: []*services.Transaction{{SignedTransactionBytes: signedTxBytes}},
+	})
+	require.NoError(t, err)
+
+	// Deserialize and re-serialize.
+	restored, err := TransactionFromBytes(listBytes)
+	require.NoError(t, err)
+	out, err := TransactionToBytes(restored)
+	require.NoError(t, err)
+
+	var outList sdk.TransactionList
+	require.NoError(t, protobuf.Unmarshal(out, &outList))
+	require.Len(t, outList.TransactionList, 1)
+	var outSigned services.SignedTransaction
+	require.NoError(t, protobuf.Unmarshal(outList.TransactionList[0].SignedTransactionBytes, &outSigned))
+
+	// Body bytes must survive verbatim so every signature still matches.
+	require.Equal(t, nonCanonical, outSigned.GetBodyBytes())
+
+	keysByPrefix := map[string]PublicKey{
+		string(key1.PublicKey().BytesRaw()): key1.PublicKey(),
+		string(key2.PublicKey().BytesRaw()): key2.PublicKey(),
+	}
+	require.Len(t, outSigned.GetSigMap().GetSigPair(), 2)
+	for _, pair := range outSigned.GetSigMap().GetSigPair() {
+		key, ok := keysByPrefix[string(pair.GetPubKeyPrefix())]
+		require.True(t, ok, "unexpected public key prefix in signature map")
+		require.True(t, key.VerifySignedMessage(outSigned.GetBodyBytes(), pair.GetEd25519()),
+			"signature must remain valid after re-serialization")
+	}
+}
+
+func TestUnitTransactionReserializeDoesNotDuplicateCustomFeeLimits(t *testing.T) {
+	t.Parallel()
+
+	feeLimit := NewCustomFeeLimit().
+		SetPayerId(AccountID{Account: 5}).
+		SetCustomFees([]*CustomFixedFee{NewCustomFixedFee().SetAmount(100)})
+
+	tx, err := NewTopicMessageSubmitTransaction().
+		SetTopicID(TopicID{Topic: 7}).
+		SetMessage([]byte("hello")).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		AddCustomFeeLimit(feeLimit).
+		Freeze()
+	require.NoError(t, err)
+
+	countMaxCustomFees := func(bz []byte) int {
+		var list sdk.TransactionList
+		require.NoError(t, protobuf.Unmarshal(bz, &list))
+		require.NotEmpty(t, list.TransactionList)
+		var signed services.SignedTransaction
+		require.NoError(t, protobuf.Unmarshal(list.TransactionList[0].SignedTransactionBytes, &signed))
+		var body services.TransactionBody
+		require.NoError(t, protobuf.Unmarshal(signed.GetBodyBytes(), &body))
+		return len(body.GetMaxCustomFees())
+	}
+
+	// Serializing repeatedly must keep exactly one custom fee limit.
+	first, err := TransactionToBytes(tx)
+	require.NoError(t, err)
+	require.Equal(t, 1, countMaxCustomFees(first))
+
+	second, err := TransactionToBytes(tx)
+	require.NoError(t, err)
+	require.Equal(t, 1, countMaxCustomFees(second))
+
+	// The count must also hold after a deserialize/serialize round-trip.
+	restored, err := TransactionFromBytes(second)
+	require.NoError(t, err)
+	roundTripped, err := TransactionToBytes(restored)
+	require.NoError(t, err)
+	require.Equal(t, 1, countMaxCustomFees(roundTripped))
 }
 
 func TestUnitTransactionToFromBytesWithClient(t *testing.T) {
