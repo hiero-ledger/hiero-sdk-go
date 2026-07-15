@@ -1204,10 +1204,10 @@ func TestUnitRemoveSignature(t *testing.T) {
 		require.NoError(t, err)
 		require.NotContains(t, signs[nodeAccountID1], privateKey.PublicKey())
 
-		// Idempotent: removing again yields nothing.
+		// Removing again errors: the key is no longer on the transaction.
 		removedAgain, err := frozen.RemoveSignature(privateKey.PublicKey())
-		require.NoError(t, err)
-		require.Empty(t, removedAgain)
+		require.Equal(t, errPublicKeyHasNotSigned, err)
+		require.Nil(t, removedAgain)
 	})
 
 	t.Run("Multiple nodes", func(t *testing.T) {
@@ -1229,9 +1229,13 @@ func TestUnitRemoveSignature(t *testing.T) {
 		require.NoError(t, err)
 		require.NotContains(t, signs[nodeAccountID1], privateKey.PublicKey())
 		require.NotContains(t, signs[nodeAccountID2], privateKey.PublicKey())
+
+		// Both bookkeeping entries (one per node) are removed, staying aligned.
+		require.Empty(t, frozen.publicKeys)
+		require.Empty(t, frozen.transactionSigners)
 	})
 
-	t.Run("Key not found is a no-op", func(t *testing.T) {
+	t.Run("Key not found returns an error", func(t *testing.T) {
 		frozen := newFrozenTx(t, []AccountID{nodeAccountID1})
 
 		frozen, err := frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
@@ -1241,8 +1245,8 @@ func TestUnitRemoveSignature(t *testing.T) {
 		require.NoError(t, err)
 
 		removed, err := frozen.RemoveSignature(otherKey.PublicKey())
-		require.NoError(t, err)
-		require.Empty(t, removed)
+		require.Equal(t, errPublicKeyHasNotSigned, err)
+		require.Nil(t, removed)
 
 		// The unrelated signature is untouched.
 		signs, err := frozen.GetSignatures()
@@ -1260,10 +1264,10 @@ func TestUnitRemoveSignature(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, [][]byte{mockSignature}, removed)
 
-		// Removing again yields nothing (confirms the ECDSA sig pair is gone).
+		// Removing again errors (confirms the ECDSA sig pair is gone).
 		removedAgain, err := frozen.RemoveSignature(privateKeyECDSA.PublicKey())
-		require.NoError(t, err)
-		require.Empty(t, removedAgain)
+		require.Equal(t, errPublicKeyHasNotSigned, err)
+		require.Nil(t, removedAgain)
 	})
 
 	t.Run("Not frozen", func(t *testing.T) {

@@ -1434,9 +1434,9 @@ func _SignaturePairBytes(sigPair *services.SignaturePair) []byte {
 
 // RemoveSignature removes a previously added signature that matches the given public key from
 // every signed transaction. The transaction must be frozen; otherwise errTransactionIsNotFrozen
-// is returned. It returns the removed signature bytes (one entry per signed transaction the key
-// was present in) for audit purposes. If the key has no signature, an empty slice and nil error
-// are returned.
+// is returned. If the key has not signed the transaction, errPublicKeyHasNotSigned is returned
+// (mirroring the other Hiero SDKs). On success it returns the removed signature bytes (one entry
+// per signed transaction the key was present in) for audit purposes.
 func (tx *Transaction[T]) RemoveSignature(publicKey PublicKey) ([][]byte, error) {
 	if !tx.IsFrozen() {
 		return nil, errTransactionIsNotFrozen
@@ -1466,16 +1466,24 @@ func (tx *Transaction[T]) RemoveSignature(publicKey PublicKey) ([][]byte, error)
 		tx.signedTransactions._Set(index, temp)
 	}
 
-	// Keep publicKeys/transactionSigners aligned with the wire signatures: remove the single
-	// bookkeeping entry for this key (preserves the len(SigPair) == len(publicKeys) invariant
-	// that _BuildTransaction relies on).
+	if len(removed) == 0 {
+		return nil, errPublicKeyHasNotSigned
+	}
+
+	// Keep publicKeys/transactionSigners aligned with the wire signatures: drop every bookkeeping
+	// entry for this key (preserves the len(SigPair) == len(publicKeys) invariant that
+	// _BuildTransaction relies on).
+	keptKeys := tx.publicKeys[:0:0]
+	keptSigners := tx.transactionSigners[:0:0]
 	for i, key := range tx.publicKeys {
 		if key.String() == publicKey.String() {
-			tx.publicKeys = append(tx.publicKeys[:i], tx.publicKeys[i+1:]...)
-			tx.transactionSigners = append(tx.transactionSigners[:i], tx.transactionSigners[i+1:]...)
-			break
+			continue
 		}
+		keptKeys = append(keptKeys, tx.publicKeys[i])
+		keptSigners = append(keptSigners, tx.transactionSigners[i])
 	}
+	tx.publicKeys = keptKeys
+	tx.transactionSigners = keptSigners
 
 	// Invalidate any previously built transactions and keep transaction IDs locked so a later
 	// build does not re-sign and resurrect the removed signature.
