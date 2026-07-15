@@ -56,12 +56,12 @@ func TestUnitMirrorNodeGetBaseRestUrl(t *testing.T) {
 		{
 			name:        "localhost gets special handling",
 			address:     "localhost:8080",
-			expectedURL: "http://localhost:5551/api/v1",
+			expectedURL: "http://localhost:38081/api/v1",
 		},
 		{
 			name:        "127.0.0.1 gets special handling",
 			address:     "127.0.0.1:9999",
-			expectedURL: "http://127.0.0.1:5551/api/v1",
+			expectedURL: "http://127.0.0.1:38081/api/v1",
 		},
 		{
 			name:        "testnet mirror",
@@ -89,7 +89,7 @@ func TestUnitMirrorNodeGetBaseRestUrl(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				if test.address == "localhost:8080" {
-					assert.Equal(t, "http://localhost:5551/api/v1", url)
+					assert.Equal(t, "http://localhost:38081/api/v1", url)
 				} else {
 					assert.Equal(t, test.expectedURL, url)
 				}

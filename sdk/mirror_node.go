@@ -67,7 +67,7 @@ func (node *_MirrorNode) getBaseRestUrl() (string, error) {
 	}
 	hostStr := *host
 	if hostStr == "localhost" || hostStr == "127.0.0.1" {
-		return fmt.Sprintf("http://%s:5551/api/v1", hostStr), nil
+		return fmt.Sprintf("http://%s:38081/api/v1", hostStr), nil
 	}
 	return fmt.Sprintf("%s://%s:%d/api/v1", scheme, hostStr, port), nil
 }
