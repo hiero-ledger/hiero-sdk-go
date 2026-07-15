@@ -1407,6 +1407,124 @@ func TestUnitRemoveAllSignatures(t *testing.T) {
 	})
 }
 
+func TestUnitSignaturePairBytesUnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	// A signature pair carrying a type other than Ed25519/ECDSA (here Contract) has no raw
+	// signature bytes to return.
+	sigPair := &services.SignaturePair{
+		PubKeyPrefix: []byte{1, 2, 3},
+		Signature:    &services.SignaturePair_Contract{Contract: []byte{4, 5, 6}},
+	}
+	require.Nil(t, _SignaturePairBytes(sigPair))
+}
+
+// newRemoveSigFrozenTx builds a frozen FileAppendTransaction usable for signature-removal
+// edge-case tests.
+func newRemoveSigFrozenTx(t *testing.T) *FileAppendTransaction {
+	t.Helper()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	transaction := NewFileAppendTransaction().
+		SetFileID(FileID{File: 3}).
+		SetContents([]byte("test content")).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID)
+	transaction.SetMaxChunks(1)
+	transaction.SetMaxChunkSize(2048)
+
+	frozen, err := transaction.FreezeWith(client)
+	require.NoError(t, err)
+	return frozen
+}
+
+// TestUnitRemoveSignatureEdgeCases covers the defensive branches of RemoveSignature that the
+// happy-path tests do not exercise: a signed transaction with a nil SigMap must be skipped, and a
+// slice entry that is not a *services.SignedTransaction must surface an error.
+func TestUnitRemoveSignatureEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+	mockSignature := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	t.Run("Nil SigMap entries are skipped", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+
+		frozen, err := frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, AccountID{Account: 3})
+		require.NoError(t, err)
+
+		// Append an extra signed transaction with no signature map; RemoveSignature must skip it
+		// without panicking and still remove the real signature.
+		frozen.signedTransactions._Push(&services.SignedTransaction{SigMap: nil})
+
+		removed, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.NoError(t, err)
+		require.Equal(t, [][]byte{mockSignature}, removed)
+	})
+
+	t.Run("Non-SignedTransaction entry errors", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+		frozen.signedTransactions._Push(42)
+
+		removed, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.Error(t, err)
+		require.Nil(t, removed)
+	})
+}
+
+// TestUnitRemoveAllSignaturesEdgeCases covers the defensive branches of RemoveAllSignatures: a nil
+// SigMap is skipped, a non-SignedTransaction entry errors, and a signature pair whose PubKeyPrefix
+// cannot be parsed into a PublicKey surfaces the parse error.
+func TestUnitRemoveAllSignaturesEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Nil SigMap entries are skipped", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+
+		privateKey, err := PrivateKeyFromString(mockPrivateKey)
+		require.NoError(t, err)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), []byte{0, 1, 2, 3}, testTransactionID, AccountID{Account: 3})
+		require.NoError(t, err)
+
+		frozen.signedTransactions._Push(&services.SignedTransaction{SigMap: nil})
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.NoError(t, err)
+		require.Len(t, removed, 1)
+	})
+
+	t.Run("Non-SignedTransaction entry errors", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+		frozen.signedTransactions._Push(42)
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.Error(t, err)
+		require.Nil(t, removed)
+	})
+
+	t.Run("Invalid public key prefix errors", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+
+		// A 3-byte prefix parses neither as Ed25519 (32 bytes) nor ECDSA (33/65 bytes).
+		frozen.signedTransactions._Push(&services.SignedTransaction{
+			SigMap: &services.SignatureMap{
+				SigPair: []*services.SignaturePair{{
+					PubKeyPrefix: []byte{1, 2, 3},
+					Signature:    &services.SignaturePair_Ed25519{Ed25519: []byte{4, 5, 6}},
+				}},
+			},
+		})
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.Error(t, err)
+		require.Nil(t, removed)
+	})
+}
+
 func TestUnitGetSignableNodeBodyBytesListUnfrozen(t *testing.T) {
 	t.Parallel()
 
