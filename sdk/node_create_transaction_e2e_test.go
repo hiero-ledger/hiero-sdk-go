@@ -88,7 +88,6 @@ func TestIntegrationNodeCreateTransactionCanExecute(t *testing.T) {
 	resp, err = tx.Sign(adminKey).Execute(client)
 	require.NoError(t, err)
 
-	
 	receipt, err = resp.GetReceipt(client)
 	require.NoError(t, err)
 	t.Log(receipt.NodeID)

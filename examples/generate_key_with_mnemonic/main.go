@@ -19,7 +19,7 @@ func main() {
 	fmt.Printf("Generated 24-word mnemonic: %v\n", mnemonic24)
 
 	fmt.Println("Recovering an ECDSA private key from the 24-word mnemonic phrase above...")
-	privateKey24, err := mnemonic24.ToStandardECDSAsecp256k1PrivateKey( /* passphrase */ "", /* index */ 0)
+	privateKey24, err := mnemonic24.ToStandardECDSAsecp256k1PrivateKey( /* passphrase */ "" /* index */, 0)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error converting 24 word mnemonic to PrivateKey", err))
 	}
@@ -39,7 +39,7 @@ func main() {
 	fmt.Printf("Generated 12-word mnemonic: %v\n", mnemonic12)
 
 	fmt.Println("Recovering an ECDSA private key from the 12-word mnemonic phrase above...")
-	privateKey12, err := mnemonic12.ToStandardECDSAsecp256k1PrivateKey( /* passphrase */ "", /* index */ 0)
+	privateKey12, err := mnemonic12.ToStandardECDSAsecp256k1PrivateKey( /* passphrase */ "" /* index */, 0)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error converting 12 word mnemonic to PrivateKey", err))
 	}
