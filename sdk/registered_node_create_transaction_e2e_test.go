@@ -17,7 +17,7 @@ func TestIntegrationRegisteredNodeCreateTransactionCanExecute(t *testing.T) {
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -80,7 +80,7 @@ func TestIntegrationRegisteredNodeCreateTransactionMirrorNodeEndpointSucceeds(t 
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -138,7 +138,7 @@ func TestIntegrationRegisteredNodeCreateTransactionRpcRelayEndpointSucceeds(t *t
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -196,7 +196,7 @@ func TestIntegrationRegisteredNodeCreateTransactionGeneralServiceEndpointSucceed
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -256,7 +256,7 @@ func TestIntegrationRegisteredNodeCreateTransactionMixedEndpointsSucceeds(t *tes
 	t.Parallel()
 
 	// Set the network
-	client, err := ClientForNetworkV2(map[string]AccountID{"localhost:50211": {Account: 3}})
+	client, err := ClientForNetworkV2(map[string]AccountID{"localhost:35211": {Account: 3}})
 	require.NoError(t, err)
 	client.SetMirrorNetwork([]string{"localhost:5600"})
 
@@ -330,7 +330,7 @@ func TestIntegrationRegisteredNodeCreateTransactionWithDescriptionSucceeds(t *te
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -387,7 +387,7 @@ func TestIntegrationRegisteredNodeCreateTransactionFailsIfNoAdminKeySet(t *testi
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -418,7 +418,7 @@ func TestIntegrationRegisteredNodeCreateTransactionFailsIfEmptyEndpoints(t *test
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}

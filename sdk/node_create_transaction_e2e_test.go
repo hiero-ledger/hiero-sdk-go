@@ -17,7 +17,7 @@ func TestIntegrationNodeCreateTransactionCanExecute(t *testing.T) {
 
 	// Set the network
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
@@ -100,7 +100,7 @@ func TestIntegrationNodeCreateTransactionWithAssociatedRegisteredNode(t *testing
 	// Set the network
 	nodeAccountID := AccountID{Account: 3}
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = nodeAccountID
+	network["localhost:35211"] = nodeAccountID
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}

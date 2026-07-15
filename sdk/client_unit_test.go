@@ -333,6 +333,19 @@ func TestUnitClientPersistsShardAndRealm(t *testing.T) {
 	assert.Equal(t, uint64(2), client.GetRealm())
 }
 
+func TestUnitClientForNameLocalhost(t *testing.T) {
+	t.Parallel()
+
+	client, err := ClientForName("localhost")
+	require.NoError(t, err)
+	defer client.Close()
+
+	// The localhost preset targets the Solo local consensus node and mirror gRPC endpoint.
+	network := client.GetNetwork()
+	assert.Equal(t, AccountID{Account: 3}, network["127.0.0.1:35211"])
+	assert.Contains(t, client.GetMirrorNetwork(), "127.0.0.1:5600")
+}
+
 func TestUnitClientForNetworkV2(t *testing.T) {
 	t.Parallel()
 	network := map[string]AccountID{
@@ -452,9 +465,9 @@ func TestUnitClientGetMirrorRestApiBaseUrlLocalHost(t *testing.T) {
 			assert.Equal(t, test.expectedScheme, parsedURL.Scheme)
 
 			if test.domain == "localhost:80" {
-				assert.Equal(t, "localhost:5551", parsedURL.Host)
+				assert.Equal(t, "localhost:38081", parsedURL.Host)
 			} else {
-				assert.Equal(t, "127.0.0.1:5551", parsedURL.Host)
+				assert.Equal(t, "127.0.0.1:38081", parsedURL.Host)
 			}
 
 			assert.Equal(t, "/api/v1", parsedURL.Path)
