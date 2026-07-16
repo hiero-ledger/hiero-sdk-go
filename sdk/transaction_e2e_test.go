@@ -409,3 +409,139 @@ func TestIntegrationTransactionStaticMethodsTopicMessageSubmit(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 }
+
+// _SignaturesContainKey reports whether GetSignatures records a signature for publicKey against
+// any node (GetSignatures keys the inner map by *PublicKey, so we compare by String()).
+func _SignaturesContainKey(signatures map[AccountID]map[*PublicKey][]byte, publicKey PublicKey) bool {
+	for _, nodeSigs := range signatures {
+		for key := range nodeSigs {
+			if key.String() == publicKey.String() {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func TestIntegrationTransactionRemoveSignature(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err := NewAccountDeleteTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetAccountID(*receipt.AccountID).
+		SetTransferAccountID(env.Client.GetOperatorAccountID()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	// Sign with the account key, then confirm the signature is present.
+	_, err = newKey.SignTransaction(tx)
+	require.NoError(t, err)
+
+	signatures, err := tx.GetSignatures()
+	require.NoError(t, err)
+	require.True(t, _SignaturesContainKey(signatures, newKey.PublicKey()))
+
+	// Remove it: the returned bytes are the signatures that were stripped off the wire.
+	removed, err := tx.RemoveSignature(newKey.PublicKey())
+	require.NoError(t, err)
+	require.NotEmpty(t, removed)
+
+	signatures, err = tx.GetSignatures()
+	require.NoError(t, err)
+	require.False(t, _SignaturesContainKey(signatures, newKey.PublicKey()))
+
+	// Removing again errors, since the key is no longer on the transaction.
+	_, err = tx.RemoveSignature(newKey.PublicKey())
+	require.ErrorIs(t, err, errPublicKeyHasNotSigned)
+
+	// Re-sign with the account key and execute: the delete requires the account's signature, so a
+	// successful receipt proves the signature was genuinely re-applied after removal.
+	_, err = newKey.SignTransaction(tx)
+	require.NoError(t, err)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTransactionRemoveAllSignatures(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err := NewAccountDeleteTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetAccountID(*receipt.AccountID).
+		SetTransferAccountID(env.Client.GetOperatorAccountID()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	// Sign with both the operator and the account key so more than one signature is present.
+	_, err = tx.SignWithOperator(env.Client)
+	require.NoError(t, err)
+	_, err = newKey.SignTransaction(tx)
+	require.NoError(t, err)
+
+	signatures, err := tx.GetSignatures()
+	require.NoError(t, err)
+	require.True(t, _SignaturesContainKey(signatures, newKey.PublicKey()))
+
+	// Strip everything: the returned map is keyed by every public key that had signed.
+	removed, err := tx.RemoveAllSignatures()
+	require.NoError(t, err)
+	require.NotEmpty(t, removed)
+
+	var newKeyFound bool
+	for key := range removed {
+		if key.String() == newKey.PublicKey().String() {
+			newKeyFound = true
+		}
+	}
+	require.True(t, newKeyFound)
+
+	// Every node's signature set is now empty.
+	signatures, err = tx.GetSignatures()
+	require.NoError(t, err)
+	for _, nodeSigs := range signatures {
+		require.Empty(t, nodeSigs)
+	}
+
+	// Re-sign with the account key and execute. The operator signature is re-applied automatically
+	// at execution time, so re-adding the account key is enough for the delete to succeed.
+	_, err = newKey.SignTransaction(tx)
+	require.NoError(t, err)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
