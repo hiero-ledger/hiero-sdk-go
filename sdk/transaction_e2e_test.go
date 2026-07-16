@@ -480,6 +480,56 @@ func TestIntegrationTransactionRemoveSignature(t *testing.T) {
 	require.NoError(t, err)
 }
 
+// TestIntegrationTransactionRemoveSignatureIsAppliedOnExecute proves the removal actually reaches
+// the wire: after removing the account key we execute WITHOUT re-signing, and the network rejects
+// the delete with INVALID_SIGNATURE. This is stronger than the GetSignatures check (which only
+// reads the in-memory sig map) because it confirms the removed signature is genuinely absent from
+// the bytes transmitted at build/execute time and is not resurrected.
+func TestIntegrationTransactionRemoveSignatureIsAppliedOnExecute(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err := NewAccountDeleteTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetAccountID(*receipt.AccountID).
+		SetTransferAccountID(env.Client.GetOperatorAccountID()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	// Sign with the account key, confirm it is present, then remove it.
+	_, err = newKey.SignTransaction(tx)
+	require.NoError(t, err)
+
+	signatures, err := tx.GetSignatures()
+	require.NoError(t, err)
+	require.True(t, _SignaturesContainKey(signatures, newKey.PublicKey()))
+
+	removed, err := tx.RemoveSignature(newKey.PublicKey())
+	require.NoError(t, err)
+	require.NotEmpty(t, removed)
+
+	// Execute WITHOUT re-signing. The operator (payer) signature is re-applied automatically, but the
+	// account's required signature was removed, so the delete must be rejected with INVALID_SIGNATURE.
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.ErrorContains(t, err, "INVALID_SIGNATURE")
+}
+
 func TestIntegrationTransactionRemoveAllSignatures(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -504,28 +554,40 @@ func TestIntegrationTransactionRemoveAllSignatures(t *testing.T) {
 		FreezeWith(env.Client)
 	require.NoError(t, err)
 
-	// Sign with both the operator and the account key so more than one signature is present.
-	_, err = tx.SignWithOperator(env.Client)
+	// Sign with the account key plus a second, unrelated key so more than one signature is present on
+	// the wire. Both are applied via SignTransaction, which materializes the signature into the sig
+	// map immediately (unlike the operator signer, which is deferred until build/execute time and so
+	// would not yet appear in GetSignatures/RemoveAllSignatures).
+	secondKey, err := PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
 	_, err = newKey.SignTransaction(tx)
 	require.NoError(t, err)
+	_, err = secondKey.SignTransaction(tx)
+	require.NoError(t, err)
 
+	// Both keys must be present before removal.
 	signatures, err := tx.GetSignatures()
 	require.NoError(t, err)
 	require.True(t, _SignaturesContainKey(signatures, newKey.PublicKey()))
+	require.True(t, _SignaturesContainKey(signatures, secondKey.PublicKey()))
 
-	// Strip everything: the returned map is keyed by every public key that had signed.
+	// Strip everything: the returned map is keyed by every public key that had signed, so both keys
+	// must appear in it.
 	removed, err := tx.RemoveAllSignatures()
 	require.NoError(t, err)
-	require.NotEmpty(t, removed)
+	require.Len(t, removed, 2)
 
-	var newKeyFound bool
+	var newKeyFound, secondKeyFound bool
 	for key := range removed {
-		if key.String() == newKey.PublicKey().String() {
+		switch key.String() {
+		case newKey.PublicKey().String():
 			newKeyFound = true
+		case secondKey.PublicKey().String():
+			secondKeyFound = true
 		}
 	}
 	require.True(t, newKeyFound)
+	require.True(t, secondKeyFound)
 
 	// Every node's signature set is now empty.
 	signatures, err = tx.GetSignatures()
