@@ -1343,6 +1343,75 @@ func TestUnitRemoveSignatureNotResurrectedOnBuild(t *testing.T) {
 	}
 }
 
+// TestUnitRemoveSignatureBeforeBuild covers the deferred-signature path: a key added via Sign() is
+// only materialized at build time. RemoveSignature must still recognise it (no
+// errPublicKeyHasNotSigned), drop the pending signer, and not let it re-sign on build.
+func TestUnitRemoveSignatureBeforeBuild(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	fileID := FileID{File: 3}
+	nodeAccountID1 := AccountID{Account: 3}
+
+	key, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	transaction := NewFileAppendTransaction().
+		SetFileID(fileID).
+		SetContents([]byte("test content")).
+		SetNodeAccountIDs([]AccountID{nodeAccountID1}).
+		SetTransactionID(testTransactionID)
+	transaction.SetMaxChunks(1)
+	transaction.SetMaxChunkSize(2048)
+
+	frozen, err := transaction.FreezeWith(client)
+	require.NoError(t, err)
+
+	// Sign() only queues the key; nothing is materialized until build time.
+	frozen = frozen.Sign(key)
+	require.Len(t, frozen.publicKeys, 1)
+	require.Len(t, frozen.transactionSigners, 1)
+
+	signs, err := frozen.GetSignatures()
+	require.NoError(t, err)
+	for _, inner := range signs {
+		for pk := range inner {
+			require.NotEqual(t, key.PublicKey().String(), pk.String(),
+				"signature should not be materialized before build")
+		}
+	}
+
+	// Removing the pending signer must succeed even though nothing is materialized.
+	removed, err := frozen.RemoveSignature(key.PublicKey())
+	require.NoError(t, err)
+	require.Empty(t, removed, "no materialized signature existed, so nothing is returned")
+	require.Empty(t, frozen.publicKeys, "the pending signer must be dropped")
+	require.Empty(t, frozen.transactionSigners)
+
+	// Building must not resurrect the removed signer.
+	allTx, err := frozen._BuildAllTransactions()
+	require.NoError(t, err)
+	require.NotEmpty(t, allTx)
+
+	prefix := key.PublicKey().BytesRaw()
+	for _, built := range allTx {
+		var signedTx services.SignedTransaction
+		require.NoError(t, protobuf.Unmarshal(built.SignedTransactionBytes, &signedTx))
+		for _, sigPair := range signedTx.SigMap.SigPair {
+			require.NotEqual(t, prefix, sigPair.PubKeyPrefix,
+				"removed pending signer was resurrected on build")
+		}
+	}
+
+	// Removing again now errors: the key is gone in every form.
+	removedAgain, err := frozen.RemoveSignature(key.PublicKey())
+	require.Equal(t, errPublicKeyHasNotSigned, err)
+	require.Nil(t, removedAgain)
+}
+
 func TestUnitRemoveAllSignatures(t *testing.T) {
 	t.Parallel()
 

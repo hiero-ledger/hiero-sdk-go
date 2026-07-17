@@ -1437,6 +1437,10 @@ func _SignaturePairBytes(sigPair *services.SignaturePair) []byte {
 // is returned. If the key has not signed the transaction, errPublicKeyHasNotSigned is returned
 // (mirroring the other Hiero SDKs). On success it returns the removed signature bytes (one entry
 // per signed transaction the key was present in) for audit purposes.
+//
+// A key added via Sign/SignWith is only materialized at build time, so before the first build it
+// lives solely in the publicKeys bookkeeping. Such a pending signer counts as "has signed": it is
+// dropped so the key is not re-signed on the next build, and removed is empty.
 func (tx *Transaction[T]) RemoveSignature(publicKey PublicKey) ([][]byte, error) {
 	if !tx.IsFrozen() {
 		return nil, errTransactionIsNotFrozen
@@ -1466,22 +1470,25 @@ func (tx *Transaction[T]) RemoveSignature(publicKey PublicKey) ([][]byte, error)
 		tx.signedTransactions._Set(index, temp)
 	}
 
-	if len(removed) == 0 {
-		return nil, errPublicKeyHasNotSigned
-	}
-
-	// Keep publicKeys/transactionSigners aligned with the wire signatures: drop every bookkeeping
-	// entry for this key (preserves the len(SigPair) == len(publicKeys) invariant that
-	// _BuildTransaction relies on).
+	// Drop every bookkeeping entry for this key, keeping len(SigPair) == len(publicKeys) aligned.
+	// pending marks a key queued via Sign/SignWith but not yet materialized.
+	pending := false
 	keptKeys := tx.publicKeys[:0:0]
 	keptSigners := tx.transactionSigners[:0:0]
 	for i, key := range tx.publicKeys {
 		if key.String() == publicKey.String() {
+			pending = true
 			continue
 		}
 		keptKeys = append(keptKeys, tx.publicKeys[i])
 		keptSigners = append(keptSigners, tx.transactionSigners[i])
 	}
+
+	// The key never signed: neither a materialized signature nor a pending signer was found.
+	if len(removed) == 0 && !pending {
+		return nil, errPublicKeyHasNotSigned
+	}
+
 	tx.publicKeys = keptKeys
 	tx.transactionSigners = keptSigners
 
