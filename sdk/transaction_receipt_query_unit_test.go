@@ -262,12 +262,12 @@ func TestUnitTransactionReceiptToJson(t *testing.T) {
 						ContractID: &services.ContractID{Contract: &services.ContractID_ContractNum{
 							ContractNum: 456,
 						}},
-						FileID:        &services.FileID{FileNum: 789},
-						TokenID:       &services.TokenID{TokenNum: 987},
-						SerialNumbers: []int64{1, 2, 3},
-						TopicID:       &services.TopicID{TopicNum: 654},
-						ScheduleID:    &services.ScheduleID{ScheduleNum: 321},
-						NodeId:        1,
+						FileID:           &services.FileID{FileNum: 789},
+						TokenID:          &services.TokenID{TokenNum: 987},
+						SerialNumbers:    []int64{1, 2, 3},
+						TopicID:          &services.TopicID{TopicNum: 654},
+						ScheduleID:       &services.ScheduleID{ScheduleNum: 321},
+						NodeId:           1,
 						RegisteredNodeId: 2,
 						ScheduledTransactionID: &services.TransactionID{
 							AccountID: &services.AccountID{Account: &services.AccountID_AccountNum{

@@ -5,6 +5,7 @@ package hiero
 import (
 	"bytes"
 	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 
@@ -1416,6 +1417,146 @@ func (tx *Transaction[T]) AddSignature(publicKey PublicKey, signature []byte) T 
 	}
 
 	return tx.childTransaction
+}
+
+// _SignaturePairBytes returns the raw signature bytes carried by a SignaturePair,
+// supporting both Ed25519 and ECDSA(secp256k1) signature types.
+func _SignaturePairBytes(sigPair *services.SignaturePair) []byte {
+	switch sigPair.Signature.(type) {
+	case *services.SignaturePair_Ed25519:
+		return sigPair.GetEd25519()
+	case *services.SignaturePair_ECDSASecp256K1:
+		return sigPair.GetECDSASecp256K1()
+	default:
+		return nil
+	}
+}
+
+// RemoveSignature removes a previously added signature that matches the given public key from
+// every signed transaction. The transaction must be frozen; otherwise errTransactionIsNotFrozen
+// is returned. If the key has not signed the transaction, errPublicKeyHasNotSigned is returned
+// (mirroring the other Hiero SDKs). On success it returns the removed signature bytes (one entry
+// per signed transaction the key was present in) for audit purposes.
+//
+// A key added via Sign/SignWith is only materialized at build time, so before the first build it
+// lives solely in the publicKeys bookkeeping. Such a pending signer counts as "has signed": it is
+// dropped so the key is not re-signed on the next build, and removed is empty.
+func (tx *Transaction[T]) RemoveSignature(publicKey PublicKey) ([][]byte, error) {
+	if !tx.IsFrozen() {
+		return nil, errTransactionIsNotFrozen
+	}
+
+	prefix := publicKey.BytesRaw()
+	removed := make([][]byte, 0)
+
+	for index := 0; index < tx.signedTransactions._Length(); index++ {
+		temp, ok := tx.signedTransactions._Get(index).(*services.SignedTransaction)
+		if !ok {
+			return nil, errors.New("signed transaction is not a protobuf SignedTransaction")
+		}
+		if temp.SigMap == nil {
+			continue
+		}
+
+		kept := temp.SigMap.SigPair[:0:0]
+		for _, sigPair := range temp.SigMap.SigPair {
+			if bytes.Equal(sigPair.PubKeyPrefix, prefix) {
+				removed = append(removed, _SignaturePairBytes(sigPair))
+				continue
+			}
+			kept = append(kept, sigPair)
+		}
+		temp.SigMap.SigPair = kept
+		tx.signedTransactions._Set(index, temp)
+	}
+
+	// Drop every bookkeeping entry for this key, keeping len(SigPair) == len(publicKeys) aligned.
+	// pending marks a key queued via Sign/SignWith but not yet materialized.
+	pending := false
+	keptKeys := tx.publicKeys[:0:0]
+	keptSigners := tx.transactionSigners[:0:0]
+	for i, key := range tx.publicKeys {
+		if key.String() == publicKey.String() {
+			pending = true
+			continue
+		}
+		keptKeys = append(keptKeys, tx.publicKeys[i])
+		keptSigners = append(keptSigners, tx.transactionSigners[i])
+	}
+
+	// The key never signed: neither a materialized signature nor a pending signer was found.
+	if len(removed) == 0 && !pending {
+		return nil, errPublicKeyHasNotSigned
+	}
+
+	tx.publicKeys = keptKeys
+	tx.transactionSigners = keptSigners
+
+	// Invalidate any previously built transactions and keep transaction IDs locked so a later
+	// build does not re-sign and resurrect the removed signature.
+	tx.transactions = _NewLockableSlice()
+	tx.transactionIDs.locked = true
+
+	return removed, nil
+}
+
+// RemoveAllSignatures removes every signature from all signed transactions and clears the
+// publicKeys/transactionSigners bookkeeping, leaving a clean slate (the transaction will not
+// re-sign itself on the next build). The transaction must be frozen; otherwise
+// errTransactionIsNotFrozen is returned. It returns the removed signatures keyed by public key
+// for audit purposes.
+func (tx *Transaction[T]) RemoveAllSignatures() (map[PublicKey][][]byte, error) {
+	if !tx.IsFrozen() {
+		return nil, errTransactionIsNotFrozen
+	}
+
+	// Deduplicate by the hex-encoded public key prefix to avoid PublicKey pointer-identity
+	// collisions when used as a map key.
+	type removedEntry struct {
+		key        PublicKey
+		signatures [][]byte
+	}
+	collected := make(map[string]*removedEntry)
+
+	for index := 0; index < tx.signedTransactions._Length(); index++ {
+		temp, ok := tx.signedTransactions._Get(index).(*services.SignedTransaction)
+		if !ok {
+			return nil, errors.New("signed transaction is not a protobuf SignedTransaction")
+		}
+		if temp.SigMap == nil {
+			continue
+		}
+
+		for _, sigPair := range temp.SigMap.SigPair {
+			hexKey := hex.EncodeToString(sigPair.PubKeyPrefix)
+			entry, exists := collected[hexKey]
+			if !exists {
+				key, err := PublicKeyFromBytes(sigPair.PubKeyPrefix)
+				if err != nil {
+					return nil, err
+				}
+				entry = &removedEntry{key: key}
+				collected[hexKey] = entry
+			}
+			entry.signatures = append(entry.signatures, _SignaturePairBytes(sigPair))
+		}
+
+		temp.SigMap.SigPair = make([]*services.SignaturePair, 0)
+		tx.signedTransactions._Set(index, temp)
+	}
+
+	tx.publicKeys = make([]PublicKey, 0)
+	tx.transactionSigners = make([]TransactionSigner, 0)
+
+	tx.transactions = _NewLockableSlice()
+	tx.transactionIDs.locked = true
+
+	result := make(map[PublicKey][][]byte, len(collected))
+	for _, entry := range collected {
+		result[entry.key] = entry.signatures
+	}
+
+	return result, nil
 }
 
 func (tx *Transaction[T]) preFreezeWith(*Client, TransactionInterface) {

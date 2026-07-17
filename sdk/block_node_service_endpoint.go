@@ -46,7 +46,7 @@ func (e *BlockNodeServiceEndpoint) SetEndpointApis(apis []BlockNodeApi) *BlockNo
 
 // AddEndpointApi adds a block node API kind to this endpoint.
 func (e *BlockNodeServiceEndpoint) AddEndpointApi(api BlockNodeApi) *BlockNodeServiceEndpoint {
-	e.endpointApis = append(e.endpointApis,api)
+	e.endpointApis = append(e.endpointApis, api)
 	return e
 }
 

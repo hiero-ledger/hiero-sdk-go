@@ -368,4 +368,3 @@ func TestUnitDeleteTokenNftAllowanceAllSerialsAppendsPerCall(t *testing.T) {
 		require.Equal(t, d.CryptoApproveAllowance.NftAllowances, []*services.NftAllowance{revoke, revoke})
 	}
 }
-

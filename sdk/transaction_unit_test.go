@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
@@ -1145,6 +1146,452 @@ func TestUnitAddSignatureV2WithEmptySignedTransactions(t *testing.T) {
 	signs, err := tx.GetSignatures()
 	require.NoError(t, err)
 	require.Empty(t, signs)
+}
+
+// findSignaturesForKey locates the entry in a RemoveAllSignatures result map whose public key
+// matches pub (map keys are PublicKey structs, so we compare by String() rather than indexing).
+func findSignaturesForKey(m map[PublicKey][][]byte, pub PublicKey) ([][]byte, bool) {
+	for k, v := range m {
+		if k.String() == pub.String() {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+func TestUnitRemoveSignature(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	fileID := FileID{File: 3}
+	nodeAccountID1 := AccountID{Account: 3}
+	nodeAccountID2 := AccountID{Account: 4}
+	nodeAccountIDs := []AccountID{nodeAccountID1, nodeAccountID2}
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	mockSignature := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	newFrozenTx := func(t *testing.T, nodes []AccountID) *FileAppendTransaction {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs(nodes).
+			SetTransactionID(testTransactionID)
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+		return frozen
+	}
+
+	t.Run("Round-trip single node", func(t *testing.T) {
+		frozen := newFrozenTx(t, []AccountID{nodeAccountID1})
+
+		frozen, err := frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+
+		removed, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.NoError(t, err)
+		require.Equal(t, [][]byte{mockSignature}, removed)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.NotContains(t, signs[nodeAccountID1], privateKey.PublicKey())
+
+		// Removing again errors: the key is no longer on the transaction.
+		removedAgain, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.Equal(t, errPublicKeyHasNotSigned, err)
+		require.Nil(t, removedAgain)
+	})
+
+	t.Run("Multiple nodes", func(t *testing.T) {
+		frozen := newFrozenTx(t, nodeAccountIDs)
+
+		frozen, err := frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID2)
+		require.NoError(t, err)
+
+		removed, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.NoError(t, err)
+		require.Len(t, removed, 2)
+		for _, sig := range removed {
+			require.Equal(t, mockSignature, sig)
+		}
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.NotContains(t, signs[nodeAccountID1], privateKey.PublicKey())
+		require.NotContains(t, signs[nodeAccountID2], privateKey.PublicKey())
+
+		// Both bookkeeping entries (one per node) are removed, staying aligned.
+		require.Empty(t, frozen.publicKeys)
+		require.Empty(t, frozen.transactionSigners)
+	})
+
+	t.Run("Key not found returns an error", func(t *testing.T) {
+		frozen := newFrozenTx(t, []AccountID{nodeAccountID1})
+
+		frozen, err := frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+
+		otherKey, err := GeneratePrivateKey()
+		require.NoError(t, err)
+
+		removed, err := frozen.RemoveSignature(otherKey.PublicKey())
+		require.Equal(t, errPublicKeyHasNotSigned, err)
+		require.Nil(t, removed)
+
+		// The unrelated signature is untouched.
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		require.Len(t, signs[nodeAccountID1], 1)
+	})
+
+	t.Run("ECDSA key", func(t *testing.T) {
+		frozen := newFrozenTx(t, []AccountID{nodeAccountID1})
+
+		frozen, err := frozen.AddSignatureV2(privateKeyECDSA.PublicKey(), mockSignature, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+
+		removed, err := frozen.RemoveSignature(privateKeyECDSA.PublicKey())
+		require.NoError(t, err)
+		require.Equal(t, [][]byte{mockSignature}, removed)
+
+		// Removing again errors (confirms the ECDSA sig pair is gone).
+		removedAgain, err := frozen.RemoveSignature(privateKeyECDSA.PublicKey())
+		require.Equal(t, errPublicKeyHasNotSigned, err)
+		require.Nil(t, removedAgain)
+	})
+
+	t.Run("Not frozen", func(t *testing.T) {
+		tx := NewTransferTransaction()
+		removed, err := tx.RemoveSignature(privateKey.PublicKey())
+		require.Error(t, err)
+		require.Equal(t, errTransactionIsNotFrozen, err)
+		require.Nil(t, removed)
+	})
+}
+
+// TestUnitRemoveSignatureNotResurrectedOnBuild guards the subtle interaction with
+// _SignTransaction: after a signature is removed, rebuilding the transaction must not re-add it,
+// while other signatures must survive the rebuild.
+func TestUnitRemoveSignatureNotResurrectedOnBuild(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	fileID := FileID{File: 3}
+	nodeAccountID1 := AccountID{Account: 3}
+
+	keyToRemove, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+	keyToKeep, err := GeneratePrivateKey()
+	require.NoError(t, err)
+
+	sigToRemove := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	sigToKeep := []byte{9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
+
+	transaction := NewFileAppendTransaction().
+		SetFileID(fileID).
+		SetContents([]byte("test content")).
+		SetNodeAccountIDs([]AccountID{nodeAccountID1}).
+		SetTransactionID(testTransactionID)
+	transaction.SetMaxChunks(1)
+	transaction.SetMaxChunkSize(2048)
+
+	frozen, err := transaction.FreezeWith(client)
+	require.NoError(t, err)
+
+	frozen, err = frozen.AddSignatureV2(keyToRemove.PublicKey(), sigToRemove, testTransactionID, nodeAccountID1)
+	require.NoError(t, err)
+	frozen, err = frozen.AddSignatureV2(keyToKeep.PublicKey(), sigToKeep, testTransactionID, nodeAccountID1)
+	require.NoError(t, err)
+
+	removed, err := frozen.RemoveSignature(keyToRemove.PublicKey())
+	require.NoError(t, err)
+	require.Equal(t, [][]byte{sigToRemove}, removed)
+
+	// Rebuild the wire transactions and inspect the resulting signature maps.
+	allTx, err := frozen._BuildAllTransactions()
+	require.NoError(t, err)
+	require.NotEmpty(t, allTx)
+
+	removedPrefix := keyToRemove.PublicKey().BytesRaw()
+	keptPrefix := keyToKeep.PublicKey().BytesRaw()
+
+	for _, built := range allTx {
+		var signedTx services.SignedTransaction
+		require.NoError(t, protobuf.Unmarshal(built.SignedTransactionBytes, &signedTx))
+
+		var keptFound bool
+		for _, sigPair := range signedTx.SigMap.SigPair {
+			require.NotEqual(t, removedPrefix, sigPair.PubKeyPrefix, "removed signature was resurrected on build")
+			if bytes.Equal(sigPair.PubKeyPrefix, keptPrefix) {
+				keptFound = true
+			}
+		}
+		require.True(t, keptFound, "the signature that was not removed should survive the build")
+	}
+}
+
+// TestUnitRemoveSignatureBeforeBuild covers the deferred-signature path: a key added via Sign() is
+// only materialized at build time. RemoveSignature must still recognise it (no
+// errPublicKeyHasNotSigned), drop the pending signer, and not let it re-sign on build.
+func TestUnitRemoveSignatureBeforeBuild(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	fileID := FileID{File: 3}
+	nodeAccountID1 := AccountID{Account: 3}
+
+	key, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	transaction := NewFileAppendTransaction().
+		SetFileID(fileID).
+		SetContents([]byte("test content")).
+		SetNodeAccountIDs([]AccountID{nodeAccountID1}).
+		SetTransactionID(testTransactionID)
+	transaction.SetMaxChunks(1)
+	transaction.SetMaxChunkSize(2048)
+
+	frozen, err := transaction.FreezeWith(client)
+	require.NoError(t, err)
+
+	// Sign() only queues the key; nothing is materialized until build time.
+	frozen = frozen.Sign(key)
+	require.Len(t, frozen.publicKeys, 1)
+	require.Len(t, frozen.transactionSigners, 1)
+
+	signs, err := frozen.GetSignatures()
+	require.NoError(t, err)
+	for _, inner := range signs {
+		for pk := range inner {
+			require.NotEqual(t, key.PublicKey().String(), pk.String(),
+				"signature should not be materialized before build")
+		}
+	}
+
+	// Removing the pending signer must succeed even though nothing is materialized.
+	removed, err := frozen.RemoveSignature(key.PublicKey())
+	require.NoError(t, err)
+	require.Empty(t, removed, "no materialized signature existed, so nothing is returned")
+	require.Empty(t, frozen.publicKeys, "the pending signer must be dropped")
+	require.Empty(t, frozen.transactionSigners)
+
+	// Building must not resurrect the removed signer.
+	allTx, err := frozen._BuildAllTransactions()
+	require.NoError(t, err)
+	require.NotEmpty(t, allTx)
+
+	prefix := key.PublicKey().BytesRaw()
+	for _, built := range allTx {
+		var signedTx services.SignedTransaction
+		require.NoError(t, protobuf.Unmarshal(built.SignedTransactionBytes, &signedTx))
+		for _, sigPair := range signedTx.SigMap.SigPair {
+			require.NotEqual(t, prefix, sigPair.PubKeyPrefix,
+				"removed pending signer was resurrected on build")
+		}
+	}
+
+	// Removing again now errors: the key is gone in every form.
+	removedAgain, err := frozen.RemoveSignature(key.PublicKey())
+	require.Equal(t, errPublicKeyHasNotSigned, err)
+	require.Nil(t, removedAgain)
+}
+
+func TestUnitRemoveAllSignatures(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	fileID := FileID{File: 3}
+	nodeAccountID1 := AccountID{Account: 3}
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	mockSignatureEd := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+	mockSignatureEcdsa := []byte{9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
+
+	t.Run("Clears every signature and bookkeeping", func(t *testing.T) {
+		transaction := NewFileAppendTransaction().
+			SetFileID(fileID).
+			SetContents([]byte("test content")).
+			SetNodeAccountIDs([]AccountID{nodeAccountID1}).
+			SetTransactionID(testTransactionID)
+		transaction.SetMaxChunks(1)
+		transaction.SetMaxChunkSize(2048)
+
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), mockSignatureEd, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+		frozen, err = frozen.AddSignatureV2(privateKeyECDSA.PublicKey(), mockSignatureEcdsa, testTransactionID, nodeAccountID1)
+		require.NoError(t, err)
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.NoError(t, err)
+		require.Len(t, removed, 2)
+
+		edSigs, ok := findSignaturesForKey(removed, privateKey.PublicKey())
+		require.True(t, ok)
+		require.Equal(t, [][]byte{mockSignatureEd}, edSigs)
+
+		ecdsaSigs, ok := findSignaturesForKey(removed, privateKeyECDSA.PublicKey())
+		require.True(t, ok)
+		require.Equal(t, [][]byte{mockSignatureEcdsa}, ecdsaSigs)
+
+		signs, err := frozen.GetSignatures()
+		require.NoError(t, err)
+		for _, nodeSigs := range signs {
+			require.Empty(t, nodeSigs)
+		}
+
+		require.Empty(t, frozen.publicKeys)
+		require.Empty(t, frozen.transactionSigners)
+	})
+
+	t.Run("Not frozen", func(t *testing.T) {
+		tx := NewTransferTransaction()
+		removed, err := tx.RemoveAllSignatures()
+		require.Error(t, err)
+		require.Equal(t, errTransactionIsNotFrozen, err)
+		require.Nil(t, removed)
+	})
+}
+
+func TestUnitSignaturePairBytesUnsupportedType(t *testing.T) {
+	t.Parallel()
+
+	// A signature pair carrying a type other than Ed25519/ECDSA (here Contract) has no raw
+	// signature bytes to return.
+	sigPair := &services.SignaturePair{
+		PubKeyPrefix: []byte{1, 2, 3},
+		Signature:    &services.SignaturePair_Contract{Contract: []byte{4, 5, 6}},
+	}
+	require.Nil(t, _SignaturePairBytes(sigPair))
+}
+
+// newRemoveSigFrozenTx builds a frozen FileAppendTransaction usable for signature-removal
+// edge-case tests.
+func newRemoveSigFrozenTx(t *testing.T) *FileAppendTransaction {
+	t.Helper()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	transaction := NewFileAppendTransaction().
+		SetFileID(FileID{File: 3}).
+		SetContents([]byte("test content")).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID)
+	transaction.SetMaxChunks(1)
+	transaction.SetMaxChunkSize(2048)
+
+	frozen, err := transaction.FreezeWith(client)
+	require.NoError(t, err)
+	return frozen
+}
+
+// TestUnitRemoveSignatureEdgeCases covers the defensive branches of RemoveSignature that the
+// happy-path tests do not exercise: a signed transaction with a nil SigMap must be skipped, and a
+// slice entry that is not a *services.SignedTransaction must surface an error.
+func TestUnitRemoveSignatureEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+	mockSignature := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	t.Run("Nil SigMap entries are skipped", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+
+		frozen, err := frozen.AddSignatureV2(privateKey.PublicKey(), mockSignature, testTransactionID, AccountID{Account: 3})
+		require.NoError(t, err)
+
+		// Append an extra signed transaction with no signature map; RemoveSignature must skip it
+		// without panicking and still remove the real signature.
+		frozen.signedTransactions._Push(&services.SignedTransaction{SigMap: nil})
+
+		removed, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.NoError(t, err)
+		require.Equal(t, [][]byte{mockSignature}, removed)
+	})
+
+	t.Run("Non-SignedTransaction entry errors", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+		frozen.signedTransactions._Push(42)
+
+		removed, err := frozen.RemoveSignature(privateKey.PublicKey())
+		require.Error(t, err)
+		require.Nil(t, removed)
+	})
+}
+
+// TestUnitRemoveAllSignaturesEdgeCases covers the defensive branches of RemoveAllSignatures: a nil
+// SigMap is skipped, a non-SignedTransaction entry errors, and a signature pair whose PubKeyPrefix
+// cannot be parsed into a PublicKey surfaces the parse error.
+func TestUnitRemoveAllSignaturesEdgeCases(t *testing.T) {
+	t.Parallel()
+
+	t.Run("Nil SigMap entries are skipped", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+
+		privateKey, err := PrivateKeyFromString(mockPrivateKey)
+		require.NoError(t, err)
+		frozen, err = frozen.AddSignatureV2(privateKey.PublicKey(), []byte{0, 1, 2, 3}, testTransactionID, AccountID{Account: 3})
+		require.NoError(t, err)
+
+		frozen.signedTransactions._Push(&services.SignedTransaction{SigMap: nil})
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.NoError(t, err)
+		require.Len(t, removed, 1)
+	})
+
+	t.Run("Non-SignedTransaction entry errors", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+		frozen.signedTransactions._Push(42)
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.Error(t, err)
+		require.Nil(t, removed)
+	})
+
+	t.Run("Invalid public key prefix errors", func(t *testing.T) {
+		frozen := newRemoveSigFrozenTx(t)
+
+		// A 3-byte prefix parses neither as Ed25519 (32 bytes) nor ECDSA (33/65 bytes).
+		frozen.signedTransactions._Push(&services.SignedTransaction{
+			SigMap: &services.SignatureMap{
+				SigPair: []*services.SignaturePair{{
+					PubKeyPrefix: []byte{1, 2, 3},
+					Signature:    &services.SignaturePair_Ed25519{Ed25519: []byte{4, 5, 6}},
+				}},
+			},
+		})
+
+		removed, err := frozen.RemoveAllSignatures()
+		require.Error(t, err)
+		require.Nil(t, removed)
+	})
 }
 
 func TestUnitGetSignableNodeBodyBytesListUnfrozen(t *testing.T) {

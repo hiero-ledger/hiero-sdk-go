@@ -403,4 +403,3 @@ func generalServiceEndpointFromJSON(base registeredEndpointBase, raw *generalSer
 	}
 	return endpoint
 }
-
