@@ -16,7 +16,7 @@ const (
 type HookCreationDetails struct {
 	extensionPoint HookExtensionPoint
 	hookId         int64
-	evmHook  EvmHook
+	evmHook        EvmHook
 	adminKey       Key
 }
 
@@ -77,7 +77,7 @@ func hookCreationDetailsFromProtobuf(pb *services.HookCreationDetails) HookCreat
 	return HookCreationDetails{
 		extensionPoint: HookExtensionPoint(pb.GetExtensionPoint()),
 		hookId:         pb.GetHookId(),
-		evmHook:  evmHookFromProtobuf(pb.GetEvmHook()),
+		evmHook:        evmHookFromProtobuf(pb.GetEvmHook()),
 		adminKey:       key,
 	}
 }

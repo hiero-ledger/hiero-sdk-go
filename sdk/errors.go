@@ -38,6 +38,7 @@ var errNodeIdIsRequired = errors.New("nodeID is required")
 var errEvmAddressIsNotALongZeroAddress = errors.New("EVM address is not a correct long zero address")
 var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct size")
 var errInvalidChunkSize = errors.New("chunk size must be greater than 0")
+var errPublicKeyHasNotSigned = errors.New("the public key has not signed this transaction")
 
 // Endpoint validation errors
 var errEndpointMustHaveAddressOrDomainName = errors.New("endpoint must have either address or domain name")

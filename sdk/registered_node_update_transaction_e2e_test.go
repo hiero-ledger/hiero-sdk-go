@@ -17,7 +17,7 @@ func setupRegisteredNodeUpdateLocalClient(t *testing.T) *Client {
 	t.Helper()
 
 	network := make(map[string]AccountID)
-	network["localhost:50211"] = AccountID{Account: 3}
+	network["localhost:35211"] = AccountID{Account: 3}
 	client, err := ClientForNetworkV2(network)
 	require.NoError(t, err)
 	mirror := []string{"localhost:5600"}
