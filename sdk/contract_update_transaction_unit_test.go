@@ -412,3 +412,22 @@ func TestUnitContractUpdateTransactionBytesHooks(t *testing.T) {
 	require.Equal(t, *hook, contractUpdateTx.GetHooksToCreate()[0])
 	require.Equal(t, []int64{1}, contractUpdateTx.GetHooksToDelete())
 }
+
+// HIP-904
+func TestUnitContractUpdateTransactionUnlimitedMaxAutoAssociations(t *testing.T) {
+	t.Parallel()
+
+	transaction, err := NewContractUpdateTransaction().
+		SetTransactionID(TransactionIDGenerate(AccountID{Account: 324})).
+		SetNodeAccountIDs([]AccountID{{Account: 10}}).
+		SetContractID(ContractID{Contract: 7}).
+		SetMaxAutomaticTokenAssociations(-1).
+		Freeze()
+	require.NoError(t, err)
+
+	require.Equal(t, int32(-1), transaction.GetMaxAutomaticTokenAssociations())
+
+	proto := transaction.build().GetContractUpdateInstance()
+	require.NotNil(t, proto.MaxAutomaticTokenAssociations)
+	require.Equal(t, int32(-1), proto.MaxAutomaticTokenAssociations.GetValue())
+}
