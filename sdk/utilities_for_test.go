@@ -5,7 +5,9 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -286,6 +288,89 @@ func createFungibleToken(env *IntegrationTestEnv, opts ...TokenCreateTransaction
 		return TokenID{}, err
 	}
 	return *receipt.TokenID, err
+}
+
+// mirrorTokenBalance is one entry from GET /api/v1/accounts/{id}/tokens.
+type mirrorTokenBalance struct {
+	TokenID  string `json:"token_id"`
+	Balance  uint64 `json:"balance"`
+	Decimals uint64 `json:"decimals"`
+}
+
+type mirrorAccountTokensResponse struct {
+	Tokens []mirrorTokenBalance `json:"tokens"`
+}
+
+const (
+	mirrorTokenBalanceRetryAttempts = 10
+	mirrorTokenBalanceRetryDelay    = 2 * time.Second
+	mirrorTokenBalanceHTTPTimeout   = 30 * time.Second
+)
+
+// fetchMirrorTokenBalance runs a single mirror node query for accountID's tokenID balance.
+// found is false (with balance 0) when the relationship isn't ingested yet, which is
+// distinct from a genuine balance of 0.
+func fetchMirrorTokenBalance(client *Client, accountID AccountID, tokenID TokenID) (balance uint64, decimals uint64, found bool, err error) {
+	baseURL, err := client.GetMirrorRestApiBaseUrl()
+	if err != nil {
+		return 0, 0, false, err
+	}
+	requestURL := fmt.Sprintf("%s/accounts/%s/tokens?token.id=%s", baseURL, accountID.String(), tokenID.String())
+
+	httpClient := &http.Client{Timeout: mirrorTokenBalanceHTTPTimeout}
+	resp, err := httpClient.Get(requestURL) // #nosec
+	if err != nil {
+		return 0, 0, false, err
+	}
+	defer drainAndClose(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, 0, false, fmt.Errorf("mirror node returned status %d for %s", resp.StatusCode, requestURL)
+	}
+
+	var parsed mirrorAccountTokensResponse
+	if err := json.NewDecoder(resp.Body).Decode(&parsed); err != nil {
+		return 0, 0, false, err
+	}
+
+	for _, rel := range parsed.Tokens {
+		if rel.TokenID == tokenID.String() {
+			return rel.Balance, rel.Decimals, true, nil
+		}
+	}
+	return 0, 0, false, nil
+}
+
+// waitForMirrorTokenBalance polls until accountID's balance of tokenID equals expected,
+// asserts it, and returns the token's decimals. Waiting for the exact value (not just the
+// relationship's appearance) absorbs propagation delay of an in-flight change such as a
+// wipe. A missing balance entry never satisfies the wait, even when expected is 0.
+func waitForMirrorTokenBalance(t *testing.T, env IntegrationTestEnv, accountID AccountID, tokenID TokenID, expected uint64) uint64 {
+	t.Helper()
+	var lastBalance uint64
+	var lastDecimals uint64
+	var lastFound bool
+	var lastErr error
+	for attempt := 0; attempt < mirrorTokenBalanceRetryAttempts; attempt++ {
+		if attempt > 0 {
+			time.Sleep(mirrorTokenBalanceRetryDelay)
+		}
+		lastBalance, lastDecimals, lastFound, lastErr = fetchMirrorTokenBalance(env.Client, accountID, tokenID)
+		if lastErr == nil && lastFound && lastBalance == expected {
+			return lastDecimals
+		}
+	}
+	require.NoError(t, lastErr, "failed to query token balance from mirror node")
+	require.True(t, lastFound, "mirror node has no balance entry for token %s on account %s before timeout", tokenID, accountID)
+	assert.Equal(t, expected, lastBalance, "mirror node token balance did not reach expected value before timeout")
+	return lastDecimals
+}
+
+// drainAndClose exhausts and closes an HTTP response body so the underlying
+// connection can be reused across retries.
+func drainAndClose(body io.ReadCloser) {
+	_, _ = io.Copy(io.Discard, body)
+	_ = body.Close()
 }
 
 type AccountCreateTransactionCustomizer func(transaction *AccountCreateTransaction)
