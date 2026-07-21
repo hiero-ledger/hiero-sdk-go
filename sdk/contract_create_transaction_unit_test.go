@@ -421,3 +421,33 @@ func TestUnitContractCreateBytesHooks(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, *hook, contractCreateTx.GetHooks()[0])
 }
+
+// HIP-904
+func TestUnitContractCreateTransactionUnlimitedMaxAutoAssociations(t *testing.T) {
+	t.Parallel()
+
+	transaction, err := NewContractCreateTransaction().
+		SetTransactionID(TransactionIDGenerate(AccountID{Account: 324})).
+		SetNodeAccountIDs([]AccountID{{Account: 10}}).
+		SetBytecodeFileID(FileID{File: 7}).
+		SetGas(500).
+		SetMaxAutomaticTokenAssociations(-1).
+		Freeze()
+	require.NoError(t, err)
+
+	require.Equal(t, int32(-1), transaction.GetMaxAutomaticTokenAssociations())
+
+	proto := transaction.build().GetContractCreateInstance()
+	require.Equal(t, int32(-1), proto.MaxAutomaticTokenAssociations)
+}
+
+func TestUnitContractCreateFlowUnlimitedMaxAutoAssociations(t *testing.T) {
+	t.Parallel()
+
+	flow := NewContractCreateFlow().
+		SetMaxAutomaticTokenAssociations(-1)
+	require.Equal(t, int32(-1), flow.GetMaxAutomaticTokenAssociations())
+
+	contractCreateTx := flow._CreateContractCreateTransaction(FileID{File: 7})
+	require.Equal(t, int32(-1), contractCreateTx.GetMaxAutomaticTokenAssociations())
+}
