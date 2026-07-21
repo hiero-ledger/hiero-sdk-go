@@ -1,3 +1,11 @@
+## v2.82.0
+
+### Added
+- `Transaction.RemoveSignature(publicKey)` and `Transaction.RemoveAllSignatures()` for removing signatures from a frozen transaction, aligning the Go SDK's signature-management API with the other Hiero SDKs. `RemoveSignature` removes a specific key's signature from every signed transaction and returns the removed signature bytes (one entry per signed transaction); `RemoveAllSignatures` clears all signatures and returns them keyed by public key. Both keep the public-key/signer bookkeeping aligned with the wire signatures and lock the transaction ID so a later build cannot re-sign and resurrect a removed signature [#1774](https://github.com/hiero-ledger/hiero-sdk-go/pull/1774)
+
+### Fixed
+- Preserve the original signed transaction body bytes on re-serialization instead of re-marshalling an unchanged body, which (since protobuf serialization is not guaranteed byte-for-byte deterministic) could invalidate signatures in multi-party or cross-SDK flows [#1771](https://github.com/hiero-ledger/hiero-sdk-go/pull/1771)
+
 ## v2.81.0
 
 ### Added
