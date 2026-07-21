@@ -39,15 +39,20 @@ func TestIntegrationAccountBalanceQueryCanGetTokenBalance(t *testing.T) {
 	tokenID, err := createFungibleToken(&env)
 	require.NoError(t, err)
 
-	balance, err := NewAccountBalanceQuery().
+	operatorID := env.Client.GetOperatorAccountID()
+
+	_, err = NewAccountBalanceQuery().
 		SetNodeAccountIDs(env.NodeAccountIDs).
-		SetAccountID(env.Client.GetOperatorAccountID()).
+		SetAccountID(operatorID).
 		Execute(env.Client)
 	require.NoError(t, err)
 
-	assert.Equal(t, balance, balance)
-	// TODO: assert.Equal(t, uint64(1000000), balance.Tokens.Get(*tokenID))
-	// TODO: assert.Equal(t, uint64(3), balance.TokenDecimals.Get(*tokenID))
+	// HIP-367 dropped token balances from the consensus response; assert via the mirror node.
+	balance, decimals, err := getTokenBalanceFromMirror(env.Client, operatorID, tokenID)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(1_000_000), balance)
+	assert.Equal(t, uint64(18), decimals)
+
 	err = CloseIntegrationTestEnv(env, &tokenID)
 	require.NoError(t, err)
 }

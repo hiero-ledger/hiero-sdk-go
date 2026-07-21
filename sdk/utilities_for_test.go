@@ -5,7 +5,9 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -286,6 +288,75 @@ func createFungibleToken(env *IntegrationTestEnv, opts ...TokenCreateTransaction
 		return TokenID{}, err
 	}
 	return *receipt.TokenID, err
+}
+
+// mirrorTokenBalance is one entry from GET /api/v1/accounts/{id}/tokens.
+type mirrorTokenBalance struct {
+	TokenID  string `json:"token_id"`
+	Balance  uint64 `json:"balance"`
+	Decimals uint64 `json:"decimals"`
+}
+
+type mirrorAccountTokensResponse struct {
+	Tokens []mirrorTokenBalance `json:"tokens"`
+}
+
+// getTokenBalanceFromMirror returns accountID's balance and decimals for tokenID from the
+// mirror node (the source of truth since HIP-367), polling with bounded retries to absorb
+// propagation delay and returning as soon as the relationship appears.
+func getTokenBalanceFromMirror(client *Client, accountID AccountID, tokenID TokenID) (uint64, uint64, error) {
+	baseURL, err := client.GetMirrorRestApiBaseUrl()
+	if err != nil {
+		return 0, 0, err
+	}
+	requestURL := fmt.Sprintf("%s/accounts/%s/tokens?token.id=%s", baseURL, accountID.String(), tokenID.String())
+
+	const maxAttempts = 10
+	const retryDelay = 2 * time.Second
+
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	var lastErr error
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if attempt > 0 {
+			time.Sleep(retryDelay)
+		}
+
+		resp, err := httpClient.Get(requestURL) // #nosec
+		if err != nil {
+			lastErr = err
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			lastErr = fmt.Errorf("mirror node returned status %d for %s", resp.StatusCode, requestURL)
+			drainAndClose(resp.Body)
+			continue
+		}
+
+		var parsed mirrorAccountTokensResponse
+		decodeErr := json.NewDecoder(resp.Body).Decode(&parsed)
+		drainAndClose(resp.Body)
+		if decodeErr != nil {
+			lastErr = decodeErr
+			continue
+		}
+
+		for _, rel := range parsed.Tokens {
+			if rel.TokenID == tokenID.String() {
+				return rel.Balance, rel.Decimals, nil
+			}
+		}
+		lastErr = fmt.Errorf("token %s not yet reflected on mirror node for account %s", tokenID.String(), accountID.String())
+	}
+
+	return 0, 0, fmt.Errorf("failed to fetch token balance from mirror node after %d attempts: %w", maxAttempts, lastErr)
+}
+
+// drainAndClose exhausts and closes an HTTP response body so the underlying
+// connection can be reused across retries.
+func drainAndClose(body io.ReadCloser) {
+	_, _ = io.Copy(io.Discard, body)
+	_ = body.Close()
 }
 
 type AccountCreateTransactionCustomizer func(transaction *AccountCreateTransaction)
