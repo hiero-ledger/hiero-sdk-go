@@ -24,6 +24,8 @@ type FileUpdateTransaction struct {
 	expirationTime *time.Time
 	contents       []byte
 	memo           string
+	maxChunks      uint64
+	chunkSize      int
 }
 
 // NewFileUpdateTransaction creates a FileUpdateTransaction which modifies the metadata and/or contents of a file.
@@ -33,7 +35,10 @@ type FileUpdateTransaction struct {
 // additional KeyList or ThresholdKey then M-of-M secondary KeyList or ThresholdKey signing
 // requirements must be meet
 func NewFileUpdateTransaction() *FileUpdateTransaction {
-	tx := &FileUpdateTransaction{}
+	tx := &FileUpdateTransaction{
+		maxChunks: 20,
+		chunkSize: 2048,
+	}
 	tx.Transaction = _NewTransaction(tx)
 
 	return tx
@@ -57,6 +62,8 @@ func _FileUpdateTransactionFromProtobuf(tx Transaction[*FileUpdateTransaction], 
 		expirationTime: expiration,
 		contents:       pb.GetFileUpdate().GetContents(),
 		memo:           pb.GetFileUpdate().GetMemo().Value,
+		maxChunks:      20,
+		chunkSize:      2048,
 	}
 
 	tx.childTransaction = &fileUpdateTransaction
@@ -130,6 +137,33 @@ func (tx *FileUpdateTransaction) GetContents() []byte {
 	return tx.contents
 }
 
+// SetMaxChunkSize sets the maximum size of each chunk used by ExecuteAll when the contents are
+// larger than a single transaction can hold. Defaults to 2048 bytes, matching FileAppendTransaction.
+func (tx *FileUpdateTransaction) SetMaxChunkSize(size int) *FileUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.chunkSize = size
+	return tx
+}
+
+// GetMaxChunkSize returns the maximum size of each chunk used by ExecuteAll.
+func (tx *FileUpdateTransaction) GetMaxChunkSize() int {
+	return tx.chunkSize
+}
+
+// SetMaxChunks sets the maximum number of chunks ExecuteAll is allowed to split the contents into.
+// Defaults to 20, matching FileAppendTransaction. ExecuteAll returns ErrMaxChunksExceeded if the
+// contents require more chunks than this.
+func (tx *FileUpdateTransaction) SetMaxChunks(size uint64) *FileUpdateTransaction {
+	tx._RequireNotFrozen()
+	tx.maxChunks = size
+	return tx
+}
+
+// GetMaxChunks returns the maximum number of chunks ExecuteAll is allowed to split the contents into.
+func (tx *FileUpdateTransaction) GetMaxChunks() uint64 {
+	return tx.maxChunks
+}
+
 // SetFileMemo Sets the new memo to be associated with the file (UTF-8 encoding max 100 bytes)
 func (tx *FileUpdateTransaction) SetFileMemo(memo string) *FileUpdateTransaction {
 	tx._RequireNotFrozen()
@@ -147,6 +181,100 @@ func (tx *FileUpdateTransaction) GeFileMemo() string {
 
 func (tx *FileUpdateTransaction) GetFileMemo() string {
 	return tx.memo
+}
+
+// ExecuteAll updates the file, transparently splitting contents larger than a single transaction
+// can hold. When the contents fit in one chunk it behaves like Execute and returns a single-element
+// slice; otherwise the first chunk overwrites the file via the FileUpdate and the remainder is
+// appended with a FileAppendTransaction, so a file larger than the ~6 KiB single-transaction limit
+// can be updated in one call. The returned slice holds the FileUpdate response followed by one
+// response per append chunk.
+//
+// Each sub-transaction is charged its own fee and is signed with the operator only. If the file
+// requires additional keys, or you need explicit control of the FileID, per-transaction fees, error
+// recovery between chunks, or scheduling, use the manual FileUpdateTransaction +
+// FileAppendTransaction two-step instead. Execute keeps its single-transaction semantics and still
+// returns TRANSACTION_OVERSIZE for oversized contents.
+func (tx *FileUpdateTransaction) ExecuteAll(client *Client) ([]TransactionResponse, error) {
+	if client == nil || client.operator == nil {
+		return nil, errNoClientProvided
+	}
+	if tx.freezeError != nil {
+		return nil, tx.freezeError
+	}
+
+	chunkSize := tx.chunkSize
+	if chunkSize <= 0 {
+		chunkSize = 2048
+	}
+
+	chunks := uint64((len(tx.contents) + chunkSize - 1) / chunkSize)
+	if chunks == 0 {
+		chunks = 1
+	}
+	if chunks > tx.maxChunks {
+		return nil, ErrMaxChunksExceeded{Chunks: chunks, MaxChunks: tx.maxChunks}
+	}
+
+	// Fits in a single transaction: behave exactly like Execute.
+	if chunks <= 1 {
+		resp, err := tx.Execute(client)
+		return []TransactionResponse{resp}, err
+	}
+
+	// Chunking rebuilds the bodies and appends by FileID, so the transaction must be unfrozen and
+	// carry a FileID.
+	if tx.IsFrozen() {
+		return nil, errFileUpdateChunkingRequiresUnfrozen
+	}
+	if tx.fileID == nil {
+		return nil, errFileUpdateChunkingRequiresFileID
+	}
+
+	fullContents := tx.contents
+	firstChunkEnd := min(chunkSize, len(fullContents))
+
+	// The first chunk overwrites the file's contents via the update itself; wait for its receipt
+	// before appending the rest to preserve ordering.
+	tx.SetContents(fullContents[:firstChunkEnd])
+	updateResponse, err := tx.Execute(client)
+	if err != nil {
+		return []TransactionResponse{updateResponse}, err
+	}
+	if _, err := updateResponse.SetValidateStatus(true).GetReceipt(client); err != nil {
+		return []TransactionResponse{updateResponse}, err
+	}
+
+	appendTx := NewFileAppendTransaction().
+		SetFileID(*tx.fileID).
+		SetContents(fullContents[firstChunkEnd:]).
+		SetMaxChunkSize(chunkSize).
+		SetMaxChunks(tx.maxChunks)
+	if nodeAccountIDs := tx.GetNodeAccountIDs(); len(nodeAccountIDs) > 0 {
+		appendTx.SetNodeAccountIDs(nodeAccountIDs)
+	}
+
+	appendResponses, err := appendTx.ExecuteAll(client)
+	responses := append([]TransactionResponse{updateResponse}, appendResponses...)
+	return responses, err
+}
+
+// Schedule creates a ScheduleCreateTransaction for this FileUpdateTransaction. Chunked contents
+// (more than one chunk) cannot be scheduled, mirroring FileAppendTransaction.Schedule.
+func (tx *FileUpdateTransaction) Schedule() (*ScheduleCreateTransaction, error) {
+	chunkSize := tx.chunkSize
+	if chunkSize <= 0 {
+		chunkSize = 2048
+	}
+	chunks := uint64((len(tx.contents) + chunkSize - 1) / chunkSize)
+	if chunks > 1 {
+		return &ScheduleCreateTransaction{}, ErrMaxChunksExceeded{
+			Chunks:    chunks,
+			MaxChunks: 1,
+		}
+	}
+
+	return tx.Transaction.Schedule()
 }
 
 // ----------- Overridden functions ----------------
