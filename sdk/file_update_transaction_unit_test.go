@@ -319,3 +319,152 @@ func TestUnitFileUpdateTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(FileUpdateTransaction).buildProtoBody())
 }
+
+// FileUpdate content auto-chunking via ExecuteAll
+
+func TestUnitFileUpdateTransactionChunkDefaults(t *testing.T) {
+	t.Parallel()
+
+	tx := NewFileUpdateTransaction()
+
+	assert.Equal(t, uint64(20), tx.GetMaxChunks(), "default max chunks should match FileAppendTransaction")
+	assert.Equal(t, 2048, tx.GetMaxChunkSize(), "default chunk size should match FileAppendTransaction")
+}
+
+func TestUnitFileUpdateTransactionChunkSettersRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	tx := NewFileUpdateTransaction().
+		SetMaxChunks(7).
+		SetMaxChunkSize(512)
+
+	assert.Equal(t, uint64(7), tx.GetMaxChunks())
+	assert.Equal(t, 512, tx.GetMaxChunkSize())
+}
+
+func TestUnitFileUpdateTransactionExecuteAllChunkMath(t *testing.T) {
+	t.Parallel()
+
+	fileID := FileID{File: 3}
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+
+	cases := []struct {
+		size   int
+		chunks uint64
+	}{
+		{size: 101, chunks: 2},
+		{size: 200, chunks: 2},
+		{size: 201, chunks: 3},
+		{size: 1000, chunks: 10},
+	}
+
+	for _, c := range cases {
+		tx := NewFileUpdateTransaction().
+			SetFileID(fileID).
+			SetContents(make([]byte, c.size)).
+			SetMaxChunkSize(100).
+			SetMaxChunks(1)
+
+		_, err := tx.ExecuteAll(client)
+
+		var chunkErr ErrMaxChunksExceeded
+		require.ErrorAs(t, err, &chunkErr, "size %d should exceed max chunks", c.size)
+		assert.Equal(t, c.chunks, chunkErr.Chunks, "wrong chunk count for size %d", c.size)
+		assert.Equal(t, uint64(1), chunkErr.MaxChunks)
+	}
+}
+
+func TestUnitFileUpdateTransactionChunkBoundary(t *testing.T) {
+	t.Parallel()
+
+	fileID := FileID{File: 3}
+
+	atBoundary := NewFileUpdateTransaction().
+		SetFileID(fileID).
+		SetContents(make([]byte, 100)).
+		SetMaxChunkSize(100)
+	_, err := atBoundary.Schedule()
+	require.NoError(t, err, "exactly chunkSize must be a single chunk")
+
+	overBoundary := NewFileUpdateTransaction().
+		SetFileID(fileID).
+		SetContents(make([]byte, 101)).
+		SetMaxChunkSize(100)
+	_, err = overBoundary.Schedule()
+	var chunkErr ErrMaxChunksExceeded
+	require.ErrorAs(t, err, &chunkErr, "chunkSize+1 must need two chunks")
+	assert.Equal(t, uint64(2), chunkErr.Chunks)
+}
+
+func TestUnitFileUpdateTransactionExecuteAllRequiresFileID(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+
+	// Multi-chunk content with no FileID: chunking cannot append without the file id.
+	tx := NewFileUpdateTransaction().
+		SetContents(make([]byte, 300)).
+		SetMaxChunkSize(100).
+		SetMaxChunks(20)
+
+	_, err = tx.ExecuteAll(client)
+	require.ErrorIs(t, err, errFileUpdateChunkingRequiresFileID)
+}
+
+func TestUnitFileUpdateTransactionExecuteAllRequiresUnfrozen(t *testing.T) {
+	t.Parallel()
+
+	fileID := FileID{File: 3}
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+
+	tx := NewFileUpdateTransaction().
+		SetFileID(fileID).
+		SetContents(make([]byte, 300)).
+		SetMaxChunkSize(100).
+		SetMaxChunks(20)
+
+	_, err = tx.FreezeWith(client)
+	require.NoError(t, err)
+
+	_, err = tx.ExecuteAll(client)
+	require.ErrorIs(t, err, errFileUpdateChunkingRequiresUnfrozen)
+}
+
+func TestUnitFileUpdateTransactionExecuteAllNilClient(t *testing.T) {
+	t.Parallel()
+
+	tx := NewFileUpdateTransaction().
+		SetFileID(FileID{File: 3}).
+		SetContents(make([]byte, 300))
+
+	_, err := tx.ExecuteAll(nil)
+	require.ErrorIs(t, err, errNoClientProvided)
+}
+
+func TestUnitFileUpdateTransactionScheduleChunkedRejected(t *testing.T) {
+	t.Parallel()
+
+	fileID := FileID{File: 3}
+
+	// A single chunk of contents can still be scheduled.
+	single := NewFileUpdateTransaction().
+		SetFileID(fileID).
+		SetContents(make([]byte, 100)).
+		SetMaxChunkSize(100)
+	_, err := single.Schedule()
+	require.NoError(t, err)
+
+	// Contents spanning more than one chunk cannot be scheduled.
+	chunked := NewFileUpdateTransaction().
+		SetFileID(fileID).
+		SetContents(make([]byte, 101)).
+		SetMaxChunkSize(100)
+	_, err = chunked.Schedule()
+	var chunkErr ErrMaxChunksExceeded
+	require.ErrorAs(t, err, &chunkErr)
+	assert.Equal(t, uint64(2), chunkErr.Chunks)
+	assert.Equal(t, uint64(1), chunkErr.MaxChunks)
+}

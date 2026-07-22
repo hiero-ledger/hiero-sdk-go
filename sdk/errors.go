@@ -40,6 +40,10 @@ var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct s
 var errInvalidChunkSize = errors.New("chunk size must be greater than 0")
 var errPublicKeyHasNotSigned = errors.New("the public key has not signed this transaction")
 
+// FileUpdateTransaction auto-chunking (ExecuteAll) errors
+var errFileUpdateChunkingRequiresFileID = errors.New("FileUpdateTransaction requires a FileID to update contents larger than the chunk size")
+var errFileUpdateChunkingRequiresUnfrozen = errors.New("FileUpdateTransaction with contents larger than the chunk size must not be frozen before ExecuteAll")
+
 // Endpoint validation errors
 var errEndpointMustHaveAddressOrDomainName = errors.New("endpoint must have either address or domain name")
 var errEndpointCannotHaveBothAddressAndDomainName = errors.New("endpoint must have either address or domain name, but not both")
