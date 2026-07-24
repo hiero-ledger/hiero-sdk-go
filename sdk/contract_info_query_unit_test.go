@@ -113,7 +113,6 @@ func TestUnitContractInfoQueryMock(t *testing.T) {
 }
 
 func TestUnitContractInfoQueryGetTransactionIDMock(t *testing.T) {
-	t.Skip("Skipping test as it is currently broken with the addition of generating new payment transactions for queries")
 	t.Parallel()
 
 	transactionID := TransactionIDGenerate(AccountID{Account: 123})

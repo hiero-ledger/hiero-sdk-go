@@ -262,7 +262,14 @@ func (q *Query) generatePayments(client *Client, cost Hbar) (*services.Transacti
 	var tx *services.Transaction
 	var err error
 	nodeID := q.nodeAccountIDs._GetCurrent()
-	txnID := TransactionIDGenerate(client.operator.accountID)
+
+	var txnID TransactionID
+	if !q.paymentTransactionIDs._IsEmpty() {
+		txnID = q.paymentTransactionIDs._GetCurrent().(TransactionID)
+	} else {
+		txnID = TransactionIDGenerate(client.operator.accountID)
+	}
+
 	tx, err = _QueryMakePaymentTransaction(
 		txnID,
 		nodeID.(AccountID),
