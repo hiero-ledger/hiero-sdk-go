@@ -165,3 +165,13 @@ func TestUnitAccountInfoQueryExecuteWithoutOperator(t *testing.T) {
 		Execute(client)
 	require.ErrorIs(t, err, errNoClientProvided)
 }
+
+// TestUnitAccountInfoQueryGetCostNilClient verifies that GetCost fails cleanly without a client.
+func TestUnitAccountInfoQueryGetCostNilClient(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: 1800}).
+		GetCost(nil)
+	require.ErrorIs(t, err, errNoClientProvided)
+}
