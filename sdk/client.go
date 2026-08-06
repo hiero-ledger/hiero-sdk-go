@@ -749,15 +749,25 @@ func (client *Client) GetOperatorPublicKey() PublicKey {
 	return PublicKey{}
 }
 
-// Ping sends an AccountBalanceQuery to the specified _Node returning nil if no
-// problems occur. Otherwise, an error representing the status of the _Node will
-// be returned.
-func (client *Client) Ping(nodeID AccountID) error {
-	_, err := NewAccountBalanceQuery().
-		SetNodeAccountIDs([]AccountID{nodeID}).
-		SetAccountID(client.GetOperatorAccountID()).
-		Execute(client)
+// treasuryAccountNum is the account number of the treasury system account, which exists on every
+// network from genesis.
+const treasuryAccountNum = 2
 
+// Ping checks the liveness of the given consensus node, returning nil if the node is reachable.
+//
+// It sends a single getAccountInfo query for the treasury account with ResponseType COST_ANSWER:
+// a healthy node answers with the query fee without executing the query, so nothing is charged
+// and no operator is required.
+func (client *Client) Ping(nodeID AccountID) error {
+	if _, ok := client.network._GetNodeForAccountID(nodeID); !ok {
+		return fmt.Errorf("node with account ID %s not found in the client's network", nodeID.String())
+	}
+
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Shard: client.shard, Realm: client.realm, Account: treasuryAccountNum}).
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		SetMaxRetry(1).
+		GetCost(client)
 	return err
 }
 

@@ -146,3 +146,22 @@ func TestUnitAccountInfoQueryMock(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, HbarFromTinybar(2), cost)
 }
+
+// TestUnitAccountInfoQueryExecuteWithoutOperator verifies that executing a paid query on a
+// client without an operator fails cleanly instead of panicking when building the payment.
+func TestUnitAccountInfoQueryExecuteWithoutOperator(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer([][]interface{}{{}})
+	defer server.Close()
+
+	client.operator = nil
+
+	// An explicit payment skips the cost lookup and goes straight to payment signing.
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: 1800}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetQueryPayment(NewHbar(1)).
+		Execute(client)
+	require.ErrorIs(t, err, errNoClientProvided)
+}

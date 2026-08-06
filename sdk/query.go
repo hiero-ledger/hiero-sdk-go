@@ -83,8 +83,9 @@ func (q *Query) GetQueryPayment() Hbar {
 }
 
 // GetCost returns the fee that would be charged to get the requested information (if a cost was requested).
+// COST_ANSWER queries are free and unsigned, so no operator is required.
 func (q *Query) getCost(client *Client, e QueryInterface) (Hbar, error) {
-	if client == nil || client.operator == nil {
+	if client == nil {
 		return Hbar{}, errNoClientProvided
 	}
 
@@ -182,6 +183,10 @@ func (q *Query) SetPaymentTransactionID(transactionID TransactionID) *Query {
 func (q *Query) execute(client *Client, e QueryInterface) (*services.Response, error) {
 	q.client = client
 	if client == nil {
+		return nil, errNoClientProvided
+	}
+	// Paid queries need an operator to sign the payment transaction.
+	if q.isPaymentRequired && client.operator == nil {
 		return nil, errNoClientProvided
 	}
 

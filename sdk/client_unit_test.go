@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 	"github.com/stretchr/testify/require"
 )
 
@@ -473,4 +474,99 @@ func TestUnitClientGetMirrorRestApiBaseUrlLocalHost(t *testing.T) {
 			assert.Equal(t, "/api/v1", parsedURL.Path)
 		})
 	}
+}
+
+// TestUnitClientPingReachableNode verifies that Ping probes the node with a COST_ANSWER
+// getAccountInfo query for account 0.0.2, without a payment or a configured operator.
+func TestUnitClientPingReachableNode(t *testing.T) {
+	t.Parallel()
+
+	probeCalls := 0
+	probe := func(request *services.Query) *services.Response {
+		probeCalls++
+		require.NotNil(t, request.Query)
+		infoQuery := request.Query.(*services.Query_CryptoGetInfo).CryptoGetInfo
+
+		require.Equal(t, services.ResponseType_COST_ANSWER, infoQuery.Header.ResponseType)
+		require.Nil(t, infoQuery.Header.Payment, "the ping probe must not attach a payment transaction")
+		require.Equal(t, AccountID{Account: treasuryAccountNum}._ToProtobuf().String(), infoQuery.AccountID.String())
+
+		return &services.Response{
+			Response: &services.Response_CryptoGetInfo{
+				CryptoGetInfo: &services.CryptoGetInfoResponse{
+					Header: &services.ResponseHeader{
+						NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+						ResponseType:                services.ResponseType_COST_ANSWER,
+						Cost:                        25,
+					},
+				},
+			},
+		}
+	}
+
+	client, server := NewMockClientAndServer([][]interface{}{{probe}})
+	defer server.Close()
+
+	client.operator = nil
+
+	err := client.Ping(AccountID{Account: 3})
+	require.NoError(t, err)
+	require.Equal(t, 1, probeCalls, "Ping must send exactly one probe query")
+}
+
+// TestUnitClientPingBusyNode verifies that the probe is a single attempt: a retryable BUSY
+// precheck fails Ping instead of being retried.
+func TestUnitClientPingBusyNode(t *testing.T) {
+	t.Parallel()
+
+	probeCalls := 0
+	busy := func(request *services.Query) *services.Response {
+		probeCalls++
+		return &services.Response{
+			Response: &services.Response_CryptoGetInfo{
+				CryptoGetInfo: &services.CryptoGetInfoResponse{
+					Header: &services.ResponseHeader{
+						NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY,
+						ResponseType:                services.ResponseType_COST_ANSWER,
+					},
+				},
+			},
+		}
+	}
+
+	// Queue several responses so a wrongly retrying Ping would consume more than one.
+	client, server := NewMockClientAndServer([][]interface{}{{busy, busy, busy}})
+	defer server.Close()
+
+	err := client.Ping(AccountID{Account: 3})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "BUSY")
+	require.Equal(t, 1, probeCalls, "Ping must not retry the probe")
+}
+
+// TestUnitClientPingUnknownNode verifies that Ping errors when the node is not part of the
+// client's network.
+func TestUnitClientPingUnknownNode(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer([][]interface{}{{}})
+	defer server.Close()
+
+	err := client.Ping(AccountID{Account: 99})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "not found in the client's network")
+}
+
+// TestUnitClientPingUnreachableNode verifies that Ping fails when the single-attempt probe
+// fails at the gRPC layer.
+func TestUnitClientPingUnreachableNode(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer([][]interface{}{{}})
+	// Close the server so the probe fails at the gRPC layer.
+	server.Close()
+	client.SetGrpcDeadline(500 * time.Millisecond)
+
+	err := client.Ping(AccountID{Account: 3})
+	require.Error(t, err)
 }
