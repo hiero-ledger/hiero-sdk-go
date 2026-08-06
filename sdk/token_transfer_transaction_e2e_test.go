@@ -76,15 +76,9 @@ func TestIntegrationTokenTransferTransactionCanExecute(t *testing.T) {
 	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
-	_, err = NewAccountBalanceQuery().
-		SetAccountID(env.Client.GetOperatorAccountID()).
-		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		Execute(env.Client)
-	require.NoError(t, err)
+	// HIP-367 dropped token balances from the consensus response; assert via the mirror node.
+	waitForMirrorTokenBalance(t, env, env.Client.GetOperatorAccountID(), tokenID, 999_990)
 
-	// TODO assert.Contains(t, balance.Tokens.balances, tokenID.String())
-	// TODO amount := balance.Tokens.balances[tokenID.String()]
-	// TODO assert.Equal(t, uint64(999990), amount, "token transfer transaction failed")
 	resp, err = NewTokenWipeTransaction().
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
 		SetTokenID(tokenID).

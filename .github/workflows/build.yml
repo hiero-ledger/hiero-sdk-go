@@ -23,7 +23,7 @@ env:
     NODE_VERSION: "22"
     HIERO_VERSION: v0.73.0
     MIRROR_NODE_VERSION: v0.153.0
-    SOLO_VERSION: v0.69.0
+    SOLO_VERSION: v0.69.1
     HEDERA_NETWORK: localhost
 
 jobs:
