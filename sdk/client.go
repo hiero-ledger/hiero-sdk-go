@@ -749,24 +749,21 @@ func (client *Client) GetOperatorPublicKey() PublicKey {
 	return PublicKey{}
 }
 
-// treasuryAccountNum is the account number of the treasury system account, which exists on every
-// network from genesis.
+// treasuryAccountNum is the treasury system account, present on every network from genesis.
 const treasuryAccountNum = 2
 
 // Ping checks the liveness of the given consensus node, returning nil if the node is reachable.
 //
-// It sends a single getAccountInfo query for the treasury account with ResponseType COST_ANSWER:
-// a healthy node answers with the query fee without executing the query, so nothing is charged
-// and no operator is required.
+// It sends a COST_ANSWER getAccountInfo query for the treasury account, which a healthy node answers
+// with the query fee without executing it: nothing is charged and no operator is required.
+//
+// The probe follows the client's retry settings. A node already in backoff is never contacted, so
+// Ping fails without reaching the network; readmission happens when the backoff elapses, not on a
+// successful Ping.
 func (client *Client) Ping(nodeID AccountID) error {
-	if _, ok := client.network._GetNodeForAccountID(nodeID); !ok {
-		return fmt.Errorf("node with account ID %s not found in the client's network", nodeID.String())
-	}
-
 	_, err := NewAccountInfoQuery().
 		SetAccountID(AccountID{Shard: client.shard, Realm: client.realm, Account: treasuryAccountNum}).
 		SetNodeAccountIDs([]AccountID{nodeID}).
-		SetMaxRetry(1).
 		GetCost(client)
 	return err
 }

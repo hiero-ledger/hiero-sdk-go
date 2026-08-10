@@ -7,6 +7,7 @@ package hiero
 import (
 	"bytes"
 	"net/url"
+	"sync"
 	"testing"
 	"time"
 
@@ -476,26 +477,20 @@ func TestUnitClientGetMirrorRestApiBaseUrlLocalHost(t *testing.T) {
 	}
 }
 
-// TestUnitClientPingReachableNode verifies that Ping probes the node with a COST_ANSWER
-// getAccountInfo query for account 0.0.2, without a payment or a configured operator.
-func TestUnitClientPingReachableNode(t *testing.T) {
-	t.Parallel()
-
-	probeCalls := 0
-	probe := func(request *services.Query) *services.Response {
-		probeCalls++
-		require.NotNil(t, request.Query)
-		infoQuery := request.Query.(*services.Query_CryptoGetInfo).CryptoGetInfo
-
-		require.Equal(t, services.ResponseType_COST_ANSWER, infoQuery.Header.ResponseType)
-		require.Nil(t, infoQuery.Header.Payment, "the ping probe must not attach a payment transaction")
-		require.Equal(t, AccountID{Account: treasuryAccountNum}._ToProtobuf().String(), infoQuery.AccountID.String())
+// _CostAnswer returns a COST_ANSWER handler reporting the given precheck status, recording every
+// request it received.
+func _CostAnswer(status services.ResponseCodeEnum, captured *[]*services.Query) func(*services.Query) *services.Response {
+	var mu sync.Mutex
+	return func(request *services.Query) *services.Response {
+		mu.Lock()
+		*captured = append(*captured, request)
+		mu.Unlock()
 
 		return &services.Response{
 			Response: &services.Response_CryptoGetInfo{
 				CryptoGetInfo: &services.CryptoGetInfoResponse{
 					Header: &services.ResponseHeader{
-						NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK,
+						NodeTransactionPrecheckCode: status,
 						ResponseType:                services.ResponseType_COST_ANSWER,
 						Cost:                        25,
 					},
@@ -503,25 +498,141 @@ func TestUnitClientPingReachableNode(t *testing.T) {
 			},
 		}
 	}
+}
 
-	client, server := NewMockClientAndServer([][]interface{}{{probe}})
+// _AssertIsCostAnswerProbe asserts the request is the liveness probe: a COST_ANSWER getAccountInfo
+// for the treasury account, carrying no payment.
+func _AssertIsCostAnswerProbe(t *testing.T, request *services.Query) {
+	t.Helper()
+
+	info, ok := request.Query.(*services.Query_CryptoGetInfo)
+	require.True(t, ok, "probe must be a getAccountInfo query, was: %v", request.Query)
+	require.Equal(t, services.ResponseType_COST_ANSWER, info.CryptoGetInfo.Header.ResponseType)
+	require.Nil(t, info.CryptoGetInfo.Header.Payment, "the probe must not attach a payment transaction")
+	require.Equal(t,
+		AccountID{Account: treasuryAccountNum}._ToProtobuf().String(),
+		info.CryptoGetInfo.AccountID.String())
+}
+
+// Ping probes with an unpaid COST_ANSWER getAccountInfo query, and needs no operator.
+func TestUnitClientPingReachableNode(t *testing.T) {
+	t.Parallel()
+
+	var captured []*services.Query
+	client, server := NewMockClientAndServer([][]interface{}{{_CostAnswer(services.ResponseCodeEnum_OK, &captured)}})
 	defer server.Close()
 
 	client.operator = nil
 
-	err := client.Ping(AccountID{Account: 3})
-	require.NoError(t, err)
-	require.Equal(t, 1, probeCalls, "Ping must send exactly one probe query")
+	require.NoError(t, client.Ping(AccountID{Account: 3}))
+	require.Len(t, captured, 1, "Ping must send exactly one probe query")
+	_AssertIsCostAnswerProbe(t, captured[0])
 }
 
-// TestUnitClientPingBusyNode verifies that the probe is a single attempt: a retryable BUSY
-// precheck fails Ping instead of being retried.
-func TestUnitClientPingBusyNode(t *testing.T) {
+// PingAll probes every node in the network.
+func TestUnitClientPingAllProbesEveryNode(t *testing.T) {
 	t.Parallel()
 
-	probeCalls := 0
-	busy := func(request *services.Query) *services.Response {
-		probeCalls++
+	var node3, node4, node5 []*services.Query
+	client, server := NewMockClientAndServer([][]interface{}{
+		{_CostAnswer(services.ResponseCodeEnum_OK, &node3)},
+		{_CostAnswer(services.ResponseCodeEnum_OK, &node4)},
+		{_CostAnswer(services.ResponseCodeEnum_OK, &node5)},
+	})
+	defer server.Close()
+
+	require.Len(t, client.GetNetwork(), 3)
+	client.PingAll()
+
+	for _, captured := range [][]*services.Query{node3, node4, node5} {
+		require.Len(t, captured, 1)
+		_AssertIsCostAnswerProbe(t, captured[0])
+	}
+}
+
+// A successful probe halves the node's backoff, so a recovered node is retried sooner if it fails
+// again.
+func TestUnitClientPingSuccessDecreasesNodeBackoff(t *testing.T) {
+	t.Parallel()
+
+	var captured []*services.Query
+	client, server := NewMockClientAndServer([][]interface{}{{_CostAnswer(services.ResponseCodeEnum_OK, &captured)}})
+	defer server.Close()
+
+	node, ok := client.network._GetNodeForAccountID(AccountID{Account: 3})
+	require.True(t, ok)
+	node.minBackoff = 250 * time.Millisecond
+	node.currentBackoff = 4 * time.Second
+
+	require.NoError(t, client.Ping(AccountID{Account: 3}))
+	assert.Equal(t, 2*time.Second, node.currentBackoff)
+}
+
+// Ping cannot readmit a node: a node in backoff is never contacted, so the probe fails without
+// reaching the network even if the node has recovered. Readmission happens when the backoff elapses.
+func TestUnitClientPingSkipsNodeInBackoff(t *testing.T) {
+	t.Parallel()
+
+	var captured []*services.Query
+	client, server := NewMockClientAndServer([][]interface{}{{_CostAnswer(services.ResponseCodeEnum_OK, &captured)}})
+	defer server.Close()
+
+	node, ok := client.network._GetNodeForAccountID(AccountID{Account: 3})
+	require.True(t, ok)
+	readmitTime := time.Now().Add(time.Hour)
+	node.readmitTime = &readmitTime
+	require.False(t, node._IsHealthy())
+
+	client.SetMaxAttempts(1)
+
+	require.Error(t, client.Ping(AccountID{Account: 3}))
+	assert.Empty(t, captured, "a node in backoff must not be probed")
+}
+
+// The other half of that contract: a successful probe lowers the backoff but leaves the readmit time
+// and failure count untouched, so a node stays unhealthy until its backoff elapses.
+func TestUnitClientPingSuccessDoesNotClearBackoff(t *testing.T) {
+	t.Parallel()
+
+	var captured []*services.Query
+	client, server := NewMockClientAndServer([][]interface{}{{_CostAnswer(services.ResponseCodeEnum_OK, &captured)}})
+	defer server.Close()
+
+	node, ok := client.network._GetNodeForAccountID(AccountID{Account: 3})
+	require.True(t, ok)
+	// One millisecond past the readmit time: the probe reaches the network while the bookkeeping from
+	// the earlier failure is still in place.
+	readmitTime := time.Now().Add(-time.Millisecond)
+	node.readmitTime = &readmitTime
+	node.badGrpcStatusCount = 3
+
+	require.NoError(t, client.Ping(AccountID{Account: 3}))
+	require.Len(t, captured, 1)
+	assert.Equal(t, &readmitTime, node._GetReadmitTime(), "a successful probe must not clear the readmit time")
+	assert.Equal(t, int64(3), node._GetAttempts(), "a successful probe must not reset the failure count")
+}
+
+// A non-retryable precheck failure surfaces to the caller without a retry.
+func TestUnitClientPingPrecheckFailure(t *testing.T) {
+	t.Parallel()
+
+	var captured []*services.Query
+	invalid := _CostAnswer(services.ResponseCodeEnum_INVALID_ACCOUNT_ID, &captured)
+
+	// Queue extra responses so a wrongly retrying Ping would consume more than one.
+	client, server := NewMockClientAndServer([][]interface{}{{invalid, invalid, invalid}})
+	defer server.Close()
+
+	err := client.Ping(AccountID{Account: 3})
+	require.ErrorContains(t, err, "INVALID_ACCOUNT_ID")
+	require.Len(t, captured, 1, "a non-retryable precheck must not be retried")
+}
+
+// _BusyCostAnswer returns a COST_ANSWER handler that always reports BUSY, a retryable precheck
+// status, and counts its calls.
+func _BusyCostAnswer(calls *int) func(*services.Query) *services.Response {
+	return func(request *services.Query) *services.Response {
+		*calls++
 		return &services.Response{
 			Response: &services.Response_CryptoGetInfo{
 				CryptoGetInfo: &services.CryptoGetInfoResponse{
@@ -533,32 +644,83 @@ func TestUnitClientPingBusyNode(t *testing.T) {
 			},
 		}
 	}
+}
+
+// With MaxAttempts(1) — the configuration for pruning dead nodes with PingAll — a retryable BUSY
+// precheck fails Ping without a retry.
+func TestUnitClientPingBusyNodeSingleAttempt(t *testing.T) {
+	t.Parallel()
+
+	probeCalls := 0
+	busy := _BusyCostAnswer(&probeCalls)
 
 	// Queue several responses so a wrongly retrying Ping would consume more than one.
 	client, server := NewMockClientAndServer([][]interface{}{{busy, busy, busy}})
 	defer server.Close()
 
+	client.SetMaxAttempts(1)
+
 	err := client.Ping(AccountID{Account: 3})
 	require.Error(t, err)
 	require.ErrorContains(t, err, "BUSY")
-	require.Equal(t, 1, probeCalls, "Ping must not retry the probe")
+	require.Equal(t, 1, probeCalls, "Ping must not retry when the client allows a single attempt")
 }
 
-// TestUnitClientPingUnknownNode verifies that Ping errors when the node is not part of the
-// client's network.
+// Ping imposes no retry limit of its own: BUSY is retried up to the client's MaxAttempts, matching
+// the Java SDK, which leaves the fail-fast choice to the caller.
+func TestUnitClientPingBusyNodeFollowsClientMaxAttempts(t *testing.T) {
+	t.Parallel()
+
+	probeCalls := 0
+	busy := _BusyCostAnswer(&probeCalls)
+
+	client, server := NewMockClientAndServer([][]interface{}{{busy, busy, busy, busy, busy}})
+	defer server.Close()
+
+	client.SetMaxAttempts(3)
+
+	err := client.Ping(AccountID{Account: 3})
+	require.Error(t, err)
+	require.ErrorContains(t, err, "BUSY")
+	require.Equal(t, 3, probeCalls, "Ping must retry up to the client's MaxAttempts")
+}
+
+// The retry behaviour Ping relies on: a query with no max retry of its own follows the client's
+// MaxAttempts.
+func TestUnitQueryClientMaxAttemptsAppliesWithoutMaxRetry(t *testing.T) {
+	t.Parallel()
+
+	queryCalls := 0
+	busy := _BusyCostAnswer(&queryCalls)
+
+	client, server := NewMockClientAndServer([][]interface{}{{busy, busy, busy, busy, busy}})
+	defer server.Close()
+
+	client.SetMaxAttempts(3)
+
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: 3}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		GetCost(client)
+	require.Error(t, err)
+	require.Equal(t, 3, queryCalls, "the client's MaxAttempts must still apply when the request sets no max retry")
+}
+
+// Ping rejects a node that is not part of the client's network.
 func TestUnitClientPingUnknownNode(t *testing.T) {
 	t.Parallel()
 
 	client, server := NewMockClientAndServer([][]interface{}{{}})
 	defer server.Close()
 
-	err := client.Ping(AccountID{Account: 99})
-	require.Error(t, err)
-	require.ErrorContains(t, err, "not found in the client's network")
+	unknown := AccountID{Account: 99}
+	var invalidNode ErrInvalidNodeAccountIDSet
+	require.ErrorAs(t, client.Ping(unknown), &invalidNode)
+	assert.Equal(t, unknown, invalidNode.NodeAccountID)
 }
 
-// TestUnitClientPingUnreachableNode verifies that Ping fails when the single-attempt probe
-// fails at the gRPC layer.
+// Ping surfaces a gRPC transport failure and records it against the node, which is what lets PingAll
+// prune dead nodes.
 func TestUnitClientPingUnreachableNode(t *testing.T) {
 	t.Parallel()
 
@@ -566,7 +728,31 @@ func TestUnitClientPingUnreachableNode(t *testing.T) {
 	// Close the server so the probe fails at the gRPC layer.
 	server.Close()
 	client.SetGrpcDeadline(500 * time.Millisecond)
+	client.SetMaxAttempts(1)
+
+	node, ok := client.network._GetNodeForAccountID(AccountID{Account: 3})
+	require.True(t, ok)
 
 	err := client.Ping(AccountID{Account: 3})
-	require.Error(t, err)
+	require.ErrorContains(t, err, "Unavailable")
+	assert.Equal(t, int64(1), node._GetAttempts(), "a failed probe must be recorded against the node")
+}
+
+// Ping fails fast against an address nothing is listening on, the case PingAll with
+// SetMaxAttempts(1) is meant to prune.
+func TestUnitClientPingUnreachableAddress(t *testing.T) {
+	t.Parallel()
+
+	// Port 1 is not bound, so the node resolves within the network but the connection is refused.
+	unreachable := AccountID{Account: 99}
+	client, err := ClientForNetworkV2(map[string]AccountID{"127.0.0.1:1": unreachable})
+	require.NoError(t, err)
+	client.SetMaxAttempts(1)
+
+	start := time.Now()
+	err = client.Ping(unreachable)
+	elapsed := time.Since(start)
+
+	require.ErrorContains(t, err, "Unavailable")
+	assert.Less(t, elapsed, 30*time.Second, "a single-attempt Ping must fail fast")
 }

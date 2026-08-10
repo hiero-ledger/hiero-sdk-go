@@ -162,3 +162,52 @@ func TestClientIntegrationForMirrorNetworkWithShardAndRealm(t *testing.T) {
 	require.Nil(t, client)
 	assert.Contains(t, err.Error(), "failed to query address book: no healthy nodes")
 }
+
+// Every node of a live network answers the probe, and PingAll probes every node.
+func TestIntegrationClientPingAllNetworkNodes(t *testing.T) { // nolint
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	for address, nodeID := range env.Client.GetNetwork() {
+		require.NoError(t, env.Client.Ping(nodeID), "node %s at %s should be reachable", nodeID, address)
+	}
+
+	// PingAll swallows errors, so a rising use count is the proof it probed - valid only if healthy first.
+	usesBefore := make(map[AccountID]int64)
+	for address, nodeID := range env.Client.GetNetwork() {
+		node, ok := env.Client.network._GetNodeForAccountID(nodeID)
+		require.True(t, ok)
+		require.True(t, node._IsHealthy(), "node %s at %s should be healthy before PingAll", nodeID, address)
+		usesBefore[nodeID] = node._GetUseCount()
+	}
+
+	env.Client.PingAll()
+	for address, nodeID := range env.Client.GetNetwork() {
+		node, ok := env.Client.network._GetNodeForAccountID(nodeID)
+		require.True(t, ok)
+		assert.Greater(t, node._GetUseCount(), usesBefore[nodeID],
+			"PingAll must probe node %s at %s", nodeID, address)
+		// Only transport failures back a node off, so this catches unreachability, not every failure.
+		assert.True(t, node._IsHealthy(), "node %s at %s should stay healthy after PingAll", nodeID, address)
+	}
+}
+
+// The probe works against a live node with no operator configured: a COST_ANSWER query is free and
+// unsigned, so it attaches no payment.
+func TestIntegrationClientPingWithoutOperator(t *testing.T) { // nolint
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	client, err := ClientForNetworkV2(env.Client.GetNetwork())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, client.Close())
+	}()
+	require.Nil(t, client.operator)
+
+	for _, nodeID := range client.GetNetwork() {
+		require.NoError(t, client.Ping(nodeID))
+	}
+}

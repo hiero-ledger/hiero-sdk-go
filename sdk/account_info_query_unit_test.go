@@ -147,8 +147,8 @@ func TestUnitAccountInfoQueryMock(t *testing.T) {
 	require.Equal(t, HbarFromTinybar(2), cost)
 }
 
-// TestUnitAccountInfoQueryExecuteWithoutOperator verifies that executing a paid query on a
-// client without an operator fails cleanly instead of panicking when building the payment.
+// A paid query on a client without an operator must fail cleanly instead of panicking while
+// building the payment.
 func TestUnitAccountInfoQueryExecuteWithoutOperator(t *testing.T) {
 	t.Parallel()
 
@@ -166,7 +166,7 @@ func TestUnitAccountInfoQueryExecuteWithoutOperator(t *testing.T) {
 	require.ErrorIs(t, err, errNoClientProvided)
 }
 
-// TestUnitAccountInfoQueryGetCostNilClient verifies that GetCost fails cleanly without a client.
+// GetCost must fail cleanly without a client.
 func TestUnitAccountInfoQueryGetCostNilClient(t *testing.T) {
 	t.Parallel()
 
