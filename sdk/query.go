@@ -83,7 +83,7 @@ func (q *Query) GetQueryPayment() Hbar {
 }
 
 // GetCost returns the fee that would be charged to get the requested information (if a cost was requested).
-// COST_ANSWER queries are free and unsigned, so no operator is required.
+// COST_ANSWER queries are free, so no operator is required.
 func (q *Query) getCost(client *Client, e QueryInterface) (Hbar, error) {
 	if client == nil {
 		return Hbar{}, errNoClientProvided
@@ -264,6 +264,13 @@ func (q *Query) shouldRetry(e Executable, response interface{}) _ExecutionState 
 }
 
 func (q *Query) generatePayments(client *Client, cost Hbar) (*services.Transaction, error) {
+	// Only the operator can pay for and sign a query payment, so without one there is nothing to
+	// attach. Reachable when a COST_ANSWER query runs on an object a previous Execute already
+	// attached the client to; the caller sends the query unpaid, which is what COST_ANSWER wants.
+	if client.operator == nil {
+		return nil, errQueryPaymentRequiresOperator
+	}
+
 	var tx *services.Transaction
 	var err error
 	nodeID := q.nodeAccountIDs._GetCurrent()

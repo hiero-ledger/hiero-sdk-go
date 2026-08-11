@@ -762,7 +762,7 @@ const treasuryAccountNum = 2
 // successful Ping.
 func (client *Client) Ping(nodeID AccountID) error {
 	_, err := NewAccountInfoQuery().
-		SetAccountID(AccountID{Shard: client.shard, Realm: client.realm, Account: treasuryAccountNum}).
+		SetAccountID(AccountID{Account: treasuryAccountNum}).
 		SetNodeAccountIDs([]AccountID{nodeID}).
 		GetCost(client)
 	return err
