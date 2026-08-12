@@ -749,15 +749,22 @@ func (client *Client) GetOperatorPublicKey() PublicKey {
 	return PublicKey{}
 }
 
-// Ping sends an AccountBalanceQuery to the specified _Node returning nil if no
-// problems occur. Otherwise, an error representing the status of the _Node will
-// be returned.
-func (client *Client) Ping(nodeID AccountID) error {
-	_, err := NewAccountBalanceQuery().
-		SetNodeAccountIDs([]AccountID{nodeID}).
-		SetAccountID(client.GetOperatorAccountID()).
-		Execute(client)
+// treasuryAccountNum is the treasury system account, present on every network from genesis.
+const treasuryAccountNum = 2
 
+// Ping checks the liveness of the given consensus node, returning nil if the node is reachable.
+//
+// It sends a COST_ANSWER getAccountInfo query for the treasury account, which a healthy node answers
+// with the query fee without executing it: nothing is charged and no operator is required.
+//
+// The probe follows the client's retry settings. A node already in backoff is never contacted, so
+// Ping fails without reaching the network; readmission happens when the backoff elapses, not on a
+// successful Ping.
+func (client *Client) Ping(nodeID AccountID) error {
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: treasuryAccountNum}).
+		SetNodeAccountIDs([]AccountID{nodeID}).
+		GetCost(client)
 	return err
 }
 

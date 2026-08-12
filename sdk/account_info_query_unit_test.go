@@ -146,3 +146,65 @@ func TestUnitAccountInfoQueryMock(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, HbarFromTinybar(2), cost)
 }
+
+// A paid query on a client without an operator must fail cleanly instead of panicking while
+// building the payment.
+func TestUnitAccountInfoQueryExecuteWithoutOperator(t *testing.T) {
+	t.Parallel()
+
+	client, server := NewMockClientAndServer([][]interface{}{{}})
+	defer server.Close()
+
+	client.operator = nil
+
+	// An explicit payment skips the cost lookup and goes straight to payment signing.
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: 1800}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetQueryPayment(NewHbar(1)).
+		Execute(client)
+	require.ErrorIs(t, err, errNoClientProvided)
+}
+
+// A COST_ANSWER query is unpaid, so it must go out without a payment even on a query object a
+// previous Execute already attached the client to - reaching for the absent operator there would
+// panic while building the payment.
+func TestUnitAccountInfoQueryGetCostAfterExecuteWithoutOperator(t *testing.T) {
+	t.Parallel()
+
+	var captured []*services.Query
+	client, server := NewMockClientAndServer([][]interface{}{{_CostAnswer(services.ResponseCodeEnum_OK, &captured)}})
+	defer server.Close()
+
+	client.operator = nil
+
+	query := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: 1800}).
+		SetNodeAccountIDs([]AccountID{{Account: 3}})
+
+	// Fails for want of an operator, but leaves the client on the query.
+	_, err := query.Execute(client)
+	require.ErrorIs(t, err, errNoClientProvided)
+	require.NotNil(t, query.client)
+
+	cost, err := query.GetCost(client)
+	require.NoError(t, err)
+	require.Equal(t, HbarFromTinybar(25), cost)
+
+	// The failed Execute must not have reached the network, so this is the cost lookup.
+	require.Len(t, captured, 1)
+	info, ok := captured[0].Query.(*services.Query_CryptoGetInfo)
+	require.True(t, ok)
+	require.Equal(t, services.ResponseType_COST_ANSWER, info.CryptoGetInfo.Header.ResponseType)
+	require.Nil(t, info.CryptoGetInfo.Header.Payment, "a COST_ANSWER query must not attach a payment transaction")
+}
+
+// GetCost must fail cleanly without a client.
+func TestUnitAccountInfoQueryGetCostNilClient(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewAccountInfoQuery().
+		SetAccountID(AccountID{Account: 1800}).
+		GetCost(nil)
+	require.ErrorIs(t, err, errNoClientProvided)
+}
