@@ -1,3 +1,12 @@
+## v2.83.0
+
+### Changed
+- `Client.Ping` / `Client.PingAll` now probe a node with a free `COST_ANSWER` `AccountInfoQuery` for the treasury account instead of an `AccountBalanceQuery`, which consensus node v0.77 no longer serves. Stage 1 of the cross-SDK [`AccountBalanceQuery` deprecation proposal](https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/account-balance-query-deprecation.md) [#1799](https://github.com/hiero-ledger/hiero-sdk-go/pull/1799)
+
+### Fixed
+- Executing a paid query on a client with no operator now returns an error instead of panicking [#1799](https://github.com/hiero-ledger/hiero-sdk-go/pull/1799)
+- Query payments now use the transaction ID set via `SetPaymentTransactionID` instead of always generating a new one [#1790](https://github.com/hiero-ledger/hiero-sdk-go/pull/1790)
+
 ## v2.82.0
 
 ### Added
