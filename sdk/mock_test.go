@@ -25,34 +25,36 @@ import (
 
 func TestUnitMockQuery(t *testing.T) {
 	t.Parallel()
+
+	key, _ := PrivateKeyFromStringEd25519(mockPrivateKey)
+
+	// Exercises the generic query path, including a BUSY retry. Uses AccountInfoQuery because the
+	// deprecated AccountBalanceQuery can no longer execute.
 	responses := [][]interface{}{
 		{
 			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_ANSWER_ONLY},
+				Response: &services.Response_CryptoGetInfo{
+					CryptoGetInfo: &services.CryptoGetInfoResponse{
+						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY, ResponseType: services.ResponseType_COST_ANSWER},
 					},
 				},
 			},
 			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_COST_ANSWER, Cost: 0},
-						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
-							AccountNum: 1800,
-						}},
-						Balance: 2000,
+				Response: &services.Response_CryptoGetInfo{
+					CryptoGetInfo: &services.CryptoGetInfoResponse{
+						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_COST_ANSWER, Cost: 25},
 					},
 				},
 			},
 			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_ANSWER_ONLY, Cost: 0},
-						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
-							AccountNum: 1800,
-						}},
-						Balance: 2000,
+				Response: &services.Response_CryptoGetInfo{
+					CryptoGetInfo: &services.CryptoGetInfoResponse{
+						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_ANSWER_ONLY, Cost: 25},
+						AccountInfo: &services.CryptoGetInfoResponse_AccountInfo{
+							AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{AccountNum: 1800}},
+							Key:       key._ToProtoKey(),
+							Balance:   2000,
+						},
 					},
 				},
 			},
@@ -62,7 +64,7 @@ func TestUnitMockQuery(t *testing.T) {
 	client, server := NewMockClientAndServer(responses)
 	defer server.Close()
 
-	_, err := NewAccountBalanceQuery().
+	_, err := NewAccountInfoQuery().
 		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetAccountID(AccountID{Account: 1800}).
 		Execute(client)

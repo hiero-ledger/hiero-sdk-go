@@ -10,47 +10,11 @@ import (
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/stretchr/testify/require"
 )
 
-func TestUnitAccountBalanceQueryValidate(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	require.NoError(t, err)
-	client.SetAutoValidateChecksums(true)
-	accountID, err := AccountIDFromString("0.0.123-esxsf")
-	require.NoError(t, err)
-
-	balanceQuery := NewAccountBalanceQuery().
-		SetAccountID(accountID)
-
-	err = balanceQuery.validateNetworkOnIDs(client)
-	require.NoError(t, err)
-}
-
-func TestUnitAccountBalanceQueryValidateWrong(t *testing.T) {
-	t.Parallel()
-
-	client, err := _NewMockClient()
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	require.NoError(t, err)
-	client.SetAutoValidateChecksums(true)
-	accountID, err := AccountIDFromString("0.0.123-rmkykd")
-	require.NoError(t, err)
-
-	balanceQuery := NewAccountBalanceQuery().
-		SetAccountID(accountID)
-
-	err = balanceQuery.validateNetworkOnIDs(client)
-	assert.Error(t, err)
-	if err != nil {
-		assert.Equal(t, "network mismatch or wrong checksum given, given checksum: rmkykd, correct checksum esxsf, network: testnet", err.Error())
-	}
-}
+// Checksum validation is no longer part of this query -- it cannot execute, so it never validates
+// IDs. TestUnitMirrorNodeAccountBalanceQueryValidateChecksum covers the replacement.
 
 func TestUnitAccountBalanceQueryGet(t *testing.T) {
 	t.Parallel()
@@ -85,11 +49,6 @@ func TestUnitAccountBalanceQueryCoverage(t *testing.T) {
 	nodeAccountID := []AccountID{{Account: 10}}
 	transactionID := TransactionIDGenerate(AccountID{Account: 324})
 
-	client, err := _NewMockClient()
-	client.SetLedgerID(*NewLedgerIDTestnet())
-	require.NoError(t, err)
-	client.SetAutoValidateChecksums(true)
-
 	query := NewAccountBalanceQuery().
 		SetMaxRetry(3).
 		SetMaxBackoff(time.Second * 30).
@@ -101,13 +60,9 @@ func TestUnitAccountBalanceQueryCoverage(t *testing.T) {
 		SetMaxQueryPayment(NewHbar(23)).
 		SetQueryPayment(NewHbar(3))
 
-	err = query.validateNetworkOnIDs(client)
-
-	require.NoError(t, err)
 	query.GetNodeAccountIDs()
 	query.GetMaxBackoff()
 	query.GetMinBackoff()
-	query.getName()
 	query.GetAccountID()
 	query.GetContractID()
 
@@ -116,53 +71,47 @@ func TestUnitAccountBalanceQueryCoverage(t *testing.T) {
 	bal._ToProtobuf()
 }
 
-func TestUnitAccountBalanceQueryMock(t *testing.T) {
+// Execute must return the deprecation error without any consensus-node call; the mock fails the
+// test on any request it receives.
+func TestUnitAccountBalanceQueryDeprecatedExecute(t *testing.T) {
 	t.Parallel()
 
-	responses := [][]interface{}{
-		{
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_COST_ANSWER, Cost: 0},
-						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
-							AccountNum: 1800,
-						}},
-						Balance: 2000,
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_ANSWER_ONLY, Cost: 0},
-						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
-							AccountNum: 1800,
-						}},
-						Balance: 2000,
-					},
-				},
-			},
-		},
+	call := func(request *services.Query) *services.Response {
+		t.Error("AccountBalanceQuery.Execute must not make any consensus node calls")
+		return &services.Response{}
 	}
+
+	responses := [][]interface{}{{call}}
 
 	client, server := NewMockClientAndServer(responses)
 	defer server.Close()
 
-	query := NewAccountBalanceQuery().
+	_, err := NewAccountBalanceQuery().
 		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetAccountID(AccountID{Account: 1800}).
-		SetContractID(ContractID{Contract: 3})
+		Execute(client)
 
-	_, err := query.Execute(client)
-	require.NoError(t, err)
+	require.ErrorIs(t, err, errAccountBalanceQueryDeprecated)
+	require.EqualError(t, err, "AccountBalanceQuery is no longer supported; use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances")
+}
+
+// GetCost must also return the deprecation error without contacting the network.
+func TestUnitAccountBalanceQueryDeprecatedGetCost(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewAccountBalanceQuery().
+		SetAccountID(AccountID{Account: 1800}).
+		GetCost(nil)
+
+	require.ErrorIs(t, err, errAccountBalanceQueryDeprecated)
 }
 
 func TestUnitAccountBalanceQueryNoClient(t *testing.T) {
 	t.Parallel()
 
+	// Execute now returns the deprecation error before any client/network validation.
 	_, err := NewAccountBalanceQuery().
 		Execute(nil)
 
-	require.ErrorContains(t, err, "client` must be provided and have an _Operator")
+	require.ErrorIs(t, err, errAccountBalanceQueryDeprecated)
 }

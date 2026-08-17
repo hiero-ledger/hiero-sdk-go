@@ -21,7 +21,9 @@ var errNoClientOrTransactionID = errors.New("`client` must have an `_Operator` o
 var errNoClientOrTransactionIDOrNodeId = errors.New("`client` must be provided or both `nodeId` and `transactionId` must be set") // nolint
 var errClientOperatorSigning = errors.New("`client` must have an `_Operator` to sign with the _Operator")
 var errNoClientProvided = errors.New("`client` must be provided and have an _Operator")
+
 var errQueryPaymentRequiresOperator = errors.New("`client` must have an _Operator to pay for a query")
+var errAccountBalanceQueryDeprecated = errors.New("AccountBalanceQuery is no longer supported; use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances")
 var errTransactionIsNotFrozen = errors.New("transaction is not frozen")
 var errInnerTransactionShouldBeFrozen = errors.New("inner transaction should be frozen")
 var errFailedToDeserializeBytes = errors.New("failed to deserialize bytes")

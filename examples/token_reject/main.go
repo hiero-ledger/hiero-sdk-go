@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -119,7 +120,11 @@ func main() {
 		panic(fmt.Sprintf("%v : Error transferring tokens", err))
 	}
 
-	tokenBalance, err := hiero.NewAccountBalanceQuery().SetAccountID(receiver).Execute(client)
+	// Poll until the mirror node has ingested the transfer of the fungible tokens and the 3 NFTs.
+	tokenBalance, err := balance_helper.WaitForMirrorBalance(client, receiver,
+		func(b hiero.AccountBalance) bool {
+			return b.Tokens.Get(tokenID) == 1_000_000 && b.Tokens.Get(nftID) == 3
+		})
 	if err != nil {
 		panic(fmt.Sprintf("%v : Error getting balance", err))
 	}
@@ -127,7 +132,7 @@ func main() {
 	fmt.Println("Fungible token balance for receiver account before reject: ", tokenBalance.Tokens.Get(tokenID))
 	fmt.Println("NFT balance for receiver account before reject: ", tokenBalance.Tokens.Get(nftID))
 
-	tokenBalance, err = hiero.NewAccountBalanceQuery().SetAccountID(treasury).Execute(client)
+	tokenBalance, err = hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(treasury).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : Error getting balance", err))
 	}
@@ -157,7 +162,9 @@ func main() {
 		panic(fmt.Sprintf("%v : Error rejecting tokens", err))
 	}
 
-	tokenBalance, err = hiero.NewAccountBalanceQuery().SetAccountID(receiver).Execute(client)
+	// Poll until the mirror node has ingested both rejects and the receiver holds nothing.
+	tokenBalance, err = balance_helper.WaitForMirrorBalance(client, receiver,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenID) == 0 && b.Tokens.Get(nftID) == 0 })
 	if err != nil {
 		panic(fmt.Sprintf("%v : Error getting balance", err))
 	}
@@ -165,7 +172,7 @@ func main() {
 	fmt.Println("Fungible token balance for receiver account after reject: ", tokenBalance.Tokens.Get(tokenID))
 	fmt.Println("NFT balance for receiver account after reject: ", tokenBalance.Tokens.Get(nftID))
 
-	tokenBalance, err = hiero.NewAccountBalanceQuery().SetAccountID(treasury).Execute(client)
+	tokenBalance, err = hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(treasury).Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : Error getting balance", err))
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -288,10 +289,9 @@ func main() {
 	}
 
 	// Check alice's balance before Bob transfers 20 tokens to Charlie
-	// This is a free query
-	aliceBalance1, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
+	// This is a free query; poll until the mirror node responds for the account.
+	aliceBalance1, err := balance_helper.WaitForMirrorBalance(client, aliceId,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting account balance 1 for alice", err))
 	}
@@ -322,10 +322,9 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting record for token transfer transaction for bob", err))
 	}
 
-	// Query to check alice's balance
-	aliceBalance2, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
+	// Alice's balance, polling until the mirror node has ingested the custom-fee credit.
+	aliceBalance2, err := balance_helper.WaitForMirrorBalance(client, aliceId,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != aliceBalance1.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting account balance 2 for alice", err))
 	}
@@ -395,7 +394,7 @@ func main() {
 	}
 
 	// Another account balance query to check alice's token balance before Bob transfers 20 tokens to Charlie
-	aliceBalance3, err := hiero.NewAccountBalanceQuery().
+	aliceBalance3, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(aliceId).
 		Execute(client)
 	if err != nil {
@@ -425,10 +424,9 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting record for token transfer transaction for bob", err))
 	}
 
-	// Checking alice's token balance again
-	aliceBalance4, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
+	// Alice's balance again, polling until the fractional-fee credit is ingested.
+	aliceBalance4, err := balance_helper.WaitForMirrorBalance(client, aliceId,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenId) != aliceBalance3.Tokens.Get(tokenId) })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting account balance 2 for alice", err))
 	}

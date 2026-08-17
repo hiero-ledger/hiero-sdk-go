@@ -35,6 +35,21 @@ func _AccountBalanceFromProtobuf(pb *services.CryptoGetAccountBalanceResponse) A
 	}
 }
 
+// _AccountBalanceFromMirrorNode builds an AccountBalance from mirror node REST data. balances and
+// decimals are keyed by token ID string for the public maps, and tokens carries the same balances
+// keyed by TokenID so the deprecated Token map stays in sync as the protobuf path does.
+//
+// The caller passes both keyings because it has already parsed each token ID; re-deriving one from
+// the other here would parse every ID a second time. The maps are adopted, not copied.
+func _AccountBalanceFromMirrorNode(hbars Hbar, balances map[string]uint64, decimals map[string]uint64, tokens map[TokenID]uint64) AccountBalance {
+	return AccountBalance{
+		Hbars:         hbars,
+		Token:         tokens,
+		Tokens:        TokenBalanceMap{balances: balances},
+		TokenDecimals: TokenDecimalMap{decimals: decimals},
+	}
+}
+
 func (balance *AccountBalance) _ToProtobuf() *services.CryptoGetAccountBalanceResponse { //nolint
 	return &services.CryptoGetAccountBalanceResponse{
 		Balance: uint64(balance.Hbars.AsTinybar()),

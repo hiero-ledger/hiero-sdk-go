@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -91,14 +92,14 @@ func main() {
 	 * Step 3:
 	 * Submit a message to that topic, paid for by alice, specifying max custom fee amount bigger than the topic’s amount.
 	 */
-	accountBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Poll until the mirror node has ingested the newly created account.
+	accountBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, *alice,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v error getting account balance", err))
 	}
 
-	feeCollectorBalanceBefore, err := hiero.NewAccountBalanceQuery().
+	feeCollectorBalanceBefore, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(operatorAccountID).
 		Execute(client)
 	if err != nil {
@@ -132,14 +133,16 @@ func main() {
 	 * Step 4:
 	 * Verify alice was debited the fee amount and the fee collector account was credited the amount.
 	 */
-	accountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Poll until the mirror node has ingested the message submission alice paid the fee for.
+	accountBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, *alice,
+		func(b hiero.AccountBalance) bool {
+			return b.Hbars.AsTinybar() != accountBalanceBefore.Hbars.AsTinybar()
+		})
 	if err != nil {
 		panic(fmt.Sprintf("%v error getting account balance", err))
 	}
 
-	feeCollectorBalanceAfter, err := hiero.NewAccountBalanceQuery().
+	feeCollectorBalanceAfter, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(operatorAccountID).
 		Execute(client)
 	if err != nil {
@@ -216,14 +219,14 @@ func main() {
 	 * Step 7:
 	 * Submit another message to that topic, paid by alice, without specifying max custom fee amount.
 	 */
-	accountBalanceBefore, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Poll until the mirror node has ingested the token transfer that credited alice 1 token.
+	accountBalanceBefore, err = balance_helper.WaitForMirrorBalance(client, *alice,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenID) == 1 })
 	if err != nil {
 		panic(fmt.Sprintf("%v error getting account balance", err))
 	}
 
-	feeCollectorBalanceBefore, err = hiero.NewAccountBalanceQuery().
+	feeCollectorBalanceBefore, err = hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(operatorAccountID).
 		Execute(client)
 	if err != nil {
@@ -247,9 +250,11 @@ func main() {
 	fmt.Println("Message submitted successfully")
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	feeCollectorBalanceAfter, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(operatorAccountID).
-		Execute(client)
+	// Poll until the submission is ingested and the collector holds the 1-token custom fee.
+	feeCollectorBalanceAfter, err = balance_helper.WaitForMirrorBalance(client, operatorAccountID,
+		func(b hiero.AccountBalance) bool {
+			return b.Tokens.Get(tokenID) == feeCollectorBalanceBefore.Tokens.Get(tokenID)+1
+		})
 	if err != nil {
 		panic(fmt.Sprintf("%v error getting account balance", err))
 	}
@@ -258,7 +263,7 @@ func main() {
 	 * Step 8:
 	 * Verify alice was debited the new fee amount and the fee collector account was credited the amount.
 	 */
-	accountBalanceAfter, err = hiero.NewAccountBalanceQuery().
+	accountBalanceAfter, err = hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(*alice).
 		Execute(client)
 	if err != nil {
@@ -315,9 +320,9 @@ func main() {
 	 * Step 11:
 	 * Submit another message to that topic, paid with bob, without specifying max custom fee amount.
 	 */
-	accountBalanceBefore, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(*bob).
-		Execute(client)
+	// Poll until the mirror node has ingested the newly created account.
+	accountBalanceBefore, err = balance_helper.WaitForMirrorBalance(client, *bob,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v error getting account balance", err))
 	}
@@ -344,9 +349,12 @@ func main() {
 	 * Step 12:
 	 * Verify bob was not debited the fee amount.
 	 */
-	accountBalanceAfter, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(*bob).
-		Execute(client)
+	// Poll until bob's submission is ingested; he is exempt from the custom fee, not the
+	// transaction fee.
+	accountBalanceAfter, err = balance_helper.WaitForMirrorBalance(client, *bob,
+		func(b hiero.AccountBalance) bool {
+			return b.Hbars.AsTinybar() != accountBalanceBefore.Hbars.AsTinybar()
+		})
 	if err != nil {
 		panic(fmt.Sprintf("%v error getting account balance", err))
 	}

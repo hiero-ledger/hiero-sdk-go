@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -106,9 +107,9 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting transfer transaction receipt", err))
 	}
 
-	balance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*aliasAccountID).
-		Execute(client)
+	// Poll until the mirror node has ingested the auto-created account.
+	balance, err := balance_helper.WaitForMirrorBalance(client, *aliasAccountID,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error retrieving balance", err))
 	}

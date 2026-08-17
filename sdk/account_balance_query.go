@@ -10,6 +10,13 @@ import (
 
 // AccountBalanceQuery gets the balance of a CryptoCurrency account. This returns only the balance, so it is a smaller
 // and faster reply than AccountInfoQuery, which returns the balance plus additional information.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
+//
+// Consensus node v0.77 no longer serves CryptoGetAccountBalance, so Execute and GetCost return
+// errAccountBalanceQueryDeprecated without contacting the network. The type and its setters are
+// retained so existing code keeps compiling; none of them affect the outcome, and the query never
+// reaches the _Execute loop (hence no getMethod/buildQuery/getQueryResponse implementations).
 type AccountBalanceQuery struct {
 	Query
 	accountID  *AccountID
@@ -20,6 +27,8 @@ type AccountBalanceQuery struct {
 // an AccountBalanceQuery.
 // It is recommended that you use this for creating new instances of an AccountBalanceQuery
 // instead of manually creating an instance of the struct.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
 func NewAccountBalanceQuery() *AccountBalanceQuery {
 	header := services.QueryHeader{}
 	return &AccountBalanceQuery{
@@ -69,26 +78,18 @@ func (q *AccountBalanceQuery) GetContractID() ContractID {
 	return *q.contractID
 }
 
-func (q *AccountBalanceQuery) GetCost(client *Client) (Hbar, error) {
-	return q.Query.getCost(client, q)
+// GetCost returns an error immediately without any network request. The client is ignored.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
+func (q *AccountBalanceQuery) GetCost(_ *Client) (Hbar, error) {
+	return Hbar{}, errAccountBalanceQueryDeprecated
 }
 
-// Execute executes the query with the provided client
-func (q *AccountBalanceQuery) Execute(client *Client) (AccountBalance, error) {
-	if client == nil {
-		return AccountBalance{}, errNoClientProvided
-	}
-
-	err := q.validateNetworkOnIDs(client)
-	if err != nil {
-		return AccountBalance{}, err
-	}
-
-	resp, err := q.Query.execute(client, q)
-	if err != nil {
-		return AccountBalance{}, err
-	}
-	return _AccountBalanceFromProtobuf(resp.GetCryptogetAccountBalance()), nil
+// Execute returns an error immediately without any network request. The client is ignored.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
+func (q *AccountBalanceQuery) Execute(_ *Client) (AccountBalance, error) {
+	return AccountBalance{}, errAccountBalanceQueryDeprecated
 }
 
 // SetMaxQueryPayment sets the maximum payment allowed for this query.
@@ -136,66 +137,4 @@ func (q *AccountBalanceQuery) SetPaymentTransactionID(transactionID TransactionI
 func (q *AccountBalanceQuery) SetLogLevel(level LogLevel) *AccountBalanceQuery {
 	q.Query.SetLogLevel(level)
 	return q
-}
-
-// ---------- Parent functions specific implementation ----------
-
-func (q *AccountBalanceQuery) getMethod(channel *_Channel) _Method {
-	return _Method{
-		query: channel._GetCrypto().CryptoGetBalance,
-	}
-}
-
-func (q *AccountBalanceQuery) getName() string {
-	return "AccountBalanceQuery"
-}
-
-func (q *AccountBalanceQuery) buildProtoBody() *services.CryptoGetAccountBalanceQuery {
-	pb := services.CryptoGetAccountBalanceQuery{Header: &services.QueryHeader{}}
-
-	if q.accountID != nil {
-		pb.BalanceSource = &services.CryptoGetAccountBalanceQuery_AccountID{
-			AccountID: q.accountID._ToProtobuf(),
-		}
-	}
-
-	if q.contractID != nil {
-		pb.BalanceSource = &services.CryptoGetAccountBalanceQuery_ContractID{
-			ContractID: q.contractID._ToProtobuf(),
-		}
-	}
-	return &pb
-}
-func (q *AccountBalanceQuery) buildQuery() *services.Query {
-	pb := q.buildProtoBody()
-
-	return &services.Query{
-		Query: &services.Query_CryptogetAccountBalance{
-			CryptogetAccountBalance: pb,
-		},
-	}
-}
-
-func (q *AccountBalanceQuery) validateNetworkOnIDs(client *Client) error {
-	if client == nil || !client.autoValidateChecksums {
-		return nil
-	}
-
-	if q.accountID != nil {
-		if err := q.accountID.ValidateChecksum(client); err != nil {
-			return err
-		}
-	}
-
-	if q.contractID != nil {
-		if err := q.contractID.ValidateChecksum(client); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-func (q *AccountBalanceQuery) getQueryResponse(response *services.Response) queryResponse {
-	return response.GetCryptogetAccountBalance()
 }

@@ -83,7 +83,7 @@ func TestIntegrationNodeForQuery(t *testing.T) {
 	client.SetMaxAttempts(3)
 	nodeAccountIDs := map[string]struct{}{}
 	for i := 0; i < 5; i++ {
-		_, err := NewAccountBalanceQuery().
+		_, err := NewAccountInfoQuery().
 			SetAccountID(AccountID{Account: 3}).
 			Execute(client)
 		require.NoError(t, err)
@@ -125,13 +125,13 @@ func TestIntegrationNodeForTransactionSourceListUnchanged(t *testing.T) {
 	client.SetLedgerID(*ledger)
 	client.SetMaxAttempts(3)
 
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
 		Execute(client)
 	expectedHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
 	copy(expectedHealthyNodes, client.network.healthyNodes)
 	resultHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
 		Execute(client)
 	copy(resultHealthyNodes, client.network.healthyNodes)
@@ -163,13 +163,13 @@ func TestIntegrationNodeForQuerySourceListUnchanged(t *testing.T) {
 	client.SetLedgerID(*ledger)
 	client.SetMaxAttempts(3)
 
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
 		Execute(client)
 	expectedHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
 	copy(expectedHealthyNodes, client.network.healthyNodes)
 	resultHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
 		Execute(client)
 	copy(resultHealthyNodes, client.network.healthyNodes)

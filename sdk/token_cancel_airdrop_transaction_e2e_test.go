@@ -67,13 +67,7 @@ func TestIntegrationTokenCancelAirdropCanExecute(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the operator does hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(1_000_000), operatorBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(10), operatorBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{tokenID: 1_000_000, nftID: 10})
 }
 
 func TestIntegrationTokenCancelAirdropMultipleReceivers(t *testing.T) {
@@ -144,13 +138,7 @@ func TestIntegrationTokenCancelAirdropMultipleReceivers(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the operator does hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(1_000_000), operatorBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(10), operatorBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{tokenID: 1_000_000, nftID: 10})
 
 }
 
@@ -231,22 +219,10 @@ func TestIntegrationTokenCancelAirdropMultipleAirdropTxns(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the receiver does not hold the tokens via query
-	reciverBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(0), reciverBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(0), reciverBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, receiver, map[TokenID]uint64{tokenID: 0, nftID: 0})
 
 	// Verify the operator does hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(1_000_000), operatorBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(10), operatorBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{tokenID: 1_000_000, nftID: 10})
 }
 
 func TestIntegrationTokenCancelAirdropCannotCancelNonExistingAirdrop(t *testing.T) {

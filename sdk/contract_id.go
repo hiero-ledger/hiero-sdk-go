@@ -165,18 +165,29 @@ func (id ContractID) ToEvmAddress() string {
 	}
 }
 
+// _MirrorNodePathID renders the ContractID in a form the mirror node's
+// /accounts/{idOrAliasOrEvmAddress} and /contracts/{idOrAddress} paths accept: an EVM address as
+// bare hex, anything else as shard.realm.num. String() cannot be used for the EVM-address case
+// because it renders `shard.realm.<hex>`, which the mirror node does not resolve.
+//
+// The numeric form is preferred whenever it is available, since a ContractID populated from an EVM
+// address keeps both fields set. See AccountID._MirrorNodePathID for the account counterpart.
+func (id ContractID) _MirrorNodePathID() string {
+	if id.Contract == 0 && len(id.EvmAddress) > 0 {
+		return hex.EncodeToString(id.EvmAddress)
+	}
+	return fmt.Sprintf("%d.%d.%d", id.Shard, id.Realm, id.Contract)
+}
+
 // PopulateContract gets the actual `Contract` field of the `ContractId` from the Mirror Node.
 // Should be used after generating `ContractId.FromEvmAddress()` because it sets the `Contract` field to `0`
 // automatically since there is no connection between the `Contract` and the `evmAddress`
 func (id *ContractID) PopulateContract(client *Client) error {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return errors.New("mirror node is not set")
-	}
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf("%s/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
+	url := fmt.Sprintf("%s/contracts/%s", mirrorUrl, id._MirrorNodePathID())
 
 	resp, err := http.Get(url) // #nosec
 	if err != nil {

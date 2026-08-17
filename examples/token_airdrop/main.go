@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -200,16 +201,14 @@ func main() {
 	 * Step 5:
 	 * Query to verify alice and bob received the airdrops and carol did not
 	 */
-	aliceBalance, _ := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
-
-	bobBalance, _ := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
-	carolBalance, _ := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Poll until the airdrop is ingested: alice and bob had auto-association slots, so their
+	// transfers executed immediately; carol's stays pending.
+	aliceBalance := mustWaitForMirrorBalance(client, *alice,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(*tokenID) == 100 })
+	bobBalance := mustWaitForMirrorBalance(client, *bob,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(*tokenID) == 100 })
+	carolBalance := mustWaitForMirrorBalance(client, *carol,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(*tokenID) == 0 })
 
 	fmt.Println("Alice ft balance after airdrop: ", aliceBalance.Tokens.Get(*tokenID))
 	fmt.Println("Bob ft balance after airdrop: ", bobBalance.Tokens.Get(*tokenID))
@@ -229,9 +228,9 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error claiming tokens", err))
 	}
-	carolBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Poll until the mirror node has ingested the claim.
+	carolBalance = mustWaitForMirrorBalance(client, *carol,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(*tokenID) == 100 })
 	fmt.Println("Carol ft balance after claim: ", carolBalance.Tokens.Get(*tokenID))
 
 	/*
@@ -267,16 +266,14 @@ func main() {
 	 * Query to verify alice received the airdrop and bob and carol did not
 	 */
 
-	aliceBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
-
-	bobBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
-	carolBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Poll until the NFT airdrop is ingested: only alice had a free auto-association slot left,
+	// so bob's and carol's stay pending.
+	aliceBalance = mustWaitForMirrorBalance(client, *alice,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 1 })
+	bobBalance = mustWaitForMirrorBalance(client, *bob,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 0 })
+	carolBalance = mustWaitForMirrorBalance(client, *carol,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 0 })
 
 	fmt.Println("Alice nft balance after airdrop: ", aliceBalance.Tokens.Get(nftID))
 	fmt.Println("Bob nft balance after airdrop: ", bobBalance.Tokens.Get(nftID))
@@ -299,9 +296,9 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error claiming tokens", err))
 	}
-	bobBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*bob).
-		Execute(client)
+	// Poll until the mirror node has ingested the claim.
+	bobBalance = mustWaitForMirrorBalance(client, *bob,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 1 })
 	fmt.Println("Bob nft balance after claim: ", bobBalance.Tokens.Get(nftID))
 
 	/*
@@ -321,9 +318,9 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error canceling tokens", err))
 	}
-	carolBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*carol).
-		Execute(client)
+	// Carol never held the NFT (her pending airdrop was canceled), so one successful read suffices.
+	carolBalance = mustWaitForMirrorBalance(client, *carol,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 0 })
 	fmt.Println("Carol nft balance after cancel: ", carolBalance.Tokens.Get(nftID))
 
 	/*
@@ -350,18 +347,18 @@ func main() {
 	 * Step 13:
 	 * Query to verify bob no longer has the NFT
 	 */
-	bobBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*bob).
-		Execute(client)
+	// Poll until the mirror node has ingested the reject.
+	bobBalance = mustWaitForMirrorBalance(client, *bob,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 0 })
 	fmt.Println("Bob nft balance after reject: ", bobBalance.Tokens.Get(nftID))
 
 	/*
 	 * Step 13:
 	 * Query to verify the NFT was returned to the Treasury
 	 */
-	treasuryBalance, _ := hiero.NewAccountBalanceQuery().
-		SetAccountID(*treasury).
-		Execute(client)
+	// The treasury holds the never-airdropped NFT plus the one bob rejected.
+	treasuryBalance := mustWaitForMirrorBalance(client, *treasury,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(nftID) == 2 })
 	fmt.Println("Treasury nft balance after reject: ", treasuryBalance.Tokens.Get(nftID))
 
 	/*
@@ -387,18 +384,18 @@ func main() {
 	 * Step 14:
 	 * Query to verify carol no longer has the fungible tokens
 	 */
-	carolBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
-	fmt.Println("Carol ft balance after claim: ", carolBalance.Tokens.Get(*tokenID))
+	// Poll until the mirror node has ingested the reject.
+	carolBalance = mustWaitForMirrorBalance(client, *carol,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(*tokenID) == 0 })
+	fmt.Println("Carol ft balance after reject: ", carolBalance.Tokens.Get(*tokenID))
 
 	/*
 	 * Step 15:
 	 * Query to verify Treasury received the rejected fungible tokens
 	 */
-	treasuryBalance, _ = hiero.NewAccountBalanceQuery().
-		SetAccountID(*treasury).
-		Execute(client)
+	// The treasury airdropped 100 each to alice and bob; carol's 100 came back with her reject.
+	treasuryBalance = mustWaitForMirrorBalance(client, *treasury,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(*tokenID) == 800 })
 	fmt.Println("Treasury ft balance after reject: ", treasuryBalance.Tokens.Get(*tokenID))
 
 	/*
@@ -407,4 +404,14 @@ func main() {
 	client.Close()
 
 	fmt.Println("Example Complete!")
+}
+
+// mustWaitForMirrorBalance is balance_helper.WaitForMirrorBalance with this example's
+// panic-on-failure error handling.
+func mustWaitForMirrorBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.AccountBalance) bool) hiero.AccountBalance {
+	balance, err := balance_helper.WaitForMirrorBalance(client, accountID, ready)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error querying account balance", err))
+	}
+	return balance
 }

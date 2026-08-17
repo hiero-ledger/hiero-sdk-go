@@ -18,7 +18,7 @@ func (tokenBalances *TokenBalanceMap) GetAll() map[string]uint64 {
 	return tokenBalances.balances
 }
 
-func _TokenBalanceMapFromProtobuf(pb []*services.TokenBalance) TokenBalanceMap {
+func _TokenBalanceMapFromProtobuf(pb []*services.TokenBalance) TokenBalanceMap { // nolint
 	balances := make(map[string]uint64)
 
 	for _, tokenBalance := range pb {

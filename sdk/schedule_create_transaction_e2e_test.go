@@ -783,18 +783,22 @@ func TestIntegrationScheduleCreateTransactionWaitForExpiry(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, scheduleInfo.ExecutedAt)
 
-	accountBalanceBefore, err := NewAccountBalanceQuery().
+	accountBalanceBefore, err := NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(accountId).
 		Execute(env.Client)
 	require.NoError(t, err)
 
-	time.Sleep(5 * time.Second)
-
-	accountBalanceAfter, err := NewAccountBalanceQuery().
-		SetAccountID(accountId).
-		Execute(env.Client)
+	// Wait for the mirror node to report the transfer rather than sleeping a fixed interval.
+	expectedAfter := accountBalanceBefore.Hbars.AsTinybar() - 100000000
+	accountBalanceAfter, err := mirrorBalanceEventually(
+		&env,
+		NewMirrorNodeAccountBalanceQuery().SetAccountID(accountId),
+		func(balance AccountBalance) bool {
+			return balance.Hbars.AsTinybar() == expectedAfter
+		},
+	)
 	require.NoError(t, err)
-	assert.Equal(t, accountBalanceBefore.Hbars.AsTinybar(), accountBalanceAfter.Hbars.AsTinybar()+100000000)
+	assert.Equal(t, expectedAfter, accountBalanceAfter.Hbars.AsTinybar())
 
 	_, err = NewTransactionRecordQuery().
 		SetTransactionID(txId).

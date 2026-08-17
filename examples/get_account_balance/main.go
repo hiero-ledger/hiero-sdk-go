@@ -33,7 +33,7 @@ func main() {
 	client.SetOperator(operatorAccountID, operatorKey)
 
 	// This is a free query to retrieve account's balance
-	balance, err := hiero.NewAccountBalanceQuery().
+	balance, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		// Have to set account ID
 		SetAccountID(client.GetOperatorAccountID()).
 		Execute(client)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -174,31 +175,27 @@ func executeBatchWithManualInnerTransactionFreeze(client *hiero.Client) {
 
 	fmt.Printf("Created third account (Carol): %v\n", carol.String())
 
-	// Step 3: Get initial balances
-	aliceBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Step 3: Get initial balances, polling until the mirror node has ingested the new accounts
+	aliceBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, *alice,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Alice's initial balance: %v", err))
 	}
 
-	bobBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*bob).
-		Execute(client)
+	bobBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, *bob,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Bob's initial balance: %v", err))
 	}
 
-	carolBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*carol).
-		Execute(client)
+	carolBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, *carol,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Carol's initial balance: %v", err))
 	}
 
-	operatorBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(client.GetOperatorAccountID()).
-		Execute(client)
+	operatorBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, client.GetOperatorAccountID(),
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get operator's initial balance: %v", err))
 	}
@@ -230,32 +227,31 @@ func executeBatchWithManualInnerTransactionFreeze(client *hiero.Client) {
 
 	fmt.Printf("Batch transaction executed with status: %v\n", batchReceipt.Status)
 
-	// Step 5: Verify new balances
+	// Step 5: Verify new balances, polling until the mirror node has ingested the batch transaction
 	fmt.Println("Verifying the balances after batch execution...")
-	aliceBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+
+	aliceBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, *alice,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != aliceBalanceBefore.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Alice's final balance: %v", err))
 	}
 
-	bobBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*bob).
-		Execute(client)
+	bobBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, *bob,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != bobBalanceBefore.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Bob's final balance: %v", err))
 	}
 
-	carolBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*carol).
-		Execute(client)
+	carolBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, *carol,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != carolBalanceBefore.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Carol's final balance: %v", err))
 	}
 
-	operatorBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(client.GetOperatorAccountID()).
-		Execute(client)
+	operatorBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, client.GetOperatorAccountID(),
+		func(b hiero.AccountBalance) bool {
+			return b.Hbars.AsTinybar() != operatorBalanceBefore.Hbars.AsTinybar()
+		})
 	if err != nil {
 		panic(fmt.Sprintf("failed to get operator's final balance: %v", err))
 	}
@@ -317,17 +313,15 @@ func executeBatchWithBatchify(client *hiero.Client) {
 		panic(fmt.Sprintf("failed to batchify Alice's transfer: %v", err))
 	}
 
-	// Step 5: Get initial balances
-	aliceBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+	// Step 5: Get initial balances, polling until the mirror node has ingested the new account
+	aliceBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, *alice,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Alice's initial balance: %v", err))
 	}
 
-	operatorBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(client.GetOperatorAccountID()).
-		Execute(client)
+	operatorBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, client.GetOperatorAccountID(),
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("failed to get operator's initial balance: %v", err))
 	}
@@ -355,18 +349,19 @@ func executeBatchWithBatchify(client *hiero.Client) {
 
 	fmt.Printf("Batch transaction executed with status: %v\n", batchReceipt.Status)
 
-	// Step 7: Verify new balances
+	// Step 7: Verify new balances, polling until the mirror node has ingested the batch transaction
 	fmt.Println("Verifying the balances after batch execution...")
-	aliceBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*alice).
-		Execute(client)
+
+	aliceBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, *alice,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != aliceBalanceBefore.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("failed to get Alice's final balance: %v", err))
 	}
 
-	operatorBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(client.GetOperatorAccountID()).
-		Execute(client)
+	operatorBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, client.GetOperatorAccountID(),
+		func(b hiero.AccountBalance) bool {
+			return b.Hbars.AsTinybar() != operatorBalanceBefore.Hbars.AsTinybar()
+		})
 	if err != nil {
 		panic(fmt.Sprintf("failed to get operator's final balance: %v", err))
 	}

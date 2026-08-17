@@ -52,20 +52,10 @@ func TestIntegrationTokenAirdropTransactionTransfersTokensWhenAssociated(t *test
 	require.NoError(t, err)
 
 	// Verify the receiver holds the tokens via query
-	receiverAccountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(100), receiverAccountBalance.Tokens.Get(tokenID))
-	assert.Equal(t, uint64(2), receiverAccountBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, receiver, map[TokenID]uint64{tokenID: 100, nftID: 2})
 
 	// Verify the operator does not hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000-100), operatorBalance.Tokens.Get(tokenID))
-	assert.Equal(t, uint64(8), operatorBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{tokenID: 1_000_000 - 100, nftID: 8})
 }
 func TestIntegrationTokenAirdropTransactionPendingTokensWhenNotAssociated(t *testing.T) {
 	env := NewIntegrationTestEnv(t)
@@ -120,20 +110,10 @@ func TestIntegrationTokenAirdropTransactionPendingTokensWhenNotAssociated(t *tes
 	assert.Equal(t, nftID.Nft(nftSerials[1]), *record.PendingAirdropRecords[2].pendingAirdropId.nftID)
 
 	// Verify the receiver does not hold the tokens via query
-	receiverAccountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(0), receiverAccountBalance.Tokens.Get(tokenID))
-	assert.Equal(t, uint64(0), receiverAccountBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, receiver, map[TokenID]uint64{tokenID: 0, nftID: 0})
 
 	// Verify the operator does hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000), operatorBalance.Tokens.Get(tokenID))
-	assert.Equal(t, uint64(10), operatorBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{tokenID: 1_000_000, nftID: 10})
 }
 
 func TestIntegrationTokenAirdropTransactionCreatesHollowAccount(t *testing.T) {
@@ -181,20 +161,10 @@ func TestIntegrationTokenAirdropTransactionCreatesHollowAccount(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the receiver holds the tokens via query
-	receiverAccountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(*aliasAccountId).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(100), receiverAccountBalance.Tokens.Get(tokenID))
-	assert.Equal(t, uint64(2), receiverAccountBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, *aliasAccountId, map[TokenID]uint64{tokenID: 100, nftID: 2})
 
 	// Verify the operator does not hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000-100), operatorBalance.Tokens.Get(tokenID))
-	assert.Equal(t, uint64(8), operatorBalance.Tokens.Get(nftID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{tokenID: 1_000_000 - 100, nftID: 8})
 }
 
 func TestIntegrationTokenAirdropTransactionWithCustomFees(t *testing.T) {
@@ -282,25 +252,11 @@ func TestIntegrationTokenAirdropTransactionWithCustomFees(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the custom fee has been paid by the sender to the collector
-	receiverAccountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(100), receiverAccountBalance.Tokens.Get(*tokenID))
+	requireMirrorTokenBalances(t, &env, receiver, map[TokenID]uint64{*tokenID: 100})
 
-	senderAccountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(sender).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(0), senderAccountBalance.Tokens.Get(*tokenID))
-	assert.Equal(t, uint64(99), senderAccountBalance.Tokens.Get(customFeeTokenID))
+	requireMirrorTokenBalances(t, &env, sender, map[TokenID]uint64{*tokenID: 0, customFeeTokenID: 99})
 
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000-100), operatorBalance.Tokens.Get(*tokenID))
-	assert.Equal(t, uint64(1_000_000-100+1), operatorBalance.Tokens.Get(customFeeTokenID))
+	requireMirrorTokenBalances(t, &env, env.OperatorID, map[TokenID]uint64{*tokenID: 1_000_000 - 100, customFeeTokenID: 1_000_000 - 100 + 1})
 }
 func TestIntegrationTokenAirdropTransactionWithReceiverSigTrue(t *testing.T) {
 	env := NewIntegrationTestEnv(t)

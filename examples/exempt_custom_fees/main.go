@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -186,29 +187,27 @@ func main() {
 	 * of the token that was created was not charged a custom fee in the transfer
 	 */
 
-	firstAccountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(firstAccountId).
-		Execute(client)
+	// Poll until both transfers are ingested: the first account keeps the full amount, fee-exempt.
+	firstAccountBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, firstAccountId,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenId) == amount })
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("first's balance:", firstAccountBalanceAfter.Tokens.Get(tokenId))
 
-	secondAccountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(secondAccountId).
-		Execute(client)
+	secondAccountBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, secondAccountId,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenId) == 0 })
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println("second's balance:", secondAccountBalanceAfter.Tokens.Get(tokenId))
 
-	thirdAccountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(thirdAccountId).
-		Execute(client)
+	thirdAccountBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, thirdAccountId,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenId) == 0 })
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("third's balance:", secondAccountBalanceAfter.Tokens.Get(tokenId))
+	fmt.Println("third's balance:", thirdAccountBalanceAfter.Tokens.Get(tokenId))
 
 	if firstAccountBalanceAfter.Tokens.Get(tokenId) == amount && secondAccountBalanceAfter.Tokens.Get(tokenId) == 0 && thirdAccountBalanceAfter.Tokens.Get(tokenId) == 0 {
 		fmt.Println("Fee collector accounts were not charged after transfer transaction")

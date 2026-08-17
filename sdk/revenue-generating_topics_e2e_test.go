@@ -393,12 +393,7 @@ func TestIntegrationRevenueGeneratingTopicCanChargeTokensWithLimit(t *testing.T)
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// Verify the custom fee charged
-	accountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(payerId).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	assert.True(t, accountBalance.Tokens.Get(tokenId) == 0)
+	requireMirrorTokenBalances(t, &env, payerId, map[TokenID]uint64{tokenId: 0})
 }
 
 func TestIntegrationRevenueGeneratingTopicCanChargeTokensWithoutLimit(t *testing.T) {
@@ -458,12 +453,7 @@ func TestIntegrationRevenueGeneratingTopicCanChargeTokensWithoutLimit(t *testing
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// Verify the custom fee charged
-	accountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(payerId).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	assert.True(t, accountBalance.Tokens.Get(tokenId) == 0)
+	requireMirrorTokenBalances(t, &env, payerId, map[TokenID]uint64{tokenId: 0})
 }
 
 func TestIntegrationRevenueGeneratingTopicDoesNotChargeHbarsFeeExemptKeys(t *testing.T) {
@@ -589,12 +579,7 @@ func TestIntegrationRevenueGeneratingTopicDoesNotChargeTokensFeeExemptKeys(t *te
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// Verify the custom fee is not charged
-	accountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(payerId).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	assert.True(t, accountBalance.Tokens.Get(tokenId) == 1)
+	requireMirrorTokenBalances(t, &env, payerId, map[TokenID]uint64{tokenId: 1})
 }
 
 func TestIntegrationRevenueGeneratingTopicCanotChargeHbarsWithLowerLimit(t *testing.T) {
@@ -836,12 +821,7 @@ func TestIntegrationRevenueGeneratingTopicDoesNotChargeTreasuries(t *testing.T) 
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// Verify the custom did not charge
-	accountBalance, err := NewAccountBalanceQuery().
-		SetAccountID(payerId).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	assert.True(t, accountBalance.Tokens.Get(tokenId) == 1)
+	requireMirrorTokenBalances(t, &env, payerId, map[TokenID]uint64{tokenId: 1})
 }
 
 func TestIntegrationRevenueGeneratingTopicCanChargeHbarsWithLimitSchedule(t *testing.T) {

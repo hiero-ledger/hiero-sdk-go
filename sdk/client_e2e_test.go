@@ -114,7 +114,7 @@ func DisabledTestIntegrationClientPingAllBadNetwork(t *testing.T) { // nolint
 		i++
 	}
 
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(val[0]).
 		Execute(tempClient)
 	require.NoError(t, err)

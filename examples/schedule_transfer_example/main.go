@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -80,9 +81,9 @@ func main() {
 	fmt.Printf("Bob's account: %v\n", bobsID)
 
 	// Step 3: Read Bob's initial balance for the before/after comparison.
-	bobsInitialBalance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(bobsID).
-		Execute(client)
+	// Poll until the mirror node has ingested the newly created account.
+	bobsInitialBalance, err := balance_helper.WaitForMirrorBalance(client, bobsID,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting Bob's balance", err))
 	}
@@ -117,7 +118,7 @@ func main() {
 
 	// Step 5: Confirm Bob's balance hasn't changed — the schedule is pending
 	// because Bob's signature is still missing.
-	balancePending, err := hiero.NewAccountBalanceQuery().
+	balancePending, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(bobsID).
 		Execute(client)
 	if err != nil {
@@ -164,10 +165,9 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting ScheduleSign receipt", err))
 	}
 
-	// Step 8: Confirm Bob's balance now reflects the transfer.
-	balanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(bobsID).
-		Execute(client)
+	// Step 8: Confirm Bob's balance, polling until the executed scheduled transfer is ingested.
+	balanceAfter, err := balance_helper.WaitForMirrorBalance(client, bobsID,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != bobsInitialBalance.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting Bob's balance", err))
 	}

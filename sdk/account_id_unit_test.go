@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"encoding/base32"
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	protobuf "google.golang.org/protobuf/proto"
 )
 
 func TestUnitAccountIDChecksumFromString(t *testing.T) {
@@ -397,4 +399,36 @@ func TestUnitAccountIDPopulateWithDifferentPorts(t *testing.T) {
 			})
 		})
 	}
+}
+
+// Covers the three shapes /accounts/{idOrAliasOrEvmAddress} accepts.
+func TestUnitAccountIDMirrorNodePathID(t *testing.T) {
+	t.Parallel()
+
+	// Plain account number.
+	assert.Equal(t, "0.0.1234", AccountID{Account: 1234}._MirrorNodePathID())
+
+	// EVM-address alias: bare hex, no shard.realm prefix.
+	evm := []byte{0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99,
+		0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x01, 0x23, 0x45, 0x67}
+	assert.Equal(t, "00112233445566778899aabbccddeeff01234567",
+		AccountID{AliasEvmAddress: &evm}._MirrorNodePathID())
+
+	// Public-key alias: base32 (no padding) of the serialized key, no shard.realm prefix.
+	key, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	aliasID := *key.PublicKey().ToAccountID(0, 0)
+
+	path := aliasID._MirrorNodePathID()
+	assert.NotContains(t, path, "0.0.", "public-key alias must not carry a shard.realm prefix")
+
+	aliasBytes, err := protobuf.Marshal(aliasID.AliasKey._ToProtoKey())
+	require.NoError(t, err)
+	expected := base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(aliasBytes)
+	assert.Equal(t, expected, path)
+
+	// The encoding must decode back to the original alias bytes.
+	decoded, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(path)
+	require.NoError(t, err)
+	assert.Equal(t, aliasBytes, decoded)
 }

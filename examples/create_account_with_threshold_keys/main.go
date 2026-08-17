@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -133,13 +134,9 @@ func main() {
 
 	fmt.Printf("status of transfer transaction: %v\n", transactionReceipt.Status)
 
-	// This query is free
-	// Here we check if transfer transaction actually succeeded
-	balance, err := hiero.NewAccountBalanceQuery().
-		// The account ID to check balance of
-		SetAccountID(newAccountID).
-		SetNodeAccountIDs([]hiero.AccountID{transactionResponse.NodeID}).
-		Execute(client)
+	// The account was created with 6 Hbar and transferred 5 away; poll until the mirror node agrees.
+	balance, err := balance_helper.WaitForMirrorBalance(client, newAccountID,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() == hiero.NewHbar(1).AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error executing account balance query", err))
 	}

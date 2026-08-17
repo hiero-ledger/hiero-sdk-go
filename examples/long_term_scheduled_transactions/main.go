@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -145,9 +146,9 @@ func main() {
 		Sign the transaction with the other key and verify the transaction executes successfully
 	*/
 
-	accountBalance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
+	// Poll until the mirror node has ingested the newly created account.
+	accountBalance, err := balance_helper.WaitForMirrorBalance(client, alice,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting account balance", err))
 	}
@@ -178,9 +179,13 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting schedule info", err))
 	}
-	accountBalance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
+
+	// Poll until the mirror node has ingested the executed scheduled transfer.
+	balanceBeforeTransfer := accountBalance
+	accountBalance, err = balance_helper.WaitForMirrorBalance(client, alice,
+		func(b hiero.AccountBalance) bool {
+			return b.Hbars.AsTinybar() != balanceBeforeTransfer.Hbars.AsTinybar()
+		})
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting account balance", err))
 	}
@@ -277,7 +282,7 @@ func main() {
 		Step 9:
 		Verify that the transfer successfully executes roughly at the time of its expiration.
 	*/
-	accountBalance, err = hiero.NewAccountBalanceQuery().
+	accountBalance, err = hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(alice).
 		Execute(client)
 	if err != nil {
@@ -291,9 +296,10 @@ func main() {
 		fmt.Printf("Elapsed time: %.1f seconds\r", time.Since(startTime).Seconds())
 	}
 
-	accountBalance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
+	// Poll until the mirror node has ingested the scheduled transfer executed at expiry.
+	balanceBeforeExpiry := accountBalance
+	accountBalance, err = balance_helper.WaitForMirrorBalance(client, alice,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != balanceBeforeExpiry.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting account balance", err))
 	}

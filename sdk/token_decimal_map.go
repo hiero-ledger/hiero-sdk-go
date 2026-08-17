@@ -22,7 +22,7 @@ func (tokenDecimals *TokenDecimalMap) GetAll() map[string]uint64 {
 	return tokenDecimals.decimals
 }
 
-func _TokenDecimalMapFromProtobuf(pb []*services.TokenBalance) TokenDecimalMap {
+func _TokenDecimalMapFromProtobuf(pb []*services.TokenBalance) TokenDecimalMap { // nolint
 	decimals := make(map[string]uint64)
 
 	for _, tokenDecimal := range pb {

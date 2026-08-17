@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -80,16 +81,14 @@ func main() {
 	}
 	userAccountID := *userReceipt.AccountID
 
-	// Balances before
-	senderBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(userAccountID).
-		Execute(client)
+	// Balances before, polling until the mirror node has ingested the newly created accounts
+	senderBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, userAccountID,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying user balance", err))
 	}
-	exchangeBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(exchangeAccountID).
-		Execute(client)
+	exchangeBalanceBefore, err := balance_helper.WaitForMirrorBalance(client, exchangeAccountID,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying exchange balance", err))
 	}
@@ -140,16 +139,16 @@ func main() {
 		panic(fmt.Sprintf("%v : error retrieving transfer receipt", err))
 	}
 
-	// Step 4: Confirm balances after the transfer.
-	senderBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(userAccountID).
-		Execute(client)
+	// Step 4: Confirm balances after the transfer, polling until the mirror node has ingested it.
+	senderBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, userAccountID,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != senderBalanceBefore.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying user balance after", err))
 	}
-	exchangeBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(exchangeAccountID).
-		Execute(client)
+	exchangeBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, exchangeAccountID,
+		func(b hiero.AccountBalance) bool {
+			return b.Hbars.AsTinybar() != exchangeBalanceBefore.Hbars.AsTinybar()
+		})
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying exchange balance after", err))
 	}

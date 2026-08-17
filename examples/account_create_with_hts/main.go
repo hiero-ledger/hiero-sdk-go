@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -258,7 +259,10 @@ func main() {
 	 *
 	 * Show the new account ID owns the fungible token
 	 */
-	accountBalances, err := hiero.NewAccountBalanceQuery().SetAccountID(aliasAccountId2).Execute(client)
+
+	// Poll until the mirror node has ingested the auto-created account and the token transfer.
+	accountBalances, err := balance_helper.WaitForMirrorBalance(client, aliasAccountId2,
+		func(b hiero.AccountBalance) bool { return b.Tokens.Get(tokenId) == 10 })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error receiving account balance", err))
 	}

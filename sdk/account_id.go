@@ -1,6 +1,7 @@
 package hiero
 
 import (
+	"encoding/base32"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -339,21 +340,41 @@ const (
 	EvmAddress
 )
 
-func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (map[string]interface{}, error) {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return nil, errors.New("mirror node is not set")
+// _MirrorNodePathID renders the AccountID in a form /accounts/{idOrAliasOrEvmAddress} accepts: an
+// EVM-address alias as bare hex, a public-key alias as base32 (RFC 4648, no padding) of the
+// serialized key -- what the mirror node itself reports -- and anything else as shard.realm.num.
+//
+// The numeric form wins whenever it is available, because it is canonical and because an alias ID
+// keeps its alias field after PopulateAccount fills in the account number. 0.0.0 is not a real
+// account, so a zero Account means only the alias can identify this ID.
+//
+// Note that the alias forms carry no shard.realm prefix; the mirror node resolves an alias without
+// one. See ContractID._MirrorNodePathID for the contract counterpart.
+func (id AccountID) _MirrorNodePathID() string {
+	if id.Account != 0 {
+		return fmt.Sprintf("%d.%d.%d", id.Shard, id.Realm, id.Account)
 	}
 
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	switch {
+	case id.AliasEvmAddress != nil:
+		return hex.EncodeToString(*id.AliasEvmAddress)
+	case id.AliasKey != nil:
+		if aliasBytes, err := protobuf.Marshal(id.AliasKey._ToProtoKey()); err == nil {
+			return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(aliasBytes)
+		}
+		return id.String()
+	default:
+		return id.String()
+	}
+}
+
+func (id *AccountID) _MirrorNodeRequest(client *Client) (map[string]interface{}, error) {
+	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {
 		return nil, err
 	}
 
-	if populateType == "account" {
-		mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, hex.EncodeToString(*id.AliasEvmAddress))
-	} else {
-		mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, id.String())
-	}
+	mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, id._MirrorNodePathID())
 
 	resp, err := http.Get(mirrorUrl) // #nosec
 	if err != nil {
@@ -373,7 +394,7 @@ func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (ma
 // Should be used after generating `AccountId.FromEvmAddress()` because it sets the `Account` field to `0`
 // automatically since there is no connection between the `Account` and the `evmAddress`
 func (id *AccountID) PopulateAccount(client *Client) error {
-	result, err := id._MirrorNodeRequest(client, "account")
+	result, err := id._MirrorNodeRequest(client)
 	if err != nil {
 		return err
 	}
@@ -394,7 +415,7 @@ func (id *AccountID) PopulateAccount(client *Client) error {
 
 // PopulateEvmAddress gets the actual `AliasEvmAddress` field of the `AccountId` from the Mirror Node.
 func (id *AccountID) PopulateEvmAddress(client *Client) error {
-	result, err := id._MirrorNodeRequest(client, "evmAddress")
+	result, err := id._MirrorNodeRequest(client)
 	if err != nil {
 		return err
 	}

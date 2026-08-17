@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/hiero-ledger/hiero-sdk-go/v2/examples/balance_helper"
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
 
@@ -35,14 +36,14 @@ func main() {
 	recipientID := hiero.AccountID{Account: 3}
 
 	// Step 1: Check Hbar balance of sender and recipient.
-	senderBalanceBefore, err := hiero.NewAccountBalanceQuery().
+	senderBalanceBefore, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(operatorAccountID).
 		Execute(client)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying sender balance", err))
 	}
 
-	recipientBalanceBefore, err := hiero.NewAccountBalanceQuery().
+	recipientBalanceBefore, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(recipientID).
 		Execute(client)
 	if err != nil {
@@ -75,16 +76,15 @@ func main() {
 	fmt.Printf("Transfer memo: %v\n", record.TransactionMemo)
 
 	// Step 3: Check Hbar balance of sender and recipient after the transfer.
-	senderBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(operatorAccountID).
-		Execute(client)
+	// Poll until the mirror node has ingested the transfer and the sender's balance changed.
+	senderBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, operatorAccountID,
+		func(b hiero.AccountBalance) bool { return b.Hbars.AsTinybar() != senderBalanceBefore.Hbars.AsTinybar() })
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying sender balance after", err))
 	}
 
-	recipientBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(recipientID).
-		Execute(client)
+	recipientBalanceAfter, err := balance_helper.WaitForMirrorBalance(client, recipientID,
+		balance_helper.Anytime)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error querying recipient balance after", err))
 	}
