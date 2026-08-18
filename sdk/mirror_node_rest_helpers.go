@@ -124,6 +124,17 @@ func mirrorNodePostWithRetry(client *Client, url, contentType string, body []byt
 	})
 }
 
+// mirrorNodeGetWithRetry GETs; see mirrorNodeRequestWithRetry for the retry contract.
+func mirrorNodeGetWithRetry(client *Client, url string, maxAttempts uint64, timeout time.Duration) (*http.Response, error) {
+	if err := mirrorNodeValidateURL(url); err != nil {
+		return nil, err
+	}
+
+	return mirrorNodeRequestWithRetry(client, maxAttempts, timeout, func(httpClient *http.Client) (*http.Response, error) {
+		return httpClient.Get(url) // #nosec
+	})
+}
+
 // mirrorNodeShouldRetry reports whether a failed request should be retried: transport errors
 // and 5xx/429 are transient; 4xx responses are genuine results the caller expects.
 func mirrorNodeShouldRetry(err error, resp *http.Response) bool {
