@@ -85,36 +85,28 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 		return RegisteredNodeAddressBook{}, errNoClientProvided
 	}
 
-	mirrorBase, endpoint, err := q.resolveEndpoint(client)
+	endpoint, err := q.resolveEndpoint(client)
 	if err != nil {
 		return RegisteredNodeAddressBook{}, err
 	}
 
-	return q.walkPages(mirrorBase, endpoint, q.resolveAttempts(client))
+	return q.walkPages(endpoint, q.resolveAttempts(client))
 }
 
-// resolveEndpoint discovers the mirror node REST base URL on the client,
-// parses it, and returns it together with the initial query URL.
-func (q *RegisteredNodeAddressBookQuery) resolveEndpoint(client *Client) (*url.URL, string, error) {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return nil, "", fmt.Errorf("mirror node is not set")
-	}
-
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+// resolveEndpoint discovers the mirror node REST base URL on the client and
+// returns the initial query URL. A local node serves this endpoint on 8084
+// rather than the default mirrorNodeRestBaseURL port.
+func (q *RegisteredNodeAddressBookQuery) resolveEndpoint(client *Client) (string, error) {
+	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to get mirror REST API base URL: %w", err)
+		return "", err
 	}
 
 	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
 		mirrorUrl = "http://localhost:8084/api/v1"
 	}
 
-	mirrorBase, err := url.Parse(mirrorUrl)
-	if err != nil {
-		return nil, "", fmt.Errorf("invalid mirror REST API base URL %q: %w", mirrorUrl, err)
-	}
-
-	return mirrorBase, q.buildURL(mirrorUrl), nil
+	return q.buildURL(mirrorUrl), nil
 }
 
 // resolveAttempts picks the per-page retry budget: query setting first,
@@ -130,33 +122,29 @@ func (q *RegisteredNodeAddressBookQuery) resolveAttempts(client *Client) uint64 
 }
 
 // walkPages follows links.next until exhausted (or the page cap trips).
-func (q *RegisteredNodeAddressBookQuery) walkPages(base *url.URL, endpoint string, attempts uint64) (RegisteredNodeAddressBook, error) {
+func (q *RegisteredNodeAddressBookQuery) walkPages(endpoint string, attempts uint64) (RegisteredNodeAddressBook, error) {
 	allNodes := make([]RegisteredNode, 0)
 
-	for range registeredNodeMaxPages {
-		body, err := fetchRegisteredNodesPage(endpoint, attempts)
-		if err != nil {
-			return RegisteredNodeAddressBook{}, err
-		}
-
-		nodes, next, err := parseRegisteredNodes(body)
-		if err != nil {
-			return RegisteredNodeAddressBook{}, err
-		}
-		allNodes = append(allNodes, nodes...)
-
-		if next == nil || *next == "" {
-			return RegisteredNodeAddressBook{RegisteredNodes: allNodes}, nil
-		}
-
-		resolved, err := resolveNextURL(base, *next)
-		if err != nil {
-			return RegisteredNodeAddressBook{}, fmt.Errorf("invalid pagination next link %q: %w", *next, err)
-		}
-		endpoint = resolved
+	err := mirrorNodeWalkPages(
+		endpoint,
+		registeredNodeMaxPages,
+		func(pageURL string) ([]byte, error) {
+			return fetchRegisteredNodesPage(pageURL, attempts)
+		},
+		func(body []byte) (*string, error) {
+			nodes, next, err := parseRegisteredNodes(body)
+			if err != nil {
+				return nil, err
+			}
+			allNodes = append(allNodes, nodes...)
+			return next, nil
+		},
+	)
+	if err != nil {
+		return RegisteredNodeAddressBook{}, err
 	}
 
-	return RegisteredNodeAddressBook{}, fmt.Errorf("exceeded pagination cap of %d pages", registeredNodeMaxPages)
+	return RegisteredNodeAddressBook{RegisteredNodes: allNodes}, nil
 }
 
 // buildURL composes the mirror node REST URL together with any query
@@ -222,15 +210,6 @@ func fetchRegisteredNodesPage(endpoint string, attempts uint64) ([]byte, error) 
 	return nil, fmt.Errorf("failed after %d attempt(s): %w", attempts, lastErr)
 }
 
-// resolveNextURL resolves a pagination next link against the mirror base URL.
-func resolveNextURL(base *url.URL, next string) (string, error) {
-	parsed, err := url.Parse(next)
-	if err != nil {
-		return "", err
-	}
-	return base.ResolveReference(parsed).String(), nil
-}
-
 func parseRegisteredNodes(body []byte) ([]RegisteredNode, *string, error) {
 	var raw registeredNodesResponseJSON
 	if err := json.Unmarshal(body, &raw); err != nil {
@@ -256,10 +235,6 @@ func parseRegisteredNodes(body []byte) ([]RegisteredNode, *string, error) {
 type registeredNodesResponseJSON struct {
 	RegisteredNodes []registeredNodeJSON `json:"registered_nodes"`
 	Links           *linksJSON           `json:"links"`
-}
-
-type linksJSON struct {
-	Next *string `json:"next"`
 }
 
 type registeredNodeJSON struct {

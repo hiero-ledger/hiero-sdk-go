@@ -42,16 +42,16 @@ func (node *_MirrorNode) getScheme() (string, error) {
 
 	// Standard HTTPS ports
 	if port == 443 {
-		return "https", nil
+		return mirrorNodeSchemeHTTPS, nil
 	}
 
 	// Standard HTTP ports
 	if port == 80 {
-		return "http", nil
+		return mirrorNodeSchemeHTTP, nil
 	}
 
 	// For other ports, assume HTTPS for security
-	return "https", nil
+	return mirrorNodeSchemeHTTPS, nil
 }
 
 func (node *_MirrorNode) getBaseRestUrl() (string, error) {

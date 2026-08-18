@@ -5,8 +5,6 @@ package hiero
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strings"
 
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
@@ -169,13 +167,9 @@ func (q *FeeEstimateQuery) estimateSingleTransaction(client *Client, tx Transact
 
 // callGetFeeEstimate calls the fee estimate REST API endpoint
 func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.Transaction) (FeeEstimateResponse, error) {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return FeeEstimateResponse{}, errors.New("mirror node is not set")
-	}
-
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {
-		return FeeEstimateResponse{}, errors.Wrap(err, "failed to get mirror REST API base URL")
+		return FeeEstimateResponse{}, err
 	}
 
 	isLocalHost := strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1")
@@ -198,23 +192,10 @@ func (q *FeeEstimateQuery) callGetFeeEstimate(client *Client, protoTx *services.
 	if err != nil {
 		return FeeEstimateResponse{}, errors.Wrapf(err, "failed to call fee estimate API after %d attempts", q.maxAttempts)
 	}
-	if resp == nil {
-		return FeeEstimateResponse{}, errors.Wrap(errors.New("received nil response"), "failed to call fee estimate API")
-	}
-	if resp.StatusCode != http.StatusOK {
-		body, readErr := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if readErr == nil {
-			return FeeEstimateResponse{}, errors.Wrap(fmt.Errorf("received non-200 response: %d, details: %s", resp.StatusCode, body), "failed to call fee estimate API")
-		}
-		return FeeEstimateResponse{}, errors.Wrap(fmt.Errorf("received non-200 response: %d", resp.StatusCode), "failed to call fee estimate API")
-	}
 
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
+	body, err := mirrorNodeReadBody(resp)
 	if err != nil {
-		return FeeEstimateResponse{}, errors.Wrap(err, "failed to read response body")
+		return FeeEstimateResponse{}, errors.Wrap(err, "failed to call fee estimate API")
 	}
 
 	var response FeeEstimateResponse
