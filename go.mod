@@ -11,7 +11,7 @@ require (
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.12.0
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
-	golang.org/x/crypto v0.54.0
+	golang.org/x/crypto v0.55.0
 	golang.org/x/text v0.41.0
 	google.golang.org/grpc v1.83.0
 	google.golang.org/protobuf v1.36.12
@@ -24,7 +24,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
-	golang.org/x/net v0.56.0 // indirect
+	golang.org/x/net v0.57.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
