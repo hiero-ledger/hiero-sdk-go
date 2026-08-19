@@ -333,3 +333,19 @@ func TestUnitMirrorNodeAccountBalanceQueryBuildURL(t *testing.T) {
 	assert.Equal(t, "https://mirror.example.com/api/v1/balances?account.id=1.2.3",
 		query.buildURL("https://mirror.example.com/api/v1"))
 }
+
+func TestUnitMirrorNodeAccountBalanceQueryWrapsTransportFailure(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetMirrorNetwork([]string{"127.0.0.1:1"})
+
+	_, err = NewMirrorNodeAccountBalanceQuery().
+		SetAccountID(AccountID{Account: 3}).
+		SetMaxAttempts(1).
+		Execute(client)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to send request")
+}

@@ -432,3 +432,10 @@ func TestUnitAccountIDMirrorNodePathID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, aliasBytes, decoded)
 }
+
+func TestUnitAccountIDMirrorNodePathIDWithoutNumOrAlias(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "0.0.0", AccountID{}._MirrorNodePathID())
+	assert.Equal(t, "1.2.0", AccountID{Shard: 1, Realm: 2}._MirrorNodePathID())
+}
