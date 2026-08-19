@@ -17,8 +17,7 @@ const (
 	mirrorHbarBalanceRetryDelay    = 2 * time.Second
 )
 
-// mirrorHbarBalanceEventually polls until ready accepts the result, absorbing mirror node ingestion
-// lag. On timeout it returns the last balance and error so the caller's assertion reports it.
+// mirrorHbarBalanceEventually polls until ready accepts the result, absorbing mirror node lag.
 func mirrorHbarBalanceEventually(env *IntegrationTestEnv, query *MirrorNodeAccountBalanceQuery, ready func(MirrorNodeAccountBalance) bool) (MirrorNodeAccountBalance, error) {
 	var balance MirrorNodeAccountBalance
 	var err error
@@ -40,7 +39,6 @@ func nonZeroHbars(balance MirrorNodeAccountBalance) bool {
 	return balance.Hbars.AsTinybar() > 0
 }
 
-// Acceptance 1: a valid account ID returns the hbar balance the mirror node holds.
 func TestIntegrationMirrorNodeAccountBalanceQueryCanExecute(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -55,7 +53,6 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanExecute(t *testing.T) {
 	assert.Positive(t, balance.Hbars.AsTinybar(), "the operator account must hold hbars")
 }
 
-// The query is free and must work without an operator, unlike the consensus-node queries.
 func TestIntegrationMirrorNodeAccountBalanceQueryWithoutOperator(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -73,7 +70,6 @@ func TestIntegrationMirrorNodeAccountBalanceQueryWithoutOperator(t *testing.T) {
 	assert.Positive(t, balance.Hbars.AsTinybar())
 }
 
-// Acceptance 6: an unset account ID fails before any request is made.
 func TestIntegrationMirrorNodeAccountBalanceQueryNoIDError(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -83,7 +79,6 @@ func TestIntegrationMirrorNodeAccountBalanceQueryNoIDError(t *testing.T) {
 	require.ErrorIs(t, err, errMirrorNodeAccountBalanceQueryNoAccountID)
 }
 
-// Acceptance 2: an account addressed by its EVM address alias resolves and returns its balance.
 func TestIntegrationMirrorNodeAccountBalanceQueryCanGetBalanceByEvmAddress(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -113,7 +108,6 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanGetBalanceByEvmAddress(t *te
 	assert.Equal(t, NewHbar(1).AsTinybar(), balance.Hbars.AsTinybar())
 }
 
-// Acceptance 3: an account addressed by an ED25519 public-key alias resolves and returns its balance.
 func TestIntegrationMirrorNodeAccountBalanceQueryCanGetBalanceByPublicKeyAlias(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -140,7 +134,6 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanGetBalanceByPublicKeyAlias(t
 	assert.Equal(t, NewHbar(1).AsTinybar(), balance.Hbars.AsTinybar())
 }
 
-// Acceptance 4: a contract's balance is read through the same account.id parameter.
 func TestIntegrationMirrorNodeAccountBalanceQueryCanGetContractBalance(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -159,20 +152,16 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanGetContractBalance(t *testin
 	resp, err = NewContractCreateTransaction().
 		SetAdminKey(env.Client.GetOperatorPublicKey()).
 		SetNodeAccountIDs([]AccountID{resp.NodeID}).
-		SetGas(contractDeployGas).
-		SetConstructorParameters(NewContractFunctionParameters().AddString("hello from hiero")).
+		SetGas(400_000).
 		SetBytecodeFileID(fileID).
-		SetContractMemo("hiero-sdk-go::MirrorNodeAccountBalanceQuery").
 		Execute(env.Client)
 	require.NoError(t, err)
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 	contractID := *receipt.ContractID
 
-	// No SetContractID: a contract goes through account.id as the equivalent AccountID.
 	contractAccountID := AccountID{Shard: contractID.Shard, Realm: contractID.Realm, Account: contractID.Contract}
 
-	// Fund by transfer: the constructor is not payable, so an initial balance reverts.
 	tx, err := NewTransferTransaction().
 		AddHbarTransfer(contractAccountID, NewHbar(1)).
 		AddHbarTransfer(env.OperatorID, NewHbar(-1)).
@@ -200,8 +189,6 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanGetContractBalance(t *testin
 	require.NoError(t, err)
 }
 
-// Acceptance 5: an unknown account yields a zero balance, not an error -- the endpoint returns an
-// empty list rather than a 404, unlike the consensus-node query's INVALID_ACCOUNT_ID.
 func TestIntegrationMirrorNodeAccountBalanceQueryNonExistentAccountIsZero(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
