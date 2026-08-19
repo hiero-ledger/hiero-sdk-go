@@ -340,17 +340,9 @@ const (
 	EvmAddress
 )
 
-// _MirrorNodePathID renders the AccountID in a form /accounts/{idOrAliasOrEvmAddress} accepts: an
-// EVM-address alias as bare hex, a public-key alias as base32 (RFC 4648, no padding) of the
-// serialized key -- what the mirror node itself reports -- and anything else as shard.realm.num.
-//
-// The numeric form wins whenever it is available, because it is canonical and because an alias ID
-// keeps its alias field after PopulateAccount fills in the account number. 0.0.0 is not a real
-// account, so a zero Account means only the alias can identify this ID.
-//
-// Note that the alias forms carry no shard.realm prefix; the mirror node resolves an alias without
-// one. A contract is addressed through the same numeric form, so no separate contract variant is
-// needed.
+// _MirrorNodePathID renders the AccountID as the mirror node accepts it: shard.realm.num when a
+// number is set, otherwise an EVM-address alias as bare hex or a public key alias as unpadded
+// base32. Alias forms carry no shard.realm prefix.
 func (id AccountID) _MirrorNodePathID() string {
 	if id.Account != 0 {
 		return fmt.Sprintf("%d.%d.%d", id.Shard, id.Realm, id.Account)

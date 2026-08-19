@@ -84,8 +84,8 @@ func (q *MirrorNodeAccountBalanceQuery) resolveEndpoint(client *Client) (string,
 	return q.buildURL(mirrorUrl), nil
 }
 
-// resolveAttempts picks the retry budget: query, then client, then the SDK default. Not a single
-// attempt: Client.GetMaxAttempts reports -1 when unset and 5xx responses must still be retried.
+// resolveAttempts picks the retry budget: query setting first,
+// client default second, the SDK default as the final fallback.
 func (q *MirrorNodeAccountBalanceQuery) resolveAttempts(client *Client) uint64 {
 	if q.maxAttempts > 0 {
 		return q.maxAttempts
@@ -118,8 +118,7 @@ func (q *MirrorNodeAccountBalanceQuery) validateNetworkOnIDs(client *Client) err
 	return nil
 }
 
-// fetchAccountBalances GETs the balances endpoint; the shared core retries 5xx/429 and transport
-// failures, and returns a 4xx as-is.
+// fetchAccountBalances GETs the balances endpoint through the shared retry core.
 func fetchAccountBalances(client *Client, endpoint string, attempts uint64) ([]byte, error) {
 	resp, err := mirrorNodeGetWithRetry(client, endpoint, attempts, mirrorNodeDefaultTimeout)
 	if err != nil {
@@ -151,6 +150,5 @@ type accountBalancesResponseJSON struct {
 
 type accountBalanceJSON struct {
 	Account string `json:"account"`
-	// Tinybars; int64 holds the whole hbar supply exactly.
-	Balance int64 `json:"balance"`
+	Balance int64  `json:"balance"`
 }

@@ -48,7 +48,6 @@ func TestUnitMirrorNodeAccountBalanceQueryDefaults(t *testing.T) {
 	assert.Zero(t, query.GetMaxAttempts())
 }
 
-// AC 1: a valid account ID returns the hbar balance the mirror node reports.
 func TestUnitMirrorNodeAccountBalanceQueryReturnsHbarBalance(t *testing.T) {
 	var gotAccountID string
 	client := newMockMirrorClient(t, "balance.example.com:443", balancesHandler(t, &gotAccountID,
@@ -79,7 +78,6 @@ func TestUnitMirrorNodeAccountBalanceQueryLargeBalanceIsLossless(t *testing.T) {
 	assert.Equal(t, tinybars, balance.Hbars.AsTinybar())
 }
 
-// AC 2: an EVM address is sent as bare hex, which is what the mirror node resolves.
 func TestUnitMirrorNodeAccountBalanceQueryResolvesEvmAddress(t *testing.T) {
 	var gotAccountID string
 	client := newMockMirrorClient(t, "evm.example.com:443", balancesHandler(t, &gotAccountID,
@@ -97,7 +95,6 @@ func TestUnitMirrorNodeAccountBalanceQueryResolvesEvmAddress(t *testing.T) {
 	assert.Equal(t, "742d35cc6634c0532925a3b844bc454e4438f44e", gotAccountID)
 }
 
-// AC 3: a public key alias is sent base32-encoded, the form the mirror node reports and accepts.
 func TestUnitMirrorNodeAccountBalanceQueryResolvesPublicKeyAlias(t *testing.T) {
 	var gotAccountID string
 	client := newMockMirrorClient(t, "alias.example.com:443", balancesHandler(t, &gotAccountID,
@@ -119,7 +116,6 @@ func TestUnitMirrorNodeAccountBalanceQueryResolvesPublicKeyAlias(t *testing.T) {
 	assert.Equal(t, gotAccountID, url.QueryEscape(gotAccountID), "alias must need no escaping")
 }
 
-// AC 4: a contract is addressed through the same account.id parameter.
 func TestUnitMirrorNodeAccountBalanceQueryResolvesContractID(t *testing.T) {
 	var gotAccountID string
 	client := newMockMirrorClient(t, "contract.example.com:443", balancesHandler(t, &gotAccountID,
@@ -135,7 +131,6 @@ func TestUnitMirrorNodeAccountBalanceQueryResolvesContractID(t *testing.T) {
 	assert.Equal(t, "0.0.98765", gotAccountID)
 }
 
-// AC 5: an unknown account yields an empty list, which is a zero balance and not an error.
 func TestUnitMirrorNodeAccountBalanceQueryNonExistentAccountIsZero(t *testing.T) {
 	var gotAccountID string
 	client := newMockMirrorClient(t, "missing.example.com:443", balancesHandler(t, &gotAccountID,
@@ -149,7 +144,6 @@ func TestUnitMirrorNodeAccountBalanceQueryNonExistentAccountIsZero(t *testing.T)
 	assert.Equal(t, HbarFromTinybar(0), balance.Hbars)
 }
 
-// AC 6: an unset account ID fails before any network call.
 func TestUnitMirrorNodeAccountBalanceQueryNoAccountIDErrorsBeforeRequest(t *testing.T) {
 	var called atomic.Bool
 	client := newMockMirrorClient(t, "unused.example.com:443", func(w http.ResponseWriter, r *http.Request) {
@@ -173,7 +167,6 @@ func TestUnitMirrorNodeAccountBalanceQueryNilClientErrors(t *testing.T) {
 	require.ErrorIs(t, err, errNoClientProvided)
 }
 
-// AC 7: a transient 503 is retried and the following success is returned.
 func TestUnitMirrorNodeAccountBalanceQueryRetriesTransientError(t *testing.T) {
 	var attempts atomic.Int32
 	client := newMockMirrorClient(t, "retry.example.com:443", func(w http.ResponseWriter, r *http.Request) {
@@ -289,8 +282,7 @@ func TestUnitMirrorNodeAccountBalanceQueryBadChecksumErrorsBeforeRequest(t *test
 	assert.False(t, called.Load(), "a checksum mismatch must not reach the network")
 }
 
-// resolveAttempts: query setting, then client, then SDK default. The default must not be a single
-// attempt -- this query has to retry 5xx, and Client.GetMaxAttempts reports -1 when unset.
+// The fallback must not be a single attempt; 5xx responses still have to be retried.
 func TestUnitMirrorNodeAccountBalanceQueryResolveAttempts(t *testing.T) {
 	t.Parallel()
 

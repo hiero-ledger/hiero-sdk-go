@@ -25,12 +25,8 @@ const (
 )
 
 // mirrorNodeRestBaseURL returns the client's mirror node REST API base URL, erroring when no
-// mirror network is configured.
-//
-// The canonical value comes from _MirrorNode.getBaseRestUrl, which maps a localhost mirror network
-// to port 38081. Endpoints that a local node serves elsewhere override it afterwards: the fee
-// estimate and registered-node endpoints on 8084, the contract-call endpoint on 8545 (the JSON-RPC
-// relay). Callers that need no override use the returned URL as-is.
+// mirror network is configured. A caller whose endpoint is served on a different port against a
+// local node overrides it afterwards.
 func mirrorNodeRestBaseURL(client *Client) (string, error) {
 	if client == nil {
 		return "", errNoClientProvided
@@ -43,8 +39,8 @@ func mirrorNodeRestBaseURL(client *Client) (string, error) {
 	return client.GetMirrorRestApiBaseUrl()
 }
 
-// mirrorNodeValidateURL rejects a URL no HTTP request could ever satisfy, so the retry loop does
-// not spend its whole budget and backoff on a permanent failure.
+// mirrorNodeValidateURL rejects a URL no HTTP request could satisfy, so the retry loop does not
+// spend its budget on a permanent failure.
 func mirrorNodeValidateURL(rawURL string) error {
 	parsed, err := url.Parse(rawURL)
 	if err != nil {
@@ -61,12 +57,9 @@ func mirrorNodeValidateURL(rawURL string) error {
 }
 
 // mirrorNodeRequestWithRetry runs send with exponential backoff, retrying transport failures and
-// 5xx/429; a 4xx is the intended result of the call and is not retried. send runs once per attempt
-// so it can rebuild the request body.
-//
-// The final attempt is returned raw so callers can format their own error: a 200 response, a
-// non-200 response with a nil error, or a nil response and the transport error. The caller must
-// close a non-nil Body (mirrorNodeReadBody does). A timeout of 0 disables the per-request timeout.
+// 5xx/429; a 4xx is the intended result and is not retried. The final attempt is returned raw so
+// callers can format their own error, and the caller must close a non-nil Body. A timeout of 0
+// disables the per-request timeout.
 func mirrorNodeRequestWithRetry(client *Client, maxAttempts uint64, timeout time.Duration, send func(*http.Client) (*http.Response, error)) (*http.Response, error) {
 	if maxAttempts == 0 {
 		return nil, errors.New("maxAttempts must be at least 1")
@@ -180,9 +173,6 @@ func mirrorNodeReadBody(resp *http.Response) ([]byte, error) {
 // mirrorNodeWalkPages walks a paginated endpoint from pageURL, passing each fetched body to
 // handlePage, which returns the raw links.next. Stops when next is absent, or at maxPages so a
 // misbehaving mirror node cannot loop forever.
-//
-// A links.next is a root-relative path, so it is resolved against pageURL itself rather than
-// against a separately supplied base -- one argument cannot then disagree with the other.
 func mirrorNodeWalkPages(
 	pageURL string,
 	maxPages int,
