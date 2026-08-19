@@ -116,7 +116,8 @@ func (e ErrHederaNetwork) Error() string {
 }
 
 // ErrHederaPreCheckStatus is returned by Transaction.Execute and QueryBuilder.Execute if an exceptional status is
-// returned during _Network side validation of the sent transaction.
+// returned during _Network side validation of the sent transaction. MirrorNodeAccountBalanceQuery
+// also returns it, mapping an unknown account onto StatusInvalidAccountID.
 type ErrHederaPreCheckStatus struct {
 	TxID   TransactionID
 	Status Status

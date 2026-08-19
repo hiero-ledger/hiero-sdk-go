@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -116,32 +117,47 @@ func TestUnitMirrorNodeAccountBalanceQueryResolvesPublicKeyAlias(t *testing.T) {
 	assert.Equal(t, gotAccountID, url.QueryEscape(gotAccountID), "alias must need no escaping")
 }
 
-func TestUnitMirrorNodeAccountBalanceQueryResolvesContractID(t *testing.T) {
-	var gotAccountID string
-	client := newMockMirrorClient(t, "contract.example.com:443", balancesHandler(t, &gotAccountID,
-		`{"balances":[{"account":"0.0.98765","balance":777}]}`))
-
-	contractID := ContractID{Shard: 0, Realm: 0, Contract: 98765}
-	balance, err := NewMirrorNodeAccountBalanceQuery().
-		SetAccountID(AccountID{Shard: contractID.Shard, Realm: contractID.Realm, Account: contractID.Contract}).
-		Execute(client)
-
-	require.NoError(t, err)
-	assert.Equal(t, HbarFromTinybar(777), balance.Hbars)
-	assert.Equal(t, "0.0.98765", gotAccountID)
-}
-
-func TestUnitMirrorNodeAccountBalanceQueryNonExistentAccountIsZero(t *testing.T) {
+func TestUnitMirrorNodeAccountBalanceQueryNonExistentAccountErrors(t *testing.T) {
 	var gotAccountID string
 	client := newMockMirrorClient(t, "missing.example.com:443", balancesHandler(t, &gotAccountID,
 		`{"timestamp":null,"balances":[],"links":{"next":null}}`))
 
-	balance, err := NewMirrorNodeAccountBalanceQuery().
+	_, err := NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(AccountID{Account: 999999999}).
 		Execute(client)
 
-	require.NoError(t, err, "an empty balances array is a zero balance, not an error")
-	assert.Equal(t, HbarFromTinybar(0), balance.Hbars)
+	var status ErrHederaPreCheckStatus
+	require.ErrorAs(t, err, &status)
+	assert.Equal(t, StatusInvalidAccountID, status.Status)
+	assert.Contains(t, err.Error(), "INVALID_ACCOUNT_ID")
+}
+
+func TestUnitMirrorNodeAccountBalanceQueryZeroBalanceIsNotMissing(t *testing.T) {
+	var gotAccountID string
+	client := newMockMirrorClient(t, "zerobalance.example.com:443", balancesHandler(t, &gotAccountID,
+		`{"balances":[{"account":"0.0.42","balance":0}]}`))
+
+	balance, err := NewMirrorNodeAccountBalanceQuery().
+		SetAccountID(AccountID{Account: 42}).
+		Execute(client)
+
+	require.NoError(t, err)
+	assert.Zero(t, balance.Hbars.AsTinybar())
+}
+
+func TestUnitMirrorNodeAccountBalanceQueryMissingBalancesArrayIsMalformed(t *testing.T) {
+	var gotAccountID string
+	client := newMockMirrorClient(t, "nobalances.example.com:443", balancesHandler(t, &gotAccountID,
+		`{"timestamp":null,"links":{"next":null}}`))
+
+	_, err := NewMirrorNodeAccountBalanceQuery().
+		SetAccountID(AccountID{Account: 7}).
+		Execute(client)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "no balances array")
+	var status ErrHederaPreCheckStatus
+	assert.False(t, errors.As(err, &status), "a malformed payload must not read as a missing account")
 }
 
 func TestUnitMirrorNodeAccountBalanceQueryNoAccountIDErrorsBeforeRequest(t *testing.T) {

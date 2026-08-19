@@ -33,8 +33,8 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// MirrorNodeAccountBalanceQuery replaces the deprecated AccountBalanceQuery, which the
-	// consensus node stops serving in release 0.77. It reads from the mirror node REST API, so it
+	// MirrorNodeAccountBalanceQuery replaces AccountBalanceQuery, which the consensus node stops
+	// serving in release 0.77. It reads from the mirror node REST API, so it
 	// is free and needs no query payment.
 	balance, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(operatorAccountID).

@@ -176,7 +176,7 @@ func TestUnitMirrorNodeValidateURL(t *testing.T) {
 }
 
 // A URL no request could satisfy must fail before the retry loop spends its budget on it.
-func TestUnitMirrorNodeGetAndPostRejectInvalidURLWithoutRequesting(t *testing.T) {
+func TestUnitMirrorNodeGetAndPostRejectInvalidURL(t *testing.T) {
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 
@@ -285,18 +285,18 @@ func TestUnitMirrorNodeWalkPagesFollowsNextAcrossPages(t *testing.T) {
 func TestUnitMirrorNodeWalkPagesStopsAtPageCap(t *testing.T) {
 	t.Parallel()
 
-	const cap = 3
+	const maxPages = 3
 	pages := 0
 	forever := "/api/v1/things?page=next"
 
-	err := mirrorNodeWalkPages("https://mirror.example.com/api/v1/things", cap,
+	err := mirrorNodeWalkPages("https://mirror.example.com/api/v1/things", maxPages,
 		func(pageURL string) ([]byte, error) { pages++; return []byte(`{}`), nil },
 		func(body []byte) (*string, error) { return &forever, nil },
 	)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "exceeded pagination cap of 3 pages")
-	assert.Equal(t, cap, pages, "no more than the cap may be fetched")
+	assert.Equal(t, maxPages, pages, "no more than the cap may be fetched")
 }
 
 func TestUnitMirrorNodeWalkPagesPropagatesErrors(t *testing.T) {

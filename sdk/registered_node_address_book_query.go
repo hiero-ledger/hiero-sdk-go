@@ -93,9 +93,8 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 	return q.walkPages(endpoint, q.resolveAttempts(client))
 }
 
-// resolveEndpoint discovers the mirror node REST base URL on the client and
-// returns the initial query URL. A local node serves this endpoint on 8084
-// rather than the default mirrorNodeRestBaseURL port.
+// resolveEndpoint returns the initial query URL. A local node serves this
+// endpoint on 8084 rather than on the client's mirror REST port.
 func (q *RegisteredNodeAddressBookQuery) resolveEndpoint(client *Client) (string, error) {
 	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {

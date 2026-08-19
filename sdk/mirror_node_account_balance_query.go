@@ -4,13 +4,16 @@ package hiero
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 )
 
 // MirrorNodeAccountBalanceQuery retrieves an account's or contract's hbar balance from the mirror
-// node REST API, replacing AccountBalanceQuery. It is free and requires no operator. The mirror node
-// trails the network by a few seconds, so results are not read-after-write consistent.
+// node REST API, replacing AccountBalanceQuery. It is free and requires no operator.
+//
+// The mirror node trails the network by a few seconds, so results are not read-after-write
+// consistent: a freshly created account fails with StatusInvalidAccountID until it is ingested.
 type MirrorNodeAccountBalanceQuery struct {
 	accountID   *AccountID
 	maxAttempts uint64
@@ -48,7 +51,7 @@ func (q *MirrorNodeAccountBalanceQuery) GetMaxAttempts() uint64 {
 	return q.maxAttempts
 }
 
-// Execute executes the Query with the provided client
+// Execute executes the query with the provided client
 func (q *MirrorNodeAccountBalanceQuery) Execute(client *Client) (MirrorNodeAccountBalance, error) {
 	if client == nil {
 		return MirrorNodeAccountBalance{}, errNoClientProvided
@@ -96,7 +99,6 @@ func (q *MirrorNodeAccountBalanceQuery) resolveAttempts(client *Client) uint64 {
 	return maxAttempts
 }
 
-// buildURL escapes the filter: an alias is opaque bytes and must not alter the query string.
 func (q *MirrorNodeAccountBalanceQuery) buildURL(mirrorBaseURL string) string {
 	params := url.Values{}
 	params.Set("account.id", q.accountID._MirrorNodePathID())
@@ -118,7 +120,6 @@ func (q *MirrorNodeAccountBalanceQuery) validateNetworkOnIDs(client *Client) err
 	return nil
 }
 
-// fetchAccountBalances GETs the balances endpoint through the shared retry core.
 func fetchAccountBalances(client *Client, endpoint string, attempts uint64) ([]byte, error) {
 	resp, err := mirrorNodeGetWithRetry(client, endpoint, attempts, mirrorNodeDefaultTimeout)
 	if err != nil {
@@ -128,16 +129,21 @@ func fetchAccountBalances(client *Client, endpoint string, attempts uint64) ([]b
 	return mirrorNodeReadBody(resp)
 }
 
-// parseAccountBalances reads an empty list as a zero balance: the endpoint returns one for an
-// unknown account rather than a 404, so zero is not proof the account exists.
+// parseAccountBalances maps an empty balances list onto StatusInvalidAccountID, the status
+// AccountBalanceQuery returned for an unknown account. The endpoint reports one as 200 with no rows.
 func parseAccountBalances(body []byte) (MirrorNodeAccountBalance, error) {
 	var raw accountBalancesResponseJSON
 	if err := json.Unmarshal(body, &raw); err != nil {
 		return MirrorNodeAccountBalance{}, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	if raw.Balances == nil {
+		return MirrorNodeAccountBalance{}, errors.New("mirror node response has no balances array")
+	}
+
+	// An existing account with no hbar returns "balance": 0, so an empty list only means unknown.
 	if len(raw.Balances) == 0 {
-		return MirrorNodeAccountBalance{Hbars: HbarFromTinybar(0)}, nil
+		return MirrorNodeAccountBalance{}, ErrHederaPreCheckStatus{Status: StatusInvalidAccountID}
 	}
 
 	return MirrorNodeAccountBalance{Hbars: HbarFromTinybar(raw.Balances[0].Balance)}, nil
@@ -149,6 +155,5 @@ type accountBalancesResponseJSON struct {
 }
 
 type accountBalanceJSON struct {
-	Account string `json:"account"`
-	Balance int64  `json:"balance"`
+	Balance int64 `json:"balance"`
 }

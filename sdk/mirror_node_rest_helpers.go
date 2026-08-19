@@ -25,8 +25,7 @@ const (
 )
 
 // mirrorNodeRestBaseURL returns the client's mirror node REST API base URL, erroring when no
-// mirror network is configured. A caller whose endpoint is served on a different port against a
-// local node overrides it afterwards.
+// mirror network is configured.
 func mirrorNodeRestBaseURL(client *Client) (string, error) {
 	if client == nil {
 		return "", errNoClientProvided

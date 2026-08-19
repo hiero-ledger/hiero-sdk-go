@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -30,6 +31,10 @@ func mirrorHbarBalanceEventually(env *IntegrationTestEnv, query *MirrorNodeAccou
 		if err == nil && ready(balance) {
 			return balance, nil
 		}
+	}
+
+	if err == nil {
+		err = fmt.Errorf("mirror node did not reach the expected state within %d attempts", mirrorHbarBalanceRetryAttempts)
 	}
 
 	return balance, err
@@ -160,6 +165,16 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanGetContractBalance(t *testin
 	require.NoError(t, err)
 	contractID := *receipt.ContractID
 
+	defer func() {
+		_, err := NewContractDeleteTransaction().
+			SetContractID(contractID).
+			SetTransferAccountID(env.Client.GetOperatorAccountID()).
+			Execute(env.Client)
+		require.NoError(t, err)
+		_, err = NewFileDeleteTransaction().SetFileID(fileID).Execute(env.Client)
+		require.NoError(t, err)
+	}()
+
 	contractAccountID := AccountID{Shard: contractID.Shard, Realm: contractID.Realm, Account: contractID.Contract}
 
 	tx, err := NewTransferTransaction().
@@ -178,26 +193,18 @@ func TestIntegrationMirrorNodeAccountBalanceQueryCanGetContractBalance(t *testin
 	require.NoError(t, err)
 	assert.Equal(t, NewHbar(1).AsTinybar(), balance.Hbars.AsTinybar())
 
-	_, err = NewContractDeleteTransaction().
-		SetContractID(contractID).
-		SetTransferAccountID(env.Client.GetOperatorAccountID()).
-		Execute(env.Client)
-	require.NoError(t, err)
-	_, err = NewFileDeleteTransaction().
-		SetFileID(fileID).
-		Execute(env.Client)
-	require.NoError(t, err)
 }
 
-func TestIntegrationMirrorNodeAccountBalanceQueryNonExistentAccountIsZero(t *testing.T) {
+func TestIntegrationMirrorNodeAccountBalanceQueryNonExistentAccountErrors(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
 	defer CloseIntegrationTestEnv(env, nil)
 
-	balance, err := NewMirrorNodeAccountBalanceQuery().
+	_, err := NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(AccountID{Account: 999999999}).
 		Execute(env.Client)
 
-	require.NoError(t, err, "an unknown account is an empty balances array, not an error")
-	assert.Zero(t, balance.Hbars.AsTinybar())
+	var status ErrHederaPreCheckStatus
+	require.ErrorAs(t, err, &status)
+	assert.Equal(t, StatusInvalidAccountID, status.Status)
 }
