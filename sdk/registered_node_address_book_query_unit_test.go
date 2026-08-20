@@ -6,6 +6,8 @@ package hiero
 
 import (
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 
@@ -420,4 +422,66 @@ func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
 	_, err = NewRegisteredNodeAddressBookQuery().Execute(client)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "mirror node is not set")
+}
+
+// A local mirror serves this endpoint on 8084 rather than the default REST port.
+func TestUnitRegisteredNodeAddressBookQueryResolveEndpoint(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name    string
+		mirror  string
+		wantPre string
+	}{
+		{name: "localhost is redirected to 8084", mirror: "localhost:5600", wantPre: "http://localhost:8084/api/v1/network/registered-nodes"},
+		{name: "loopback IP is redirected to 8084", mirror: "127.0.0.1:5600", wantPre: "http://localhost:8084/api/v1/network/registered-nodes"},
+		{name: "remote mirror is left alone", mirror: "mirror.example.com:443", wantPre: "https://mirror.example.com:443/api/v1/network/registered-nodes"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			client, err := _NewMockClient()
+			require.NoError(t, err)
+			client.SetMirrorNetwork([]string{tt.mirror})
+
+			endpoint, err := NewRegisteredNodeAddressBookQuery().resolveEndpoint(client)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPre, endpoint)
+		})
+	}
+}
+
+func TestUnitRegisteredNodeAddressBookQueryWalkPagesAccumulates(t *testing.T) {
+	page := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		page++
+		if page == 1 {
+			_, _ = w.Write([]byte(`{"registered_nodes":[{"registered_node_id":1,"description":"one"}],"links":{"next":"/api/v1/network/registered-nodes?page=2"}}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"registered_nodes":[{"registered_node_id":2,"description":"two"}],"links":{"next":null}}`))
+	}))
+	defer server.Close()
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(server.URL, 1)
+
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 2, "nodes from every page are accumulated")
+	assert.Equal(t, uint64(1), book.RegisteredNodes[0].RegisteredNodeID)
+	assert.Equal(t, uint64(2), book.RegisteredNodes[1].RegisteredNodeID)
+}
+
+func TestUnitRegisteredNodeAddressBookQueryWalkPagesSurfacesHTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"_status":"bad"}`))
+	}))
+	defer server.Close()
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(server.URL, 1)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "400")
 }

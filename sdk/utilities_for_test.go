@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"testing"
@@ -473,4 +474,23 @@ func SetupMockTransportForDomain(domain string, mockServerURL string) func() {
 	return func() {
 		http.DefaultTransport = originalTransport
 	}
+}
+
+// newMockMirrorClient serves handler from a test server, redirects domain to it, and returns a
+// client whose mirror network is that domain. The server and the transport redirect are torn down
+// through t.Cleanup; because the redirect mutates http.DefaultTransport, callers must not be
+// parallel.
+func newMockMirrorClient(t *testing.T, domain string, handler http.HandlerFunc) *Client {
+	t.Helper()
+
+	server := httptest.NewServer(handler)
+	t.Cleanup(server.Close)
+	t.Cleanup(SetupMockTransportForDomain(domain, server.URL))
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{domain})
+
+	return client
 }

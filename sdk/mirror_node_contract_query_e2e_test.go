@@ -139,14 +139,14 @@ func TestMirrorNodeContractQueryFailWhenGasLimitIsLow(t *testing.T) {
 		SetGasLimit(100).
 		SetFunction("getOwner", nil).
 		Execute(env.Client)
-	require.ErrorContains(t, err, "received non-200 response from Mirror Node")
+	require.ErrorContains(t, err, "received non-200 response from mirror node")
 
 	_, err = NewMirrorNodeContractCallQuery().
 		SetContractID(*contractID).
 		SetGasLimit(100).
 		SetFunction("getOwner", nil).
 		Execute(env.Client)
-	require.ErrorContains(t, err, "received non-200 response from Mirror Node")
+	require.ErrorContains(t, err, "received non-200 response from mirror node")
 }
 
 func TestMirrorNodeContractQueryFailWhenSenderIsNotSet(t *testing.T) {
@@ -182,13 +182,13 @@ func TestMirrorNodeContractQueryFailWhenSenderIsNotSet(t *testing.T) {
 		SetContractID(*contractID).
 		SetFunction("addOwnerAndTransfer", param).
 		Execute(env.Client)
-	require.ErrorContains(t, err, "received non-200 response from Mirror Node")
+	require.ErrorContains(t, err, "received non-200 response from mirror node")
 
 	_, err = NewMirrorNodeContractCallQuery().
 		SetContractID(*contractID).
 		SetFunction("addOwnerAndTransfer", param).
 		Execute(env.Client)
-	require.ErrorContains(t, err, "received non-200 response from Mirror Node")
+	require.ErrorContains(t, err, "received non-200 response from mirror node")
 }
 func TestMirrorNodeContractQueryCanSimulateWithSenderSet(t *testing.T) {
 	env := NewIntegrationTestEnv(t)

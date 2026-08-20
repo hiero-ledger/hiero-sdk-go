@@ -21,6 +21,7 @@ var errNoClientOrTransactionID = errors.New("`client` must have an `_Operator` o
 var errNoClientOrTransactionIDOrNodeId = errors.New("`client` must be provided or both `nodeId` and `transactionId` must be set") // nolint
 var errClientOperatorSigning = errors.New("`client` must have an `_Operator` to sign with the _Operator")
 var errNoClientProvided = errors.New("`client` must be provided and have an _Operator")
+var errMirrorNodeAccountBalanceQueryNoAccountID = errors.New("`accountID` must be set on MirrorNodeAccountBalanceQuery")
 var errQueryPaymentRequiresOperator = errors.New("`client` must have an _Operator to pay for a query")
 var errTransactionIsNotFrozen = errors.New("transaction is not frozen")
 var errInnerTransactionShouldBeFrozen = errors.New("inner transaction should be frozen")
@@ -115,7 +116,8 @@ func (e ErrHederaNetwork) Error() string {
 }
 
 // ErrHederaPreCheckStatus is returned by Transaction.Execute and QueryBuilder.Execute if an exceptional status is
-// returned during _Network side validation of the sent transaction.
+// returned during _Network side validation of the sent transaction. MirrorNodeAccountBalanceQuery
+// also returns it, mapping an unknown account onto StatusInvalidAccountID.
 type ErrHederaPreCheckStatus struct {
 	TxID   TransactionID
 	Status Status

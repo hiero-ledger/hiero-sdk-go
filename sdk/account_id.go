@@ -1,6 +1,7 @@
 package hiero
 
 import (
+	"encoding/base32"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -339,21 +340,34 @@ const (
 	EvmAddress
 )
 
-func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (map[string]interface{}, error) {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return nil, errors.New("mirror node is not set")
+// _MirrorNodePathID renders the AccountID as the mirror node accepts it: shard.realm.num when a
+// number is set, otherwise an EVM-address alias as bare hex or a public key alias as unpadded
+// base32. Alias forms carry no shard.realm prefix.
+func (id AccountID) _MirrorNodePathID() string {
+	if id.Account != 0 {
+		return fmt.Sprintf("%d.%d.%d", id.Shard, id.Realm, id.Account)
 	}
 
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	switch {
+	case id.AliasEvmAddress != nil:
+		return hex.EncodeToString(*id.AliasEvmAddress)
+	case id.AliasKey != nil:
+		if aliasBytes, err := protobuf.Marshal(id.AliasKey._ToProtoKey()); err == nil {
+			return base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(aliasBytes)
+		}
+		return id.String()
+	default:
+		return id.String()
+	}
+}
+
+func (id *AccountID) _MirrorNodeRequest(client *Client) (map[string]interface{}, error) {
+	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {
 		return nil, err
 	}
 
-	if populateType == "account" {
-		mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, hex.EncodeToString(*id.AliasEvmAddress))
-	} else {
-		mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, id.String())
-	}
+	mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, id._MirrorNodePathID())
 
 	resp, err := http.Get(mirrorUrl) // #nosec
 	if err != nil {
@@ -373,7 +387,7 @@ func (id *AccountID) _MirrorNodeRequest(client *Client, populateType string) (ma
 // Should be used after generating `AccountId.FromEvmAddress()` because it sets the `Account` field to `0`
 // automatically since there is no connection between the `Account` and the `evmAddress`
 func (id *AccountID) PopulateAccount(client *Client) error {
-	result, err := id._MirrorNodeRequest(client, "account")
+	result, err := id._MirrorNodeRequest(client)
 	if err != nil {
 		return err
 	}
@@ -394,7 +408,7 @@ func (id *AccountID) PopulateAccount(client *Client) error {
 
 // PopulateEvmAddress gets the actual `AliasEvmAddress` field of the `AccountId` from the Mirror Node.
 func (id *AccountID) PopulateEvmAddress(client *Client) error {
-	result, err := id._MirrorNodeRequest(client, "evmAddress")
+	result, err := id._MirrorNodeRequest(client)
 	if err != nil {
 		return err
 	}

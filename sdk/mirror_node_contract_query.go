@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -199,10 +197,7 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) fillEvmAddresses() error
 }
 
 func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMirrorNode(client *Client, jsonPayload string) (map[string]any, error) {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return nil, errors.New("mirror node is not set")
-	}
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	mirrorUrl, err := mirrorNodeRestBaseURL(client)
 	if err != nil {
 		return nil, err
 	}
@@ -218,18 +213,14 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMir
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	if resp == nil {
-		return nil, errors.New("received nil response from Mirror Node")
-	}
 
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("received non-200 response from Mirror Node: %d, details: %s", resp.StatusCode, body)
+	body, err := mirrorNodeReadBody(resp)
+	if err != nil {
+		return nil, err
 	}
 
 	var result map[string]any
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	if err := json.Unmarshal(body, &result); err != nil {
 		return nil, err
 	}
 	return result, nil

@@ -303,7 +303,7 @@ func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
 		SetFunction("testFunction", NewContractFunctionParameters().AddString("test")).
 		Execute(client)
-	require.ErrorContains(t, err, "received non-200 response from Mirror Node")
+	require.ErrorContains(t, err, "received non-200 response from mirror node")
 	assert.Equal(t, int32(1), atomic.LoadInt32(&attempts), "non-200 responses must not be retried")
 }
 
