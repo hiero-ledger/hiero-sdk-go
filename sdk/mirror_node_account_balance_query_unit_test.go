@@ -307,7 +307,7 @@ func TestUnitMirrorNodeAccountBalanceQueryResolveAttempts(t *testing.T) {
 	require.Equal(t, -1, client.GetMaxAttempts(), "an unset client reports -1, not a usable count")
 
 	query := NewMirrorNodeAccountBalanceQuery()
-	assert.Equal(t, uint64(maxAttempts), query.resolveAttempts(client), "falls back to the SDK default")
+	assert.Equal(t, uint64(mirrorNodeDefaultMaxAttempts), query.resolveAttempts(client), "falls back to the mirror node default")
 
 	client.SetMaxAttempts(4)
 	assert.Equal(t, uint64(4), query.resolveAttempts(client), "client setting is used when the query has none")
@@ -356,4 +356,66 @@ func TestUnitMirrorNodeAccountBalanceQueryWrapsTransportFailure(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to send request")
+}
+
+var errNotNil = errors.New("any error")
+
+// SetAccountID documents alias support, so an ID sent as an alias must not be checksum-validated —
+// an alias carries no checksum. An ID sent by number must still be validated, even if it also
+// carries an alias.
+func TestUnitMirrorNodeAccountBalanceQueryChecksumValidationAllowsAliases(t *testing.T) {
+	client := newMockMirrorClient(t, "aliaschecksum.example.com:443", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"balances":[{"balance":7}]}`))
+	})
+	client.SetAutoValidateChecksums(true)
+
+	key, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	publicKey := key.PublicKey()
+	evmAccountID, err := AccountIDFromEvmPublicAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e")
+	require.NoError(t, err)
+	goodChecksum, err := AccountIDFromString("0.0.123-esxsf")
+	require.NoError(t, err)
+	badChecksum, err := AccountIDFromString("0.0.123-rmkykd")
+	require.NoError(t, err)
+
+	numberAndEvmBadChecksum := badChecksum
+	numberAndEvmBadChecksum.AliasEvmAddress = evmAccountID.AliasEvmAddress
+
+	for _, tt := range []struct {
+		name      string
+		accountID AccountID
+		wantErr   error
+	}{
+		{name: "public key alias", accountID: AccountID{AliasKey: &publicKey}},
+		{name: "EVM address alias", accountID: evmAccountID},
+		{name: "numeric with valid checksum", accountID: goodChecksum},
+		{name: "numeric without checksum", accountID: AccountID{Account: 5}, wantErr: errChecksumMissing},
+		// Sent by number, so the checksum is still meaningful and still checked.
+		{name: "numeric with wrong checksum, carrying an EVM alias", accountID: numberAndEvmBadChecksum, wantErr: errNotNil},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewMirrorNodeAccountBalanceQuery().SetAccountID(tt.accountID).Execute(client)
+			switch {
+			case tt.wantErr == errNotNil:
+				require.Error(t, err)
+			case tt.wantErr != nil:
+				require.ErrorIs(t, err, tt.wantErr)
+			default:
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+// A default query must not be able to block for minutes: 3 attempts at 30s each, and SetMaxAttempts
+// lets a caller tighten it further.
+func TestUnitMirrorNodeAccountBalanceQueryBoundsWallClockByDefault(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+
+	assert.Equal(t, uint64(3), uint64(mirrorNodeDefaultMaxAttempts), "3 attempts x 30s bounds the default")
+	assert.Equal(t, uint64(1), NewMirrorNodeAccountBalanceQuery().SetMaxAttempts(1).resolveAttempts(client))
 }

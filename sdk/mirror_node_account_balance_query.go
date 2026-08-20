@@ -88,7 +88,7 @@ func (q *MirrorNodeAccountBalanceQuery) resolveEndpoint(client *Client) (string,
 }
 
 // resolveAttempts picks the retry budget: query setting first,
-// client default second, the SDK default as the final fallback.
+// client default second, the mirror node default as the final fallback.
 func (q *MirrorNodeAccountBalanceQuery) resolveAttempts(client *Client) uint64 {
 	if q.maxAttempts > 0 {
 		return q.maxAttempts
@@ -96,7 +96,7 @@ func (q *MirrorNodeAccountBalanceQuery) resolveAttempts(client *Client) uint64 {
 	if clientMax := client.GetMaxAttempts(); clientMax > 0 {
 		return uint64(clientMax)
 	}
-	return maxAttempts
+	return mirrorNodeDefaultMaxAttempts
 }
 
 func (q *MirrorNodeAccountBalanceQuery) buildURL(mirrorBaseURL string) string {
@@ -107,17 +107,17 @@ func (q *MirrorNodeAccountBalanceQuery) buildURL(mirrorBaseURL string) string {
 }
 
 func (q *MirrorNodeAccountBalanceQuery) validateNetworkOnIDs(client *Client) error {
-	if client == nil || !client.autoValidateChecksums {
+	if client == nil || !client.autoValidateChecksums || q.accountID == nil {
 		return nil
 	}
 
-	if q.accountID != nil {
-		if err := q.accountID.ValidateChecksum(client); err != nil {
-			return err
-		}
+	// Only an ID with no account number is sent as an alias (see _MirrorNodePathID), and an alias
+	// carries no checksum to validate. Anything sent by number is validated as usual.
+	if q.accountID.Account == 0 && (q.accountID.AliasKey != nil || q.accountID.AliasEvmAddress != nil) {
+		return nil
 	}
 
-	return nil
+	return q.accountID.ValidateChecksum(client)
 }
 
 func fetchAccountBalances(client *Client, endpoint string, attempts uint64) ([]byte, error) {
