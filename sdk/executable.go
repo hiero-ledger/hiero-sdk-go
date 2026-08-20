@@ -269,31 +269,15 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 
 		method := e.getMethod(channel)
 
-		var resp interface{}
-
 		var grpcDeadline time.Duration
 		if e.GetGrpcDeadline() != nil {
 			grpcDeadline = *e.GetGrpcDeadline()
 		} else {
 			grpcDeadline = client.GetGrpcDeadline()
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), grpcDeadline)
-		defer cancel()
-
 		txLogger.Trace("executing gRPC call", "requestId", e.getLogID(e))
 
-		var marshaledResponse []byte
-		if method.query != nil {
-			resp, err = method.query(ctx, protoRequest.(*services.Query))
-			if err == nil {
-				marshaledResponse, _ = protobuf.Marshal(resp.(*services.Response))
-			}
-		} else {
-			resp, err = method.transaction(ctx, protoRequest.(*services.Transaction))
-			if err == nil {
-				marshaledResponse, _ = protobuf.Marshal(resp.(*services.TransactionResponse))
-			}
-		}
+		resp, marshaledResponse, err := _ExecuteRequest(method, grpcDeadline, protoRequest)
 
 		if err != nil {
 			e.advanceRequest()
@@ -378,6 +362,29 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 	txLogger.Error("exceeded maximum attempts for request", "last exception being", errPersistent)
 
 	return &services.Response{}, errPersistent
+}
+
+func _ExecuteRequest(method _Method, grpcDeadline time.Duration, protoRequest interface{}) (interface{}, []byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), grpcDeadline)
+	defer cancel()
+
+	if method.query != nil {
+		resp, err := method.query(ctx, protoRequest.(*services.Query))
+		if err != nil {
+			return resp, nil, err
+		}
+
+		marshaledResponse, _ := protobuf.Marshal(resp)
+		return resp, marshaledResponse, nil
+	}
+
+	resp, err := method.transaction(ctx, protoRequest.(*services.Transaction))
+	if err != nil {
+		return resp, nil, err
+	}
+
+	marshaledResponse, _ := protobuf.Marshal(resp)
+	return resp, marshaledResponse, nil
 }
 
 func _DelayForAttempt(logID string, backoff time.Duration, attempt int64, logger Logger, err error) {
