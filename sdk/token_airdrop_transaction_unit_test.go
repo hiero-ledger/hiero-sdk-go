@@ -5,6 +5,8 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -339,4 +341,212 @@ func TestUnitTokenAirdropTransactionFromToBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenAirdropTransaction).buildProtoBody())
+}
+
+// The builder methods below locate a token's existing entry by scanning the
+// tokenTransfers map. That scan previously compared only shard and realm, so
+// tokens differing only in their token number matched each other. These tests
+// pin the behaviour with exactly that shape — the case the single-token tests
+// above never exercise.
+
+func TestUnitTokenAirdropTransactionAddTokenTransferMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+	receiver := AccountID{Account: 3}
+
+	transaction := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, sender, -100).
+		AddTokenTransfer(tokenA, receiver, 100).
+		AddTokenTransfer(tokenB, sender, -50).
+		AddTokenTransfer(tokenB, receiver, 50)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Contains(t, transfers, tokenA)
+	require.Contains(t, transfers, tokenB)
+	require.Len(t, transfers[tokenA], 2)
+	require.Len(t, transfers[tokenB], 2)
+
+	assert.Equal(t, int64(-100), amountFor(t, transfers[tokenA], sender))
+	assert.Equal(t, int64(100), amountFor(t, transfers[tokenA], receiver))
+	assert.Equal(t, int64(-50), amountFor(t, transfers[tokenB], sender))
+	assert.Equal(t, int64(50), amountFor(t, transfers[tokenB], receiver))
+}
+
+func TestUnitTokenAirdropTransactionAddTokenTransferWithDecimalsMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddTokenTransferWithDecimals(tokenA, sender, -100, 8).
+		AddTokenTransferWithDecimals(tokenB, sender, -50, 2)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Contains(t, transfers, tokenA)
+	require.Contains(t, transfers, tokenB)
+	assert.Equal(t, int64(-100), amountFor(t, transfers[tokenA], sender))
+	assert.Equal(t, int64(-50), amountFor(t, transfers[tokenB], sender))
+
+	decimals := transaction.GetTokenIDDecimals()
+	assert.Equal(t, uint32(8), decimals[tokenA])
+	assert.Equal(t, uint32(2), decimals[tokenB])
+}
+
+func TestUnitTokenAirdropTransactionAddApprovedTokenTransferMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddApprovedTokenTransfer(tokenA, sender, -100, true).
+		AddApprovedTokenTransfer(tokenB, sender, -50, false)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Len(t, transfers[tokenA], 1)
+	require.Len(t, transfers[tokenB], 1)
+	assert.Equal(t, int64(-100), transfers[tokenA][0].Amount)
+	assert.Equal(t, int64(-50), transfers[tokenB][0].Amount)
+	assert.True(t, transfers[tokenA][0].IsApproved)
+	assert.False(t, transfers[tokenB][0].IsApproved, "approval must not leak from tokenA to tokenB")
+}
+
+func TestUnitTokenAirdropTransactionAddApprovedTokenTransferWithDecimalsMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddApprovedTokenTransferWithDecimals(tokenA, sender, -100, 8, true).
+		AddApprovedTokenTransferWithDecimals(tokenB, sender, -50, 2, false)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Len(t, transfers[tokenA], 1)
+	require.Len(t, transfers[tokenB], 1)
+	assert.Equal(t, int64(-100), transfers[tokenA][0].Amount)
+	assert.Equal(t, int64(-50), transfers[tokenB][0].Amount)
+	assert.True(t, transfers[tokenA][0].IsApproved)
+	assert.False(t, transfers[tokenB][0].IsApproved, "approval must not leak from tokenA to tokenB")
+}
+
+func TestUnitTokenAirdropTransactionSetTokenTransferApprovalOtherTokensUnaffected(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, sender, -100).
+		AddTokenTransfer(tokenB, sender, -50).
+		SetTokenTransferApproval(tokenA, sender, true)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Len(t, transfers[tokenA], 1)
+	require.Len(t, transfers[tokenB], 1)
+	assert.True(t, transfers[tokenA][0].IsApproved)
+	assert.False(t, transfers[tokenB][0].IsApproved, "approval must not leak to the token that was not named")
+}
+
+func TestUnitTokenAirdropTransactionSetNftTransferApprovalOtherTokensUnaffected(t *testing.T) {
+	t.Parallel()
+
+	// Serial numbers restart at 1 for every collection, so serial 1 exists in both.
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+	receiver := AccountID{Account: 3}
+
+	transaction := NewTokenAirdropTransaction().
+		AddNftTransfer(NftID{TokenID: tokenA, SerialNumber: 1}, sender, receiver).
+		AddNftTransfer(NftID{TokenID: tokenB, SerialNumber: 1}, sender, receiver).
+		SetNftTransferApproval(NftID{TokenID: tokenA, SerialNumber: 1}, true)
+
+	nftTransfers := transaction.GetNftTransfers()
+	require.Len(t, nftTransfers[tokenA], 1)
+	require.Len(t, nftTransfers[tokenB], 1)
+	assert.True(t, nftTransfers[tokenA][0].IsApproved)
+	assert.False(t, nftTransfers[tokenB][0].IsApproved, "approval must not leak to the collection that was not named")
+}
+
+// TokenAirdropTransaction and TransferTransaction expose mirror-image builder APIs
+// over identically shaped transfer maps and must produce identical
+// TokenTransferLists for identical input.
+func TestUnitTokenAirdropTransactionMatchesTransferTransactionProto(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+	receiver := AccountID{Account: 3}
+	nftA := NftID{TokenID: tokenA, SerialNumber: 1}
+	nftB := NftID{TokenID: tokenB, SerialNumber: 1}
+
+	airdrop := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, sender, -100).
+		AddTokenTransfer(tokenA, receiver, 100).
+		AddTokenTransfer(tokenB, sender, -50).
+		AddTokenTransfer(tokenB, receiver, 50).
+		AddNftTransfer(nftA, sender, receiver).
+		AddNftTransfer(nftB, sender, receiver).
+		SetNftTransferApproval(nftA, true).
+		SetTokenTransferApproval(tokenA, sender, true)
+
+	transfer := NewTransferTransaction().
+		AddTokenTransfer(tokenA, sender, -100).
+		AddTokenTransfer(tokenA, receiver, 100).
+		AddTokenTransfer(tokenB, sender, -50).
+		AddTokenTransfer(tokenB, receiver, 50).
+		AddNftTransfer(nftA, sender, receiver).
+		AddNftTransfer(nftB, sender, receiver).
+		SetNftTransferApproval(nftA, true).
+		SetTokenTransferApproval(tokenA, sender, true)
+
+	assert.Equal(t,
+		normalizeTokenTransferLists(transfer.build().GetCryptoTransfer().GetTokenTransfers()),
+		normalizeTokenTransferLists(airdrop.build().GetTokenAirdrop().GetTokenTransfers()),
+	)
+}
+
+// amountFor returns the transferred amount for accountID, failing the test if absent.
+func amountFor(t *testing.T, transfers []TokenTransfer, accountID AccountID) int64 {
+	t.Helper()
+	for _, transfer := range transfers {
+		if transfer.AccountID == accountID {
+			return transfer.Amount
+		}
+	}
+	t.Fatalf("no transfer found for account %s", accountID)
+	return 0
+}
+
+// normalizeTokenTransferLists renders transfer lists in a stable order so that two
+// transactions built from the same input compare equal regardless of map ordering.
+func normalizeTokenTransferLists(lists []*services.TokenTransferList) []string {
+	out := make([]string, 0, len(lists))
+	for _, list := range lists {
+		entries := make([]string, 0, len(list.Transfers)+len(list.NftTransfers))
+		for _, transfer := range list.Transfers {
+			entries = append(entries, fmt.Sprintf("ft account=%d amount=%d approved=%t",
+				transfer.AccountID.GetAccountNum(), transfer.Amount, transfer.IsApproval))
+		}
+		for _, nft := range list.NftTransfers {
+			entries = append(entries, fmt.Sprintf("nft serial=%d sender=%d receiver=%d approved=%t",
+				nft.SerialNumber, nft.SenderAccountID.GetAccountNum(),
+				nft.ReceiverAccountID.GetAccountNum(), nft.IsApproval))
+		}
+		sort.Strings(entries)
+		out = append(out, fmt.Sprintf("token=%d decimals=%v %v",
+			list.Token.GetTokenNum(), list.ExpectedDecimals.GetValue(), entries))
+	}
+	sort.Strings(out)
+	return out
 }

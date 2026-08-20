@@ -156,3 +156,22 @@ func TestUnitTokenIDToEvmAddress(t *testing.T) {
 	id = TokenID{Shard: 1, Realm: 1, Token: 123}
 	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 }
+
+func TestUnitTokenIDCompareDistinguishesEveryField(t *testing.T) {
+	t.Parallel()
+
+	base := TokenID{Shard: 1, Realm: 2, Token: 3}
+
+	assert.Zero(t, base.Compare(TokenID{Shard: 1, Realm: 2, Token: 3}))
+	assert.NotZero(t, base.Compare(TokenID{Shard: 9, Realm: 2, Token: 3}), "shard must be significant")
+	assert.NotZero(t, base.Compare(TokenID{Shard: 1, Realm: 9, Token: 3}), "realm must be significant")
+	assert.NotZero(t, base.Compare(TokenID{Shard: 1, Realm: 2, Token: 9}), "token number must be significant")
+
+	// Everything on a live network is 0.0.x, so the token number is the only
+	// field that distinguishes real token IDs.
+	assert.NotZero(t, TokenID{Token: 1000}.Compare(TokenID{Token: 2000}))
+
+	// A checksum is presentation metadata and must not affect identity.
+	checksum := "abcde"
+	assert.Zero(t, base.Compare(TokenID{Shard: 1, Realm: 2, Token: 3, checksum: &checksum}))
+}

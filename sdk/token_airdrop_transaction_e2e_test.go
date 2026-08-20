@@ -495,3 +495,76 @@ func TestIntegrationTokenAirdropTransactionWithInvalidBody(t *testing.T) {
 		Execute(env.Client)
 	require.ErrorContains(t, err, "INVALID_TRANSACTION_BODY")
 }
+
+// Airdrops several tokens at once: each must keep its own transfer list. Asserts
+// on the record — what actually moved on the network — not on builder state.
+func TestIntegrationTokenAirdropTransactionTransfersMultipleTokensIndependently(t *testing.T) {
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	tokenA, err := createFungibleToken(&env)
+	require.NoError(t, err)
+	tokenB, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	nftA, err := createNft(&env)
+	require.NoError(t, err)
+	nftB, err := createNft(&env)
+	require.NoError(t, err)
+
+	// Serial numbers restart at 1 per collection, so both mints yield serial 1.
+	mintA, err := NewTokenMintTransaction().SetTokenID(nftA).SetMetadatas(mintMetadata).Execute(env.Client)
+	require.NoError(t, err)
+	receiptA, err := mintA.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	mintB, err := NewTokenMintTransaction().SetTokenID(nftB).SetMetadatas(mintMetadata).Execute(env.Client)
+	require.NoError(t, err)
+	receiptB, err := mintB.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	receiver, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	// Distinct amounts per token so the record attributes each movement unambiguously.
+	airdropTx, err := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, env.OperatorID, -100).
+		AddTokenTransfer(tokenA, receiver, 100).
+		AddTokenTransfer(tokenB, env.OperatorID, -50).
+		AddTokenTransfer(tokenB, receiver, 50).
+		AddNftTransfer(nftA.Nft(receiptA.SerialNumbers[0]), env.OperatorID, receiver).
+		AddNftTransfer(nftB.Nft(receiptB.SerialNumbers[0]), env.OperatorID, receiver).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	record, err := airdropTx.SetValidateStatus(true).GetRecord(env.Client)
+	require.NoError(t, err)
+
+	// Each fungible token must move its own amount, and neither may absorb the other.
+	require.Contains(t, record.TokenTransfers, tokenA)
+	require.Contains(t, record.TokenTransfers, tokenB)
+	assert.Equal(t, int64(100), recordAmountFor(t, record.TokenTransfers[tokenA], receiver))
+	assert.Equal(t, int64(-100), recordAmountFor(t, record.TokenTransfers[tokenA], env.OperatorID))
+	assert.Equal(t, int64(50), recordAmountFor(t, record.TokenTransfers[tokenB], receiver))
+	assert.Equal(t, int64(-50), recordAmountFor(t, record.TokenTransfers[tokenB], env.OperatorID))
+
+	// Both collections must move their serial 1, not one collection twice.
+	require.Len(t, record.NftTransfers[nftA], 1)
+	require.Len(t, record.NftTransfers[nftB], 1)
+	assert.Equal(t, receiptA.SerialNumbers[0], record.NftTransfers[nftA][0].SerialNumber)
+	assert.Equal(t, receiptB.SerialNumbers[0], record.NftTransfers[nftB][0].SerialNumber)
+}
+
+// recordAmountFor returns the amount moved for accountID, failing the test if absent.
+func recordAmountFor(t *testing.T, transfers []TokenTransfer, accountID AccountID) int64 {
+	t.Helper()
+	for _, transfer := range transfers {
+		if transfer.AccountID == accountID {
+			return transfer.Amount
+		}
+	}
+	t.Fatalf("no transfer found for account %s", accountID)
+	return 0
+}
