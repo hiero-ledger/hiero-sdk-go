@@ -1,3 +1,11 @@
+## v2.84.0
+
+### Added
+- `MirrorNodeAccountBalanceQuery`, a free mirror node REST query that replaces `AccountBalanceQuery`, which consensus node v0.77 no longer serves. Stage 2 of the cross-SDK [`AccountBalanceQuery` deprecation proposal](https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/account-balance-query-deprecation.md) [#1814](https://github.com/hiero-ledger/hiero-sdk-go/pull/1814)
+
+### Fixed
+- `AccountID.PopulateAccount` no longer panics when the ID carries no EVM address alias [#1814](https://github.com/hiero-ledger/hiero-sdk-go/pull/1814)
+
 ## v2.83.0
 
 ### Changed
