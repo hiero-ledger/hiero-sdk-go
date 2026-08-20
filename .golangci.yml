@@ -28,6 +28,11 @@ linters:
                 - "-QF1008" # Omit embedded fields from selector expression.
     exclusions:
         generated: lax
+        rules:
+            # The SDK must keep reading protobuf fields HAPI marks deprecated.
+            - linters:
+                  - staticcheck
+              text: "SA1019: .*is deprecated: Marked as deprecated in .*\\.proto"
         presets:
             - comments
             - common-false-positives
