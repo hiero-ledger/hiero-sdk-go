@@ -59,7 +59,7 @@ func _TokenAirdropTransactionFromProtobuf(tx Transaction[*TokenAirdropTransactio
 // SetTokenTransferApproval Sets the desired token unit balance adjustments
 func (tx *TokenAirdropTransaction) SetTokenTransferApproval(tokenID TokenID, accountID AccountID, approval bool) *TokenAirdropTransaction { //nolint
 	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.equals(tokenID) {
+		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
 					transfer.isApproved = approval
@@ -74,7 +74,7 @@ func (tx *TokenAirdropTransaction) SetTokenTransferApproval(tokenID TokenID, acc
 // SetNftTransferApproval Sets the desired nft token unit balance adjustments
 func (tx *TokenAirdropTransaction) SetNftTransferApproval(nftID NftID, approval bool) *TokenAirdropTransaction {
 	for token, nftTransfers := range tx.nftTransfers {
-		if token.equals(nftID.TokenID) {
+		if token.Compare(nftID.TokenID) == 0 {
 			for _, nftTransfer := range nftTransfers {
 				if nftTransfer.SerialNumber == nftID.SerialNumber {
 					nftTransfer.IsApproved = approval
@@ -142,7 +142,7 @@ func (tx *TokenAirdropTransaction) AddTokenTransferWithDecimals(tokenID TokenID,
 	tx._RequireNotFrozen()
 
 	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.equals(tokenID) {
+		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
@@ -183,7 +183,7 @@ func (tx *TokenAirdropTransaction) AddTokenTransfer(tokenID TokenID, accountID A
 	tx._RequireNotFrozen()
 
 	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.equals(tokenID) {
+		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
@@ -242,7 +242,7 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransferWithDecimals(tokenID 
 	tx._RequireNotFrozen()
 
 	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.equals(tokenID) {
+		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
@@ -285,7 +285,7 @@ func (tx *TokenAirdropTransaction) AddApprovedTokenTransfer(tokenID TokenID, acc
 	tx._RequireNotFrozen()
 
 	for token, tokenTransfer := range tx.tokenTransfers {
-		if token.equals(tokenID) {
+		if token.Compare(tokenID) == 0 {
 			for _, transfer := range tokenTransfer.Transfers {
 				if transfer.accountID._Equals(accountID) {
 					transfer.amount = HbarFromTinybar(transfer.amount.AsTinybar() + value)
