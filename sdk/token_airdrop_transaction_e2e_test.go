@@ -495,3 +495,38 @@ func TestIntegrationTokenAirdropTransactionWithInvalidBody(t *testing.T) {
 		Execute(env.Client)
 	require.ErrorContains(t, err, "INVALID_TRANSACTION_BODY")
 }
+
+func TestIntegrationTokenAirdropTransactionTransfersMultipleTokensIndependently(t *testing.T) {
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	tokenA, err := createFungibleToken(&env)
+	require.NoError(t, err)
+	tokenB, err := createFungibleToken(&env)
+	require.NoError(t, err)
+
+	receiver, _, err := createAccount(&env, func(tx *AccountCreateTransaction) {
+		tx.SetMaxAutomaticTokenAssociations(-1)
+	})
+	require.NoError(t, err)
+
+	// Distinct amounts per token so the record attributes each movement unambiguously.
+	airdropTx, err := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, env.OperatorID, -100).
+		AddTokenTransfer(tokenA, receiver, 100).
+		AddTokenTransfer(tokenB, env.OperatorID, -50).
+		AddTokenTransfer(tokenB, receiver, 50).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	record, err := airdropTx.SetValidateStatus(true).GetRecord(env.Client)
+	require.NoError(t, err)
+
+	// Each token must move its own amount, and neither may absorb the other.
+	require.Contains(t, record.TokenTransfers, tokenA)
+	require.Contains(t, record.TokenTransfers, tokenB)
+	assert.Equal(t, int64(100), tokenTransferAmountFor(t, record.TokenTransfers[tokenA], receiver))
+	assert.Equal(t, int64(-100), tokenTransferAmountFor(t, record.TokenTransfers[tokenA], env.OperatorID))
+	assert.Equal(t, int64(50), tokenTransferAmountFor(t, record.TokenTransfers[tokenB], receiver))
+	assert.Equal(t, int64(-50), tokenTransferAmountFor(t, record.TokenTransfers[tokenB], env.OperatorID))
+}

@@ -494,3 +494,16 @@ func newMockMirrorClient(t *testing.T, domain string, handler http.HandlerFunc) 
 
 	return client
 }
+
+// tokenTransferAmountFor returns the amount transferred for accountID, failing the
+// test if no transfer matches.
+func tokenTransferAmountFor(t *testing.T, transfers []TokenTransfer, accountID AccountID) int64 {
+	t.Helper()
+	for _, transfer := range transfers {
+		if transfer.AccountID.Compare(accountID) == 0 {
+			return transfer.Amount
+		}
+	}
+	t.Fatalf("no transfer found for account %s", accountID)
+	return 0
+}
