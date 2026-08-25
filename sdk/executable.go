@@ -364,21 +364,18 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 	return &services.Response{}, errPersistent
 }
 
+// _ExecuteRequest executes a single gRPC attempt within its own timeout context.
 func _ExecuteRequest(method _Method, grpcDeadline time.Duration, protoRequest interface{}) (interface{}, []byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), grpcDeadline)
 	defer cancel()
 
+	var resp protobuf.Message
+	var err error
 	if method.query != nil {
-		resp, err := method.query(ctx, protoRequest.(*services.Query))
-		if err != nil {
-			return resp, nil, err
-		}
-
-		marshaledResponse, _ := protobuf.Marshal(resp)
-		return resp, marshaledResponse, nil
+		resp, err = method.query(ctx, protoRequest.(*services.Query))
+	} else {
+		resp, err = method.transaction(ctx, protoRequest.(*services.Transaction))
 	}
-
-	resp, err := method.transaction(ctx, protoRequest.(*services.Transaction))
 	if err != nil {
 		return resp, nil, err
 	}
