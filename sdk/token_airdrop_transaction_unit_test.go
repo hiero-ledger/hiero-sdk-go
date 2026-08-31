@@ -340,3 +340,135 @@ func TestUnitTokenAirdropTransactionFromToBytes(t *testing.T) {
 
 	assert.Equal(t, tx.buildProtoBody(), txFromBytes.(TokenAirdropTransaction).buildProtoBody())
 }
+
+func TestUnitTokenAirdropTransactionAddTokenTransferMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+	receiver := AccountID{Account: 3}
+
+	transaction := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, sender, -100).
+		AddTokenTransfer(tokenA, receiver, 100).
+		AddTokenTransfer(tokenB, sender, -50).
+		AddTokenTransfer(tokenB, receiver, 50)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Contains(t, transfers, tokenA)
+	require.Contains(t, transfers, tokenB)
+	require.Len(t, transfers[tokenA], 2)
+	require.Len(t, transfers[tokenB], 2)
+
+	assert.Equal(t, int64(-100), tokenTransferAmountFor(t, transfers[tokenA], sender))
+	assert.Equal(t, int64(100), tokenTransferAmountFor(t, transfers[tokenA], receiver))
+	assert.Equal(t, int64(-50), tokenTransferAmountFor(t, transfers[tokenB], sender))
+	assert.Equal(t, int64(50), tokenTransferAmountFor(t, transfers[tokenB], receiver))
+}
+
+func TestUnitTokenAirdropTransactionAddTokenTransferWithDecimalsMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddTokenTransferWithDecimals(tokenA, sender, -100, 8).
+		AddTokenTransferWithDecimals(tokenB, sender, -50, 2)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Contains(t, transfers, tokenA)
+	require.Contains(t, transfers, tokenB)
+	assert.Equal(t, int64(-100), tokenTransferAmountFor(t, transfers[tokenA], sender))
+	assert.Equal(t, int64(-50), tokenTransferAmountFor(t, transfers[tokenB], sender))
+
+	decimals := transaction.GetTokenIDDecimals()
+	assert.Equal(t, uint32(8), decimals[tokenA])
+	assert.Equal(t, uint32(2), decimals[tokenB])
+}
+
+func TestUnitTokenAirdropTransactionAddApprovedTokenTransferMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddApprovedTokenTransfer(tokenA, sender, -100, true).
+		AddApprovedTokenTransfer(tokenB, sender, -50, false)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Len(t, transfers[tokenA], 1)
+	require.Len(t, transfers[tokenB], 1)
+	assert.Equal(t, int64(-100), transfers[tokenA][0].Amount)
+	assert.Equal(t, int64(-50), transfers[tokenB][0].Amount)
+	assert.True(t, transfers[tokenA][0].IsApproved)
+	assert.False(t, transfers[tokenB][0].IsApproved, "approval must not leak from tokenA to tokenB")
+}
+
+func TestUnitTokenAirdropTransactionAddApprovedTokenTransferWithDecimalsMultipleTokens(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddApprovedTokenTransferWithDecimals(tokenA, sender, -100, 8, true).
+		AddApprovedTokenTransferWithDecimals(tokenB, sender, -50, 2, false)
+
+	decimals := transaction.GetTokenIDDecimals()
+	assert.Equal(t, uint32(8), decimals[tokenA])
+	assert.Equal(t, uint32(2), decimals[tokenB])
+
+	transfers := transaction.GetTokenTransfers()
+	require.Len(t, transfers[tokenA], 1)
+	require.Len(t, transfers[tokenB], 1)
+	assert.Equal(t, int64(-100), transfers[tokenA][0].Amount)
+	assert.Equal(t, int64(-50), transfers[tokenB][0].Amount)
+	assert.True(t, transfers[tokenA][0].IsApproved)
+	assert.False(t, transfers[tokenB][0].IsApproved, "approval must not leak from tokenA to tokenB")
+}
+
+func TestUnitTokenAirdropTransactionSetTokenTransferApprovalOtherTokensUnaffected(t *testing.T) {
+	t.Parallel()
+
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+
+	transaction := NewTokenAirdropTransaction().
+		AddTokenTransfer(tokenA, sender, -100).
+		AddTokenTransfer(tokenB, sender, -50).
+		SetTokenTransferApproval(tokenA, sender, true)
+
+	transfers := transaction.GetTokenTransfers()
+	require.Len(t, transfers[tokenA], 1)
+	require.Len(t, transfers[tokenB], 1)
+	assert.True(t, transfers[tokenA][0].IsApproved)
+	assert.False(t, transfers[tokenB][0].IsApproved, "approval must not leak to the token that was not named")
+}
+
+func TestUnitTokenAirdropTransactionSetNftTransferApprovalOtherTokensUnaffected(t *testing.T) {
+	t.Parallel()
+
+	// Serial numbers restart at 1 for every collection, so serial 1 exists in both.
+	tokenA := TokenID{Token: 1}
+	tokenB := TokenID{Token: 2}
+	sender := AccountID{Account: 2}
+	receiver := AccountID{Account: 3}
+
+	transaction := NewTokenAirdropTransaction().
+		AddNftTransfer(NftID{TokenID: tokenA, SerialNumber: 1}, sender, receiver).
+		AddNftTransfer(NftID{TokenID: tokenB, SerialNumber: 1}, sender, receiver).
+		SetNftTransferApproval(NftID{TokenID: tokenA, SerialNumber: 1}, true)
+
+	nftTransfers := transaction.GetNftTransfers()
+	require.Len(t, nftTransfers[tokenA], 1)
+	require.Len(t, nftTransfers[tokenB], 1)
+	assert.True(t, nftTransfers[tokenA][0].IsApproved)
+	assert.False(t, nftTransfers[tokenB][0].IsApproved, "approval must not leak to the collection that was not named")
+}

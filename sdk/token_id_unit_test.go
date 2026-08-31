@@ -156,3 +156,19 @@ func TestUnitTokenIDToEvmAddress(t *testing.T) {
 	id = TokenID{Shard: 1, Realm: 1, Token: 123}
 	require.Equal(t, longZeroAddress, id.ToEvmAddress())
 }
+func TestUnitTokenIDEqualsDistinguishesEveryField(t *testing.T) {
+	t.Parallel()
+
+	base := TokenID{Shard: 1, Realm: 2, Token: 3}
+
+	assert.True(t, base.equals(TokenID{Shard: 1, Realm: 2, Token: 3}))
+	assert.False(t, base.equals(TokenID{Shard: 9, Realm: 2, Token: 3}), "shard must be significant")
+	assert.False(t, base.equals(TokenID{Shard: 1, Realm: 9, Token: 3}), "realm must be significant")
+	assert.False(t, base.equals(TokenID{Shard: 1, Realm: 2, Token: 9}), "token number must be significant")
+
+	assert.False(t, TokenID{Token: 1000}.equals(TokenID{Token: 2000}))
+
+	// A checksum is presentation metadata and must not affect identity.
+	checksum := "abcde"
+	assert.True(t, base.equals(TokenID{Shard: 1, Realm: 2, Token: 3, checksum: &checksum}))
+}
