@@ -33,6 +33,10 @@ func _AccountIDFromString(s string) (shard int, realm int, num int, checksum *st
 			return 0, 0, 0, nil, nil, nil, fmt.Errorf("expected {shard}.{realm}.{num}-{checksum}")
 		}
 
+		if values[1] == "" {
+			return 0, 0, 0, nil, nil, nil, fmt.Errorf("expected {shard}.{realm}.{num}-{checksum}")
+		}
+
 		checksum = &values[1]
 		s = values[0]
 	}
@@ -95,6 +99,10 @@ func _ContractIDFromString(s string) (shard int, realm int, num int, checksum *s
 		values := strings.SplitN(s, "-", 2)
 
 		if len(values) > 2 {
+			return 0, 0, 0, nil, nil, fmt.Errorf("expected {shard}.{realm}.{num}-{checksum}")
+		}
+
+		if values[1] == "" {
 			return 0, 0, 0, nil, nil, fmt.Errorf("expected {shard}.{realm}.{num}-{checksum}")
 		}
 
@@ -163,6 +171,10 @@ func _IdFromString(s string) (shard int, realm int, num int, checksum *string, e
 		values := strings.SplitN(s, "-", 2)
 
 		if len(values) > 2 {
+			return 0, 0, 0, nil, fmt.Errorf("expected {shard}.{realm}.{num}-{checksum}")
+		}
+
+		if values[1] == "" {
 			return 0, 0, 0, nil, fmt.Errorf("expected {shard}.{realm}.{num}-{checksum}")
 		}
 
