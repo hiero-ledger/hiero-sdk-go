@@ -83,10 +83,6 @@ func (tx PrngTransaction) getMethod(channel *_Channel) _Method {
 		transaction: channel._GetUtil().Prng,
 	}
 }
-func (tx PrngTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx PrngTransaction) validateNetworkOnIDs(client *Client) error {
 	return nil
 }

@@ -190,10 +190,6 @@ func (tx FileCreateTransaction) getMethod(channel *_Channel) _Method {
 		transaction: channel._GetFile().CreateFile,
 	}
 }
-func (tx FileCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx FileCreateTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, tx)
 }

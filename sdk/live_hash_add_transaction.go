@@ -208,10 +208,6 @@ func (tx LiveHashAddTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx LiveHashAddTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx LiveHashAddTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }
