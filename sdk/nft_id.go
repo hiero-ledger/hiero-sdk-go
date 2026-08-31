@@ -61,7 +61,7 @@ func (id *NftID) Validate(client *Client) error {
 
 // String returns a string representation of the NftID
 func (id NftID) String() string {
-	return fmt.Sprintf("%s@%d", id.TokenID.String(), id.SerialNumber)
+	return fmt.Sprintf("%s/%d", id.TokenID.String(), id.SerialNumber)
 }
 
 // ToStringWithChecksum returns a string representation of the NftID with a checksum
@@ -70,7 +70,7 @@ func (id NftID) ToStringWithChecksum(client Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s@%d", token, id.SerialNumber), nil
+	return fmt.Sprintf("%s/%d", token, id.SerialNumber), nil
 }
 
 func (id NftID) _ToProtobuf() *services.NftID {
