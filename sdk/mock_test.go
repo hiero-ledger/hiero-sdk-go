@@ -69,6 +69,50 @@ func TestUnitMockQuery(t *testing.T) {
 	require.NoError(t, err)
 }
 
+type contextTrackingFileCreateTransaction struct {
+	*FileCreateTransaction
+	method _Method
+}
+
+func (tx contextTrackingFileCreateTransaction) getMethod(*_Channel) _Method {
+	return tx.method
+}
+
+func TestUnitMockExecuteCancelsContextBetweenTransactionAttempts(t *testing.T) {
+	responses := [][]interface{}{{}}
+	client, server := NewMockClientAndServer(responses)
+	defer server.Close()
+
+	transaction := NewFileCreateTransaction().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetContents([]byte("hello"))
+	_, err := transaction.FreezeWith(client)
+	require.NoError(t, err)
+
+	var firstAttemptContext context.Context
+	attempt := 0
+	executable := contextTrackingFileCreateTransaction{
+		FileCreateTransaction: transaction,
+		method: _Method{
+			transaction: func(ctx context.Context, _ *services.Transaction, _ ...grpc.CallOption) (*services.TransactionResponse, error) {
+				attempt++
+				if attempt == 1 {
+					firstAttemptContext = ctx
+					return &services.TransactionResponse{NodeTransactionPrecheckCode: services.ResponseCodeEnum_BUSY}, nil
+				}
+
+				require.NotNil(t, firstAttemptContext)
+				require.ErrorIs(t, firstAttemptContext.Err(), context.Canceled)
+				return &services.TransactionResponse{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK}, nil
+			},
+		},
+	}
+
+	_, err = _Execute(client, executable)
+	require.NoError(t, err)
+	require.Equal(t, 2, attempt)
+}
+
 func DisabledTestUnitMockBackoff(t *testing.T) {
 	responses := [][]interface{}{{
 		&services.TransactionResponse{
