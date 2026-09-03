@@ -131,10 +131,6 @@ func (tx AccountDeleteTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx AccountDeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx AccountDeleteTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, tx)
 }

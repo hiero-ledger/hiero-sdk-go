@@ -458,10 +458,6 @@ func (tx TokenAirdropTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TokenAirdropTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TokenAirdropTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

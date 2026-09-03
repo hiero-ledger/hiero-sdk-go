@@ -233,10 +233,6 @@ func (tx BatchTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx BatchTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx BatchTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

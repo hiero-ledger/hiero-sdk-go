@@ -451,10 +451,6 @@ func (tx ContractCreateTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx ContractCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx ContractCreateTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

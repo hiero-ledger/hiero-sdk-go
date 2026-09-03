@@ -179,10 +179,6 @@ func TestUnitRegisteredNodeCreateTransactionScheduledBuild(t *testing.T) {
 	scheduled, err := tx.buildScheduled()
 	require.NoError(t, err)
 	require.NotNil(t, scheduled.GetRegisteredNodeCreate())
-
-	again, err := tx.constructScheduleProtobuf()
-	require.NoError(t, err)
-	require.NotNil(t, again.GetRegisteredNodeCreate())
 }
 
 func buildFrozenRegisteredNodeCreateTransaction(t *testing.T) (*RegisteredNodeCreateTransaction, *Client, PrivateKey) {

@@ -155,10 +155,6 @@ func (tx SystemUndeleteTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx SystemUndeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx SystemUndeleteTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }
