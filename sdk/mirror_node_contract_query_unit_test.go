@@ -6,6 +6,7 @@ package hiero
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -229,6 +230,7 @@ func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
@@ -267,6 +269,7 @@ func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
@@ -298,6 +301,7 @@ func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	_, err = NewMirrorNodeContractEstimateGasQuery().
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
@@ -369,6 +373,7 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create a contract query
 				query := NewMirrorNodeContractEstimateGasQuery()
@@ -406,6 +411,7 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create a contract call query
 				query := NewMirrorNodeContractCallQuery()
@@ -419,4 +425,50 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 			})
 		})
 	}
+}
+
+// #283 states that every mirror REST call in scope is read-only, so a POST must be retried on a
+// 5xx rather than suppressed as non-idempotent — and that no SDK writes this down. This pins
+// both halves: the retry happens, and the body is replayed byte-for-byte.
+func TestUnitMirrorNodeContractQueryReplaysPostBodyOnRetry(t *testing.T) {
+	// Note: Not running in parallel since we modify global http.DefaultTransport
+	const domain = "postreplay.example.com:443"
+
+	var bodies []string
+	var methods []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		payload, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		bodies = append(bodies, string(payload))
+		methods = append(methods, r.Method)
+
+		if len(bodies) == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{"result": "0x5208"}))
+	}))
+	defer server.Close()
+
+	cleanup := SetupMockTransportForDomain(domain, server.URL)
+	defer cleanup()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
+
+	gas, err := NewMirrorNodeContractEstimateGasQuery().
+		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
+		SetFunction("testFunction", NewContractFunctionParameters().AddString("test")).
+		Execute(client)
+
+	require.NoError(t, err)
+	assert.Equal(t, uint64(21000), gas)
+	require.Len(t, bodies, 2, "the 503 should be retried once")
+	assert.Equal(t, []string{http.MethodPost, http.MethodPost}, methods, "a read-only POST is retried, not suppressed")
+	assert.Equal(t, bodies[0], bodies[1], "the request body must be replayed identically")
+	assert.Contains(t, bodies[0], `"estimate":true`, "and it must still be the real payload")
 }

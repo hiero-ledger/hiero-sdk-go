@@ -476,10 +476,31 @@ func SetupMockTransportForDomain(domain string, mockServerURL string) func() {
 	}
 }
 
+// attachMockMirrorTransport points a client's mirror HTTP layer at mockServerURL for domain.
+//
+// It exists because that layer owns a private http.Transport and therefore cannot see the
+// http.DefaultTransport swap SetupMockTransportForDomain performs. Tests that build their own
+// client need both seams while call sites migrate; newMockMirrorClient wires both for tests
+// that do not.
+func attachMockMirrorTransport(t *testing.T, client *Client, domain string, mockServerURL string) {
+	t.Helper()
+
+	mock := NewMockTransport()
+	mock.AddDomainRedirect(domain, mockServerURL)
+	client.setMirrorHttpTransport(newHttpTransportOver(mock))
+}
+
 // newMockMirrorClient serves handler from a test server, redirects domain to it, and returns a
 // client whose mirror network is that domain. The server and the transport redirect are torn down
 // through t.Cleanup; because the redirect mutates http.DefaultTransport, callers must not be
 // parallel.
+//
+// Both mirror HTTP seams are wired to the same server, so a call site can be migrated onto the
+// mirror HTTP layer without its tests changing:
+//
+//   - call sites on the shared retry helper reach the mock through http.DefaultTransport
+//   - call sites on the mirror HTTP layer reach it through the injected transport, which owns a
+//     private http.Transport and so cannot see the global swap
 func newMockMirrorClient(t *testing.T, domain string, handler http.HandlerFunc) *Client {
 	t.Helper()
 
@@ -491,6 +512,10 @@ func newMockMirrorClient(t *testing.T, domain string, handler http.HandlerFunc) 
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+
+	mirrorMock := NewMockTransport()
+	mirrorMock.AddDomainRedirect(domain, server.URL)
+	client.setMirrorHttpTransport(newHttpTransportOver(mirrorMock))
 
 	return client
 }

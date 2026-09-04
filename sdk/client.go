@@ -51,6 +51,8 @@ type Client struct {
 	logger                     Logger
 	shard                      uint64
 	realm                      uint64
+
+	mirrorHttp *mirrorHttpState
 }
 
 // TransactionSigner is a closure or function that defines how transactions will be signed
@@ -183,6 +185,7 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
+		mirrorHttp:                      &mirrorHttpState{},
 		logger:                          defaultLogger,
 		shard:                           shard,
 		realm:                           realm,
@@ -419,6 +422,14 @@ func ClientFromConfigFile(filename string) (*Client, error) {
 // Close is used to disconnect the Client from the _Network
 func (client *Client) Close() error {
 	client.CancelScheduledNetworkUpdate()
+
+	// Released before the networks so that an early return from either close below cannot
+	// leak the HTTP pool. The two network closes keep their original error semantics; the
+	// early-return bug they share is pre-existing and tracked separately.
+	if err := client.closeMirrorHttp(mirrorHttpDefaultCloseGrace); err != nil {
+		return err
+	}
+
 	err := client.network._Close()
 	if err != nil {
 		return err

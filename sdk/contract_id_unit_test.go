@@ -326,6 +326,7 @@ func TestUnitContractIDPopulateContractWithDifferentPorts(t *testing.T) {
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create a contract ID with EVM address
 				evmAddressBytes, err := hex.DecodeString(evmAddress)
