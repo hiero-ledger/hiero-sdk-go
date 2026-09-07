@@ -1,6 +1,6 @@
 module github.com/hiero-ledger/hiero-sdk-go/v2
 
-go 1.25.7
+go 1.26.0
 
 require (
 	github.com/btcsuite/btcd/btcec/v2 v2.5.0
@@ -11,7 +11,7 @@ require (
 	github.com/rs/zerolog v1.35.1
 	github.com/stretchr/testify v1.12.1
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 	golang.org/x/text v0.41.0
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
