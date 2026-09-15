@@ -493,6 +493,7 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 
 // GetAccountBalance jRPC method for getAccountBalance
 func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAccountBalanceParams) (*response.AccountBalanceResponse, error) {
+	//nolint:staticcheck // no mirror node replacement for token balances yet
 	query := hiero.NewAccountBalanceQuery().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.AccountId != nil {
