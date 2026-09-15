@@ -338,6 +338,7 @@ func TestUnitAccountIDPopulateWithDifferentPorts(t *testing.T) {
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create an account ID with EVM address
 				evmAddressBytes, err := hex.DecodeString(evmAddress)
@@ -380,6 +381,7 @@ func TestUnitAccountIDPopulateWithDifferentPorts(t *testing.T) {
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create an account ID with account number
 				accountID := AccountID{

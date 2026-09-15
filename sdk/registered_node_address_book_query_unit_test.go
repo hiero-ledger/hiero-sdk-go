@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -465,7 +467,10 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesAccumulates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	book, err := NewRegisteredNodeAddressBookQuery().walkPages(server.URL, 1)
+	restClient := newDefaultMirrorHttpClient(server.URL)
+	t.Cleanup(func() { require.NoError(t, restClient.close(mirrorHttpDefaultCloseGrace)) })
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 2, "nodes from every page are accumulated")
@@ -480,8 +485,72 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesSurfacesHTTPError(t *testing
 	}))
 	defer server.Close()
 
-	_, err := NewRegisteredNodeAddressBookQuery().walkPages(server.URL, 1)
+	restClient := newDefaultMirrorHttpClient(server.URL)
+	t.Cleanup(func() { require.NoError(t, restClient.close(mirrorHttpDefaultCloseGrace)) })
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "400")
+}
+
+// Pagination now runs through the mirror HTTP layer, so a transient failure on page two is
+// retried with the same policy as page one. The loop this replaced used a fixed 200 ms delay.
+func TestUnitRegisteredNodeAddressBookQueryRetriesATransientPage(t *testing.T) {
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch atomic.AddInt32(&calls, 1) {
+		case 1:
+			_, _ = w.Write([]byte(`{"registered_nodes":[{"registered_node_id":1,"description":"one"}],"links":{"next":"/api/v1/network/registered-nodes?page=2"}}`))
+		case 2:
+			w.WriteHeader(http.StatusServiceUnavailable)
+		default:
+			_, _ = w.Write([]byte(`{"registered_nodes":[{"registered_node_id":2,"description":"two"}],"links":{"next":null}}`))
+		}
+	}))
+	defer server.Close()
+
+	options := fastRetryOptions(3)
+	restClient := newMirrorHttpClient(server.URL, newDefaultHttpTransport(0), options)
+	t.Cleanup(func() { require.NoError(t, restClient.close(time.Second)) })
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 2, "the retried page still contributes its nodes")
+	assert.Equal(t, int32(3), atomic.LoadInt32(&calls), "page two was retried once")
+}
+
+// A next link that names a host is refused rather than followed, so a page URL can only ever
+// address the configured mirror node.
+func TestUnitRegisteredNodeAddressBookQueryRejectsOffHostNextLink(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"registered_nodes":[],"links":{"next":"https://evil.example.com/api/v1/network/registered-nodes"}}`))
+	}))
+	defer server.Close()
+
+	restClient := newDefaultMirrorHttpClient(server.URL)
+	t.Cleanup(func() { require.NoError(t, restClient.close(time.Second)) })
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid pagination next link")
+	assert.Contains(t, err.Error(), "evil.example.com", "the rejected link is named in the error")
+}
+
+// The page cap still bounds a mirror node that paginates forever.
+func TestUnitRegisteredNodeAddressBookQueryStopsAtPageCap(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"registered_nodes":[],"links":{"next":"/api/v1/network/registered-nodes?page=next"}}`))
+	}))
+	defer server.Close()
+
+	restClient := newDefaultMirrorHttpClient(server.URL)
+	t.Cleanup(func() { require.NoError(t, restClient.close(time.Second)) })
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeded pagination cap")
 }

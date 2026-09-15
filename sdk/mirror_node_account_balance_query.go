@@ -3,9 +3,11 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 )
 
@@ -65,12 +67,7 @@ func (q *MirrorNodeAccountBalanceQuery) Execute(client *Client) (MirrorNodeAccou
 		return MirrorNodeAccountBalance{}, err
 	}
 
-	endpoint, err := q.resolveEndpoint(client)
-	if err != nil {
-		return MirrorNodeAccountBalance{}, err
-	}
-
-	body, err := fetchAccountBalances(client, endpoint, q.resolveAttempts(client))
+	body, err := q.fetch(context.Background(), client)
 	if err != nil {
 		return MirrorNodeAccountBalance{}, err
 	}
@@ -78,32 +75,55 @@ func (q *MirrorNodeAccountBalanceQuery) Execute(client *Client) (MirrorNodeAccou
 	return parseAccountBalances(body)
 }
 
-func (q *MirrorNodeAccountBalanceQuery) resolveEndpoint(client *Client) (string, error) {
-	mirrorUrl, err := mirrorNodeRestBaseURL(client)
+// fetch runs the request through the mirror HTTP layer: the Client owns the transport, this
+// query contributes only its own attempt budget.
+func (q *MirrorNodeAccountBalanceQuery) fetch(ctx context.Context, client *Client) ([]byte, error) {
+	restClient, err := client.mirrorRestClient(client.mirrorHttpOptionsForQuery(q.maxAttempts))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return q.buildURL(mirrorUrl), nil
+	path, err := q.buildPath()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := restClient.get(ctx, path)
+	if err != nil {
+		// A retryable status that outlived the budget still carries its response, so report it
+		// as the non-200 it is rather than as a transport failure.
+		if errors.Is(err, errMirrorHttpRetriesExhausted) {
+			return nil, mirrorNodeStatusError(resp)
+		}
+		return nil, fmt.Errorf("failed to send request: %w", err)
+	}
+	if resp.statusCode != http.StatusOK {
+		return nil, mirrorNodeStatusError(resp)
+	}
+
+	return resp.body, nil
 }
 
 // resolveAttempts picks the retry budget: query setting first,
 // client default second, the mirror node default as the final fallback.
 func (q *MirrorNodeAccountBalanceQuery) resolveAttempts(client *Client) uint64 {
-	if q.maxAttempts > 0 {
-		return q.maxAttempts
-	}
-	if clientMax := client.GetMaxAttempts(); clientMax > 0 {
-		return uint64(clientMax)
-	}
-	return mirrorNodeDefaultMaxAttempts
+	return uint64(client.mirrorHttpOptionsForQuery(q.maxAttempts).maxAttempts)
 }
 
-func (q *MirrorNodeAccountBalanceQuery) buildURL(mirrorBaseURL string) string {
+func (q *MirrorNodeAccountBalanceQuery) buildPath() (mirrorRestPath, error) {
 	params := url.Values{}
 	params.Set("account.id", q.accountID._MirrorNodePathID())
 
-	return fmt.Sprintf("%s/balances?%s", mirrorBaseURL, params.Encode())
+	return newMirrorRestPath("/balances?" + params.Encode())
+}
+
+func (q *MirrorNodeAccountBalanceQuery) buildURL(mirrorBaseURL string) string {
+	path, err := q.buildPath()
+	if err != nil {
+		return ""
+	}
+
+	return resolveMirrorPath(mirrorBaseURL, path)
 }
 
 func (q *MirrorNodeAccountBalanceQuery) validateNetworkOnIDs(client *Client) error {
@@ -118,15 +138,6 @@ func (q *MirrorNodeAccountBalanceQuery) validateNetworkOnIDs(client *Client) err
 	}
 
 	return q.accountID.ValidateChecksum(client)
-}
-
-func fetchAccountBalances(client *Client, endpoint string, attempts uint64) ([]byte, error) {
-	resp, err := mirrorNodeGetWithRetry(client, endpoint, attempts, mirrorNodeDefaultTimeout)
-	if err != nil {
-		return nil, fmt.Errorf("failed to send request: %w", err)
-	}
-
-	return mirrorNodeReadBody(resp)
 }
 
 // parseAccountBalances maps an empty balances list onto StatusInvalidAccountID, the status
