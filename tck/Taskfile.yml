@@ -8,12 +8,12 @@ tasks:
             - echo "Checking Go version..."
             - |
                 if ! command -v go &> /dev/null; then
-                  echo "Go is not installed. Please install Go 1.20 or higher."
+                  echo "Go is not installed. Please install Go 1.26 or higher."
                   exit 1
                 fi
                 GO_VERSION=$(go version | awk '{print $3}' | cut -c 3-)
-                if [ $(echo -e "1.20\n$GO_VERSION" | sort -V | head -n1) != "1.20" ]; then
-                  echo "Go 1.20 or higher is required. Current version: $GO_VERSION"
+                if [ $(echo -e "1.26\n$GO_VERSION" | sort -V | head -n1) != "1.26" ]; then
+                  echo "Go 1.26 or higher is required. Current version: $GO_VERSION"
                   exit 1
                 fi
 
