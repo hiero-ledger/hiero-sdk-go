@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-    GO_VERSION: "1.25.7"
+    GO_VERSION: "1.26.8"
     NODE_VERSION: "22"
     HIERO_VERSION: v0.73.0
     MIRROR_NODE_VERSION: v0.153.0

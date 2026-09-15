@@ -267,7 +267,7 @@ func (sk _ECDSAPrivateKey) _Derive(index uint32) (*_ECDSAPrivateKey, error) {
 }
 
 func (sk _ECDSAPrivateKey) _BytesRaw() []byte {
-	privateKey := sk.keyData.ToECDSA().D.FillBytes(make([]byte, 32))
+	privateKey := sk.keyData.Serialize()
 
 	return privateKey
 }
