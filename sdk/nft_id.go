@@ -3,7 +3,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,18 +17,20 @@ type NftID struct {
 	SerialNumber int64
 }
 
-// NewNftID constructs a new NftID from a TokenID and a serial number
+// NftIDFromString constructs an NftID from a string formatted as
+// `Shard.Realm.TokenID/SerialNumber` (for example "0.0.3/1"). `@` is also accepted.
 func NftIDFromString(s string) (NftID, error) {
-	split := strings.Split(s, "@")
-	if len(split) < 2 {
-		panic(errors.New("wrong NftID format"))
+	idx := strings.IndexAny(s, "/@")
+	if idx <= 0 || idx == len(s)-1 || strings.ContainsAny(s[idx+1:], "/@") {
+		return NftID{}, errNftIDFormat
 	}
-	shard, realm, num, checksum, err := _IdFromString(split[0])
+
+	shard, realm, num, checksum, err := _IdFromString(s[:idx])
 	if err != nil {
 		return NftID{}, err
 	}
 
-	serial, err := strconv.Atoi(split[1])
+	serial, err := strconv.ParseInt(s[idx+1:], 10, 64)
 	if err != nil {
 		return NftID{}, err
 	}
@@ -41,7 +42,7 @@ func NftIDFromString(s string) (NftID, error) {
 			Token:    uint64(num),
 			checksum: checksum,
 		},
-		SerialNumber: int64(serial),
+		SerialNumber: serial,
 	}, nil
 }
 
@@ -60,7 +61,7 @@ func (id *NftID) Validate(client *Client) error {
 
 // String returns a string representation of the NftID
 func (id NftID) String() string {
-	return fmt.Sprintf("%s@%d", id.TokenID.String(), id.SerialNumber)
+	return fmt.Sprintf("%s/%d", id.TokenID.String(), id.SerialNumber)
 }
 
 // ToStringWithChecksum returns a string representation of the NftID with a checksum
@@ -69,7 +70,7 @@ func (id NftID) ToStringWithChecksum(client Client) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("%s@%d", token, id.SerialNumber), nil
+	return fmt.Sprintf("%s/%d", token, id.SerialNumber), nil
 }
 
 func (id NftID) _ToProtobuf() *services.NftID {
