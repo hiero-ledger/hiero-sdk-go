@@ -498,7 +498,7 @@ func _DeriveECDSAChildKey(parentKey []byte, chainCode []byte, index uint32) ([]b
 	ir := i[32:]
 
 	ki := new(big.Int)
-	ki.Add(privKey.ToECDSA().D, il)
+	ki.Add(new(big.Int).SetBytes(privKey.Serialize()), il)
 	ki.Mod(ki, privKey.ToECDSA().Curve.Params().N)
 
 	return ki.FillBytes(make([]byte, 32)), ir, nil

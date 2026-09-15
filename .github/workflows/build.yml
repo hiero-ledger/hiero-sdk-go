@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-    GO_VERSION: "1.25.7"
+    GO_VERSION: "1.26.8"
     NODE_VERSION: "22"
     HIERO_VERSION: v0.73.0
     MIRROR_NODE_VERSION: v0.153.0
@@ -32,7 +32,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+              uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
               with:
                 egress-policy: audit
 
@@ -77,7 +77,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+              uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
               with:
                   egress-policy: audit
 
@@ -103,7 +103,7 @@ jobs:
             - name: Prepare Hiero Solo
               if: success() && matrix.test-type == 'e2e'
               id: solo
-              uses: hiero-ledger/hiero-solo-action@bdae0a37df52190b6b3801c1c981c0ed37f4616e # v0.23.0
+              uses: hiero-ledger/hiero-solo-action@6a79c9451fc1b26a98536facc3b988ab122ffbc8 # v0.24.0
               with:
                 installMirrorNode: true
                 hieroVersion: ${{ env.HIERO_VERSION }}
@@ -148,7 +148,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+              uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
               with:
                 egress-policy: audit
 
@@ -173,7 +173,7 @@ jobs:
 
             - name: Prepare Hiero Solo
               id: solo
-              uses: hiero-ledger/hiero-solo-action@bdae0a37df52190b6b3801c1c981c0ed37f4616e # v0.23.0
+              uses: hiero-ledger/hiero-solo-action@6a79c9451fc1b26a98536facc3b988ab122ffbc8 # v0.24.0
               with:
                 installMirrorNode: true
                 hieroVersion: ${{ env.HIERO_VERSION }}
@@ -206,7 +206,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+              uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
               with:
                   egress-policy: audit
 
@@ -234,7 +234,7 @@ jobs:
 
             - name: Prepare Hiero Solo
               id: solo
-              uses: hiero-ledger/hiero-solo-action@bdae0a37df52190b6b3801c1c981c0ed37f4616e # v0.23.0
+              uses: hiero-ledger/hiero-solo-action@6a79c9451fc1b26a98536facc3b988ab122ffbc8 # v0.24.0
               with:
                 installMirrorNode: true
                 hieroVersion: ${{ env.HIERO_VERSION }}
@@ -255,7 +255,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@05e31511f85b41b11d1cf0ef85d0992719546e2c # v2.21.0
+              uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
               with:
                 egress-policy: audit
 
