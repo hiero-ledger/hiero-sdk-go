@@ -15,6 +15,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type recordingLogger struct {
+	warnings []string
+}
+
+func (l *recordingLogger) SetSilent(bool)                     {}
+func (l *recordingLogger) SetLevel(LogLevel)                  {}
+func (l *recordingLogger) SubLoggerWithLevel(LogLevel) Logger { return l }
+func (l *recordingLogger) Error(string, ...interface{})       {}
+func (l *recordingLogger) Warn(msg string, _ ...interface{})  { l.warnings = append(l.warnings, msg) }
+func (l *recordingLogger) Info(string, ...interface{})        {}
+func (l *recordingLogger) Debug(string, ...interface{})       {}
+func (l *recordingLogger) Trace(string, ...interface{})       {}
+
+// Not parallel: it swaps the package level logger.
+func TestUnitAccountBalanceQueryConstructorWarns(t *testing.T) {
+	recorder := &recordingLogger{}
+	previous := accountBalanceQueryLogger
+	accountBalanceQueryLogger = recorder
+	defer func() { accountBalanceQueryLogger = previous }()
+
+	NewAccountBalanceQuery()
+
+	require.Len(t, recorder.warnings, 1)
+	require.Equal(t, accountBalanceQueryDeprecationMessage, recorder.warnings[0])
+	require.Contains(t, recorder.warnings[0], "AccountBalanceQuery is no longer supported")
+}
+
 func TestUnitAccountBalanceQueryValidate(t *testing.T) {
 	t.Parallel()
 

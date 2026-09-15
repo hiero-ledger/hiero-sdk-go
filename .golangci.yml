@@ -33,6 +33,11 @@ linters:
             - linters:
                   - staticcheck
               text: "SA1019: .*is deprecated: Marked as deprecated in .*\\.proto"
+            # The examples still call AccountBalanceQuery until they move to MirrorNodeAccountBalanceQuery.
+            - linters:
+                  - staticcheck
+              path: ^examples/
+              text: "SA1019: .*AccountBalanceQuery is deprecated"
         presets:
             - comments
             - common-false-positives
