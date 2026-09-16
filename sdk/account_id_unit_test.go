@@ -439,3 +439,25 @@ func TestUnitAccountIDMirrorNodePathIDWithoutNumOrAlias(t *testing.T) {
 	assert.Equal(t, "0.0.0", AccountID{}._MirrorNodePathID())
 	assert.Equal(t, "1.2.0", AccountID{Shard: 1, Realm: 2}._MirrorNodePathID())
 }
+
+func TestUnitEntityIDFromStringRejectsEmptyChecksum(t *testing.T) {
+	t.Parallel()
+
+	// A trailing "-" (e.g. "0.0.123-") must be rejected, not parsed as an empty checksum.
+	for _, s := range []string{"0.0.123-", "0.0.0-", "1.2.3-"} {
+		_, err := AccountIDFromString(s)
+		require.Errorf(t, err, "AccountIDFromString(%q) should be rejected", s)
+
+		_, err = ContractIDFromString(s)
+		require.Errorf(t, err, "ContractIDFromString(%q) should be rejected", s)
+
+		_, err = TokenIDFromString(s)
+		require.Errorf(t, err, "TokenIDFromString(%q) should be rejected", s)
+	}
+
+	// A well-formed checksummed ID still parses and preserves the checksum.
+	id, err := AccountIDFromString("0.0.123-esxsf")
+	require.NoError(t, err)
+	require.NotNil(t, id.GetChecksum())
+	require.Equal(t, "esxsf", *id.GetChecksum())
+}
