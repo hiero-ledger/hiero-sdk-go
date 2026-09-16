@@ -99,10 +99,6 @@ func (tx RegisteredNodeDeleteTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx RegisteredNodeDeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx RegisteredNodeDeleteTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

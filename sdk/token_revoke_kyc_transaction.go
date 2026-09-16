@@ -146,10 +146,6 @@ func (tx TokenRevokeKycTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TokenRevokeKycTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TokenRevokeKycTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

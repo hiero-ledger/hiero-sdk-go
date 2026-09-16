@@ -129,10 +129,6 @@ func (tx FreezeTransaction) getMethod(channel *_Channel) _Method {
 		transaction: channel._GetFreeze().Freeze,
 	}
 }
-func (tx FreezeTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx FreezeTransaction) validateNetworkOnIDs(client *Client) error {
 	return nil
 }

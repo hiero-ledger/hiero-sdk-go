@@ -198,10 +198,6 @@ func (tx TokenWipeTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TokenWipeTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TokenWipeTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

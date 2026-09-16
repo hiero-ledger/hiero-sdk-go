@@ -117,10 +117,6 @@ func (tx HookStoreTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx HookStoreTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx HookStoreTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

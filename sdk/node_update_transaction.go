@@ -447,10 +447,6 @@ func (tx NodeUpdateTransaction) validateTransactionFields() error {
 	return nil
 }
 
-func (tx NodeUpdateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx NodeUpdateTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

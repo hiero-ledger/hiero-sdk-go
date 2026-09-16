@@ -180,10 +180,6 @@ func (tx TokenDissociateTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TokenDissociateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TokenDissociateTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

@@ -197,10 +197,6 @@ func (tx TokenRejectTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TokenRejectTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TokenRejectTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

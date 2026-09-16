@@ -342,18 +342,6 @@ func TestUnitHookStoreTransactionBuildScheduled(t *testing.T) {
 	assert.Contains(t, err.Error(), "cannot schedule `HookStoreTransaction`")
 }
 
-func TestUnitHookStoreTransactionConstructScheduleProtobuf(t *testing.T) {
-	t.Parallel()
-
-	tx := NewHookStoreTransaction()
-
-	scheduled, err := tx.constructScheduleProtobuf()
-
-	assert.Nil(t, scheduled)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "cannot schedule `HookStoreTransaction`")
-}
-
 func TestUnitHookStoreTransactionFromProtobuf(t *testing.T) {
 	t.Parallel()
 

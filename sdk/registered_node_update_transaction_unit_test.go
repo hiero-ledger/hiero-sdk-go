@@ -387,14 +387,14 @@ func TestUnitRegisteredNodeUpdateTransactionSetServiceEndpoints(t *testing.T) {
 	require.Len(t, body.ServiceEndpoint, 1)
 }
 
-func TestUnitRegisteredNodeUpdateTransactionScheduleProtobuf(t *testing.T) {
+func TestUnitRegisteredNodeUpdateTransactionBuildScheduled(t *testing.T) {
 	t.Parallel()
 
 	tx := NewRegisteredNodeUpdateTransaction().
 		SetRegisteredNodeId(7).
 		SetDescription("scheduled")
 
-	scheduled, err := tx.constructScheduleProtobuf()
+	scheduled, err := tx.buildScheduled()
 	require.NoError(t, err)
 	require.NotNil(t, scheduled.GetRegisteredNodeUpdate())
 }

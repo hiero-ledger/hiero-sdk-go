@@ -330,10 +330,6 @@ func (tx TopicMessageSubmitTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TopicMessageSubmitTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TopicMessageSubmitTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

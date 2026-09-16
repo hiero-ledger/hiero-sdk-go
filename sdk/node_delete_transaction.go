@@ -112,10 +112,6 @@ func (tx NodeDeleteTransaction) validateTransactionFields() error {
 	return nil
 }
 
-func (tx NodeDeleteTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx NodeDeleteTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

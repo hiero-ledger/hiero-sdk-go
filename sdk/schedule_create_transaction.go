@@ -166,7 +166,7 @@ func (tx *ScheduleCreateTransaction) GetScheduleMemo() string {
 func (tx *ScheduleCreateTransaction) SetScheduledTransaction(scheduledTx TransactionInterface) (*ScheduleCreateTransaction, error) {
 	tx._RequireNotFrozen()
 
-	scheduled, err := scheduledTx.constructScheduleProtobuf()
+	scheduled, err := scheduledTx.buildScheduled()
 	if err != nil {
 		return tx, err
 	}
@@ -240,10 +240,6 @@ func (tx ScheduleCreateTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetSchedule().CreateSchedule,
 	}
-}
-
-func (tx ScheduleCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
 }
 
 func (tx ScheduleCreateTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
