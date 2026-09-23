@@ -149,10 +149,6 @@ func (tx TokenUnfreezeTransaction) getMethod(channel *_Channel) _Method {
 	}
 }
 
-func (tx TokenUnfreezeTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TokenUnfreezeTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

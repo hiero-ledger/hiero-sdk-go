@@ -323,10 +323,6 @@ func (tx TopicCreateTransaction) preFreezeWith(client *Client, self TransactionI
 	}
 }
 
-func (tx TopicCreateTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx TopicCreateTransaction) getBaseTransaction() *Transaction[TransactionInterface] {
 	return castFromConcreteToBaseTransaction(tx.Transaction, &tx)
 }

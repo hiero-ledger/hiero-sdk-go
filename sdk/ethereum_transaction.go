@@ -167,10 +167,6 @@ func (tx EthereumTransaction) buildProtoBody() *services.EthereumTransactionBody
 	return body
 }
 
-func (tx EthereumTransaction) constructScheduleProtobuf() (*services.SchedulableTransactionBody, error) {
-	return tx.buildScheduled()
-}
-
 func (tx EthereumTransaction) getMethod(channel *_Channel) _Method {
 	return _Method{
 		transaction: channel._GetContract().CallEthereum,
