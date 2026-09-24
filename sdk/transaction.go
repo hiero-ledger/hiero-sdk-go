@@ -2122,10 +2122,11 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 	baseTx.transactionFee = body.GetTransactionFee()
 
 	// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
-	if transactionID.AccountID.Account != 0 {
+	// A chunked transaction has one body per chunk per node, so each ID is kept once.
+	if transactionID.AccountID.Account != 0 && !containsID(baseTx.transactionIDs, transactionID.String()) {
 		baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
 	}
-	if !nodeAccountID._IsZero() {
+	if !nodeAccountID._IsZero() && !containsID(baseTx.nodeAccountIDs, nodeAccountID.String()) {
 		baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
 	}
 
@@ -2135,4 +2136,15 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 		baseTx.transactionFee = body.TransactionFee
 	}
 	return nil
+}
+
+// containsID reports whether ids already holds an ID with this string form.
+func containsID(ids *_LockableSlice, id string) bool {
+	for i := 0; i < ids._Length(); i++ {
+		if existing, ok := ids._Get(i).(fmt.Stringer); ok && existing.String() == id {
+			return true
+		}
+	}
+
+	return false
 }

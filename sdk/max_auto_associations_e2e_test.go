@@ -133,9 +133,7 @@ func TestLimitedMaxAutoAssociationsFungibleTokensWithManualAssociate(t *testing.
 	require.NoError(t, err)
 
 	// verify the balance of the receiver is 10
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(10), tokenBalance.Tokens.Get(tokenID1))
+	waitForMirrorTokenBalance(t, env, receiver, tokenID1, 10)
 }
 
 func TestLimitedMaxAutoAssociationsNFTsManualAssociate(t *testing.T) {
@@ -271,15 +269,11 @@ func TestUnlimitedMaxAutoAssociationsAllowsToTransferFungibleTokens(t *testing.T
 	require.NoError(t, err)
 
 	// verify the balance of the receivers is 1000
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(accountID1).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, accountID1, tokenID1, 1000)
+	waitForMirrorTokenBalance(t, env, accountID1, tokenID2, 1000)
 
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(accountID2).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, accountID2, tokenID1, 1000)
+	waitForMirrorTokenBalance(t, env, accountID2, tokenID2, 1000)
 }
 
 func TestUnlimitedMaxAutoAssociationsAllowsToTransferFungibleTokensWithDecimals(t *testing.T) {
@@ -318,10 +312,8 @@ func TestUnlimitedMaxAutoAssociationsAllowsToTransferFungibleTokensWithDecimals(
 	require.NoError(t, err)
 
 	// verify the balance of the receiver is 1000
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(accountID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, accountID, tokenID1, 1000)
+	waitForMirrorTokenBalance(t, env, accountID, tokenID2, 1000)
 }
 
 func TestUnlimitedMaxAutoAssociationsAllowsToTransferFromFungibleTokens(t *testing.T) {
@@ -378,10 +370,8 @@ func TestUnlimitedMaxAutoAssociationsAllowsToTransferFromFungibleTokens(t *testi
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// verify the balance of the receiver is 1000
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(accountID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, accountID, tokenID1, 1000)
+	waitForMirrorTokenBalance(t, env, accountID, tokenID2, 1000)
 }
 
 func TestUnlimitedMaxAutoAssociationsAllowsToTransferNFTs(t *testing.T) {
@@ -460,15 +450,11 @@ func TestUnlimitedMaxAutoAssociationsAllowsToTransferNFTs(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the balance of the receivers is 2
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(accountID1).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(2), tokenBalance.Tokens.Get(nftID1))
-	assert.Equal(t, uint64(2), tokenBalance.Tokens.Get(nftID2))
+	waitForMirrorTokenBalance(t, env, accountID1, nftID1, 2)
+	waitForMirrorTokenBalance(t, env, accountID1, nftID2, 2)
 
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(accountID2).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(2), tokenBalance.Tokens.Get(nftID1))
-	assert.Equal(t, uint64(2), tokenBalance.Tokens.Get(nftID2))
+	waitForMirrorTokenBalance(t, env, accountID2, nftID1, 2)
+	waitForMirrorTokenBalance(t, env, accountID2, nftID2, 2)
 }
 
 func TestUnlimitedMaxAutoAssociationsAllowsToTransferFromNFTs(t *testing.T) {
@@ -533,10 +519,8 @@ func TestUnlimitedMaxAutoAssociationsAllowsToTransferFromNFTs(t *testing.T) {
 	env.Client.SetOperator(env.OperatorID, env.OperatorKey)
 
 	// verify the balance of the receiver is 2
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(accountID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(2), tokenBalance.Tokens.Get(nftID1))
-	assert.Equal(t, uint64(2), tokenBalance.Tokens.Get(nftID2))
+	waitForMirrorTokenBalance(t, env, accountID, nftID1, 2)
+	waitForMirrorTokenBalance(t, env, accountID, nftID2, 2)
 }
 
 func TestUnlimitedMaxAutoAssociationsFailsWithInvalid(t *testing.T) {
@@ -655,10 +639,8 @@ func TestUnlimitedMaxAutoAssociationsContractAllowsToTransferFungibleTokens(t *t
 	require.NoError(t, err)
 
 	// verify both balances arrived on the contract
-	contractBalance, err := NewAccountBalanceQuery().SetContractID(contractID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1000), contractBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1000), contractBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, contractAccountID, tokenID1, 1000)
+	waitForMirrorTokenBalance(t, env, contractAccountID, tokenID2, 1000)
 }
 
 func TestUnlimitedMaxAutoAssociationsContractUpdate(t *testing.T) {

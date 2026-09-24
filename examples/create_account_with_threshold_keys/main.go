@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -133,16 +134,24 @@ func main() {
 
 	fmt.Printf("status of transfer transaction: %v\n", transactionReceipt.Status)
 
-	// This query is free
-	// Here we check if transfer transaction actually succeeded
-	balance, err := hiero.NewAccountBalanceQuery().
-		// The account ID to check balance of
-		SetAccountID(newAccountID).
-		SetNodeAccountIDs([]hiero.AccountID{transactionResponse.NodeID}).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error executing account balance query", err))
-	}
+	// Here we check the transfer succeeded: 6 Hbar minus the 5 sent and the fee leaves under 1
+	balance := hbarBalance(client, newAccountID, func(balance hiero.Hbar) bool {
+		return balance.AsTinybar() <= hiero.NewHbar(1).AsTinybar()
+	})
 
-	fmt.Printf("account balance after transfer: %v\n", balance.Hbars.String())
+	fmt.Printf("account balance after transfer: %v\n", balance.String())
+}
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
 }

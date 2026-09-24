@@ -331,6 +331,46 @@ func waitForMirrorTokenBalance(t *testing.T, env IntegrationTestEnv, accountID A
 	return lastDecimals
 }
 
+// waitForMirrorZeroTokenBalance polls until accountID holds none of tokenID, counting a missing relationship as 0.
+func waitForMirrorZeroTokenBalance(t *testing.T, env IntegrationTestEnv, accountID AccountID, tokenID TokenID) {
+	t.Helper()
+	var lastBalance uint64
+	var lastErr error
+	for attempt := 0; attempt < mirrorTokenBalanceRetryAttempts; attempt++ {
+		if attempt > 0 {
+			time.Sleep(mirrorTokenBalanceRetryDelay)
+		}
+		lastBalance, _, _, lastErr = fetchMirrorTokenBalance(env.Client, accountID, tokenID)
+		if lastErr == nil && lastBalance == 0 {
+			return
+		}
+	}
+	require.NoError(t, lastErr, "failed to query token balance from mirror node")
+	assert.Zero(t, lastBalance, "mirror node token balance did not reach 0 before timeout")
+}
+
+// waitForMirrorHbarBalance polls until the mirror node shows accountID holding expected, and asserts it.
+func waitForMirrorHbarBalance(t *testing.T, env IntegrationTestEnv, accountID AccountID, expected Hbar) {
+	t.Helper()
+	var last Hbar
+	var lastErr error
+	for attempt := 0; attempt < mirrorTokenBalanceRetryAttempts; attempt++ {
+		if attempt > 0 {
+			time.Sleep(mirrorTokenBalanceRetryDelay)
+		}
+		var balance MirrorNodeAccountBalance
+		balance, lastErr = NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(env.Client)
+		if lastErr == nil {
+			last = balance.Hbars
+			if last == expected {
+				return
+			}
+		}
+	}
+	require.NoError(t, lastErr, "failed to query hbar balance from mirror node")
+	assert.Equal(t, expected.AsTinybar(), last.AsTinybar(), "mirror node hbar balance did not reach expected value before timeout")
+}
+
 type AccountCreateTransactionCustomizer func(transaction *AccountCreateTransaction)
 
 func createAccount(env *IntegrationTestEnv, opts ...AccountCreateTransactionCustomizer) (AccountID, PrivateKey, error) {

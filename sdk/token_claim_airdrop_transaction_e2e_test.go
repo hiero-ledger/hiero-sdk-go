@@ -67,22 +67,12 @@ func TestIntegrationTokenClaimAirdropCanExecute(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the receiver holds the tokens via query
-	reciverBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(tokenClaimAirdropTransferAmount), reciverBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(2), reciverBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, receiver, tokenID, tokenClaimAirdropTransferAmount)
+	waitForMirrorTokenBalance(t, env, receiver, nftID, 2)
 
 	// Verify the operator does not hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(1_000_000-tokenClaimAirdropTransferAmount), operatorBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(8), operatorBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID, 1_000_000-tokenClaimAirdropTransferAmount)
+	waitForMirrorTokenBalance(t, env, env.OperatorID, nftID, 8)
 }
 
 func TestIntegrationTokenClaimAirdropMultipleReceivers(t *testing.T) {
@@ -153,31 +143,16 @@ func TestIntegrationTokenClaimAirdropMultipleReceivers(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the receiver1 holds the tokens via query
-	reciverBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver1).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(tokenClaimAirdropTransferAmount), reciverBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(2), reciverBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, receiver1, tokenID, tokenClaimAirdropTransferAmount)
+	waitForMirrorTokenBalance(t, env, receiver1, nftID, 2)
 
 	// Verify the receiver2 holds the tokens via query
-	reciverBalance, err = NewAccountBalanceQuery().
-		SetAccountID(receiver2).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(tokenClaimAirdropTransferAmount), reciverBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(2), reciverBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, receiver2, tokenID, tokenClaimAirdropTransferAmount)
+	waitForMirrorTokenBalance(t, env, receiver2, nftID, 2)
 
 	// Verify the operator does not hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(1_000_000-tokenClaimAirdropTransferAmount*2), operatorBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(6), operatorBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID, 1_000_000-tokenClaimAirdropTransferAmount*2)
+	waitForMirrorTokenBalance(t, env, env.OperatorID, nftID, 6)
 
 }
 
@@ -258,22 +233,12 @@ func TestIntegrationTokenClaimAirdropMultipleAirdropTxns(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the receiver holds the tokens via query
-	reciverBalance, err := NewAccountBalanceQuery().
-		SetAccountID(receiver).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(tokenClaimAirdropTransferAmount), reciverBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(2), reciverBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, receiver, tokenID, tokenClaimAirdropTransferAmount)
+	waitForMirrorTokenBalance(t, env, receiver, nftID, 2)
 
 	// Verify the operator does not hold the tokens
-	operatorBalance, err := NewAccountBalanceQuery().
-		SetAccountID(env.OperatorID).
-		Execute(env.Client)
-	require.NoError(t, err)
-
-	require.Equal(t, uint64(1_000_000-tokenClaimAirdropTransferAmount), operatorBalance.Tokens.Get(tokenID))
-	require.Equal(t, uint64(8), operatorBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID, 1_000_000-tokenClaimAirdropTransferAmount)
+	waitForMirrorTokenBalance(t, env, env.OperatorID, nftID, 8)
 }
 
 func TestIntegrationTokenClaimAirdropCannotClaimNonExistingAirdrop(t *testing.T) {

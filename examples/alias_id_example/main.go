@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -106,14 +107,12 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting transfer transaction receipt", err))
 	}
 
-	balance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(*aliasAccountID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving balance", err))
-	}
+	// The mirror node resolves the alias too
+	balance := hbarBalance(client, *aliasAccountID, func(balance hiero.Hbar) bool {
+		return balance == hiero.NewHbar(1)
+	})
 
-	println("Balance of the new account:", balance.Hbars.String())
+	println("Balance of the new account:", balance.String())
 
 	info, err := hiero.NewAccountInfoQuery().
 		SetAccountID(*aliasAccountID).
@@ -137,5 +136,19 @@ func main() {
 	err = client.Close()
 	if err != nil {
 		panic(fmt.Sprintf("%v : error closing client", err))
+	}
+}
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
 	}
 }
