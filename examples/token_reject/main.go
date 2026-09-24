@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -119,20 +120,10 @@ func main() {
 		panic(fmt.Sprintf("%v : Error transferring tokens", err))
 	}
 
-	tokenBalance, err := hiero.NewAccountBalanceQuery().SetAccountID(receiver).Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : Error getting balance", err))
-	}
-
-	fmt.Println("Fungible token balance for receiver account before reject: ", tokenBalance.Tokens.Get(tokenID))
-	fmt.Println("NFT balance for receiver account before reject: ", tokenBalance.Tokens.Get(nftID))
-
-	tokenBalance, err = hiero.NewAccountBalanceQuery().SetAccountID(treasury).Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : Error getting balance", err))
-	}
-	fmt.Println("Fungible token balance for treasury account before reject: ", tokenBalance.Tokens.Get(tokenID))
-	fmt.Println("NFT balance for receiver treasury before reject: ", tokenBalance.Tokens.Get(nftID))
+	fmt.Println("Fungible token balance for receiver account before reject: ", tokenBalance(client, receiver, tokenID, is(1_000_000)))
+	fmt.Println("NFT balance for receiver account before reject: ", tokenBalance(client, receiver, nftID, is(3)))
+	fmt.Println("Fungible token balance for treasury account before reject: ", tokenBalance(client, treasury, tokenID, is(0)))
+	fmt.Println("NFT balance for treasury account before reject: ", tokenBalance(client, treasury, nftID, is(0)))
 	fmt.Println("-----------------------------------")
 
 	// reject the fungible tokens
@@ -157,18 +148,33 @@ func main() {
 		panic(fmt.Sprintf("%v : Error rejecting tokens", err))
 	}
 
-	tokenBalance, err = hiero.NewAccountBalanceQuery().SetAccountID(receiver).Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : Error getting balance", err))
-	}
+	// Rejected tokens go back to the treasury.
+	fmt.Println("Fungible token balance for receiver account after reject: ", tokenBalance(client, receiver, tokenID, is(0)))
+	fmt.Println("NFT balance for receiver account after reject: ", tokenBalance(client, receiver, nftID, is(0)))
+	fmt.Println("Fungible token balance for treasury account after reject: ", tokenBalance(client, treasury, tokenID, is(1_000_000)))
+	fmt.Println("NFT balance for treasury account after reject: ", tokenBalance(client, treasury, nftID, is(3)))
+}
 
-	fmt.Println("Fungible token balance for receiver account after reject: ", tokenBalance.Tokens.Get(tokenID))
-	fmt.Println("NFT balance for receiver account after reject: ", tokenBalance.Tokens.Get(nftID))
-
-	tokenBalance, err = hiero.NewAccountBalanceQuery().SetAccountID(treasury).Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : Error getting balance", err))
+// tokenBalance polls the mirror node until ready accepts accountID's balance of tokenID; no relationship reads as 0.
+func tokenBalance(client *hiero.Client, accountID hiero.AccountID, tokenID hiero.TokenID, ready func(uint64) bool) uint64 {
+	for attempt := 1; ; attempt++ {
+		page, err := hiero.NewMirrorNodeTokenBalanceQuery().SetAccountID(accountID).SetTokenID(tokenID).Execute(client)
+		if err == nil {
+			var balance uint64
+			if len(page.Tokens) == 1 {
+				balance = page.Tokens[0].Balance
+			}
+			if ready(balance) {
+				return balance
+			}
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected %v balance for %v (last error: %v)", tokenID, accountID, err))
+		}
+		time.Sleep(time.Second)
 	}
-	fmt.Println("Fungible token balance for treasury account after reject: ", tokenBalance.Tokens.Get(tokenID))
-	fmt.Println("NFT balance for receiver treasury after reject: ", tokenBalance.Tokens.Get(nftID))
+}
+
+func is(want uint64) func(uint64) bool {
+	return func(balance uint64) bool { return balance == want }
 }

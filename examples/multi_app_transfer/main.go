@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -81,20 +82,10 @@ func main() {
 	userAccountID := *userReceipt.AccountID
 
 	// Balances before
-	senderBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(userAccountID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error querying user balance", err))
-	}
-	exchangeBalanceBefore, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(exchangeAccountID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error querying exchange balance", err))
-	}
-	fmt.Printf("User account (%v) balance: %v\n", userAccountID, senderBalanceBefore.Hbars)
-	fmt.Printf("Exchange account (%v) balance: %v\n", exchangeAccountID, exchangeBalanceBefore.Hbars)
+	senderBalanceBefore := hbarBalance(client, userAccountID, anyBalance)
+	exchangeBalanceBefore := hbarBalance(client, exchangeAccountID, anyBalance)
+	fmt.Printf("User account (%v) balance: %v\n", userAccountID, senderBalanceBefore)
+	fmt.Printf("Exchange account (%v) balance: %v\n", exchangeAccountID, exchangeBalanceBefore)
 
 	// Step 3: Build the transfer; sign with the user; serialize; "send to exchange".
 	transferAmount := hiero.NewHbar(1)
@@ -141,20 +132,12 @@ func main() {
 	}
 
 	// Step 4: Confirm balances after the transfer.
-	senderBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(userAccountID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error querying user balance after", err))
-	}
-	exchangeBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(exchangeAccountID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error querying exchange balance after", err))
-	}
-	fmt.Printf("User account (%v) balance: %v\n", userAccountID, senderBalanceAfter.Hbars)
-	fmt.Printf("Exchange account (%v) balance: %v\n", exchangeAccountID, exchangeBalanceAfter.Hbars)
+	exchangeBalanceAfter := hbarBalance(client, exchangeAccountID, func(balance hiero.Hbar) bool {
+		return balance == hiero.HbarFromTinybar(exchangeBalanceBefore.AsTinybar()+transferAmount.AsTinybar())
+	})
+	senderBalanceAfter := hbarBalance(client, userAccountID, anyBalance)
+	fmt.Printf("User account (%v) balance: %v\n", userAccountID, senderBalanceAfter)
+	fmt.Printf("Exchange account (%v) balance: %v\n", exchangeAccountID, exchangeBalanceAfter)
 
 	// Cleanup: delete both accounts, returning balances to the operator.
 	exchangeDeleteTx, err := hiero.NewAccountDeleteTransaction().
@@ -218,3 +201,19 @@ func exchangeSigningService(txBytes []byte, exchangePrivateKey hiero.PrivateKey)
 	}
 	return signedBytes
 }
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func anyBalance(hiero.Hbar) bool { return true }

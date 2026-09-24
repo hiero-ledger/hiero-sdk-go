@@ -145,13 +145,8 @@ func main() {
 		Sign the transaction with the other key and verify the transaction executes successfully
 	*/
 
-	accountBalance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance", err))
-	}
-	fmt.Println("Alice's account balance before scheduled transfer", accountBalance.Hbars)
+	balanceBefore := hbarBalance(client, alice, anyBalance)
+	fmt.Println("Alice's account balance before scheduled transfer", balanceBefore)
 
 	fmt.Println("Signing the new scheduled transaction with the 2nd key")
 	frozenSign, err = hiero.NewScheduleSignTransaction().
@@ -178,13 +173,10 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("%v : error getting schedule info", err))
 	}
-	accountBalance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance", err))
-	}
-	fmt.Println("Alice's account balance after scheduled transfer", accountBalance.Hbars)
+	balanceAfter := hbarBalance(client, alice, func(balance hiero.Hbar) bool {
+		return balance.AsTinybar() < balanceBefore.AsTinybar()
+	})
+	fmt.Println("Alice's account balance after scheduled transfer", balanceAfter)
 	fmt.Println("Scheduled transaction is executed. Executed at: ", info.ExecutedAt)
 
 	/*
@@ -277,13 +269,8 @@ func main() {
 		Step 9:
 		Verify that the transfer successfully executes roughly at the time of its expiration.
 	*/
-	accountBalance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance", err))
-	}
-	fmt.Println("Alice's account balance before scheduled transfer", accountBalance.Hbars)
+	balanceBefore = hbarBalance(client, alice, anyBalance)
+	fmt.Println("Alice's account balance before scheduled transfer", balanceBefore)
 
 	startTime := time.Now()
 	for time.Since(startTime) < 11*time.Second {
@@ -291,13 +278,11 @@ func main() {
 		fmt.Printf("Elapsed time: %.1f seconds\r", time.Since(startTime).Seconds())
 	}
 
-	accountBalance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance", err))
-	}
-	fmt.Println("Alice's account balance after scheduled transfer", accountBalance.Hbars)
+	// The transfer executes at its expiration; wait for the mirror node to show it.
+	balanceAfter = hbarBalance(client, alice, func(balance hiero.Hbar) bool {
+		return balance.AsTinybar() < balanceBefore.AsTinybar()
+	})
+	fmt.Println("Alice's account balance after scheduled transfer", balanceAfter)
 
 	record, err := hiero.NewTransactionRecordQuery().
 		SetTransactionID(txId).
@@ -314,3 +299,19 @@ func main() {
 
 	fmt.Println("Example Complete!")
 }
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func anyBalance(hiero.Hbar) bool { return true }

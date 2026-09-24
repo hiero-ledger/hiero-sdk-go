@@ -32,14 +32,12 @@ func main() {
 	// Setting the client operator ID and key
 	client.SetOperator(operatorAccountID, operatorKey)
 
-	// This is a free query to retrieve account's balance
-	balance, err := hiero.NewAccountBalanceQuery().
-		// Have to set account ID
+	// This is a free mirror node query to retrieve account's balance
+	balance, err := hiero.NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(client.GetOperatorAccountID()).
 		Execute(client)
-
 	if err != nil {
-		panic(fmt.Sprintf("%v : error executing account balance query", err))
+		panic(fmt.Sprintf("%v : error executing mirror node account balance query", err))
 	}
 
 	fmt.Printf("balance = %v\n", balance.Hbars.String())
