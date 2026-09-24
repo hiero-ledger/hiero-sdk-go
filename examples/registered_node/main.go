@@ -17,7 +17,8 @@ import (
 //  3. Query the RegisteredNodeAddressBook to confirm it appears.
 //  4. Update the registered node with a new description and a second endpoint.
 //  5. Associate the registered node with an existing consensus node.
-//  6. Delete the registered node.
+//  6. Remove the association, which would block the deletion.
+//  7. Delete the registered node.
 //
 // Environment:
 //
@@ -50,9 +51,12 @@ func main() {
 	updateRegisteredNode(client, adminKey, registeredNodeId)
 
 	// Step 8 — associate with an existing consensus node (optional).
-	associateWithConsensusNode(client, registeredNodeId)
+	dissociate := associateWithConsensusNode(client, registeredNodeId)
 
-	// Step 9 — delete the registered node.
+	// Step 9 — remove the association; an associated registered node cannot be deleted.
+	dissociate()
+
+	// Step 10 — delete the registered node.
 	deleteRegisteredNode(client, adminKey, registeredNodeId)
 
 	if err := client.Close(); err != nil {
@@ -192,14 +196,14 @@ func updateRegisteredNode(client *hiero.Client, adminKey hiero.PrivateKey, regis
 	fmt.Printf("Update receipt status: %s\n", updateReceipt.Status)
 }
 
-// associateWithConsensusNode runs step 8 of the lifecycle. Skipped when
-// CONSENSUS_NODE_ID is unset, since most operators don't hold a consensus
-// node's admin key.
-func associateWithConsensusNode(client *hiero.Client, registeredNodeId uint64) {
+// associateWithConsensusNode runs step 8 of the lifecycle and returns the step that undoes it.
+// Skipped when CONSENSUS_NODE_ID is unset, since most operators don't hold a consensus node's
+// admin key.
+func associateWithConsensusNode(client *hiero.Client, registeredNodeId uint64) (dissociate func()) {
 	consensusNodeIDStr := os.Getenv("CONSENSUS_NODE_ID")
 	if consensusNodeIDStr == "" {
 		fmt.Println("CONSENSUS_NODE_ID not set — skipping consensus-node association step")
-		return
+		return func() {}
 	}
 
 	var consensusNodeID uint64
@@ -231,6 +235,29 @@ func associateWithConsensusNode(client *hiero.Client, registeredNodeId uint64) {
 	}
 	fmt.Printf("Consensus node %d updated with associated registered node %d: %s\n",
 		consensusNodeID, registeredNodeId, nodeUpdateReceipt.Status)
+
+	return func() {
+		// The update above replaced the association list, so clearing it removes only this association.
+		clearTx, err := hiero.NewNodeUpdateTransaction().
+			SetNodeID(consensusNodeID).
+			ClearAssociatedRegisteredNodes().
+			FreezeWith(client)
+		if err != nil {
+			panic(fmt.Sprintf("%v : error freezing node update tx", err))
+		}
+
+		clearResp, err := clearTx.Sign(consensusAdminKey).Execute(client)
+		if err != nil {
+			panic(fmt.Sprintf("%v : error executing node update tx", err))
+		}
+
+		clearReceipt, err := clearResp.SetValidateStatus(true).GetReceipt(client)
+		if err != nil {
+			panic(fmt.Sprintf("%v : error fetching node update receipt", err))
+		}
+		fmt.Printf("Consensus node %d no longer associated with registered node %d: %s\n",
+			consensusNodeID, registeredNodeId, clearReceipt.Status)
+	}
 }
 
 // deleteRegisteredNode submits a RegisteredNodeDeleteTransaction and waits for

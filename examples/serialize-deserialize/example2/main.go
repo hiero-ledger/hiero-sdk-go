@@ -38,7 +38,8 @@ func main() {
 		panic(err)
 	}
 
-	resp, err := hiero.NewAccountCreateTransaction().SetKeyWithoutAlias(newKey).Execute(client)
+	// The new account needs hbar of its own to send
+	resp, err := hiero.NewAccountCreateTransaction().SetKeyWithoutAlias(newKey).SetInitialBalance(hiero.NewHbar(2)).Execute(client)
 	if err != nil {
 		panic(err)
 	}
@@ -50,10 +51,18 @@ func main() {
 
 	newAccountId := *receipt.AccountID
 
-	// Prepare and sign the tx and send it to be signed by another actor
+	// Prepare, freeze and sign the tx and send it to be signed by another actor
 	fmt.Println("Creating a transfer transaction, signing it with operator and serializing it to bytes...")
-	bytes, err := hiero.NewTransferTransaction().AddHbarTransfer(operatorAccountID, hiero.NewHbar(1)).AddHbarTransfer(newAccountId, hiero.NewHbar(-1)).
-		Sign(operatorKey).ToBytes()
+	frozenTransfer, err := hiero.NewTransferTransaction().
+		AddHbarTransfer(operatorAccountID, hiero.NewHbar(1)).
+		AddHbarTransfer(newAccountId, hiero.NewHbar(-1)).
+		SetMaxTransactionFee(hiero.NewHbar(2)).
+		FreezeWith(client)
+	if err != nil {
+		panic(err)
+	}
+
+	bytes, err := frozenTransfer.Sign(operatorKey).ToBytes()
 	if err != nil {
 		panic(err)
 	}
@@ -65,7 +74,7 @@ func main() {
 	txFromBytes := FromBytes.(hiero.TransferTransaction)
 	// New Account add his sign and execute the tx:
 	fmt.Println("Signing deserialized transaction with `newAccount` private key and executing it...")
-	executed, err := txFromBytes.Sign(newKey).SetMaxTransactionFee(hiero.NewHbar(2)).Execute(client)
+	executed, err := txFromBytes.Sign(newKey).Execute(client)
 	if err != nil {
 		panic(err)
 	}
