@@ -185,7 +185,7 @@ func _NewClient(network _Network, mirrorNetwork []string, ledgerId *LedgerID, sh
 		defaultNetworkUpdatePeriod:      24 * time.Hour,
 		networkUpdateContext:            ctx,
 		cancelNetworkUpdate:             cancel,
-		mirrorHttp:                      &mirrorHttpState{},
+		mirrorHttp:                      newMirrorHttpState(),
 		logger:                          defaultLogger,
 		shard:                           shard,
 		realm:                           realm,
@@ -423,12 +423,8 @@ func ClientFromConfigFile(filename string) (*Client, error) {
 func (client *Client) Close() error {
 	client.CancelScheduledNetworkUpdate()
 
-	// Released before the networks so that an early return from either close below cannot
-	// leak the HTTP pool. The two network closes keep their original error semantics; the
-	// early-return bug they share is pre-existing and tracked separately.
-	if err := client.closeMirrorHttp(mirrorHttpDefaultCloseGrace); err != nil {
-		return err
-	}
+	// Close the mirror HTTP transport first so an error below cannot leak it.
+	client.closeMirrorHttp(mirrorHttpDefaultCloseGrace)
 
 	err := client.network._Close()
 	if err != nil {

@@ -208,7 +208,7 @@ func int64Ptr(i int64) *int64 {
 }
 
 func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "retrytransient.example.com:443"
 
 	var attempts int32
@@ -222,9 +222,6 @@ func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
 		require.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{"result": "0x5208"}))
 	}))
 	defer server.Close()
-
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
@@ -242,7 +239,7 @@ func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
 }
 
 func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "retrytransport.example.com:443"
 
 	var attempts int32
@@ -262,9 +259,6 @@ func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
-
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
@@ -281,7 +275,7 @@ func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
 }
 
 func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "no4xxretry.example.com:443"
 
 	var attempts int32
@@ -293,9 +287,6 @@ func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
 		_, _ = w.Write([]byte(`{"_status":{"messages":[{"message":"gas limit too low"}]}}`))
 	}))
 	defer server.Close()
-
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
@@ -312,7 +303,7 @@ func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
 }
 
 func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 
 	tests := []struct {
 		name           string
@@ -364,10 +355,6 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 				}))
 				defer server.Close()
 
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
-
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
 				require.NoError(t, err)
@@ -402,10 +389,6 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 				}))
 				defer server.Close()
 
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
-
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
 				require.NoError(t, err)
@@ -427,11 +410,8 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 	}
 }
 
-// #283 states that every mirror REST call in scope is read-only, so a POST must be retried on a
-// 5xx rather than suppressed as non-idempotent — and that no SDK writes this down. This pins
-// both halves: the retry happens, and the body is replayed byte-for-byte.
 func TestUnitMirrorNodeContractQueryReplaysPostBodyOnRetry(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "postreplay.example.com:443"
 
 	var bodies []string
@@ -451,9 +431,6 @@ func TestUnitMirrorNodeContractQueryReplaysPostBodyOnRetry(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
-
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
@@ -467,8 +444,8 @@ func TestUnitMirrorNodeContractQueryReplaysPostBodyOnRetry(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, uint64(21000), gas)
-	require.Len(t, bodies, 2, "the 503 should be retried once")
-	assert.Equal(t, []string{http.MethodPost, http.MethodPost}, methods, "a read-only POST is retried, not suppressed")
-	assert.Equal(t, bodies[0], bodies[1], "the request body must be replayed identically")
-	assert.Contains(t, bodies[0], `"estimate":true`, "and it must still be the real payload")
+	require.Len(t, bodies, 2)
+	assert.Equal(t, []string{http.MethodPost, http.MethodPost}, methods)
+	assert.Equal(t, bodies[0], bodies[1])
+	assert.Contains(t, bodies[0], `"estimate":true`)
 }

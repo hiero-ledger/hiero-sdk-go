@@ -10,7 +10,7 @@ import (
 
 type _MirrorNetwork struct {
 	_ManagedNetwork
-	// nextNode is the round-robin cursor over healthyNodes, shared by every concurrent caller.
+	// nextNode is the round-robin index into healthyNodes.
 	nextNode atomic.Uint64
 }
 
@@ -53,8 +53,7 @@ func (network *_MirrorNetwork) _SetTransportSecurity(transportSecurity bool) *_M
 	return network
 }
 
-// _GetNextMirrorNode selects round-robin rather than at random, so a network with one node down
-// is not a fresh coin flip on every call.
+// _GetNextMirrorNode returns the next healthy mirror node, round-robin.
 func (network *_MirrorNetwork) _GetNextMirrorNode() (*_MirrorNode, error) {
 	network.healthyNodesMutex.RLock()
 	defer network.healthyNodesMutex.RUnlock()

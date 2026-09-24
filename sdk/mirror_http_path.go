@@ -3,6 +3,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -10,26 +11,19 @@ import (
 // The mirror REST API version segment, which the base URL already carries.
 const mirrorHttpAPIVersionPrefix = "/api/v1"
 
-// mirrorRestPath is a mirror REST path — never an absolute URL. Only newMirrorRestPath can
-// produce one, so "no host names above this layer" is a property of the type instead of a
-// convention a call site can quietly break. An accidentally absolute "https://…" is rejected
-// because it has no leading slash.
-//
-// This is the structural half of the caller-supplied-cursor problem: a request that could
-// address another host cannot be constructed, so nothing downstream has to check for one.
-type mirrorRestPath string
+// mirrorNodeRestPath is a path relative to the mirror node REST base URL. Create one with newMirrorNodeRestPath.
+type mirrorNodeRestPath string
 
-func newMirrorRestPath(path string) (mirrorRestPath, error) {
+func newMirrorNodeRestPath(path string) (mirrorNodeRestPath, error) {
 	if path == "" {
-		return "", fmt.Errorf("mirror node REST path is empty")
+		return "", errors.New("mirror node REST path is empty")
 	}
 	if !strings.HasPrefix(path, "/") {
-		return "", fmt.Errorf("mirror node REST path %q must start with %q — absolute URLs are not accepted here", path, "/")
+		return "", fmt.Errorf("mirror node REST path %q must start with %q", path, "/")
 	}
 	if strings.ContainsAny(path, " \t\r\n") {
 		return "", fmt.Errorf("mirror node REST path %q contains whitespace", path)
 	}
-	// A "//host" path is harmless under concatenation, but it is never what a caller meant.
 	if strings.HasPrefix(path, "//") {
 		return "", fmt.Errorf("mirror node REST path %q looks protocol-relative", path)
 	}
@@ -37,10 +31,10 @@ func newMirrorRestPath(path string) (mirrorRestPath, error) {
 		return "", fmt.Errorf("mirror node REST path %q contains a %q segment", path, "..")
 	}
 
-	return mirrorRestPath(path), nil
+	return mirrorNodeRestPath(path), nil
 }
 
-func (p mirrorRestPath) String() string {
+func (p mirrorNodeRestPath) String() string {
 	return string(p)
 }
 
@@ -55,32 +49,22 @@ func hasDotDotSegment(path string) bool {
 	return false
 }
 
-// resolveMirrorPath joins a mirror base URL and a path by plain concatenation, so both
-// spellings of a trailing slash behave identically.
-//
-// Concatenation rather than URL reference resolution is the point: url.URL.ResolveReference
-// lets an absolute or protocol-relative reference replace the host outright, which is exactly
-// the failure mode this layer exists to make impossible.
-func resolveMirrorPath(baseURL string, path mirrorRestPath) string {
+// resolveMirrorPath appends path to baseURL. It does not use url.ResolveReference, which would let path replace the host.
+func resolveMirrorPath(baseURL string, path mirrorNodeRestPath) string {
 	return strings.TrimSuffix(baseURL, "/") + path.String()
 }
 
-// nextPagePath converts a mirror node links.next value into a path. The mirror node returns it
-// including the API version prefix, which the base URL also carries, so the prefix is stripped
-// to keep resolution plain concatenation.
-//
-// Anything naming a host is rejected rather than trusted, which is what keeps a caller- or
-// server-supplied cursor from redirecting a request carrying mirror credentials.
-func nextPagePath(next string) (mirrorRestPath, error) {
+// nextPagePath converts a links.next value into a path, stripping the /api/v1 prefix. Absolute URLs are rejected.
+func nextPagePath(next string) (mirrorNodeRestPath, error) {
 	trimmed := strings.TrimSpace(next)
 	if trimmed == "" {
-		return "", fmt.Errorf("pagination next link is empty")
+		return "", errors.New("pagination next link is empty")
 	}
 	if strings.Contains(trimmed, "://") {
 		return "", fmt.Errorf("pagination next link %q is absolute; only same-mirror paths are followed", next)
 	}
 
-	path, err := newMirrorRestPath(trimmed)
+	path, err := newMirrorNodeRestPath(trimmed)
 	if err != nil {
 		return "", fmt.Errorf("invalid pagination next link: %w", err)
 	}
@@ -90,5 +74,5 @@ func nextPagePath(next string) (mirrorRestPath, error) {
 		return path, nil
 	}
 
-	return newMirrorRestPath(stripped)
+	return newMirrorNodeRestPath(stripped)
 }
