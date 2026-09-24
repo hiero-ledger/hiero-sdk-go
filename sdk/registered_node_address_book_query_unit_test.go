@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"sync/atomic"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -93,7 +92,9 @@ func TestUnitRegisteredNodeAddressBookQueryBuildURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.q.buildURL("https://example/api/v1"))
+			path, err := tt.q.buildPath()
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, resolveMirrorPath("https://example/api/v1", path))
 		})
 	}
 }
@@ -405,13 +406,14 @@ func TestUnitResolveAttempts(t *testing.T) {
 	require.NoError(t, err)
 
 	q := NewRegisteredNodeAddressBookQuery()
-	assert.Equal(t, uint64(1), q.resolveAttempts(client), "fallback to 1 when neither is set")
+	attempts := func() uint16 { return client.mirrorHttpPolicyForQuery(q.maxAttempts).GetMaxAttempts() }
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts(), "the full policy, where this used to be a single attempt")
 
 	client.SetMaxAttempts(7)
-	assert.Equal(t, uint64(7), q.resolveAttempts(client), "uses client default when query unset")
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts(), "the gRPC budget does not govern HTTP reads")
 
 	q.SetMaxAttempts(3)
-	assert.Equal(t, uint64(3), q.resolveAttempts(client), "query setting wins over client")
+	assert.Equal(t, uint16(3), attempts(), "query setting wins")
 }
 
 func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
@@ -426,35 +428,6 @@ func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
 	assert.Contains(t, err.Error(), "mirror node is not set")
 }
 
-// A local mirror serves this endpoint on 8084 rather than the default REST port.
-func TestUnitRegisteredNodeAddressBookQueryResolveEndpoint(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		mirror  string
-		wantPre string
-	}{
-		{name: "localhost is redirected to 8084", mirror: "localhost:5600", wantPre: "http://localhost:8084/api/v1/network/registered-nodes"},
-		{name: "loopback IP is redirected to 8084", mirror: "127.0.0.1:5600", wantPre: "http://localhost:8084/api/v1/network/registered-nodes"},
-		{name: "remote mirror is left alone", mirror: "mirror.example.com:443", wantPre: "https://mirror.example.com:443/api/v1/network/registered-nodes"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			client, err := _NewMockClient()
-			require.NoError(t, err)
-			client.SetMirrorNetwork([]string{tt.mirror})
-
-			endpoint, err := NewRegisteredNodeAddressBookQuery().resolveEndpoint(client)
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantPre, endpoint)
-		})
-	}
-}
-
 func TestUnitRegisteredNodeAddressBookQueryWalkPagesAccumulates(t *testing.T) {
 	page := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -467,8 +440,7 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesAccumulates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := newDefaultMirrorHttpClient(server.URL)
-	t.Cleanup(func() { require.NoError(t, restClient.close(mirrorHttpDefaultCloseGrace)) })
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
 
 	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
@@ -485,8 +457,7 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesSurfacesHTTPError(t *testing
 	}))
 	defer server.Close()
 
-	restClient := newDefaultMirrorHttpClient(server.URL)
-	t.Cleanup(func() { require.NoError(t, restClient.close(mirrorHttpDefaultCloseGrace)) })
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
 
 	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
@@ -510,15 +481,32 @@ func TestUnitRegisteredNodeAddressBookQueryRetriesATransientPage(t *testing.T) {
 	}))
 	defer server.Close()
 
-	options := fastRetryOptions(3)
-	restClient := newMirrorHttpClient(server.URL, newDefaultHttpTransport(0), options)
-	t.Cleanup(func() { require.NoError(t, restClient.close(time.Second)) })
+	policy := fastRetryPolicy(3)
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), policy)
 
 	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 2, "the retried page still contributes its nodes")
 	assert.Equal(t, int32(3), atomic.LoadInt32(&calls), "page two was retried once")
+}
+
+func TestUnitRegisteredNodeAddressBookQueryGivesEveryPageAFullAttemptBudget(t *testing.T) {
+	firstPage := HttpResponse{statusCode: http.StatusOK, body: []byte(`{"registered_nodes":[{"registered_node_id":1,"description":"one"}],"links":{"next":"/api/v1/network/registered-nodes?page=2"}}`)}
+	lastPage := HttpResponse{statusCode: http.StatusOK, body: []byte(`{"registered_nodes":[{"registered_node_id":2,"description":"two"}],"links":{"next":null}}`)}
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{resp: firstPage},
+		{resp: statusResponse(http.StatusServiceUnavailable)},
+		{resp: lastPage},
+	}}
+
+	restClient := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(2))
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.NoError(t, err, "three attempts over two pages fit a budget of two per request")
+	require.Len(t, book.RegisteredNodes, 2)
+	assert.Equal(t, 3, transport.callCount())
 }
 
 // A next link that names a host is refused rather than followed, so a page URL can only ever
@@ -529,8 +517,7 @@ func TestUnitRegisteredNodeAddressBookQueryRejectsOffHostNextLink(t *testing.T) 
 	}))
 	defer server.Close()
 
-	restClient := newDefaultMirrorHttpClient(server.URL)
-	t.Cleanup(func() { require.NoError(t, restClient.close(time.Second)) })
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
 
 	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
@@ -546,8 +533,7 @@ func TestUnitRegisteredNodeAddressBookQueryStopsAtPageCap(t *testing.T) {
 	}))
 	defer server.Close()
 
-	restClient := newDefaultMirrorHttpClient(server.URL)
-	t.Cleanup(func() { require.NoError(t, restClient.close(time.Second)) })
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
 
 	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 

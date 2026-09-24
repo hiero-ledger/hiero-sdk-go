@@ -14,11 +14,6 @@ import (
 )
 
 const (
-	// Attempts before giving up on transient transport failures.
-	mirrorNodeDefaultMaxAttempts = 3
-	// Per-request timeout for a mirror node call.
-	mirrorNodeDefaultTimeout = 30 * time.Second
-
 	// The only URL schemes a mirror node REST call can be made over.
 	mirrorNodeSchemeHTTP  = "http"
 	mirrorNodeSchemeHTTPS = "https"

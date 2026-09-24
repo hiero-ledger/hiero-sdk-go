@@ -1,7 +1,6 @@
 package hiero
 
 import (
-	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -199,29 +198,18 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) fillEvmAddresses() error
 }
 
 // performContractCallToMirrorNode POSTs the call payload to /contracts/call.
-//
-// The endpoint is read-only — it simulates a call or estimates gas, and mutates nothing — so
-// the POST is retried like a GET rather than being treated as non-idempotent.
 func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMirrorNode(client *Client, jsonPayload string) (map[string]any, error) {
-	baseURL, err := mirrorNodeContractQuery.resolveBaseURL(client)
+	path, err := newMirrorNodeRestPath("/contracts/call")
 	if err != nil {
 		return nil, err
 	}
 
-	path, err := newMirrorRestPath("/contracts/call")
+	restClient, err := client.mirrorRestClient(path, client.mirrorHttpPolicy())
 	if err != nil {
 		return nil, err
 	}
 
-	// The attempt budget stays fixed at the mirror node default: this query has never honoured
-	// Client.SetMaxAttempts, and unifying the SDK's four attempt policies is a behaviour change
-	// of its own rather than part of moving a call site onto this layer.
-	options := client.mirrorHttpSettings()
-	options.maxAttempts = mirrorNodeDefaultMaxAttempts
-
-	restClient := client.mirrorRestClientForBaseURL(baseURL, options)
-
-	resp, err := restClient.post(context.Background(), path, "application/json", []byte(jsonPayload))
+	resp, err := restClient.post(path, "application/json", []byte(jsonPayload), CancellationNone())
 	if err != nil {
 		if errors.Is(err, errMirrorHttpRetriesExhausted) {
 			return nil, mirrorNodeStatusError(resp)
@@ -237,22 +225,6 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMir
 		return nil, err
 	}
 	return result, nil
-}
-
-// resolveBaseURL returns the REST base. A local node serves /contracts/call on 8545, which is
-// a third distinct local port alongside 38081 and 8084 — tracked as the ingress question, not
-// changed here.
-func (mirrorNodeContractQuery *mirrorNodeContractQuery) resolveBaseURL(client *Client) (string, error) {
-	mirrorUrl, err := mirrorNodeRestBaseURL(client)
-	if err != nil {
-		return "", err
-	}
-
-	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
-		return "http://localhost:8545/api/v1", nil
-	}
-
-	return mirrorUrl, nil
 }
 
 func (mirrorNodeContractQuery *mirrorNodeContractQuery) createJSONPayload(estimate bool, blockNumber string) (string, error) {

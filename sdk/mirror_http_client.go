@@ -5,7 +5,6 @@ package hiero
 import (
 	"context"
 	"crypto/rand"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -15,137 +14,83 @@ import (
 	"time"
 )
 
-// The policy half of the prototype: everything the transport deliberately does not do.
-// See mirror_http_transport.go for the boundary and .claude/docs/go-mirror-http-prototype.md
-// for how this maps onto sdk-collaboration-hub#283.
+const httpOpCall = "call"
 
-var errMirrorHttpRetriesExhausted = errors.New("retryable status persisted after every attempt")
-
-// mirrorHttpRetryOptions is the mirror HTTP retry and timeout policy, as one value.
-//
-// It is deliberately separate from the gRPC knobs on Client. perAttemptTimeout is its own
-// field rather than a reinterpretation of Client.requestTimeout, which is documented as the
-// total budget for a whole operation — reusing that name for a per-attempt bound would
-// silently change what SetRequestTimeout means for existing callers.
-//
-// retryableStatusCodes is data rather than a rule in prose, so "which 5xx" has one answer
-// instead of one per reader.
-//
-// The connect timeout is deliberately absent: it is fixed when the transport is built, not per
-// call, so a per-call field for it would silently do nothing. It lives on the Client alongside
-// the transport instead — see client_mirror_http.go.
-type mirrorHttpRetryOptions struct {
-	maxAttempts          int
-	perAttemptTimeout    time.Duration
-	totalDeadline        time.Duration
-	minBackoff           time.Duration
-	maxBackoff           time.Duration
-	retryableStatusCodes []int
-}
-
-func defaultMirrorHttpRetryOptions() mirrorHttpRetryOptions {
-	return mirrorHttpRetryOptions{
-		maxAttempts:       mirrorNodeDefaultMaxAttempts,
-		perAttemptTimeout: mirrorNodeDefaultTimeout,
-		// Off by default. Nothing bounded total wall clock before this layer, so switching one
-		// on is a behaviour change that belongs to the cross-SDK policy decision, not to the
-		// migration of a call site. The machinery and its tests are here for when it lands.
-		totalDeadline: 0,
-		minBackoff:    250 * time.Millisecond,
-		maxBackoff:    8 * time.Second,
-		// 501, 505, 507, 508 and 511 are absent on purpose: they describe a server that will
-		// answer the same way next time.
-		retryableStatusCodes: []int{
-			http.StatusRequestTimeout,
-			http.StatusTooManyRequests,
-			http.StatusInternalServerError,
-			http.StatusBadGateway,
-			http.StatusServiceUnavailable,
-			http.StatusGatewayTimeout,
-		},
-	}
-}
-
-// mirrorHttpClient binds a mirror node base URL to a transport and a policy. It owns neither
-// the transport's lifetime nor a Client — one transport can back several of these, which is
-// what lets a single connection pool serve several mirror nodes.
-type mirrorHttpClient struct {
+// mirrorNodeHttpClient sends the requests of one call to one mirror node, retrying per policy.
+// It does not own transport.
+type mirrorNodeHttpClient struct {
 	baseURL   string
-	transport httpTransport
-	options   mirrorHttpRetryOptions
+	transport HttpTransport
+	policy    MirrorNodeHttpRetryPolicy
+	deadline  time.Time
+	headers   map[string]string
+	// clientClosed is closed when the owning Client closes; nil if there is none.
+	clientClosed <-chan struct{}
 }
 
-func newMirrorHttpClient(baseURL string, transport httpTransport, options mirrorHttpRetryOptions) *mirrorHttpClient {
-	return &mirrorHttpClient{baseURL: baseURL, transport: transport, options: options}
+func newMirrorNodeHttpClient(baseURL string, transport HttpTransport, policy MirrorNodeHttpRetryPolicy) *mirrorNodeHttpClient {
+	client := &mirrorNodeHttpClient{baseURL: baseURL, transport: transport, policy: policy}
+	if total := policy.GetTotalDeadline(); total > 0 {
+		client.deadline = time.Now().Add(total)
+	}
+
+	return client
 }
 
-// newDefaultMirrorHttpClient builds a client over a transport it creates itself, for callers
-// that do not want to inject one. The caller still owns closing it.
-func newDefaultMirrorHttpClient(baseURL string) *mirrorHttpClient {
-	return newMirrorHttpClient(baseURL, newDefaultHttpTransport(0), defaultMirrorHttpRetryOptions())
+// get sends a GET request for path.
+func (c *mirrorNodeHttpClient) get(path mirrorNodeRestPath, cancellation Cancellation) (HttpResponse, error) {
+	return c.do(HttpRequest{
+		method:  HttpMethodGet,
+		url:     resolveMirrorPath(c.baseURL, path),
+		headers: c.headers,
+	}, cancellation)
 }
 
-func (c *mirrorHttpClient) get(ctx context.Context, path mirrorRestPath) (httpResponse, error) {
-	return c.do(ctx, httpRequest{
-		method: httpMethodGet,
-		url:    resolveMirrorPath(c.baseURL, path),
-	})
-}
-
-// post carries a body. Every mirror REST endpoint in scope is read-only, so a POST is retried
-// like a GET; the method is not treated as a reason to suppress retries.
-func (c *mirrorHttpClient) post(ctx context.Context, path mirrorRestPath, contentType string, body []byte) (httpResponse, error) {
-	return c.do(ctx, httpRequest{
-		method:      httpMethodPost,
+// post sends a POST request for path. Mirror node POST endpoints are read-only, so POST is retried like GET.
+func (c *mirrorNodeHttpClient) post(path mirrorNodeRestPath, contentType string, body []byte, cancellation Cancellation) (HttpResponse, error) {
+	return c.do(HttpRequest{
+		method:      HttpMethodPost,
 		url:         resolveMirrorPath(c.baseURL, path),
 		body:        body,
 		contentType: contentType,
-	})
+		headers:     c.headers,
+	}, cancellation)
 }
 
-func (c *mirrorHttpClient) close(closeTimeout time.Duration) error {
-	return c.transport.close(closeTimeout)
-}
-
-// do runs the attempt loop. A terminal transport failure ends it immediately rather than
-// consuming the budget; a retryable status that survives every attempt is returned alongside
-// an error, so a caller can still read the body to build its own message.
-func (c *mirrorHttpClient) do(ctx context.Context, req httpRequest) (httpResponse, error) {
-	if c.options.maxAttempts < 1 {
-		return httpResponse{}, fmt.Errorf("maxAttempts must be at least 1, got %d", c.options.maxAttempts)
-	}
-
-	if c.options.totalDeadline > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, c.options.totalDeadline)
-		defer cancel()
-	}
-
-	var lastResp httpResponse
+// do sends req, retrying per policy. When retries run out on a retryable status, the last
+// response is returned with the error.
+func (c *mirrorNodeHttpClient) do(req HttpRequest, cancellation Cancellation) (HttpResponse, error) {
+	var lastResp HttpResponse
 	var lastErr error
 
-	for attempt := 0; attempt < c.options.maxAttempts; attempt++ {
-		resp, err := c.attempt(ctx, req)
+	maxAttempts := int(c.policy.GetMaxAttempts())
+	for attempt := 0; attempt < maxAttempts; attempt++ {
+		if err := c.stopReason(attempt, lastResp, cancellation); err != nil {
+			return lastResp, err
+		}
+
+		req.deadline = c.attemptDeadline()
+		resp, err := c.transport.RoundTrip(req, cancellation)
 		switch {
 		case err != nil:
-			// The caller's cancellation or the total deadline outranks the attempt budget.
-			if ctxErr := ctx.Err(); ctxErr != nil {
-				return httpResponse{}, fmt.Errorf("mirror node HTTP request stopped after %d attempt(s): %w", attempt+1, ctxErr)
+			// Client close, cancellation and the total deadline take precedence over the transport error.
+			if stopErr := c.stopReason(attempt+1, HttpResponse{}, cancellation); stopErr != nil {
+				return HttpResponse{}, stopErr
 			}
 			if kind, _ := httpErrorKindOf(err); kind != httpTransient {
-				return httpResponse{}, err
+				return HttpResponse{}, err
 			}
-			lastResp, lastErr = httpResponse{}, err
+			lastResp, lastErr = HttpResponse{}, err
 		case !c.shouldRetryStatus(resp.statusCode):
 			return resp, nil
 		default:
 			lastResp, lastErr = resp, nil
 		}
 
-		if attempt == c.options.maxAttempts-1 {
+		if attempt == maxAttempts-1 {
 			break
 		}
-		if err := c.waitBeforeRetry(ctx, attempt, lastResp); err != nil {
+		if err := c.waitBeforeRetry(attempt, lastResp, cancellation); err != nil {
 			return lastResp, err
 		}
 	}
@@ -153,48 +98,86 @@ func (c *mirrorHttpClient) do(ctx context.Context, req httpRequest) (httpRespons
 	return lastResp, c.exhaustedError(lastResp, lastErr)
 }
 
-// attempt bounds one exchange. The deadline travels on the context rather than on the HTTP
-// client, so a caller can cancel a single mirror read.
-func (c *mirrorHttpClient) attempt(ctx context.Context, req httpRequest) (httpResponse, error) {
-	if c.options.perAttemptTimeout <= 0 {
-		return c.transport.roundTrip(ctx, req)
+// attemptDeadline returns the smaller of the per-attempt timeout and the time left in the call, or 0 if neither is set.
+func (c *mirrorNodeHttpClient) attemptDeadline() time.Duration {
+	bound := c.policy.GetPerAttemptTimeout()
+	if !c.deadline.IsZero() {
+		remaining := max(time.Until(c.deadline), time.Nanosecond)
+		if bound <= 0 || remaining < bound {
+			bound = remaining
+		}
 	}
 
-	attemptCtx, cancel := context.WithTimeout(ctx, c.options.perAttemptTimeout)
-	defer cancel()
-
-	return c.transport.roundTrip(attemptCtx, req)
+	return bound
 }
 
-func (c *mirrorHttpClient) shouldRetryStatus(status int) bool {
+// stopReason returns an error if the Client closed, the caller cancelled, or the total deadline passed.
+func (c *mirrorNodeHttpClient) stopReason(attempts int, last HttpResponse, cancellation Cancellation) error {
+	select {
+	case <-c.clientClosed:
+		return clientClosedError()
+	default:
+	}
+	if cancellation.IsCancelled() {
+		return cancelledError(cancellation)
+	}
+	if !c.deadline.IsZero() && !time.Now().Before(c.deadline) {
+		return deadlineExceededError(attempts, last, context.DeadlineExceeded)
+	}
+
+	return nil
+}
+
+func (c *mirrorNodeHttpClient) shouldRetryStatus(status int) bool {
 	if status >= http.StatusOK && status < http.StatusMultipleChoices {
 		return false
 	}
 
-	return slices.Contains(c.options.retryableStatusCodes, status)
+	return slices.Contains(c.policy.retryableStatuses(), uint16(status))
 }
 
-// waitBeforeRetry sleeps, preferring a server-supplied Retry-After over computed backoff when
-// it is no longer than the cap we would have waited anyway.
-func (c *mirrorHttpClient) waitBeforeRetry(ctx context.Context, attempt int, resp httpResponse) error {
+// waitBeforeRetry sleeps before the next attempt, using Retry-After on a 429 or 5xx. It fails at
+// once if the wait would pass the total deadline.
+func (c *mirrorNodeHttpClient) waitBeforeRetry(attempt int, resp HttpResponse, cancellation Cancellation) error {
 	delay := c.backoffDelay(attempt)
-	if after, ok := retryAfterDelay(resp.headers); ok && after <= c.options.maxBackoff {
-		delay = after
+	if resp.statusCode == http.StatusTooManyRequests || resp.statusCode >= http.StatusInternalServerError {
+		if after, ok := retryAfterDelay(resp.headers); ok {
+			delay = after
+		}
+	}
+	if !c.deadline.IsZero() && delay >= time.Until(c.deadline) {
+		return deadlineExceededError(attempt+1, resp, fmt.Errorf("a wait of %s is longer than the time left", delay))
 	}
 
 	select {
-	case <-ctx.Done():
-		return ctx.Err()
+	case <-cancellation.GetContext().Done():
+		return cancelledError(cancellation)
+	case <-c.clientClosed:
+		return clientClosedError()
 	case <-time.After(delay):
 		return nil
 	}
 }
 
-// backoffDelay is exponential backoff with full jitter: a uniform draw from
-// [0, min(maxBackoff, minBackoff · 2^attempt)). Jitter matters because every SDK retrying a
-// throttled mirror node on the same curve re-converges on it.
-func (c *mirrorHttpClient) backoffDelay(attempt int) time.Duration {
-	ceiling := min(c.options.minBackoff<<min(attempt, 20), c.options.maxBackoff)
+func clientClosedError() error {
+	return &HttpTransportError{op: httpOpCall, ID: HttpTransportClientClosedError, Err: errMirrorHttpClientClosed}
+}
+
+func cancelledError(cancellation Cancellation) error {
+	return &HttpTransportError{op: httpOpCall, ID: HttpTransportCancelledError, Err: cancellation.GetContext().Err()}
+}
+
+func deadlineExceededError(attempts int, last HttpResponse, cause error) error {
+	if last.statusCode != 0 {
+		return fmt.Errorf("%w after %d attempt(s), last status %d: %w", errMirrorHttpDeadlineExceeded, attempts, last.statusCode, cause)
+	}
+
+	return fmt.Errorf("%w after %d attempt(s): %w", errMirrorHttpDeadlineExceeded, attempts, cause)
+}
+
+// backoffDelay returns a random delay in [0, min(maxBackoff, initialBackoff*2^attempt)).
+func (c *mirrorNodeHttpClient) backoffDelay(attempt int) time.Duration {
+	ceiling := min(c.policy.GetInitialBackoff()<<min(attempt, 20), c.policy.GetMaxBackoff())
 
 	return mirrorHttpJitter(ceiling)
 }
@@ -213,26 +196,23 @@ func mirrorHttpJitter(ceiling time.Duration) time.Duration {
 	return time.Duration(n.Int64())
 }
 
-func (c *mirrorHttpClient) exhaustedError(resp httpResponse, lastErr error) error {
+func (c *mirrorNodeHttpClient) exhaustedError(resp HttpResponse, lastErr error) error {
 	if lastErr != nil {
-		return fmt.Errorf("mirror node HTTP request failed after %d attempt(s): %w", c.options.maxAttempts, lastErr)
+		return fmt.Errorf("mirror node HTTP request failed after %d attempt(s): %w", c.policy.GetMaxAttempts(), lastErr)
 	}
 
-	return &httpError{
-		op:   "retry",
-		kind: httpTransient,
-		err:  fmt.Errorf("%w after %d attempt(s), last status %d", errMirrorHttpRetriesExhausted, c.options.maxAttempts, resp.statusCode),
-	}
+	return fmt.Errorf("%w after %d attempt(s), last status %d", errMirrorHttpRetriesExhausted, c.policy.GetMaxAttempts(), resp.statusCode)
 }
 
 // retryAfterDelay reads a Retry-After header in either permitted form: delta-seconds, or an
 // HTTP date. A date already in the past means "now".
-func retryAfterDelay(headers http.Header) (time.Duration, bool) {
-	if headers == nil {
+func retryAfterDelay(headers map[string][]string) (time.Duration, bool) {
+	values := headers[httpHeaderRetryAfter]
+	if len(values) == 0 {
 		return 0, false
 	}
 
-	raw := strings.TrimSpace(headers.Get(httpHeaderRetryAfter))
+	raw := strings.TrimSpace(values[0])
 	if raw == "" {
 		return 0, false
 	}
@@ -251,8 +231,7 @@ func retryAfterDelay(headers http.Header) (time.Duration, bool) {
 	return 0, false
 }
 
-// mirrorNodeStatusError formats a non-200 the way mirrorNodeReadBody does, so a call site
-// migrated onto this layer reports the same message it always has.
-func mirrorNodeStatusError(resp httpResponse) error {
+// mirrorNodeStatusError returns the error for a non-200 mirror node response.
+func mirrorNodeStatusError(resp HttpResponse) error {
 	return fmt.Errorf("received non-200 response from mirror node: %d, details: %s", resp.statusCode, resp.body)
 }

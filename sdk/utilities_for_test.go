@@ -476,46 +476,27 @@ func SetupMockTransportForDomain(domain string, mockServerURL string) func() {
 	}
 }
 
-// attachMockMirrorTransport points a client's mirror HTTP layer at mockServerURL for domain.
-//
-// It exists because that layer owns a private http.Transport and therefore cannot see the
-// http.DefaultTransport swap SetupMockTransportForDomain performs. Tests that build their own
-// client need both seams while call sites migrate; newMockMirrorClient wires both for tests
-// that do not.
+// attachMockMirrorTransport routes the client's mirror HTTP requests for domain to mockServerURL.
 func attachMockMirrorTransport(t *testing.T, client *Client, domain string, mockServerURL string) {
 	t.Helper()
 
 	mock := NewMockTransport()
 	mock.AddDomainRedirect(domain, mockServerURL)
-	client.setMirrorHttpTransport(newHttpTransportOver(mock))
+	setMirrorHttpTransport(client, newHttpTransportOver(mock, DefaultHttpTransportConfiguration()))
 }
 
-// newMockMirrorClient serves handler from a test server, redirects domain to it, and returns a
-// client whose mirror network is that domain. The server and the transport redirect are torn down
-// through t.Cleanup; because the redirect mutates http.DefaultTransport, callers must not be
-// parallel.
-//
-// Both mirror HTTP seams are wired to the same server, so a call site can be migrated onto the
-// mirror HTTP layer without its tests changing:
-//
-//   - call sites on the shared retry helper reach the mock through http.DefaultTransport
-//   - call sites on the mirror HTTP layer reach it through the injected transport, which owns a
-//     private http.Transport and so cannot see the global swap
+// newMockMirrorClient returns a client whose mirror network is domain, served by handler.
 func newMockMirrorClient(t *testing.T, domain string, handler http.HandlerFunc) *Client {
 	t.Helper()
 
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
-	t.Cleanup(SetupMockTransportForDomain(domain, server.URL))
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
-
-	mirrorMock := NewMockTransport()
-	mirrorMock.AddDomainRedirect(domain, server.URL)
-	client.setMirrorHttpTransport(newHttpTransportOver(mirrorMock))
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	return client
 }
@@ -531,4 +512,9 @@ func tokenTransferAmountFor(t *testing.T, transfers []TokenTransfer, accountID A
 	}
 	t.Fatalf("no transfer found for account %s", accountID)
 	return 0
+}
+
+// setMirrorHttpTransport injects transport through the client's mirror HTTP configuration.
+func setMirrorHttpTransport(client *Client, transport HttpTransport) {
+	client.SetMirrorNodeHttpConfig(client.GetMirrorNodeHttpConfig().WithTransport(transport))
 }

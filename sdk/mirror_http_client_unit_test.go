@@ -18,36 +18,49 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testMirrorAccountPath is the stand-in endpoint these tests exercise.
 const testMirrorAccountPath = "/accounts/0.0.1"
 
 // fakeHttpTurn is one scripted transport outcome. The last turn repeats once the script runs
 // out, so a test can say "always 503" with a single entry.
 type fakeHttpTurn struct {
-	resp  httpResponse
+	resp  HttpResponse
 	err   error
 	delay time.Duration
 }
 
 type fakeHttpTransport struct {
-	mu         sync.Mutex
-	turns      []fakeHttpTurn
-	calls      int
-	requests   []httpRequest
-	closeCalls int
+	mu            sync.Mutex
+	turns         []fakeHttpTurn
+	calls         int
+	requests      []HttpRequest
+	cancellations []Cancellation
+	closeCalls    int
 }
 
-func (f *fakeHttpTransport) roundTrip(ctx context.Context, req httpRequest) (httpResponse, error) {
+// RoundTrip honours the request deadline and the cancellation the way the default transport
+// does: its own deadline is a timeout, the cancellation firing is the caller's.
+func (f *fakeHttpTransport) RoundTrip(req HttpRequest, cancellation Cancellation) (HttpResponse, error) {
 	f.mu.Lock()
 	turn := f.turns[min(f.calls, len(f.turns)-1)]
 	f.calls++
 	f.requests = append(f.requests, req)
+	f.cancellations = append(f.cancellations, cancellation)
 	f.mu.Unlock()
 
 	if turn.delay > 0 {
+		ctx := cancellation.GetContext()
+		if req.deadline > 0 {
+			var cancel context.CancelFunc
+			ctx, cancel = context.WithTimeout(ctx, req.deadline)
+			defer cancel()
+		}
 		select {
 		case <-ctx.Done():
-			return httpResponse{}, &httpError{op: "send", kind: httpTransient, err: ctx.Err()}
+			id := HttpTransportTimeoutError
+			if cancellation.IsCancelled() {
+				id = HttpTransportCancelledError
+			}
+			return HttpResponse{}, &HttpTransportError{op: httpOpSend, ID: id, Err: ctx.Err()}
 		case <-time.After(turn.delay):
 		}
 	}
@@ -55,12 +68,10 @@ func (f *fakeHttpTransport) roundTrip(ctx context.Context, req httpRequest) (htt
 	return turn.resp, turn.err
 }
 
-func (f *fakeHttpTransport) close(_ time.Duration) error {
+func (f *fakeHttpTransport) Close(_ time.Duration) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.closeCalls++
-
-	return nil
 }
 
 func (f *fakeHttpTransport) callCount() int {
@@ -70,31 +81,29 @@ func (f *fakeHttpTransport) callCount() int {
 	return f.calls
 }
 
-func (f *fakeHttpTransport) lastRequest() httpRequest {
+func (f *fakeHttpTransport) lastRequest() HttpRequest {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
 	return f.requests[len(f.requests)-1]
 }
 
-// fastRetryOptions removes the real waits so retry behaviour can be asserted without sleeping.
-func fastRetryOptions(maxAttempts int) mirrorHttpRetryOptions {
-	options := defaultMirrorHttpRetryOptions()
-	options.maxAttempts = maxAttempts
-	options.minBackoff = time.Millisecond
-	options.maxBackoff = 2 * time.Millisecond
-
-	return options
+// fastRetryPolicy removes the real waits so retry behaviour can be asserted without sleeping.
+func fastRetryPolicy(maxAttempts uint16) MirrorNodeHttpRetryPolicy {
+	return DefaultMirrorNodeHttpRetryPolicy().
+		WithMaxAttempts(maxAttempts).
+		WithInitialBackoff(time.Millisecond).
+		WithMaxBackoff(2 * time.Millisecond)
 }
 
-func statusResponse(status int) httpResponse {
-	return httpResponse{statusCode: status, headers: http.Header{}}
+func statusResponse(status int) HttpResponse {
+	return HttpResponse{statusCode: status, headers: map[string][]string{}}
 }
 
-func testMirrorPath(t *testing.T, raw string) mirrorRestPath {
+func testMirrorPath(t *testing.T, raw string) mirrorNodeRestPath {
 	t.Helper()
 
-	path, err := newMirrorRestPath(raw)
+	path, err := newMirrorNodeRestPath(raw)
 	require.NoError(t, err)
 
 	return path
@@ -105,11 +114,11 @@ func TestUnitMirrorHttpClientRetriesTransientStatusThenSucceeds(t *testing.T) {
 
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
 		{resp: statusResponse(http.StatusServiceUnavailable)},
-		{resp: httpResponse{statusCode: http.StatusOK, body: []byte(`{"balance":1}`), headers: http.Header{}}},
+		{resp: HttpResponse{statusCode: http.StatusOK, body: []byte(`{"balance":1}`), headers: map[string][]string{}}},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(3))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(3))
 
-	resp, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	resp, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.statusCode)
 	assert.Equal(t, `{"balance":1}`, string(resp.body))
@@ -121,10 +130,10 @@ func TestUnitMirrorHttpClientDoesNotRetryTerminalStatus(t *testing.T) {
 
 	for _, status := range []int{http.StatusBadRequest, http.StatusNotFound, http.StatusNotImplemented} {
 		transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: statusResponse(status)}}}
-		client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(3))
+		client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(3))
 
-		resp, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
-		require.NoError(t, err, "a terminal status is a result, not a transport failure")
+		resp, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
+		require.NoError(t, err)
 		assert.Equal(t, status, resp.statusCode)
 		assert.Equal(t, 1, transport.callCount(), "status %d must not be retried", status)
 	}
@@ -133,15 +142,13 @@ func TestUnitMirrorHttpClientDoesNotRetryTerminalStatus(t *testing.T) {
 func TestUnitMirrorHttpClientRetriesRequestTimeoutStatus(t *testing.T) {
 	t.Parallel()
 
-	// 408 is retryable here; the shipping helper treats every 4xx as terminal, which is the
-	// one classification axis Go and Java currently disagree on.
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
 		{resp: statusResponse(http.StatusRequestTimeout)},
 		{resp: statusResponse(http.StatusOK)},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(3))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(3))
 
-	resp, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	resp, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.statusCode)
 	assert.Equal(t, 2, transport.callCount())
@@ -152,14 +159,14 @@ func TestUnitMirrorHttpClientReturnsResponseAndErrorWhenRetriesExhausted(t *test
 
 	const maxAttempts = 3
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
-		{resp: httpResponse{statusCode: http.StatusServiceUnavailable, body: []byte("still down"), headers: http.Header{}}},
+		{resp: HttpResponse{statusCode: http.StatusServiceUnavailable, body: []byte("still down"), headers: map[string][]string{}}},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(maxAttempts))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(maxAttempts))
 
-	resp, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
-	require.Error(t, err, "exhausting the budget is a failure, not a silent non-200")
+	resp, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
+	require.Error(t, err)
 	require.ErrorIs(t, err, errMirrorHttpRetriesExhausted)
-	assert.Equal(t, http.StatusServiceUnavailable, resp.statusCode, "the last response is still available for the message")
+	assert.Equal(t, http.StatusServiceUnavailable, resp.statusCode)
 	assert.Equal(t, "still down", string(resp.body))
 	assert.Equal(t, maxAttempts, transport.callCount())
 }
@@ -168,25 +175,39 @@ func TestUnitMirrorHttpClientStopsImmediatelyOnTerminalTransportError(t *testing
 	t.Parallel()
 
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
-		{err: &httpError{op: "send", kind: httpTerminal, err: errors.New("no such host")}},
+		{err: &HttpTransportError{op: httpOpSend, ID: HttpTransportUnknownHostError, Err: errors.New("no such host")}},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(5))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(5))
 
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.Error(t, err)
-	assert.Equal(t, 1, transport.callCount(), "a terminal failure must not consume the attempt budget")
+	assert.Equal(t, 1, transport.callCount())
 }
 
 func TestUnitMirrorHttpClientStopsImmediatelyWhenTransportClosed(t *testing.T) {
 	t.Parallel()
 
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
-		{err: &httpError{op: "send", kind: httpClosed, err: errHttpTransportClosed}},
+		{err: &HttpTransportError{op: httpOpSend, ID: HttpTransportClientClosedError, Err: errHttpTransportClosed}},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(5))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(5))
 
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.ErrorIs(t, err, errHttpTransportClosed)
+	assert.Equal(t, 1, transport.callCount())
+}
+
+func TestUnitMirrorHttpClientTreatsUnrecognisedTransportErrorAsTerminal(t *testing.T) {
+	t.Parallel()
+
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{err: errors.New("corporate proxy said no")},
+		{resp: statusResponse(http.StatusOK)},
+	}}
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(5))
+
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
+	require.Error(t, err)
 	assert.Equal(t, 1, transport.callCount())
 }
 
@@ -195,11 +216,11 @@ func TestUnitMirrorHttpClientRetriesTransientTransportError(t *testing.T) {
 
 	const maxAttempts = 3
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
-		{err: &httpError{op: "send", kind: httpTransient, err: errors.New("connection reset")}},
+		{err: &HttpTransportError{op: httpOpSend, ID: HttpTransportConnectionError, Err: errors.New("connection reset")}},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(maxAttempts))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(maxAttempts))
 
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "connection reset")
 	assert.Equal(t, maxAttempts, transport.callCount())
@@ -208,48 +229,83 @@ func TestUnitMirrorHttpClientRetriesTransientTransportError(t *testing.T) {
 func TestUnitMirrorHttpClientPrefersRetryAfterOverBackoff(t *testing.T) {
 	t.Parallel()
 
-	headers := http.Header{}
-	headers.Set(httpHeaderRetryAfter, "0")
+	headers := map[string][]string{httpHeaderRetryAfter: {"0"}}
 
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
-		{resp: httpResponse{statusCode: http.StatusTooManyRequests, headers: headers}},
+		{resp: HttpResponse{statusCode: http.StatusTooManyRequests, headers: headers}},
 		{resp: statusResponse(http.StatusOK)},
 	}}
 
-	options := defaultMirrorHttpRetryOptions()
-	options.maxAttempts = 2
+	policy := DefaultMirrorNodeHttpRetryPolicy()
+	policy = policy.WithMaxAttempts(2)
 	// Backoff that would dominate the test if Retry-After were ignored.
-	options.minBackoff = 5 * time.Second
-	options.maxBackoff = 5 * time.Second
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, options)
+	policy = policy.WithInitialBackoff(5 * time.Second)
+	policy = policy.WithMaxBackoff(5 * time.Second)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
 
 	start := time.Now()
-	resp, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	resp, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	elapsed := time.Since(start)
 
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.statusCode)
-	assert.Less(t, elapsed, time.Second, "Retry-After: 0 should override the computed backoff")
+	assert.Less(t, elapsed, time.Second)
 }
 
-func TestUnitMirrorHttpClientIgnoresRetryAfterAboveCap(t *testing.T) {
+func TestUnitMirrorHttpClientHonoursRetryAfterAboveMaxBackoff(t *testing.T) {
 	t.Parallel()
 
-	headers := http.Header{}
-	headers.Set(httpHeaderRetryAfter, "3600")
-
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
-		{resp: httpResponse{statusCode: http.StatusTooManyRequests, headers: headers}},
+		{resp: HttpResponse{statusCode: http.StatusServiceUnavailable, headers: map[string][]string{httpHeaderRetryAfter: {"1"}}}},
 		{resp: statusResponse(http.StatusOK)},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(2))
+
+	policy := fastRetryPolicy(2)
+	policy = policy.WithTotalDeadline(10 * time.Second)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
 
 	start := time.Now()
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	elapsed := time.Since(start)
 
 	require.NoError(t, err)
-	assert.Less(t, elapsed, time.Second, "an hour-long Retry-After must not be honoured over the cap")
+	assert.GreaterOrEqual(t, elapsed, 900*time.Millisecond)
+}
+
+func TestUnitMirrorHttpClientFailsFastWhenRetryAfterExceedsDeadline(t *testing.T) {
+	t.Parallel()
+
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{resp: HttpResponse{statusCode: http.StatusTooManyRequests, headers: map[string][]string{httpHeaderRetryAfter: {"3600"}}}},
+		{resp: statusResponse(http.StatusOK)},
+	}}
+
+	policy := fastRetryPolicy(5)
+	policy = policy.WithTotalDeadline(5 * time.Second)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
+
+	start := time.Now()
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
+
+	require.ErrorIs(t, err, errMirrorHttpDeadlineExceeded)
+	assert.Less(t, time.Since(start), time.Second)
+	assert.Equal(t, 1, transport.callCount())
+}
+
+func TestUnitMirrorHttpClientIgnoresRetryAfterOnRequestTimeoutStatus(t *testing.T) {
+	t.Parallel()
+
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{resp: HttpResponse{statusCode: http.StatusRequestTimeout, headers: map[string][]string{httpHeaderRetryAfter: {"3600"}}}},
+		{resp: statusResponse(http.StatusOK)},
+	}}
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(2))
+
+	start := time.Now()
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
+
+	require.NoError(t, err)
+	assert.Less(t, time.Since(start), time.Second)
 }
 
 func TestUnitMirrorHttpClientBoundsTotalWallClock(t *testing.T) {
@@ -259,18 +315,37 @@ func TestUnitMirrorHttpClientBoundsTotalWallClock(t *testing.T) {
 		{resp: statusResponse(http.StatusServiceUnavailable), delay: 200 * time.Millisecond},
 	}}
 
-	options := fastRetryOptions(20)
-	options.perAttemptTimeout = time.Second
-	options.totalDeadline = 300 * time.Millisecond
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, options)
+	policy := fastRetryPolicy(20)
+	policy = policy.WithPerAttemptTimeout(time.Second)
+	policy = policy.WithTotalDeadline(300 * time.Millisecond)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
 
 	start := time.Now()
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	elapsed := time.Since(start)
 
+	require.ErrorIs(t, err, errMirrorHttpDeadlineExceeded)
+	require.NotErrorIs(t, err, errMirrorHttpRetriesExhausted)
+	assert.Less(t, elapsed, 2*time.Second)
+	assert.Less(t, transport.callCount(), 20)
+}
+
+func TestUnitMirrorHttpClientTotalDeadlineSpansCall(t *testing.T) {
+	t.Parallel()
+
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{resp: statusResponse(http.StatusOK), delay: 200 * time.Millisecond},
+	}}
+
+	policy := fastRetryPolicy(1)
+	policy = policy.WithTotalDeadline(300 * time.Millisecond)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
+
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
+	require.NoError(t, err)
+
+	_, err = client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.Error(t, err)
-	assert.Less(t, elapsed, 2*time.Second, "the total deadline bounds the loop regardless of maxAttempts")
-	assert.Less(t, transport.callCount(), 20, "the deadline should cut the attempt budget short")
 }
 
 func TestUnitMirrorHttpClientAppliesPerAttemptTimeout(t *testing.T) {
@@ -281,14 +356,14 @@ func TestUnitMirrorHttpClientAppliesPerAttemptTimeout(t *testing.T) {
 		{resp: statusResponse(http.StatusOK), delay: 500 * time.Millisecond},
 	}}
 
-	options := fastRetryOptions(maxAttempts)
-	options.perAttemptTimeout = 50 * time.Millisecond
-	options.totalDeadline = 5 * time.Second
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, options)
+	policy := fastRetryPolicy(maxAttempts)
+	policy = policy.WithPerAttemptTimeout(50 * time.Millisecond)
+	policy = policy.WithTotalDeadline(5 * time.Second)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
 
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationNone())
 	require.Error(t, err)
-	assert.Equal(t, maxAttempts, transport.callCount(), "a per-attempt timeout is transient and retried")
+	assert.Equal(t, maxAttempts, transport.callCount())
 }
 
 func TestUnitMirrorHttpClientHonoursCallerCancellation(t *testing.T) {
@@ -297,7 +372,7 @@ func TestUnitMirrorHttpClientHonoursCallerCancellation(t *testing.T) {
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
 		{resp: statusResponse(http.StatusOK), delay: 5 * time.Second},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(3))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(3))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -306,24 +381,31 @@ func TestUnitMirrorHttpClientHonoursCallerCancellation(t *testing.T) {
 	}()
 
 	start := time.Now()
-	_, err := client.get(ctx, testMirrorPath(t, testMirrorAccountPath))
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationFromContext(ctx))
 
-	require.Error(t, err)
 	require.ErrorIs(t, err, context.Canceled)
+	requireHttpErrorID(t, err, HttpTransportCancelledError)
 	assert.Less(t, time.Since(start), 2*time.Second)
-	assert.Equal(t, 1, transport.callCount(), "cancellation is not a reason to try again")
+	assert.Equal(t, 1, transport.callCount())
 }
 
-func TestUnitMirrorHttpClientRejectsZeroMaxAttempts(t *testing.T) {
+func TestUnitMirrorHttpClientCancellationInterruptsBackoff(t *testing.T) {
 	t.Parallel()
 
-	transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: statusResponse(http.StatusOK)}}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(0))
+	// Retry-After makes the wait exactly 5s; a jittered backoff could draw one shorter than the
+	// delay before cancelling.
+	throttled := HttpResponse{statusCode: http.StatusServiceUnavailable, headers: map[string][]string{httpHeaderRetryAfter: {"5"}}}
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: throttled}}}
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(3))
 
-	_, err := client.get(context.Background(), testMirrorPath(t, testMirrorAccountPath))
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "maxAttempts must be at least 1")
-	assert.Equal(t, 0, transport.callCount())
+	ctx, cancel := context.WithCancel(context.Background())
+	time.AfterFunc(50*time.Millisecond, cancel)
+
+	start := time.Now()
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationFromContext(ctx))
+
+	requireHttpErrorID(t, err, HttpTransportCancelledError)
+	assert.Less(t, time.Since(start), time.Second)
 }
 
 func TestUnitMirrorHttpClientRetriesPostLikeGet(t *testing.T) {
@@ -333,14 +415,14 @@ func TestUnitMirrorHttpClientRetriesPostLikeGet(t *testing.T) {
 		{resp: statusResponse(http.StatusServiceUnavailable)},
 		{resp: statusResponse(http.StatusOK)},
 	}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(3))
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(3))
 
-	resp, err := client.post(context.Background(), testMirrorPath(t, "/contracts/call"), "application/json", []byte(`{}`))
+	resp, err := client.post(testMirrorPath(t, "/contracts/call"), "application/json", []byte(`{}`), CancellationNone())
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.statusCode)
-	assert.Equal(t, 2, transport.callCount(), "mirror REST is read-only, so POST is retried too")
-	assert.Equal(t, httpMethodPost, transport.lastRequest().method)
-	assert.Equal(t, []byte(`{}`), transport.lastRequest().body, "the body must survive a retry")
+	assert.Equal(t, 2, transport.callCount())
+	assert.Equal(t, HttpMethodPost, transport.lastRequest().method)
+	assert.Equal(t, []byte(`{}`), transport.lastRequest().body)
 }
 
 func TestUnitMirrorHttpClientResolvesPathAgainstBaseURL(t *testing.T) {
@@ -348,9 +430,9 @@ func TestUnitMirrorHttpClientResolvesPathAgainstBaseURL(t *testing.T) {
 
 	for _, base := range []string{"https://mirror.example.com/api/v1", "https://mirror.example.com/api/v1/"} {
 		transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: statusResponse(http.StatusOK)}}}
-		client := newMirrorHttpClient(base, transport, fastRetryOptions(1))
+		client := newMirrorNodeHttpClient(base, transport, fastRetryPolicy(1))
 
-		_, err := client.get(context.Background(), testMirrorPath(t, "/accounts/0.0.1?limit=25"))
+		_, err := client.get(testMirrorPath(t, "/accounts/0.0.1?limit=25"), CancellationNone())
 		require.NoError(t, err)
 		assert.Equal(t,
 			"https://mirror.example.com/api/v1/accounts/0.0.1?limit=25",
@@ -359,20 +441,10 @@ func TestUnitMirrorHttpClientResolvesPathAgainstBaseURL(t *testing.T) {
 	}
 }
 
-func TestUnitMirrorHttpClientCloseDelegatesToTransport(t *testing.T) {
-	t.Parallel()
-
-	transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: statusResponse(http.StatusOK)}}}
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", transport, fastRetryOptions(1))
-
-	require.NoError(t, client.close(time.Second))
-	assert.Equal(t, 1, transport.closeCalls)
-}
-
 func TestUnitMirrorHttpShouldRetryStatus(t *testing.T) {
 	t.Parallel()
 
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", &fakeHttpTransport{}, defaultMirrorHttpRetryOptions())
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", &fakeHttpTransport{}, DefaultMirrorNodeHttpRetryPolicy())
 
 	retryable := []int{
 		http.StatusRequestTimeout,
@@ -386,8 +458,6 @@ func TestUnitMirrorHttpShouldRetryStatus(t *testing.T) {
 		assert.True(t, client.shouldRetryStatus(status), "status %d should be retryable", status)
 	}
 
-	// The pinned list is the point: "5xx" would sweep these in, and each of them describes a
-	// server that will answer the same way next time.
 	terminal := []int{
 		http.StatusOK,
 		http.StatusNoContent,
@@ -408,21 +478,21 @@ func TestUnitMirrorHttpShouldRetryStatus(t *testing.T) {
 func TestUnitMirrorHttpBackoffIsJitteredAndCapped(t *testing.T) {
 	t.Parallel()
 
-	options := defaultMirrorHttpRetryOptions()
-	client := newMirrorHttpClient("https://mirror.example.com/api/v1", &fakeHttpTransport{}, options)
+	policy := DefaultMirrorNodeHttpRetryPolicy()
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", &fakeHttpTransport{}, policy)
 
 	distinct := make(map[time.Duration]struct{})
 	for attempt := range 6 {
 		for range 40 {
 			delay := client.backoffDelay(attempt)
 			require.GreaterOrEqual(t, delay, time.Duration(0))
-			require.LessOrEqual(t, delay, options.maxBackoff, "backoff must never exceed the cap")
+			require.LessOrEqual(t, delay, policy.GetMaxBackoff())
 			distinct[delay] = struct{}{}
 		}
 	}
 
-	assert.Greater(t, len(distinct), 1, "full jitter must not collapse to a fixed curve")
-	assert.LessOrEqual(t, client.backoffDelay(0), options.minBackoff, "the first retry draws from [0, minBackoff)")
+	assert.Greater(t, len(distinct), 1)
+	assert.LessOrEqual(t, client.backoffDelay(0), policy.GetInitialBackoff())
 }
 
 func TestUnitMirrorHttpRetryAfterDelay(t *testing.T) {
@@ -447,9 +517,9 @@ func TestUnitMirrorHttpRetryAfterDelay(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			headers := http.Header{}
+			headers := map[string][]string{}
 			if tt.value != "" {
-				headers.Set(httpHeaderRetryAfter, tt.value)
+				headers[httpHeaderRetryAfter] = []string{tt.value}
 			}
 
 			got, ok := retryAfterDelay(headers)
@@ -470,8 +540,9 @@ func TestUnitMirrorHttpRetryAfterDelay(t *testing.T) {
 	t.Run("future http date", func(t *testing.T) {
 		t.Parallel()
 
-		headers := http.Header{}
-		headers.Set(httpHeaderRetryAfter, time.Now().Add(30*time.Second).UTC().Format(http.TimeFormat))
+		headers := map[string][]string{
+			httpHeaderRetryAfter: {time.Now().Add(30 * time.Second).UTC().Format(http.TimeFormat)},
+		}
 
 		got, ok := retryAfterDelay(headers)
 		require.True(t, ok)
@@ -480,8 +551,6 @@ func TestUnitMirrorHttpRetryAfterDelay(t *testing.T) {
 	})
 }
 
-// End-to-end through the real transport rather than the fake, so the two halves are known to
-// fit together: policy above, dumb pipe below, one seam.
 func TestUnitMirrorHttpDefaultClientRetriesEndToEnd(t *testing.T) {
 	t.Parallel()
 
@@ -498,13 +567,53 @@ func TestUnitMirrorHttpDefaultClientRetriesEndToEnd(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := newDefaultMirrorHttpClient(server.URL + mirrorHttpAPIVersionPrefix)
-	defer func() { require.NoError(t, client.close(time.Second)) }()
+	client := newMirrorNodeHttpClient(server.URL+mirrorHttpAPIVersionPrefix, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
 
-	resp, err := client.get(context.Background(), testMirrorPath(t, "/balances?account.id=0.0.1"))
+	resp, err := client.get(testMirrorPath(t, "/balances?account.id=0.0.1"), CancellationNone())
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.statusCode)
 	assert.Equal(t, `{"balances":[]}`, string(resp.body))
 	assert.Equal(t, int32(2), atomic.LoadInt32(&attempts))
-	assert.Equal(t, "/api/v1/balances?account.id=0.0.1", gotPath, "the path resolves under the configured base")
+	assert.Equal(t, "/api/v1/balances?account.id=0.0.1", gotPath)
+}
+
+func TestUnitMirrorHttpClientPassesCancellationThroughUnwrapped(t *testing.T) {
+	t.Parallel()
+
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: statusResponse(http.StatusOK)}}}
+	policy := fastRetryPolicy(1).WithTotalDeadline(time.Minute)
+	client := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, err := client.get(testMirrorPath(t, testMirrorAccountPath), CancellationFromContext(ctx))
+	require.NoError(t, err)
+
+	transport.mu.Lock()
+	defer transport.mu.Unlock()
+	assert.Equal(t, ctx, transport.cancellations[0].GetContext())
+}
+
+func TestUnitMirrorHttpClientDerivesEachAttemptDeadline(t *testing.T) {
+	t.Parallel()
+
+	path := testMirrorPath(t, testMirrorAccountPath)
+	deadlineFor := func(policy MirrorNodeHttpRetryPolicy) time.Duration {
+		transport := &fakeHttpTransport{turns: []fakeHttpTurn{{resp: statusResponse(http.StatusOK)}}}
+		_, err := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, policy).get(path, CancellationNone())
+		require.NoError(t, err)
+		return transport.lastRequest().deadline
+	}
+
+	assert.Equal(t, time.Second, deadlineFor(fastRetryPolicy(1).WithPerAttemptTimeout(time.Second).WithTotalDeadline(time.Minute)),
+		"a per-attempt cap tighter than the remaining total is used as is")
+
+	fromTotal := deadlineFor(fastRetryPolicy(1).WithPerAttemptTimeout(30 * time.Second).WithTotalDeadline(2 * time.Second))
+	assert.LessOrEqual(t, fromTotal, 2*time.Second)
+	assert.Greater(t, fromTotal, time.Second)
+
+	assert.Equal(t, 2*time.Second, deadlineFor(fastRetryPolicy(1).WithPerAttemptTimeout(0).WithTotalDeadline(2*time.Second)).Round(time.Second),
+		"0 is no per-attempt cap, so the remaining total is the whole bound")
+	assert.Zero(t, deadlineFor(fastRetryPolicy(1).WithPerAttemptTimeout(0)))
 }

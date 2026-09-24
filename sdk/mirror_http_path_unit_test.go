@@ -24,13 +24,13 @@ func TestUnitMirrorRestPathAcceptsRelativePaths(t *testing.T) {
 	}
 
 	for _, raw := range accepted {
-		path, err := newMirrorRestPath(raw)
+		path, err := newMirrorNodeRestPath(raw)
 		require.NoError(t, err, "%q should be accepted", raw)
 		assert.Equal(t, raw, path.String())
 	}
 }
 
-func TestUnitMirrorRestPathRejectsAnythingNamingAHost(t *testing.T) {
+func TestUnitMirrorRestPathRejectsHost(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -52,7 +52,7 @@ func TestUnitMirrorRestPathRejectsAnythingNamingAHost(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := newMirrorRestPath(tt.raw)
+			_, err := newMirrorNodeRestPath(tt.raw)
 			require.Error(t, err, "%q must not be constructible", tt.raw)
 		})
 	}
@@ -84,15 +84,12 @@ func TestUnitResolveMirrorPathConcatenates(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		path, err := newMirrorRestPath(tt.path)
+		path, err := newMirrorNodeRestPath(tt.path)
 		require.NoError(t, err)
 		assert.Equal(t, tt.want, resolveMirrorPath(tt.base, path))
 	}
 }
 
-// Concatenation is chosen over url.ResolveReference specifically because reference resolution
-// lets a hostile value replace the host. This pins the difference so nobody "simplifies" it
-// back to ResolveReference later.
 func TestUnitResolveMirrorPathCannotBeRedirectedOffHost(t *testing.T) {
 	t.Parallel()
 
@@ -110,13 +107,13 @@ func TestUnitResolveMirrorPathCannotBeRedirectedOffHost(t *testing.T) {
 		"reference resolution hands the host to the attacker")
 
 	// What this layer does with it: refuses to build the request at all.
-	_, err = newMirrorRestPath(hostile)
+	_, err = newMirrorNodeRestPath(hostile)
 	require.Error(t, err)
 
 	// And even if the guard were bypassed, concatenation keeps it on the configured host.
 	assert.Equal(t,
 		"https://mainnet.mirrornode.hedera.com/api/v1//evil.example.com/steal",
-		resolveMirrorPath(base, mirrorRestPath(hostile)))
+		resolveMirrorPath(base, mirrorNodeRestPath(hostile)))
 }
 
 func TestUnitNextPagePathStripsAPIVersionPrefix(t *testing.T) {

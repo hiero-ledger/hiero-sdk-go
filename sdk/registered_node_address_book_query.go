@@ -3,7 +3,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -66,7 +65,7 @@ func (q *RegisteredNodeAddressBookQuery) GetLimit() int32 {
 }
 
 // SetMaxAttempts sets the total number of attempts (initial try + retries).
-// Zero (the default) is treated as a single attempt with no retries.
+// Zero (the default) uses the Client's mirror node retry policy.
 func (q *RegisteredNodeAddressBookQuery) SetMaxAttempts(maxAttempts uint64) *RegisteredNodeAddressBookQuery {
 	q.maxAttempts = maxAttempts
 	return q
@@ -82,66 +81,21 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 		return RegisteredNodeAddressBook{}, errNoClientProvided
 	}
 
-	baseURL, err := q.resolveBaseURL(client)
-	if err != nil {
-		return RegisteredNodeAddressBook{}, err
-	}
-
 	path, err := q.buildPath()
 	if err != nil {
 		return RegisteredNodeAddressBook{}, err
 	}
 
-	options := client.mirrorHttpSettings()
-	options.maxAttempts = int(q.resolveAttempts(client))
-
-	return q.walkPages(client.mirrorRestClientForBaseURL(baseURL, options), path)
-}
-
-// resolveBaseURL returns the REST base. A local node serves this endpoint on 8084 rather than
-// on the client's mirror REST port.
-func (q *RegisteredNodeAddressBookQuery) resolveBaseURL(client *Client) (string, error) {
-	mirrorUrl, err := mirrorNodeRestBaseURL(client)
+	restClient, err := client.mirrorRestClient(path, client.mirrorHttpPolicyForQuery(q.maxAttempts))
 	if err != nil {
-		return "", err
+		return RegisteredNodeAddressBook{}, err
 	}
 
-	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
-		mirrorUrl = "http://localhost:8084/api/v1"
-	}
-
-	return mirrorUrl, nil
+	return q.walkPages(restClient, path)
 }
 
-// resolveEndpoint returns the initial query URL.
-func (q *RegisteredNodeAddressBookQuery) resolveEndpoint(client *Client) (string, error) {
-	baseURL, err := q.resolveBaseURL(client)
-	if err != nil {
-		return "", err
-	}
-
-	return q.buildURL(baseURL), nil
-}
-
-// resolveAttempts picks the per-page retry budget: query setting first,
-// client default second, single attempt as the final fallback.
-func (q *RegisteredNodeAddressBookQuery) resolveAttempts(client *Client) uint64 {
-	if q.maxAttempts > 0 {
-		return q.maxAttempts
-	}
-	if clientMax := client.GetMaxAttempts(); clientMax > 0 {
-		return uint64(clientMax)
-	}
-	return 1
-}
-
-// walkPages follows links.next until exhausted (or the page cap trips). Each page goes through
-// the shared mirror HTTP layer, so pagination inherits the same retry policy as the first
-// request instead of the fixed-delay loop this used to carry.
-//
-// A next link is turned back into a path, so a page URL can only ever address the configured
-// mirror node — see nextPagePath.
-func (q *RegisteredNodeAddressBookQuery) walkPages(restClient *mirrorHttpClient, startPath mirrorRestPath) (RegisteredNodeAddressBook, error) {
+// walkPages follows links.next until exhausted (or the page cap trips).
+func (q *RegisteredNodeAddressBookQuery) walkPages(restClient *mirrorNodeHttpClient, startPath mirrorNodeRestPath) (RegisteredNodeAddressBook, error) {
 	allNodes := make([]RegisteredNode, 0)
 	path := startPath
 
@@ -170,9 +124,8 @@ func (q *RegisteredNodeAddressBookQuery) walkPages(restClient *mirrorHttpClient,
 	return RegisteredNodeAddressBook{}, fmt.Errorf("exceeded pagination cap of %d pages", registeredNodeMaxPages)
 }
 
-// buildPath composes the endpoint path together with any query parameters configured on the
-// query. It is a path, never a URL, so no call site above this can name a host.
-func (q *RegisteredNodeAddressBookQuery) buildPath() (mirrorRestPath, error) {
+// buildPath composes the endpoint path together with any query parameters configured on the query.
+func (q *RegisteredNodeAddressBookQuery) buildPath() (mirrorNodeRestPath, error) {
 	path := "/network/registered-nodes"
 
 	params := url.Values{}
@@ -187,23 +140,12 @@ func (q *RegisteredNodeAddressBookQuery) buildPath() (mirrorRestPath, error) {
 		path = path + "?" + encoded
 	}
 
-	return newMirrorRestPath(path)
+	return newMirrorNodeRestPath(path)
 }
 
-// buildURL resolves buildPath against a mirror base URL.
-func (q *RegisteredNodeAddressBookQuery) buildURL(mirrorBaseURL string) string {
-	path, err := q.buildPath()
-	if err != nil {
-		return ""
-	}
-
-	return resolveMirrorPath(mirrorBaseURL, path)
-}
-
-// fetchRegisteredNodesPage requests one page. Retry, backoff and classification all belong to
-// the mirror HTTP layer now; this used to carry its own loop with a fixed 200 ms delay.
-func fetchRegisteredNodesPage(restClient *mirrorHttpClient, path mirrorRestPath) ([]byte, error) {
-	resp, err := restClient.get(context.Background(), path)
+// fetchRegisteredNodesPage requests one page and returns its body.
+func fetchRegisteredNodesPage(restClient *mirrorNodeHttpClient, path mirrorNodeRestPath) ([]byte, error) {
+	resp, err := restClient.get(path, CancellationNone())
 	if err != nil {
 		if errors.Is(err, errMirrorHttpRetriesExhausted) {
 			return nil, mirrorNodeStatusError(resp)

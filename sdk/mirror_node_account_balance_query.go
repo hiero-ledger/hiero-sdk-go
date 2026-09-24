@@ -3,7 +3,6 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -67,7 +66,7 @@ func (q *MirrorNodeAccountBalanceQuery) Execute(client *Client) (MirrorNodeAccou
 		return MirrorNodeAccountBalance{}, err
 	}
 
-	body, err := q.fetch(context.Background(), client)
+	body, err := q.fetch(client)
 	if err != nil {
 		return MirrorNodeAccountBalance{}, err
 	}
@@ -75,23 +74,21 @@ func (q *MirrorNodeAccountBalanceQuery) Execute(client *Client) (MirrorNodeAccou
 	return parseAccountBalances(body)
 }
 
-// fetch runs the request through the mirror HTTP layer: the Client owns the transport, this
-// query contributes only its own attempt budget.
-func (q *MirrorNodeAccountBalanceQuery) fetch(ctx context.Context, client *Client) ([]byte, error) {
-	restClient, err := client.mirrorRestClient(client.mirrorHttpOptionsForQuery(q.maxAttempts))
-	if err != nil {
-		return nil, err
-	}
-
+// fetch returns the body of the balances response.
+func (q *MirrorNodeAccountBalanceQuery) fetch(client *Client) ([]byte, error) {
 	path, err := q.buildPath()
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := restClient.get(ctx, path)
+	restClient, err := client.mirrorRestClient(path, client.mirrorHttpPolicyForQuery(q.maxAttempts))
 	if err != nil {
-		// A retryable status that outlived the budget still carries its response, so report it
-		// as the non-200 it is rather than as a transport failure.
+		return nil, err
+	}
+
+	resp, err := restClient.get(path, CancellationNone())
+	if err != nil {
+		// Report an exhausted retryable status as a non-200 response.
 		if errors.Is(err, errMirrorHttpRetriesExhausted) {
 			return nil, mirrorNodeStatusError(resp)
 		}
@@ -104,26 +101,11 @@ func (q *MirrorNodeAccountBalanceQuery) fetch(ctx context.Context, client *Clien
 	return resp.body, nil
 }
 
-// resolveAttempts picks the retry budget: query setting first,
-// client default second, the mirror node default as the final fallback.
-func (q *MirrorNodeAccountBalanceQuery) resolveAttempts(client *Client) uint64 {
-	return uint64(client.mirrorHttpOptionsForQuery(q.maxAttempts).maxAttempts)
-}
-
-func (q *MirrorNodeAccountBalanceQuery) buildPath() (mirrorRestPath, error) {
+func (q *MirrorNodeAccountBalanceQuery) buildPath() (mirrorNodeRestPath, error) {
 	params := url.Values{}
 	params.Set("account.id", q.accountID._MirrorNodePathID())
 
-	return newMirrorRestPath("/balances?" + params.Encode())
-}
-
-func (q *MirrorNodeAccountBalanceQuery) buildURL(mirrorBaseURL string) string {
-	path, err := q.buildPath()
-	if err != nil {
-		return ""
-	}
-
-	return resolveMirrorPath(mirrorBaseURL, path)
+	return newMirrorNodeRestPath("/balances?" + params.Encode())
 }
 
 func (q *MirrorNodeAccountBalanceQuery) validateNetworkOnIDs(client *Client) error {

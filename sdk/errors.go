@@ -58,6 +58,13 @@ var errInnerTransactionNil = errors.New("inner transaction cannot be nil")
 var errTransactionTypeNotAllowed = errors.New("transaction type is not allowed in a batch transaction")
 var errBatchKeyNotSet = errors.New("batch key needs to be set")
 
+// Mirror node HTTP errors
+var errHttpTransportClosed = errors.New("mirror node HTTP transport is closed")
+var errHttpResponseTooLarge = errors.New("mirror node HTTP response body exceeds the size cap")
+var errMirrorHttpRetriesExhausted = errors.New("retryable status persisted")
+var errMirrorHttpDeadlineExceeded = errors.New("total deadline exceeded")
+var errMirrorHttpClientClosed = errors.New("client is closed")
+
 type ErrInvalidNodeAccountIDSet struct {
 	NodeAccountID AccountID
 }
