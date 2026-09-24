@@ -561,6 +561,30 @@ func TestUnitTopicMessageSubmitTransactionChunkSizeSerialization(t *testing.T) {
 	require.Equal(t, uint64(1024), result.GetChunkSize())
 }
 
+func TestUnitTopicMessageSubmitTransactionChunksSurviveSerialization(t *testing.T) {
+	t.Parallel()
+
+	transaction, err := NewTopicMessageSubmitTransaction().
+		SetTransactionID(TransactionIDGenerate(AccountID{Account: 324})).
+		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		SetTopicID(TopicID{Topic: 3}).
+		SetMessage(make([]byte, 2500)).
+		Freeze()
+	require.NoError(t, err)
+
+	txBytes, err := transaction.ToBytes()
+	require.NoError(t, err)
+	txParsed, err := TransactionFromBytes(txBytes)
+	require.NoError(t, err)
+	result, ok := txParsed.(TopicMessageSubmitTransaction)
+	require.True(t, ok)
+
+	require.Equal(t, 6, result.signedTransactions._Length())
+	assert.Equal(t, 2, result.nodeAccountIDs._Length())
+	assert.Equal(t, 3, result.transactionIDs._Length())
+	assert.Equal(t, transaction.transactionIDs._Get(2), result.transactionIDs._Get(2))
+}
+
 func TestUnitTopicMessageSubmitTransactionThrottle(t *testing.T) {
 	t.Parallel()
 
