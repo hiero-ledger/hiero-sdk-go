@@ -3,7 +3,9 @@ package methods
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strconv"
 	"time"
@@ -491,24 +493,13 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
 }
 
-// GetAccountBalance jRPC method for getAccountBalance
-func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAccountBalanceParams) (*response.AccountBalanceResponse, error) {
-	query := hiero.NewAccountBalanceQuery().SetGrpcDeadline(&threeSecondsDuration)
+// GetMirrorNodeAccountBalance jRPC method for getMirrorNodeAccountBalance
+func (a *AccountService) GetMirrorNodeAccountBalance(_ context.Context, params param.GetMirrorNodeAccountBalanceParams) (*response.AccountBalanceResponse, error) {
+	query := hiero.NewMirrorNodeAccountBalanceQuery()
 
-	if params.AccountId != nil {
-		accountID, err := hiero.AccountIDFromString(*params.AccountId)
-		if err != nil {
-			return nil, err
-		}
-		query.SetAccountID(accountID)
-	}
-
-	if params.ContractId != nil {
-		contractID, err := hiero.ContractIDFromString(*params.ContractId)
-		if err != nil {
-			return nil, err
-		}
-		query.SetContractID(contractID)
+	// A missing account ID is left to the SDK, which rejects the query before any network call
+	if err := utils.SetAccountIDIfPresent(params.AccountId, query.SetAccountID); err != nil {
+		return nil, err
 	}
 
 	balance, err := query.Execute(a.sdkService.GetClient(params.SessionId))
@@ -516,19 +507,64 @@ func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAc
 		return nil, err
 	}
 
-	tokenBalances := make(map[string]uint64)
-	for tokenID, amount := range balance.Tokens.GetAll() {
-		tokenBalances[tokenID] = amount
+	return &response.AccountBalanceResponse{Hbar: strconv.FormatInt(balance.Hbars.AsTinybar(), 10)}, nil
+}
+
+// ExecuteDeprecatedAccountBalanceQuery jRPC method for executeDeprecatedAccountBalanceQuery. It is the only
+// place the TCK constructs the deprecated AccountBalanceQuery: it reports the warning the SDK logged on
+// construction and the error the SDK returned from the operation.
+func (a *AccountService) ExecuteDeprecatedAccountBalanceQuery(_ context.Context, params param.ExecuteDeprecatedAccountBalanceQueryParams) (*response.DeprecatedAccountBalanceQueryResponse, error) {
+	if params.AccountId == nil {
+		return nil, response.InvalidParams.WithData("accountId is required")
+	}
+	operation := "execute"
+	if params.Operation != nil {
+		operation = *params.Operation
+	}
+	if operation != "execute" && operation != "getCost" {
+		return nil, response.InvalidParams.WithData("unknown operation: " + operation)
+	}
+	accountID, err := hiero.AccountIDFromString(*params.AccountId)
+	if err != nil {
+		return nil, err
 	}
 
-	tokenDecimals := make(map[string]uint64)
-	for tokenID, decimals := range balance.TokenDecimals.GetAll() {
-		tokenDecimals[tokenID] = decimals
+	query, logged, err := captureStdout(hiero.NewAccountBalanceQuery) //nolint:staticcheck // this method exists to construct the deprecated query
+	if err != nil {
+		return nil, err
+	}
+	query.SetAccountID(accountID)
+
+	client := a.sdkService.GetClient(params.SessionId)
+	if operation == "getCost" {
+		_, err = query.GetCost(client)
+	} else {
+		_, err = query.Execute(client)
 	}
 
-	return &response.AccountBalanceResponse{
-		Hbar:          strconv.Itoa(int(balance.Hbars.AsTinybar())),
-		TokenBalances: tokenBalances,
-		TokenDecimals: tokenDecimals,
+	var executionError *string
+	if err != nil {
+		message := err.Error()
+		executionError = &message
+	}
+
+	return &response.DeprecatedAccountBalanceQueryResponse{
+		ConstructionWarning: loggedWarning(logged),
+		ExecutionError:      executionError,
 	}, nil
+}
+
+// loggedWarning returns the message of the first warning in the SDK logger's output, or nil.
+// Only the default JSON log format is parsed, not the HEDERA_SDK_GO_LOG_PRETTY console format.
+func loggedWarning(output []byte) *string {
+	for line := range bytes.Lines(output) {
+		var entry struct {
+			Level   string `json:"level"`
+			Message string `json:"message"`
+		}
+		if json.Unmarshal(line, &entry) == nil && entry.Level == "warn" {
+			return &entry.Message
+		}
+	}
+	return nil
 }

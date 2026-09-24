@@ -10,3 +10,8 @@ type SetupParams struct {
 	NodeAccountId      *string `json:"nodeAccountId"`
 	MirrorNetworkIp    *string `json:"mirrorNetworkIp"`
 }
+
+type PingParams struct {
+	BaseParams
+	NodeAccountId *string `json:"nodeAccountId"`
+}

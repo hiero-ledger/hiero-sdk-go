@@ -99,9 +99,14 @@ func main() {
 		"executeContract":           postHandler(HandleError, handler.New(contractService.ExecuteContract)),
 		"updateNode":                postHandler(HandleError, handler.New(nodeService.UpdateNode)),
 		"deleteNode":                postHandler(HandleError, handler.New(nodeService.DeleteNode)),
-		"getAccountBalance":         postHandler(HandleError, handler.New(accountService.GetAccountBalance)),
 		"createEthereumTransaction": postHandler(HandleError, handler.New(ethereumService.CreateEthereumTransaction)),
 		"generateKey":               postHandler(HandleError, handler.New(methods.GenerateKey)),
+		"ping":                      postHandler(HandleError, handler.New(sdkService.Ping)),
+		"pingAll":                   postHandler(HandleError, handler.New(sdkService.PingAll)),
+
+		// Mirror node balance and the AccountBalanceQuery deprecation hook
+		"getMirrorNodeAccountBalance":          postHandler(HandleError, handler.New(accountService.GetMirrorNodeAccountBalance)),
+		"executeDeprecatedAccountBalanceQuery": postHandler(HandleError, handler.New(accountService.ExecuteDeprecatedAccountBalanceQuery)),
 	}
 
 	bridge := jhttp.NewBridge(assigner, nil)
@@ -116,9 +121,9 @@ func main() {
 
 	server := &http.Server{
 		Addr:         ":" + port,
-		ReadTimeout:  5 * time.Second,  // Limit time to read the request
-		WriteTimeout: 10 * time.Second, // Limit time to write the response
-		IdleTimeout:  60 * time.Second, // Limit idle connections
+		ReadTimeout:  5 * time.Second,   // Limit time to read the request
+		WriteTimeout: 150 * time.Second, // Limit time to write the response; above the SDK's 2 min default request timeout
+		IdleTimeout:  60 * time.Second,  // Limit idle connections
 	}
 
 	// Start the server in a separate goroutine
