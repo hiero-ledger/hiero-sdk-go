@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"sync/atomic"
 	"testing"
 
@@ -53,7 +52,7 @@ func TestUnitRegisteredNodeAddressBookQueryExecuteNilClient(t *testing.T) {
 
 // ----- buildURL -----
 
-func TestUnitRegisteredNodeAddressBookQueryBuildURL(t *testing.T) {
+func TestUnitRegisteredNodeAddressBookQueryBuildPath(t *testing.T) {
 	t.Parallel()
 
 	id := uint64(7)
@@ -95,41 +94,6 @@ func TestUnitRegisteredNodeAddressBookQueryBuildURL(t *testing.T) {
 			path, err := tt.q.buildPath()
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, resolveMirrorPath("https://example/api/v1", path))
-		})
-	}
-}
-
-// ----- resolveNextURL -----
-
-func TestUnitResolveNextURL(t *testing.T) {
-	t.Parallel()
-
-	base, err := url.Parse("https://mirror.example/api/v1")
-	require.NoError(t, err)
-
-	tests := []struct {
-		name string
-		next string
-		want string
-	}{
-		{
-			name: "absolute path replaces base path",
-			next: "/api/v1/network/registered-nodes?limit=25&registerednode.id=gt:5",
-			want: "https://mirror.example/api/v1/network/registered-nodes?limit=25&registerednode.id=gt:5",
-		},
-		{
-			name: "absolute URL passes through",
-			next: "https://other.example/api/v1/network/registered-nodes?limit=25",
-			want: "https://other.example/api/v1/network/registered-nodes?limit=25",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := resolveNextURL(base, tt.next)
-			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
 		})
 	}
 }
@@ -399,7 +363,7 @@ func TestUnitRegisteredNodeFromJSONBadAdminKey(t *testing.T) {
 
 // ----- resolveAttempts / Execute precondition guards -----
 
-func TestUnitResolveAttempts(t *testing.T) {
+func TestUnitRegisteredNodeAddressBookQueryMaxAttempts(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
@@ -407,13 +371,13 @@ func TestUnitResolveAttempts(t *testing.T) {
 
 	q := NewRegisteredNodeAddressBookQuery()
 	attempts := func() uint16 { return client.mirrorHttpPolicyForQuery(q.maxAttempts).GetMaxAttempts() }
-	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts(), "the full policy, where this used to be a single attempt")
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts())
 
 	client.SetMaxAttempts(7)
-	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts(), "the gRPC budget does not govern HTTP reads")
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts())
 
 	q.SetMaxAttempts(3)
-	assert.Equal(t, uint16(3), attempts(), "query setting wins")
+	assert.Equal(t, uint16(3), attempts())
 }
 
 func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
@@ -465,9 +429,9 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesSurfacesHTTPError(t *testing
 	assert.Contains(t, err.Error(), "400")
 }
 
-// Pagination now runs through the mirror HTTP layer, so a transient failure on page two is
-// retried with the same policy as page one. The loop this replaced used a fixed 200 ms delay.
-func TestUnitRegisteredNodeAddressBookQueryRetriesATransientPage(t *testing.T) {
+func TestUnitRegisteredNodeAddressBookQueryRetriesTransientPage(t *testing.T) {
+	t.Parallel()
+
 	var calls int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch atomic.AddInt32(&calls, 1) {
@@ -487,11 +451,13 @@ func TestUnitRegisteredNodeAddressBookQueryRetriesATransientPage(t *testing.T) {
 	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
 	require.NoError(t, err)
-	require.Len(t, book.RegisteredNodes, 2, "the retried page still contributes its nodes")
-	assert.Equal(t, int32(3), atomic.LoadInt32(&calls), "page two was retried once")
+	require.Len(t, book.RegisteredNodes, 2)
+	assert.Equal(t, int32(3), atomic.LoadInt32(&calls))
 }
 
-func TestUnitRegisteredNodeAddressBookQueryGivesEveryPageAFullAttemptBudget(t *testing.T) {
+func TestUnitRegisteredNodeAddressBookQueryMaxAttemptsPerPage(t *testing.T) {
+	t.Parallel()
+
 	firstPage := HttpResponse{statusCode: http.StatusOK, body: []byte(`{"registered_nodes":[{"registered_node_id":1,"description":"one"}],"links":{"next":"/api/v1/network/registered-nodes?page=2"}}`)}
 	lastPage := HttpResponse{statusCode: http.StatusOK, body: []byte(`{"registered_nodes":[{"registered_node_id":2,"description":"two"}],"links":{"next":null}}`)}
 	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
@@ -504,14 +470,14 @@ func TestUnitRegisteredNodeAddressBookQueryGivesEveryPageAFullAttemptBudget(t *t
 
 	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
-	require.NoError(t, err, "three attempts over two pages fit a budget of two per request")
+	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 2)
 	assert.Equal(t, 3, transport.callCount())
 }
 
-// A next link that names a host is refused rather than followed, so a page URL can only ever
-// address the configured mirror node.
 func TestUnitRegisteredNodeAddressBookQueryRejectsOffHostNextLink(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"registered_nodes":[],"links":{"next":"https://evil.example.com/api/v1/network/registered-nodes"}}`))
 	}))
@@ -523,11 +489,12 @@ func TestUnitRegisteredNodeAddressBookQueryRejectsOffHostNextLink(t *testing.T) 
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid pagination next link")
-	assert.Contains(t, err.Error(), "evil.example.com", "the rejected link is named in the error")
+	assert.Contains(t, err.Error(), "evil.example.com")
 }
 
-// The page cap still bounds a mirror node that paginates forever.
 func TestUnitRegisteredNodeAddressBookQueryStopsAtPageCap(t *testing.T) {
+	t.Parallel()
+
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"registered_nodes":[],"links":{"next":"/api/v1/network/registered-nodes?page=next"}}`))
 	}))

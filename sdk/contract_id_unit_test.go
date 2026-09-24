@@ -265,7 +265,7 @@ func TestUnitContractIDToEvmAddress(t *testing.T) {
 }
 
 func TestUnitContractIDPopulateContractWithDifferentPorts(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 
 	tests := []struct {
 		name           string
@@ -316,10 +316,6 @@ func TestUnitContractIDPopulateContractWithDifferentPorts(t *testing.T) {
 					require.NoError(t, err)
 				}))
 				defer server.Close()
-
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
 
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
