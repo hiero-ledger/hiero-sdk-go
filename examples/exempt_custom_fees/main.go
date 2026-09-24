@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -186,33 +187,38 @@ func main() {
 	 * of the token that was created was not charged a custom fee in the transfer
 	 */
 
-	firstAccountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(firstAccountId).
-		Execute(client)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("first's balance:", firstAccountBalanceAfter.Tokens.Get(tokenId))
+	firstAccountBalanceAfter := tokenBalance(client, firstAccountId, tokenId, is(amount))
+	fmt.Println("first's balance:", firstAccountBalanceAfter)
+	secondAccountBalanceAfter := tokenBalance(client, secondAccountId, tokenId, is(0))
+	fmt.Println("second's balance:", secondAccountBalanceAfter)
+	thirdAccountBalanceAfter := tokenBalance(client, thirdAccountId, tokenId, is(0))
+	fmt.Println("third's balance:", thirdAccountBalanceAfter)
 
-	secondAccountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(secondAccountId).
-		Execute(client)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("second's balance:", secondAccountBalanceAfter.Tokens.Get(tokenId))
-
-	thirdAccountBalanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(thirdAccountId).
-		Execute(client)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println("third's balance:", secondAccountBalanceAfter.Tokens.Get(tokenId))
-
-	if firstAccountBalanceAfter.Tokens.Get(tokenId) == amount && secondAccountBalanceAfter.Tokens.Get(tokenId) == 0 && thirdAccountBalanceAfter.Tokens.Get(tokenId) == 0 {
-		fmt.Println("Fee collector accounts were not charged after transfer transaction")
-	}
+	fmt.Println("Fee collector accounts were not charged after transfer transaction")
 
 	client.Close()
+}
+
+// tokenBalance polls the mirror node until ready accepts accountID's balance of tokenID; no relationship reads as 0.
+func tokenBalance(client *hiero.Client, accountID hiero.AccountID, tokenID hiero.TokenID, ready func(uint64) bool) uint64 {
+	for attempt := 1; ; attempt++ {
+		page, err := hiero.NewMirrorNodeTokenBalanceQuery().SetAccountID(accountID).SetTokenID(tokenID).Execute(client)
+		if err == nil {
+			var balance uint64
+			if len(page.Tokens) == 1 {
+				balance = page.Tokens[0].Balance
+			}
+			if ready(balance) {
+				return balance
+			}
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected %v balance for %v (last error: %v)", tokenID, accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func is(want uint64) func(uint64) bool {
+	return func(balance uint64) bool { return balance == want }
 }
