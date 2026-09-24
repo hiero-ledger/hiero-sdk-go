@@ -457,25 +457,6 @@ func (m *MockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return m.originalTransport.RoundTrip(req)
 }
 
-// SetupMockTransportForDomain is a helper function to setup mock transport for testing
-// It returns a cleanup function that should be called when the test is done
-func SetupMockTransportForDomain(domain string, mockServerURL string) func() {
-	// Save the original transport
-	originalTransport := http.DefaultTransport
-
-	// Create and configure the mock transport
-	mockTransport := NewMockTransport()
-	mockTransport.AddDomainRedirect(domain, mockServerURL)
-
-	// Set the mock transport as the default
-	http.DefaultTransport = mockTransport
-
-	// Return cleanup function
-	return func() {
-		http.DefaultTransport = originalTransport
-	}
-}
-
 // attachMockMirrorTransport routes the client's mirror HTTP requests for domain to mockServerURL.
 func attachMockMirrorTransport(t *testing.T, client *Client, domain string, mockServerURL string) {
 	t.Helper()

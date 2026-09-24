@@ -4,9 +4,7 @@ package hiero
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -169,23 +167,13 @@ func (id ContractID) ToEvmAddress() string {
 // Should be used after generating `ContractId.FromEvmAddress()` because it sets the `Contract` field to `0`
 // automatically since there is no connection between the `Contract` and the `evmAddress`
 func (id *ContractID) PopulateContract(client *Client) error {
-	if client.mirrorNetwork == nil || len(client.GetMirrorNetwork()) == 0 {
-		return errors.New("mirror node is not set")
-	}
-	mirrorUrl, err := client.GetMirrorRestApiBaseUrl()
+	path, err := newMirrorNodeRestPath("/contracts/" + hex.EncodeToString(id.EvmAddress))
 	if err != nil {
 		return err
 	}
-	url := fmt.Sprintf("%s/contracts/%s", mirrorUrl, hex.EncodeToString(id.EvmAddress))
 
-	resp, err := http.Get(url) // #nosec
+	result, err := mirrorNodeGetJSONObject(client, path)
 	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return err
 	}
 
