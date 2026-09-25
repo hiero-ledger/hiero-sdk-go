@@ -61,7 +61,7 @@ func (client *Client) SetMirrorNodeHttpConfig(config MirrorNodeHttpConfig) *Clie
 
 // GetMirrorNodeHttpConfig returns the configuration set with SetMirrorNodeHttpConfig.
 func (client *Client) GetMirrorNodeHttpConfig() MirrorNodeHttpConfig {
-	if client.mirrorHttp == nil {
+	if client == nil || client.mirrorHttp == nil {
 		return DefaultMirrorNodeHttpConfig()
 	}
 

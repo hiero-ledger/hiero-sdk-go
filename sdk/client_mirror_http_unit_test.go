@@ -271,6 +271,50 @@ func TestUnitClientCloseWithoutMirrorHttpIsNoOp(t *testing.T) {
 	require.NoError(t, client.Close())
 }
 
+func TestUnitClientMirrorHttpNilClientReturnsError(t *testing.T) {
+	t.Parallel()
+
+	var client *Client
+	assert.Equal(t, DefaultMirrorNodeHttpConfig(), client.GetMirrorNodeHttpConfig())
+
+	evmAddress := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
+	calls := map[string]func() error{
+		"MirrorNodeContractCallQuery": func() error {
+			_, err := NewMirrorNodeContractCallQuery().SetContractID(ContractID{Contract: 5}).Execute(client)
+			return err
+		},
+		"MirrorNodeContractEstimateGasQuery": func() error {
+			_, err := NewMirrorNodeContractEstimateGasQuery().SetContractID(ContractID{Contract: 5}).Execute(client)
+			return err
+		},
+		"MirrorNodeAccountBalanceQuery": func() error {
+			_, err := NewMirrorNodeAccountBalanceQuery().SetAccountID(AccountID{Account: 5}).Execute(client)
+			return err
+		},
+		"RegisteredNodeAddressBookQuery": func() error {
+			_, err := NewRegisteredNodeAddressBookQuery().Execute(client)
+			return err
+		},
+		"FeeEstimateQuery": func() error {
+			_, err := NewFeeEstimateQuery().SetTransaction(NewTransferTransaction()).Execute(client)
+			return err
+		},
+		"AccountID.PopulateAccount": func() error {
+			return (&AccountID{AliasEvmAddress: &evmAddress}).PopulateAccount(client)
+		},
+		"AccountID.PopulateEvmAddress": func() error {
+			return (&AccountID{Account: 5}).PopulateEvmAddress(client)
+		},
+		"ContractID.PopulateContract": func() error {
+			return (&ContractID{EvmAddress: evmAddress}).PopulateContract(client)
+		},
+	}
+
+	for name, call := range calls {
+		require.ErrorIs(t, call(), errNoClientProvided, name)
+	}
+}
+
 // The constructors' error paths return &Client{}, so the accessors must not panic on one.
 func TestUnitClientMirrorHttpZeroValueClientIsSafe(t *testing.T) {
 	t.Parallel()
