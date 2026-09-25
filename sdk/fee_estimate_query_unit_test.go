@@ -4,7 +4,6 @@ package hiero
 
 import (
 	"encoding/json"
-	"errors"
 	"net/http"
 	"testing"
 
@@ -97,34 +96,41 @@ func TestUnitFeeEstimateQueryExecuteWithoutClient(t *testing.T) {
 	require.Equal(t, errNoClientProvided, err)
 }
 
-func TestUnitFeeEstimateQueryShouldRetry(t *testing.T) {
+func TestUnitFeeEstimateQueryDefaultMaxAttempts(t *testing.T) {
 	t.Parallel()
 
-	require.False(t, mirrorNodeShouldRetry(nil, nil))
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetMaxAttempts(9)
 
-	resp200 := &http.Response{StatusCode: http.StatusOK}
-	require.False(t, mirrorNodeShouldRetry(nil, resp200))
+	query := NewFeeEstimateQuery()
+	require.Zero(t, query.GetMaxAttempts())
+	require.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), client.mirrorHttpPolicyForQuery(query.GetMaxAttempts()).GetMaxAttempts(),
+		"the gRPC budget does not govern HTTP reads")
+}
 
-	resp500 := &http.Response{StatusCode: http.StatusInternalServerError}
-	require.True(t, mirrorNodeShouldRetry(nil, resp500))
+func TestUnitFeeEstimateQueryRetriesPost(t *testing.T) {
+	t.Parallel()
 
-	resp503 := &http.Response{StatusCode: http.StatusServiceUnavailable}
-	require.True(t, mirrorNodeShouldRetry(nil, resp503))
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{resp: statusResponse(http.StatusServiceUnavailable)},
+		{resp: HttpResponse{statusCode: http.StatusOK, body: []byte(`{"network":{"multiplier":1,"subtotal":1},"node":{"base":1},"service":{"base":1}}`)}},
+	}}
+	client.SetMirrorNodeHttpConfig(DefaultMirrorNodeHttpConfig().WithTransport(transport).WithRetryPolicy(fastRetryPolicy(3)))
 
-	resp429 := &http.Response{StatusCode: http.StatusTooManyRequests}
-	require.True(t, mirrorNodeShouldRetry(nil, resp429))
+	_, err = NewFeeEstimateQuery().
+		SetMode(FeeEstimateModeState).
+		SetTransaction(NewTransferTransaction()).
+		Execute(client)
+	require.NoError(t, err)
 
-	resp400 := &http.Response{StatusCode: http.StatusBadRequest}
-	require.False(t, mirrorNodeShouldRetry(nil, resp400))
-
-	resp404 := &http.Response{StatusCode: http.StatusNotFound}
-	require.False(t, mirrorNodeShouldRetry(nil, resp404))
-
-	err := errors.New("connection refused")
-	require.True(t, mirrorNodeShouldRetry(err, nil))
-
-	err = errors.New("timeout")
-	require.True(t, mirrorNodeShouldRetry(err, nil))
+	req := transport.lastRequest()
+	require.Equal(t, 2, transport.callCount())
+	require.Equal(t, HttpMethodPost, req.method)
+	require.Equal(t, "application/protobuf", req.contentType)
+	require.Contains(t, req.url, "/api/v1/network/fees?mode=STATE")
 }
 
 func TestUnitFeeEstimateResponseFromREST(t *testing.T) {

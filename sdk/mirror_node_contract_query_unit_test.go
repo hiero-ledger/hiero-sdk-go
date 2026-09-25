@@ -6,6 +6,7 @@ package hiero
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -207,7 +208,7 @@ func int64Ptr(i int64) *int64 {
 }
 
 func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "retrytransient.example.com:443"
 
 	var attempts int32
@@ -222,13 +223,11 @@ func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
-
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
@@ -240,7 +239,7 @@ func TestUnitMirrorNodeContractQueryRetriesTransientErrors(t *testing.T) {
 }
 
 func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "retrytransport.example.com:443"
 
 	var attempts int32
@@ -260,13 +259,11 @@ func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
-
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	gas, err := NewMirrorNodeContractEstimateGasQuery().
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
@@ -278,7 +275,7 @@ func TestUnitMirrorNodeContractQueryRetriesTransportErrors(t *testing.T) {
 }
 
 func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 	const domain = "no4xxretry.example.com:443"
 
 	var attempts int32
@@ -291,13 +288,11 @@ func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain(domain, server.URL)
-	defer cleanup()
-
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	_, err = NewMirrorNodeContractEstimateGasQuery().
 		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
@@ -308,7 +303,7 @@ func TestUnitMirrorNodeContractQueryDoesNotRetryNon200(t *testing.T) {
 }
 
 func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 
 	tests := []struct {
 		name           string
@@ -360,15 +355,12 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 				}))
 				defer server.Close()
 
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
-
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create a contract query
 				query := NewMirrorNodeContractEstimateGasQuery()
@@ -397,15 +389,12 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 				}))
 				defer server.Close()
 
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
-
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create a contract call query
 				query := NewMirrorNodeContractCallQuery()
@@ -419,4 +408,44 @@ func TestUnitMirrorNodeContractQueryWithDifferentPorts(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestUnitMirrorNodeContractQueryReplaysPostBodyOnRetry(t *testing.T) {
+	t.Parallel()
+	const domain = "postreplay.example.com:443"
+
+	var bodies []string
+	var methods []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		payload, err := io.ReadAll(r.Body)
+		require.NoError(t, err)
+		bodies = append(bodies, string(payload))
+		methods = append(methods, r.Method)
+
+		if len(bodies) == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		require.NoError(t, json.NewEncoder(w).Encode(map[string]interface{}{"result": "0x5208"}))
+	}))
+	defer server.Close()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
+
+	gas, err := NewMirrorNodeContractEstimateGasQuery().
+		SetContractEvmAddress("0x742d35Cc6634C0532925a3b844Bc454e4438f44e").
+		SetFunction("testFunction", NewContractFunctionParameters().AddString("test")).
+		Execute(client)
+
+	require.NoError(t, err)
+	assert.Equal(t, uint64(21000), gas)
+	require.Len(t, bodies, 2)
+	assert.Equal(t, []string{http.MethodPost, http.MethodPost}, methods)
+	assert.Equal(t, bodies[0], bodies[1])
+	assert.Contains(t, bodies[0], `"estimate":true`)
 }

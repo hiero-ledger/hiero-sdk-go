@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -196,31 +197,31 @@ func (mirrorNodeContractQuery *mirrorNodeContractQuery) fillEvmAddresses() error
 	return nil
 }
 
+// performContractCallToMirrorNode POSTs the call payload to /contracts/call.
 func (mirrorNodeContractQuery *mirrorNodeContractQuery) performContractCallToMirrorNode(client *Client, jsonPayload string) (map[string]any, error) {
-	mirrorUrl, err := mirrorNodeRestBaseURL(client)
+	path, err := newMirrorNodeRestPath("/contracts/call")
 	if err != nil {
 		return nil, err
 	}
 
-	isLocalHost := strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1")
-	if isLocalHost {
-		mirrorUrl = "http://localhost:8545/api/v1"
+	restClient, err := client.mirrorRestClient(path, client.mirrorHttpPolicy())
+	if err != nil {
+		return nil, err
 	}
 
-	mirrorUrl = fmt.Sprintf("%s/contracts/call", mirrorUrl)
-
-	resp, err := mirrorNodePostWithRetry(client, mirrorUrl, "application/json", []byte(jsonPayload), mirrorNodeDefaultMaxAttempts, mirrorNodeDefaultTimeout)
+	resp, err := restClient.post(path, "application/json", []byte(jsonPayload), CancellationNone())
 	if err != nil {
+		if errors.Is(err, errMirrorHttpRetriesExhausted) {
+			return nil, mirrorNodeStatusError(resp)
+		}
 		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-
-	body, err := mirrorNodeReadBody(resp)
-	if err != nil {
-		return nil, err
+	if resp.statusCode != http.StatusOK {
+		return nil, mirrorNodeStatusError(resp)
 	}
 
 	var result map[string]any
-	if err := json.Unmarshal(body, &result); err != nil {
+	if err := json.Unmarshal(resp.body, &result); err != nil {
 		return nil, err
 	}
 	return result, nil

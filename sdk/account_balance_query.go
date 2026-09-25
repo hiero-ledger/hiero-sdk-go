@@ -8,8 +8,16 @@ import (
 	"github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
 )
 
+const accountBalanceQueryDeprecationMessage = "Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances."
+
+// accountBalanceQueryLogger is package level because the warning is emitted at construction,
+// where no Client -- and therefore no client logger -- is available.
+var accountBalanceQueryLogger Logger = NewLogger("AccountBalanceQuery", LoggerLevelWarn)
+
 // AccountBalanceQuery gets the balance of a CryptoCurrency account. This returns only the balance, so it is a smaller
 // and faster reply than AccountInfoQuery, which returns the balance plus additional information.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
 type AccountBalanceQuery struct {
 	Query
 	accountID  *AccountID
@@ -20,7 +28,11 @@ type AccountBalanceQuery struct {
 // an AccountBalanceQuery.
 // It is recommended that you use this for creating new instances of an AccountBalanceQuery
 // instead of manually creating an instance of the struct.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
 func NewAccountBalanceQuery() *AccountBalanceQuery {
+	accountBalanceQueryLogger.Warn(accountBalanceQueryDeprecationMessage)
+
 	header := services.QueryHeader{}
 	return &AccountBalanceQuery{
 		Query: _NewQuery(false, &header),

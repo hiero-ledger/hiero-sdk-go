@@ -3,13 +3,15 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
-	"math/rand"
+	"sync/atomic"
 
 	"github.com/pkg/errors"
 )
 
 type _MirrorNetwork struct {
 	_ManagedNetwork
+	// nextNode is the round-robin index into healthyNodes.
+	nextNode atomic.Uint64
 }
 
 func _NewMirrorNetwork() *_MirrorNetwork {
@@ -19,6 +21,9 @@ func _NewMirrorNetwork() *_MirrorNetwork {
 }
 
 func (network *_MirrorNetwork) _SetNetwork(newNetwork []string) (err error) {
+	network.healthyNodesMutex.Lock()
+	defer network.healthyNodesMutex.Unlock()
+
 	newMirrorNetwork := make(map[string]_IManagedNode)
 	for _, url := range newNetwork {
 		if newMirrorNetwork[url], err = _NewMirrorNode(url); err != nil {
@@ -30,6 +35,9 @@ func (network *_MirrorNetwork) _SetNetwork(newNetwork []string) (err error) {
 }
 
 func (network *_MirrorNetwork) _GetNetwork() []string {
+	network.healthyNodesMutex.RLock()
+	defer network.healthyNodesMutex.RUnlock()
+
 	temp := make([]string, 0)
 	for url := range network._ManagedNetwork.network { //nolint
 		temp = append(temp, url)
@@ -45,12 +53,17 @@ func (network *_MirrorNetwork) _SetTransportSecurity(transportSecurity bool) *_M
 	return network
 }
 
+// _GetNextMirrorNode returns the next healthy mirror node, round-robin.
 func (network *_MirrorNetwork) _GetNextMirrorNode() (*_MirrorNode, error) {
+	network.healthyNodesMutex.RLock()
+	defer network.healthyNodesMutex.RUnlock()
+
 	if len(network.healthyNodes) == 0 {
 		return nil, errors.New("no healthy nodes")
 	}
 
-	node := network.healthyNodes[rand.Intn(len(network.healthyNodes))] // nolint
+	index := (network.nextNode.Add(1) - 1) % uint64(len(network.healthyNodes))
+	node := network.healthyNodes[index]
 	if node, ok := node.(*_MirrorNode); ok {
 		return node, nil
 	}
