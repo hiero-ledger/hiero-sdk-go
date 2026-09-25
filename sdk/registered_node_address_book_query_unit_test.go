@@ -8,7 +8,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -52,7 +52,7 @@ func TestUnitRegisteredNodeAddressBookQueryExecuteNilClient(t *testing.T) {
 
 // ----- buildURL -----
 
-func TestUnitRegisteredNodeAddressBookQueryBuildURL(t *testing.T) {
+func TestUnitRegisteredNodeAddressBookQueryBuildPath(t *testing.T) {
 	t.Parallel()
 
 	id := uint64(7)
@@ -91,42 +91,9 @@ func TestUnitRegisteredNodeAddressBookQueryBuildURL(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.want, tt.q.buildURL("https://example/api/v1"))
-		})
-	}
-}
-
-// ----- resolveNextURL -----
-
-func TestUnitResolveNextURL(t *testing.T) {
-	t.Parallel()
-
-	base, err := url.Parse("https://mirror.example/api/v1")
-	require.NoError(t, err)
-
-	tests := []struct {
-		name string
-		next string
-		want string
-	}{
-		{
-			name: "absolute path replaces base path",
-			next: "/api/v1/network/registered-nodes?limit=25&registerednode.id=gt:5",
-			want: "https://mirror.example/api/v1/network/registered-nodes?limit=25&registerednode.id=gt:5",
-		},
-		{
-			name: "absolute URL passes through",
-			next: "https://other.example/api/v1/network/registered-nodes?limit=25",
-			want: "https://other.example/api/v1/network/registered-nodes?limit=25",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := resolveNextURL(base, tt.next)
+			path, err := tt.q.buildPath()
 			require.NoError(t, err)
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.want, resolveMirrorPath("https://example/api/v1", path))
 		})
 	}
 }
@@ -396,20 +363,21 @@ func TestUnitRegisteredNodeFromJSONBadAdminKey(t *testing.T) {
 
 // ----- resolveAttempts / Execute precondition guards -----
 
-func TestUnitResolveAttempts(t *testing.T) {
+func TestUnitRegisteredNodeAddressBookQueryMaxAttempts(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 
 	q := NewRegisteredNodeAddressBookQuery()
-	assert.Equal(t, uint64(1), q.resolveAttempts(client), "fallback to 1 when neither is set")
+	attempts := func() uint16 { return client.mirrorHttpPolicyForQuery(q.maxAttempts).GetMaxAttempts() }
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts())
 
 	client.SetMaxAttempts(7)
-	assert.Equal(t, uint64(7), q.resolveAttempts(client), "uses client default when query unset")
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts())
 
 	q.SetMaxAttempts(3)
-	assert.Equal(t, uint64(3), q.resolveAttempts(client), "query setting wins over client")
+	assert.Equal(t, uint16(3), attempts())
 }
 
 func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
@@ -424,35 +392,6 @@ func TestUnitRegisteredNodeAddressBookQueryExecuteNoMirror(t *testing.T) {
 	assert.Contains(t, err.Error(), "mirror node is not set")
 }
 
-// A local mirror serves this endpoint on 8084 rather than the default REST port.
-func TestUnitRegisteredNodeAddressBookQueryResolveEndpoint(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name    string
-		mirror  string
-		wantPre string
-	}{
-		{name: "localhost is redirected to 8084", mirror: "localhost:5600", wantPre: "http://localhost:8084/api/v1/network/registered-nodes"},
-		{name: "loopback IP is redirected to 8084", mirror: "127.0.0.1:5600", wantPre: "http://localhost:8084/api/v1/network/registered-nodes"},
-		{name: "remote mirror is left alone", mirror: "mirror.example.com:443", wantPre: "https://mirror.example.com:443/api/v1/network/registered-nodes"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-
-			client, err := _NewMockClient()
-			require.NoError(t, err)
-			client.SetMirrorNetwork([]string{tt.mirror})
-
-			endpoint, err := NewRegisteredNodeAddressBookQuery().resolveEndpoint(client)
-			require.NoError(t, err)
-			assert.Equal(t, tt.wantPre, endpoint)
-		})
-	}
-}
-
 func TestUnitRegisteredNodeAddressBookQueryWalkPagesAccumulates(t *testing.T) {
 	page := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -465,7 +404,9 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesAccumulates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	book, err := NewRegisteredNodeAddressBookQuery().walkPages(server.URL, 1)
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
 	require.NoError(t, err)
 	require.Len(t, book.RegisteredNodes, 2, "nodes from every page are accumulated")
@@ -480,8 +421,89 @@ func TestUnitRegisteredNodeAddressBookQueryWalkPagesSurfacesHTTPError(t *testing
 	}))
 	defer server.Close()
 
-	_, err := NewRegisteredNodeAddressBookQuery().walkPages(server.URL, 1)
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "400")
+}
+
+func TestUnitRegisteredNodeAddressBookQueryRetriesTransientPage(t *testing.T) {
+	t.Parallel()
+
+	var calls int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch atomic.AddInt32(&calls, 1) {
+		case 1:
+			_, _ = w.Write([]byte(`{"registered_nodes":[{"registered_node_id":1,"description":"one"}],"links":{"next":"/api/v1/network/registered-nodes?page=2"}}`))
+		case 2:
+			w.WriteHeader(http.StatusServiceUnavailable)
+		default:
+			_, _ = w.Write([]byte(`{"registered_nodes":[{"registered_node_id":2,"description":"two"}],"links":{"next":null}}`))
+		}
+	}))
+	defer server.Close()
+
+	policy := fastRetryPolicy(3)
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), policy)
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 2)
+	assert.Equal(t, int32(3), atomic.LoadInt32(&calls))
+}
+
+func TestUnitRegisteredNodeAddressBookQueryMaxAttemptsPerPage(t *testing.T) {
+	t.Parallel()
+
+	firstPage := HttpResponse{statusCode: http.StatusOK, body: []byte(`{"registered_nodes":[{"registered_node_id":1,"description":"one"}],"links":{"next":"/api/v1/network/registered-nodes?page=2"}}`)}
+	lastPage := HttpResponse{statusCode: http.StatusOK, body: []byte(`{"registered_nodes":[{"registered_node_id":2,"description":"two"}],"links":{"next":null}}`)}
+	transport := &fakeHttpTransport{turns: []fakeHttpTurn{
+		{resp: firstPage},
+		{resp: statusResponse(http.StatusServiceUnavailable)},
+		{resp: lastPage},
+	}}
+
+	restClient := newMirrorNodeHttpClient("https://mirror.example.com/api/v1", transport, fastRetryPolicy(2))
+
+	book, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.NoError(t, err)
+	require.Len(t, book.RegisteredNodes, 2)
+	assert.Equal(t, 3, transport.callCount())
+}
+
+func TestUnitRegisteredNodeAddressBookQueryRejectsOffHostNextLink(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"registered_nodes":[],"links":{"next":"https://evil.example.com/api/v1/network/registered-nodes"}}`))
+	}))
+	defer server.Close()
+
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "invalid pagination next link")
+	assert.Contains(t, err.Error(), "evil.example.com")
+}
+
+func TestUnitRegisteredNodeAddressBookQueryStopsAtPageCap(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"registered_nodes":[],"links":{"next":"/api/v1/network/registered-nodes?page=next"}}`))
+	}))
+	defer server.Close()
+
+	restClient := newMirrorNodeHttpClient(server.URL, newTestHttpTransport(t, 0), DefaultMirrorNodeHttpRetryPolicy())
+
+	_, err := NewRegisteredNodeAddressBookQuery().walkPages(restClient, testMirrorPath(t, "/network/registered-nodes"))
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "exceeded pagination cap")
 }

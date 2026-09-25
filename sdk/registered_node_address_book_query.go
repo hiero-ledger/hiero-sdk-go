@@ -4,20 +4,16 @@ package hiero
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
-	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
-const (
-	registeredNodeQueryRetryDelay = 200 * time.Millisecond
-	registeredNodeMaxPages        = 1000
-)
+const registeredNodeMaxPages = 1000
 
 type RegisteredNode struct {
 	AdminKey         Key
@@ -69,7 +65,7 @@ func (q *RegisteredNodeAddressBookQuery) GetLimit() int32 {
 }
 
 // SetMaxAttempts sets the total number of attempts (initial try + retries).
-// Zero (the default) is treated as a single attempt with no retries.
+// Zero (the default) uses the Client's mirror node retry policy.
 func (q *RegisteredNodeAddressBookQuery) SetMaxAttempts(maxAttempts uint64) *RegisteredNodeAddressBookQuery {
 	q.maxAttempts = maxAttempts
 	return q
@@ -85,71 +81,52 @@ func (q *RegisteredNodeAddressBookQuery) Execute(client *Client) (RegisteredNode
 		return RegisteredNodeAddressBook{}, errNoClientProvided
 	}
 
-	endpoint, err := q.resolveEndpoint(client)
+	path, err := q.buildPath()
 	if err != nil {
 		return RegisteredNodeAddressBook{}, err
 	}
 
-	return q.walkPages(endpoint, q.resolveAttempts(client))
-}
-
-// resolveEndpoint returns the initial query URL. A local node serves this
-// endpoint on 8084 rather than on the client's mirror REST port.
-func (q *RegisteredNodeAddressBookQuery) resolveEndpoint(client *Client) (string, error) {
-	mirrorUrl, err := mirrorNodeRestBaseURL(client)
+	restClient, err := client.mirrorRestClient(path, client.mirrorHttpPolicyForQuery(q.maxAttempts))
 	if err != nil {
-		return "", err
+		return RegisteredNodeAddressBook{}, err
 	}
 
-	if strings.Contains(mirrorUrl, "localhost") || strings.Contains(mirrorUrl, "127.0.0.1") {
-		mirrorUrl = "http://localhost:8084/api/v1"
-	}
-
-	return q.buildURL(mirrorUrl), nil
-}
-
-// resolveAttempts picks the per-page retry budget: query setting first,
-// client default second, single attempt as the final fallback.
-func (q *RegisteredNodeAddressBookQuery) resolveAttempts(client *Client) uint64 {
-	if q.maxAttempts > 0 {
-		return q.maxAttempts
-	}
-	if clientMax := client.GetMaxAttempts(); clientMax > 0 {
-		return uint64(clientMax)
-	}
-	return 1
+	return q.walkPages(restClient, path)
 }
 
 // walkPages follows links.next until exhausted (or the page cap trips).
-func (q *RegisteredNodeAddressBookQuery) walkPages(endpoint string, attempts uint64) (RegisteredNodeAddressBook, error) {
+func (q *RegisteredNodeAddressBookQuery) walkPages(restClient *mirrorNodeHttpClient, startPath mirrorNodeRestPath) (RegisteredNodeAddressBook, error) {
 	allNodes := make([]RegisteredNode, 0)
+	path := startPath
 
-	err := mirrorNodeWalkPages(
-		endpoint,
-		registeredNodeMaxPages,
-		func(pageURL string) ([]byte, error) {
-			return fetchRegisteredNodesPage(pageURL, attempts)
-		},
-		func(body []byte) (*string, error) {
-			nodes, next, err := parseRegisteredNodes(body)
-			if err != nil {
-				return nil, err
-			}
-			allNodes = append(allNodes, nodes...)
-			return next, nil
-		},
-	)
-	if err != nil {
-		return RegisteredNodeAddressBook{}, err
+	for range registeredNodeMaxPages {
+		body, err := fetchRegisteredNodesPage(restClient, path)
+		if err != nil {
+			return RegisteredNodeAddressBook{}, err
+		}
+
+		nodes, next, err := parseRegisteredNodes(body)
+		if err != nil {
+			return RegisteredNodeAddressBook{}, err
+		}
+		allNodes = append(allNodes, nodes...)
+
+		if next == nil || *next == "" {
+			return RegisteredNodeAddressBook{RegisteredNodes: allNodes}, nil
+		}
+
+		path, err = nextPagePath(*next)
+		if err != nil {
+			return RegisteredNodeAddressBook{}, fmt.Errorf("invalid pagination next link %q: %w", *next, err)
+		}
 	}
 
-	return RegisteredNodeAddressBook{RegisteredNodes: allNodes}, nil
+	return RegisteredNodeAddressBook{}, fmt.Errorf("exceeded pagination cap of %d pages", registeredNodeMaxPages)
 }
 
-// buildURL composes the mirror node REST URL together with any query
-// parameters configured on the query.
-func (q *RegisteredNodeAddressBookQuery) buildURL(mirrorBaseURL string) string {
-	endpoint := fmt.Sprintf("%s/network/registered-nodes", mirrorBaseURL)
+// buildPath composes the endpoint path together with any query parameters configured on the query.
+func (q *RegisteredNodeAddressBookQuery) buildPath() (mirrorNodeRestPath, error) {
+	path := "/network/registered-nodes"
 
 	params := url.Values{}
 	if q.registeredNodeId != nil {
@@ -160,53 +137,26 @@ func (q *RegisteredNodeAddressBookQuery) buildURL(mirrorBaseURL string) string {
 	}
 
 	if encoded := params.Encode(); encoded != "" {
-		endpoint = endpoint + "?" + encoded
+		path = path + "?" + encoded
 	}
-	return endpoint
+
+	return newMirrorNodeRestPath(path)
 }
 
-// fetchRegisteredNodes issues a single GET against the mirror node and
-// returns the response body together with the HTTP status code.
-func fetchRegisteredNodes(endpoint string) ([]byte, int, error) {
-	resp, err := http.Get(endpoint) // #nosec
+// fetchRegisteredNodesPage requests one page and returns its body.
+func fetchRegisteredNodesPage(restClient *mirrorNodeHttpClient, path mirrorNodeRestPath) ([]byte, error) {
+	resp, err := restClient.get(path, CancellationNone())
 	if err != nil {
-		return nil, 0, fmt.Errorf("failed to send request: %w", err)
+		if errors.Is(err, errMirrorHttpRetriesExhausted) {
+			return nil, mirrorNodeStatusError(resp)
+		}
+		return nil, fmt.Errorf("failed to send request: %w", err)
 	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, resp.StatusCode, fmt.Errorf("failed to read response body: %w", err)
+	if resp.statusCode != http.StatusOK {
+		return nil, mirrorNodeStatusError(resp)
 	}
-	return body, resp.StatusCode, nil
-}
 
-// fetchRegisteredNodesPage wraps fetchRegisteredNodes with the per-page retry.
-func fetchRegisteredNodesPage(endpoint string, attempts uint64) ([]byte, error) {
-	var lastErr error
-	for attempt := range attempts {
-		if attempt > 0 {
-			time.Sleep(registeredNodeQueryRetryDelay)
-		}
-
-		body, status, err := fetchRegisteredNodes(endpoint)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		if status >= 500 {
-			lastErr = fmt.Errorf("received non-200 response from mirror node: %d, details: %s", status, body)
-			continue
-		}
-
-		if status != http.StatusOK {
-			return nil, fmt.Errorf("received non-200 response from mirror node: %d, details: %s", status, body)
-		}
-
-		return body, nil
-	}
-	return nil, fmt.Errorf("failed after %d attempt(s): %w", attempts, lastErr)
+	return resp.body, nil
 }
 
 func parseRegisteredNodes(body []byte) ([]RegisteredNode, *string, error) {

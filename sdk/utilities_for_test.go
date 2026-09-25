@@ -457,40 +457,27 @@ func (m *MockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return m.originalTransport.RoundTrip(req)
 }
 
-// SetupMockTransportForDomain is a helper function to setup mock transport for testing
-// It returns a cleanup function that should be called when the test is done
-func SetupMockTransportForDomain(domain string, mockServerURL string) func() {
-	// Save the original transport
-	originalTransport := http.DefaultTransport
+// attachMockMirrorTransport routes the client's mirror HTTP requests for domain to mockServerURL.
+func attachMockMirrorTransport(t *testing.T, client *Client, domain string, mockServerURL string) {
+	t.Helper()
 
-	// Create and configure the mock transport
-	mockTransport := NewMockTransport()
-	mockTransport.AddDomainRedirect(domain, mockServerURL)
-
-	// Set the mock transport as the default
-	http.DefaultTransport = mockTransport
-
-	// Return cleanup function
-	return func() {
-		http.DefaultTransport = originalTransport
-	}
+	mock := NewMockTransport()
+	mock.AddDomainRedirect(domain, mockServerURL)
+	setMirrorHttpTransport(client, newHttpTransportOver(mock, DefaultHttpTransportConfiguration()))
 }
 
-// newMockMirrorClient serves handler from a test server, redirects domain to it, and returns a
-// client whose mirror network is that domain. The server and the transport redirect are torn down
-// through t.Cleanup; because the redirect mutates http.DefaultTransport, callers must not be
-// parallel.
+// newMockMirrorClient returns a client whose mirror network is domain, served by handler.
 func newMockMirrorClient(t *testing.T, domain string, handler http.HandlerFunc) *Client {
 	t.Helper()
 
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
-	t.Cleanup(SetupMockTransportForDomain(domain, server.URL))
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 	client.SetLedgerID(*NewLedgerIDTestnet())
 	client.SetMirrorNetwork([]string{domain})
+	attachMockMirrorTransport(t, client, domain, server.URL)
 
 	return client
 }
@@ -506,4 +493,9 @@ func tokenTransferAmountFor(t *testing.T, transfers []TokenTransfer, accountID A
 	}
 	t.Fatalf("no transfer found for account %s", accountID)
 	return 0
+}
+
+// setMirrorHttpTransport injects transport through the client's mirror HTTP configuration.
+func setMirrorHttpTransport(client *Client, transport HttpTransport) {
+	client.SetMirrorNodeHttpConfig(client.GetMirrorNodeHttpConfig().WithTransport(transport))
 }

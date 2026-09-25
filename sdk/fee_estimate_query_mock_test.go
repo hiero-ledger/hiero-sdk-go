@@ -73,10 +73,8 @@ func TestUnitFeeEstimateQueryRetriesOnUnavailableErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 	client.SetMaxBackoff(500 * time.Millisecond)
 
 	tx := NewTransferTransaction()
@@ -120,10 +118,8 @@ func TestUnitFeeEstimateQueryRetriesOnDeadlineExceededErrors(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 	client.SetMaxBackoff(500 * time.Millisecond)
 
 	tx := NewTransferTransaction()
@@ -161,10 +157,8 @@ func TestUnitFeeEstimateQuerySucceedsOnFirstAttempt(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 
 	tx := NewTransferTransaction()
 
@@ -190,10 +184,8 @@ func TestUnitFeeEstimateQueryDefaultsToIntrinsic(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 	tx := NewTransferTransaction()
 
 	response, err := NewFeeEstimateQuery().
@@ -215,10 +207,8 @@ func TestUnitFeeEstimateQuerySendsHighVolumeThrottle(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 	tx := NewTransferTransaction()
 
 	response, err := NewFeeEstimateQuery().
@@ -246,10 +236,8 @@ func TestUnitFeeEstimateQueryReturnsErrorAfterTransportFailures(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 
 	tx := NewTransferTransaction()
 
@@ -271,10 +259,8 @@ func TestUnitFeeEstimateQueryDoesNotRetryOn400(t *testing.T) {
 	}))
 	defer server.Close()
 
-	cleanup := SetupMockTransportForDomain("localhost:8084", server.URL)
-	defer cleanup()
-
 	client := newMockClientForREST()
+	attachMockMirrorTransport(t, client, "localhost:8084", server.URL)
 	client.SetMaxBackoff(500 * time.Millisecond)
 
 	tx := NewTransferTransaction()

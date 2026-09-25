@@ -45,7 +45,7 @@ func TestUnitMirrorNodeAccountBalanceQueryDefaults(t *testing.T) {
 	query := NewMirrorNodeAccountBalanceQuery()
 
 	assert.Equal(t, AccountID{}, query.GetAccountID())
-	// Zero means unset; resolveAttempts supplies the effective value.
+	// Zero means unset; the Client's mirror policy supplies the effective value.
 	assert.Zero(t, query.GetMaxAttempts())
 }
 
@@ -298,48 +298,53 @@ func TestUnitMirrorNodeAccountBalanceQueryBadChecksumErrorsBeforeRequest(t *test
 	assert.False(t, called.Load(), "a checksum mismatch must not reach the network")
 }
 
-// The fallback must not be a single attempt; 5xx responses still have to be retried.
-func TestUnitMirrorNodeAccountBalanceQueryResolveAttempts(t *testing.T) {
+func TestUnitMirrorNodeAccountBalanceQueryMaxAttempts(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
-	require.Equal(t, -1, client.GetMaxAttempts(), "an unset client reports -1, not a usable count")
 
 	query := NewMirrorNodeAccountBalanceQuery()
-	assert.Equal(t, uint64(mirrorNodeDefaultMaxAttempts), query.resolveAttempts(client), "falls back to the mirror node default")
+	attempts := func() uint16 { return client.mirrorHttpPolicyForQuery(query.maxAttempts).GetMaxAttempts() }
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts())
 
 	client.SetMaxAttempts(4)
-	assert.Equal(t, uint64(4), query.resolveAttempts(client), "client setting is used when the query has none")
+	assert.Equal(t, uint16(mirrorNodeHttpDefaultMaxAttempts), attempts())
+
+	client.SetMirrorNodeHttpConfig(DefaultMirrorNodeHttpConfig().WithRetryPolicy(DefaultMirrorNodeHttpRetryPolicy().WithMaxAttempts(3)))
+	assert.Equal(t, uint16(3), attempts())
 
 	query.SetMaxAttempts(2)
-	assert.Equal(t, uint64(2), query.resolveAttempts(client), "the query setting wins")
+	assert.Equal(t, uint16(2), attempts())
 }
 
-// A client-level budget must reach the retry loop, not just resolveAttempts.
-func TestUnitMirrorNodeAccountBalanceQueryHonoursClientMaxAttempts(t *testing.T) {
+func TestUnitMirrorNodeAccountBalanceQueryHonoursClientMirrorPolicy(t *testing.T) {
 	var attempts atomic.Int32
 	client := newMockMirrorClient(t, "clientattempts.example.com:443", func(w http.ResponseWriter, r *http.Request) {
 		attempts.Add(1)
 		w.WriteHeader(http.StatusServiceUnavailable)
 	})
-	client.SetMaxAttempts(2)
+	client.SetMaxAttempts(9)
+	client.SetMirrorNodeHttpConfig(client.GetMirrorNodeHttpConfig().
+		WithRetryPolicy(fastRetryPolicy(2)))
 
 	_, err := NewMirrorNodeAccountBalanceQuery().
 		SetAccountID(AccountID{Account: 5}).
 		Execute(client)
 
 	require.Error(t, err)
-	assert.Equal(t, int32(2), attempts.Load(), "the client's budget of 2 bounds the retries")
+	assert.Equal(t, int32(2), attempts.Load())
 }
 
-func TestUnitMirrorNodeAccountBalanceQueryBuildURL(t *testing.T) {
+func TestUnitMirrorNodeAccountBalanceQueryBuildPath(t *testing.T) {
 	t.Parallel()
 
 	query := NewMirrorNodeAccountBalanceQuery().SetAccountID(AccountID{Shard: 1, Realm: 2, Account: 3})
 
+	path, err := query.buildPath()
+	require.NoError(t, err)
 	assert.Equal(t, "https://mirror.example.com/api/v1/balances?account.id=1.2.3",
-		query.buildURL("https://mirror.example.com/api/v1"))
+		resolveMirrorPath("https://mirror.example.com/api/v1", path))
 }
 
 func TestUnitMirrorNodeAccountBalanceQueryWrapsTransportFailure(t *testing.T) {
@@ -408,14 +413,19 @@ func TestUnitMirrorNodeAccountBalanceQueryChecksumValidationAllowsAliases(t *tes
 	}
 }
 
-// A default query must not be able to block for minutes: 3 attempts at 30s each, and SetMaxAttempts
-// lets a caller tighten it further.
+// A default query cannot block past Client.requestTimeout, however many of its 5 attempts are
+// left, and SetMaxAttempts lets a caller tighten it further.
 func TestUnitMirrorNodeAccountBalanceQueryBoundsWallClockByDefault(t *testing.T) {
 	t.Parallel()
 
 	client, err := _NewMockClient()
 	require.NoError(t, err)
 
-	assert.Equal(t, uint64(3), uint64(mirrorNodeDefaultMaxAttempts), "3 attempts x 30s bounds the default")
-	assert.Equal(t, uint64(1), NewMirrorNodeAccountBalanceQuery().SetMaxAttempts(1).resolveAttempts(client))
+	query := NewMirrorNodeAccountBalanceQuery()
+	restClient, err := client.mirrorRestClient(testMirrorPath(t, testMirrorAccountPath), client.mirrorHttpPolicyForQuery(query.maxAttempts))
+	require.NoError(t, err)
+
+	assert.Equal(t, uint16(5), restClient.policy.GetMaxAttempts())
+	assert.Equal(t, client.GetRequestTimeout(), restClient.policy.GetTotalDeadline())
+	assert.Equal(t, uint16(1), client.mirrorHttpPolicyForQuery(query.SetMaxAttempts(1).maxAttempts).GetMaxAttempts())
 }

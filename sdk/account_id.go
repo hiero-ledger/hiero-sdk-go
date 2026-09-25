@@ -3,9 +3,7 @@ package hiero
 import (
 	"encoding/base32"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"strconv"
 	"strings"
 
@@ -362,25 +360,12 @@ func (id AccountID) _MirrorNodePathID() string {
 }
 
 func (id *AccountID) _MirrorNodeRequest(client *Client) (map[string]interface{}, error) {
-	mirrorUrl, err := mirrorNodeRestBaseURL(client)
+	path, err := newMirrorNodeRestPath("/accounts/" + id._MirrorNodePathID())
 	if err != nil {
 		return nil, err
 	}
 
-	mirrorUrl = fmt.Sprintf("%s/accounts/%s", mirrorUrl, id._MirrorNodePathID())
-
-	resp, err := http.Get(mirrorUrl) // #nosec
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var result map[string]interface{}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return nil, err
-	}
-
-	return result, nil
+	return mirrorNodeGetJSONObject(client, path)
 }
 
 // PopulateAccount gets the actual `Account` field of the `AccountId` from the Mirror Node.

@@ -280,7 +280,7 @@ func TestUnitAccountIDToEvmAddress(t *testing.T) {
 }
 
 func TestUnitAccountIDPopulateWithDifferentPorts(t *testing.T) {
-	// Note: Not running in parallel since we modify global http.DefaultTransport
+	t.Parallel()
 
 	tests := []struct {
 		name           string
@@ -329,15 +329,12 @@ func TestUnitAccountIDPopulateWithDifferentPorts(t *testing.T) {
 				}))
 				defer server.Close()
 
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
-
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create an account ID with EVM address
 				evmAddressBytes, err := hex.DecodeString(evmAddress)
@@ -371,15 +368,12 @@ func TestUnitAccountIDPopulateWithDifferentPorts(t *testing.T) {
 				}))
 				defer server.Close()
 
-				// Setup mock transport
-				cleanup := SetupMockTransportForDomain(test.domain, server.URL)
-				defer cleanup()
-
 				// Setup client with the test domain as the mirror network
 				client, err := _NewMockClient()
 				require.NoError(t, err)
 				client.SetLedgerID(*NewLedgerIDTestnet())
 				client.SetMirrorNetwork([]string{test.domain})
+				attachMockMirrorTransport(t, client, test.domain, server.URL)
 
 				// Create an account ID with account number
 				accountID := AccountID{
