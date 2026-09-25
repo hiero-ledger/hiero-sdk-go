@@ -72,6 +72,40 @@ func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) re
 	}
 }
 
+// Ping probes one node of the session client's network through Client.Ping. A failed probe is
+// returned as an error, so a result always means SUCCESS.
+func (s *SDKService) Ping(_ context.Context, params param.PingParams) (*response.PingResponse, error) {
+	if params.NodeAccountId == nil {
+		return nil, response.InvalidParams.WithData("nodeAccountId is required")
+	}
+	nodeID, err := hiero.AccountIDFromString(*params.NodeAccountId)
+	if err != nil {
+		return nil, response.InvalidParams.WithData(err.Error())
+	}
+	if err := s.clients.Get(params.SessionId).Ping(nodeID); err != nil {
+		return nil, err
+	}
+	return &response.PingResponse{
+		Message: "Successfully pinged node " + *params.NodeAccountId + ".",
+		Status:  statusSuccess,
+	}, nil
+}
+
+// PingAll probes every node of the session client's network in turn and returns the first failed
+// probe as an error. Client.PingAll sends the same probes but discards their errors.
+func (s *SDKService) PingAll(_ context.Context, params param.BaseParams) (*response.PingResponse, error) {
+	client := s.clients.Get(params.SessionId)
+	for _, nodeID := range client.GetNetwork() {
+		if err := client.Ping(nodeID); err != nil {
+			return nil, err
+		}
+	}
+	return &response.PingResponse{
+		Message: "Successfully pinged all nodes.",
+		Status:  statusSuccess,
+	}, nil
+}
+
 // Reset function for the SDK
 func (s *SDKService) Reset(_ context.Context, params param.BaseParams) response.SetupResponse {
 	s.clients.Delete(params.SessionId)
