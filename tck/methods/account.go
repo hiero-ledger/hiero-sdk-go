@@ -5,6 +5,7 @@ package methods
 import (
 	"context"
 	"errors"
+	"maps"
 	"strconv"
 	"time"
 
@@ -516,15 +517,8 @@ func (a *AccountService) GetAccountBalance(_ context.Context, params param.GetAc
 		return nil, err
 	}
 
-	tokenBalances := make(map[string]uint64)
-	for tokenID, amount := range balance.Tokens.GetAll() {
-		tokenBalances[tokenID] = amount
-	}
-
-	tokenDecimals := make(map[string]uint64)
-	for tokenID, decimals := range balance.TokenDecimals.GetAll() {
-		tokenDecimals[tokenID] = decimals
-	}
+	tokenBalances := maps.Clone(balance.Tokens.GetAll())
+	tokenDecimals := maps.Clone(balance.TokenDecimals.GetAll())
 
 	return &response.AccountBalanceResponse{
 		Hbar:          strconv.Itoa(int(balance.Hbars.AsTinybar())),
