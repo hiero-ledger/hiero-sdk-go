@@ -28,19 +28,6 @@ func captureStdout[T any](fn func() T) (T, []byte, error) {
 		return result, nil, err
 	}
 	defer r.Close()
-	defer w.Close()
-
-	saved, err := unix.Dup(1)
-	if err != nil {
-		return result, nil, err
-	}
-	defer unix.Close(saved)
-
-	if err := unix.Dup2(int(w.Fd()), 1); err != nil {
-		return result, nil, err
-	}
-	// Restores stdout on every path, including a panic in fn, before the pipe is closed
-	defer func() { _ = unix.Dup2(saved, 1) }()
 
 	captured := make(chan []byte, 1)
 	go func() {
@@ -48,15 +35,35 @@ func captureStdout[T any](fn func() T) (T, []byte, error) {
 		captured <- out
 	}()
 
-	result = fn()
-
-	if err := unix.Dup2(saved, 1); err != nil {
+	if err := runRedirected(w, func() { result = fn() }); err != nil {
 		return result, nil, err
 	}
-	// Both write ends are closed now, so the reader sees EOF
-	w.Close()
 	out := <-captured
 
 	_, _ = os.Stdout.Write(out)
 	return result, out, nil
+}
+
+// runRedirected runs fn with file descriptor 1 pointing at w. It restores the descriptor and closes w on
+// every path, including a panic in fn, so the reader always sees EOF.
+func runRedirected(w *os.File, fn func()) (err error) {
+	defer w.Close()
+
+	saved, err := unix.Dup(1)
+	if err != nil {
+		return err
+	}
+	defer unix.Close(saved)
+
+	if err := unix.Dup2(int(w.Fd()), 1); err != nil {
+		return err
+	}
+	defer func() {
+		if restoreErr := unix.Dup2(saved, 1); err == nil {
+			err = restoreErr
+		}
+	}()
+
+	fn()
+	return nil
 }

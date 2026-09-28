@@ -180,7 +180,7 @@ func postHandler(handler Handler, h jrpc2.Handler) jrpc2.Handler {
 		// Recover from panics
 		defer func() {
 			if r := recover(); r != nil {
-				log.Printf("Panic recovered in JSON-RPC handler for request: %s, Panic: %v", req, r)
+				log.Printf("Panic recovered in JSON-RPC handler for request: %v, Panic: %v", req, r)
 				// Convert panic to error and handle it through the error handler
 				var panicErr error
 				if e, ok := r.(error); ok {
@@ -195,7 +195,7 @@ func postHandler(handler Handler, h jrpc2.Handler) jrpc2.Handler {
 
 		res, err = h(ctx, req)
 		if err != nil {
-			log.Printf("Error occurred processing JSON-RPC request: %s, Response error: %s", req, err)
+			log.Printf("Error occurred processing JSON-RPC request: %v, Response error: %s", req, err)
 			return nil, handler(ctx, req, err)
 		}
 		return res, nil

@@ -7,11 +7,10 @@ type AccountResponse struct {
 	Status    string `json:"status"`
 }
 
-type AccountBalanceResponse struct {
+type MirrorNodeAccountBalanceResponse struct {
 	Hbar string `json:"hbars"`
 }
 
-// DeprecatedAccountBalanceQueryResponse fields are null when the SDK logged no warning or returned no error
 type DeprecatedAccountBalanceQueryResponse struct {
 	ConstructionWarning *string `json:"constructionWarning"`
 	ExecutionError      *string `json:"executionError"`

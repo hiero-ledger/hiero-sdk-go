@@ -72,15 +72,14 @@ func (s *SDKService) SetOperator(_ context.Context, params param.SetupParams) re
 	}
 }
 
-// Ping probes one node of the session client's network through Client.Ping. A failed probe is
-// returned as an error, so a result always means SUCCESS.
+// Ping jRPC method for ping
 func (s *SDKService) Ping(_ context.Context, params param.PingParams) (*response.PingResponse, error) {
 	if params.NodeAccountId == nil {
-		return nil, response.InvalidParams.WithData("nodeAccountId is required")
+		return nil, response.NewInternalError("nodeAccountId is required")
 	}
 	nodeID, err := hiero.AccountIDFromString(*params.NodeAccountId)
 	if err != nil {
-		return nil, response.InvalidParams.WithData(err.Error())
+		return nil, err
 	}
 	if err := s.clients.Get(params.SessionId).Ping(nodeID); err != nil {
 		return nil, err

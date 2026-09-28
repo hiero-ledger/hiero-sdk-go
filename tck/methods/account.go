@@ -494,7 +494,7 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 }
 
 // GetMirrorNodeAccountBalance jRPC method for getMirrorNodeAccountBalance
-func (a *AccountService) GetMirrorNodeAccountBalance(_ context.Context, params param.GetMirrorNodeAccountBalanceParams) (*response.AccountBalanceResponse, error) {
+func (a *AccountService) GetMirrorNodeAccountBalance(_ context.Context, params param.GetMirrorNodeAccountBalanceParams) (*response.MirrorNodeAccountBalanceResponse, error) {
 	query := hiero.NewMirrorNodeAccountBalanceQuery()
 
 	// A missing account ID is left to the SDK, which rejects the query before any network call
@@ -507,15 +507,13 @@ func (a *AccountService) GetMirrorNodeAccountBalance(_ context.Context, params p
 		return nil, err
 	}
 
-	return &response.AccountBalanceResponse{Hbar: strconv.FormatInt(balance.Hbars.AsTinybar(), 10)}, nil
+	return &response.MirrorNodeAccountBalanceResponse{Hbar: strconv.FormatInt(balance.Hbars.AsTinybar(), 10)}, nil
 }
 
-// ExecuteDeprecatedAccountBalanceQuery jRPC method for executeDeprecatedAccountBalanceQuery. It is the only
-// place the TCK constructs the deprecated AccountBalanceQuery: it reports the warning the SDK logged on
-// construction and the error the SDK returned from the operation.
+// ExecuteDeprecatedAccountBalanceQuery jRPC method for executeDeprecatedAccountBalanceQuery
 func (a *AccountService) ExecuteDeprecatedAccountBalanceQuery(_ context.Context, params param.ExecuteDeprecatedAccountBalanceQueryParams) (*response.DeprecatedAccountBalanceQueryResponse, error) {
 	if params.AccountId == nil {
-		return nil, response.InvalidParams.WithData("accountId is required")
+		return nil, response.NewInternalError("accountId is required")
 	}
 	operation := "execute"
 	if params.Operation != nil {
@@ -554,15 +552,16 @@ func (a *AccountService) ExecuteDeprecatedAccountBalanceQuery(_ context.Context,
 	}, nil
 }
 
-// loggedWarning returns the message of the first warning in the SDK logger's output, or nil.
+// loggedWarning returns the message of the first AccountBalanceQuery warning in the captured output, or nil.
 // Only the default JSON log format is parsed, not the HEDERA_SDK_GO_LOG_PRETTY console format.
 func loggedWarning(output []byte) *string {
 	for line := range bytes.Lines(output) {
 		var entry struct {
 			Level   string `json:"level"`
+			Module  string `json:"module"`
 			Message string `json:"message"`
 		}
-		if json.Unmarshal(line, &entry) == nil && entry.Level == "warn" {
+		if json.Unmarshal(line, &entry) == nil && entry.Level == "warn" && entry.Module == "AccountBalanceQuery" {
 			return &entry.Message
 		}
 	}
