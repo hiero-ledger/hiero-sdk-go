@@ -9,13 +9,13 @@ type MirrorNodeTokenBalance struct {
 	Balance uint64
 	// Decimals is 0 for an NFT.
 	Decimals uint64
-	// AutomaticAssociation is nil when the mirror node does not report it.
+	// AutomaticAssociation is nil when not reported.
 	AutomaticAssociation *bool
-	// CreatedTimestamp is the mirror node's seconds.nanoseconds form, or empty when not reported.
+	// CreatedTimestamp is a Unix timestamp in seconds.nanoseconds format, or empty when not reported.
 	CreatedTimestamp string
 	// FreezeStatus is NOT_APPLICABLE, FROZEN or UNFROZEN, or empty when not reported.
 	FreezeStatus string
-	// KycStatus is NOT_APPLICABLE, GRANTED or REVOKED, or empty when not reported.
+	// KycStatus is NOT_APPLICABLE, GRANTED or REVOKED.
 	KycStatus string
 }
 

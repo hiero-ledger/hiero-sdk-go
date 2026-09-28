@@ -104,7 +104,7 @@ func (q *MirrorNodeTokenBalanceQuery) Execute(client *Client) (MirrorNodeTokenBa
 	if err != nil {
 		return MirrorNodeTokenBalancePage{}, err
 	}
-	// A token.id filter's next link repeats the request, so following it would loop forever.
+	// An exact token.id filter's next link, if the mirror node sent one, would only repeat the request.
 	if q.tokenID != nil {
 		page.Next = ""
 	}

@@ -108,7 +108,7 @@ func TestUnitMirrorNodeTokenBalanceQueryFollowsNextPage(t *testing.T) {
 func TestUnitMirrorNodeTokenBalanceQuerySingleTokenHasNoNextPage(t *testing.T) {
 	t.Parallel()
 
-	// The mirror node echoes the request as next when an exact token.id page is full.
+	// A next link on an exact token.id page would only repeat the request.
 	client, transport := tokenBalanceClient(t, okBody(`{"tokens":[{"token_id":"0.0.1001","balance":9,"decimals":1,"kyc_status":"GRANTED"}],
 		"links":{"next":"/api/v1/accounts/0.0.5/tokens?limit=100&token.id=0.0.1001"}}`))
 
