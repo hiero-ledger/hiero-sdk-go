@@ -1,3 +1,22 @@
+## v2.85.0
+
+### Added
+- `MirrorNodeTokenBalanceQuery`, a free mirror node REST query that returns an account's token balances one page at a time, replacing the token balances of `AccountBalanceQuery` [#1843](https://github.com/hiero-ledger/hiero-sdk-go/pull/1843)
+- `MirrorNodeHttpConfig`, set with `Client.SetMirrorNodeHttpConfig`, to configure the HTTP client used by every mirror node REST query: retry policy, timeouts, request headers, or an application-supplied `HttpTransport`. Mirror node REST queries now retry 408, 429, 500, 502, 503 and 504 responses with backoff, honour `Retry-After`, and are bounded by the client's request timeout [#1828](https://github.com/hiero-ledger/hiero-sdk-go/pull/1828)
+
+### Changed
+- Go 1.26 is now the minimum supported version [#1834](https://github.com/hiero-ledger/hiero-sdk-go/pull/1834)
+- `NftID.String()` and `NftID.ToStringWithChecksum()` now separate the token ID and the serial with `/` (`0.0.5005/10`), as the other SDKs do. `NftIDFromString` accepts both `/` and `@`, and returns an error instead of panicking on malformed input [#1823](https://github.com/hiero-ledger/hiero-sdk-go/pull/1823)
+
+### Deprecated
+- `AccountBalanceQuery` now logs a deprecation warning each time it is constructed. Use `MirrorNodeAccountBalanceQuery` for hbar balances and `MirrorNodeTokenBalanceQuery` for token balances. Part of Stage 2 of the cross-SDK [`AccountBalanceQuery` deprecation proposal](https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/account-balance-query-deprecation.md) [#1835](https://github.com/hiero-ledger/hiero-sdk-go/pull/1835)
+
+### Fixed
+- `TokenAirdropTransaction` no longer attributes one token's transfers to another when an airdrop carries more than one token [#1820](https://github.com/hiero-ledger/hiero-sdk-go/pull/1820)
+- `AccountIDFromString`, `ContractIDFromString` and `TokenIDFromString` now reject an ID with an empty checksum, such as `0.0.123-` [#1822](https://github.com/hiero-ledger/hiero-sdk-go/pull/1822)
+- Each gRPC attempt's timeout context is now cancelled when the attempt ends, instead of when the whole request returns [#1798](https://github.com/hiero-ledger/hiero-sdk-go/pull/1798)
+- A chunked transaction deserialized with `TransactionFromBytes` now submits every chunk instead of only the first [#1844](https://github.com/hiero-ledger/hiero-sdk-go/pull/1844)
+
 ## v2.84.0
 
 ### Added
