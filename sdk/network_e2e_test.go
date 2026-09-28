@@ -83,9 +83,9 @@ func TestIntegrationNodeForQuery(t *testing.T) {
 	client.SetMaxAttempts(3)
 	nodeAccountIDs := map[string]struct{}{}
 	for i := 0; i < 5; i++ {
-		_, err := NewAccountBalanceQuery().
+		_, err := NewAccountInfoQuery().
 			SetAccountID(AccountID{Account: 3}).
-			Execute(client)
+			GetCost(client)
 		require.NoError(t, err)
 		logOutput := buf.String()
 		sanitizedLogOutput := regexp.MustCompile(`\x1b\[[0-9;]*m`).ReplaceAllString(logOutput, "")
@@ -125,15 +125,15 @@ func TestIntegrationNodeForTransactionSourceListUnchanged(t *testing.T) {
 	client.SetLedgerID(*ledger)
 	client.SetMaxAttempts(3)
 
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
-		Execute(client)
+		GetCost(client)
 	expectedHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
 	copy(expectedHealthyNodes, client.network.healthyNodes)
 	resultHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
-		Execute(client)
+		GetCost(client)
 	copy(resultHealthyNodes, client.network.healthyNodes)
 	require.Equal(t, expectedHealthyNodes, resultHealthyNodes)
 }
@@ -163,15 +163,15 @@ func TestIntegrationNodeForQuerySourceListUnchanged(t *testing.T) {
 	client.SetLedgerID(*ledger)
 	client.SetMaxAttempts(3)
 
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
-		Execute(client)
+		GetCost(client)
 	expectedHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
 	copy(expectedHealthyNodes, client.network.healthyNodes)
 	resultHealthyNodes := make([]_IManagedNode, len(client.network.healthyNodes))
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(AccountID{Account: 3}).
-		Execute(client)
+		GetCost(client)
 	copy(resultHealthyNodes, client.network.healthyNodes)
 	require.Equal(t, expectedHealthyNodes, resultHealthyNodes)
 }

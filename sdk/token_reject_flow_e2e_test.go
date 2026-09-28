@@ -58,6 +58,10 @@ func TestIntegrationTokenRejectFlowCanExecuteForFungibleToken(t *testing.T) {
 	_, err = tx.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
+	// the mirror node must show the transfer before the reject can be verified
+	waitForMirrorTokenBalance(t, env, receiver, tokenID1, 10)
+	waitForMirrorTokenBalance(t, env, receiver, tokenID2, 10)
+
 	// reject the token + dissociate
 	frozenTxn, err := NewTokenRejectFlow().
 		SetOwnerID(receiver).
@@ -71,16 +75,12 @@ func TestIntegrationTokenRejectFlowCanExecuteForFungibleToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the balance of the receiver is 0
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID1))
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorZeroTokenBalance(t, env, receiver, tokenID1)
+	waitForMirrorZeroTokenBalance(t, env, receiver, tokenID2)
 
 	// verify the tokens are transferred back to the treasury
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(env.OperatorID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID1, 1_000_000)
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID2, 1_000_000)
 
 	// verify the tokens are not associated with the receiver
 	tx, err = NewTransferTransaction().
@@ -146,6 +146,10 @@ func TestIntegrationTokenRejectFlowCanExecuteForNFT(t *testing.T) {
 	_, err = tx.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
+	// the mirror node must show the transfer before the reject can be verified
+	waitForMirrorTokenBalance(t, env, receiver, nftID1, 2)
+	waitForMirrorTokenBalance(t, env, receiver, nftID2, 2)
+
 	// reject the token + dissociate
 	frozenTxn, err := NewTokenRejectFlow().
 		SetOwnerID(receiver).
@@ -159,10 +163,8 @@ func TestIntegrationTokenRejectFlowCanExecuteForNFT(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the balance is decremented by 2
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(0), tokenBalance.Tokens.Get(nftID1))
-	assert.Equal(t, uint64(0), tokenBalance.Tokens.Get(nftID2))
+	waitForMirrorZeroTokenBalance(t, env, receiver, nftID1)
+	waitForMirrorZeroTokenBalance(t, env, receiver, nftID2)
 
 	// verify the token is transferred back to the treasury
 	nftBalance, err := NewTokenNftInfoQuery().SetNftID(nftID1.Nft(serials[1])).Execute(env.Client)

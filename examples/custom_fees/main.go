@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -288,15 +289,9 @@ func main() {
 	}
 
 	// Check alice's balance before Bob transfers 20 tokens to Charlie
-	// This is a free query
-	aliceBalance1, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance 1 for alice", err))
-	}
+	aliceBalance1 := hbarBalance(client, aliceId, anyBalance)
 
-	println("Alice's Hbar balance before Bob transfers 20 tokens to Charlie:", aliceBalance1.Hbars.String())
+	println("Alice's Hbar balance before Bob transfers 20 tokens to Charlie:", aliceBalance1.String())
 
 	// Transfer 20 tokens from bob to charlie
 	transferTransaction, err = hiero.NewTransferTransaction().
@@ -323,14 +318,12 @@ func main() {
 	}
 
 	// Query to check alice's balance
-	aliceBalance2, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance 2 for alice", err))
-	}
+	// Bob paid Alice the 1 Hbar fixed fee.
+	aliceBalance2 := hbarBalance(client, aliceId, func(balance hiero.Hbar) bool {
+		return balance == hiero.HbarFromTinybar(aliceBalance1.AsTinybar()+hiero.NewHbar(1).AsTinybar())
+	})
 
-	println("Alice's Hbar balance after Bob transfers 20 tokens to Charlie:", aliceBalance2.Hbars.String())
+	println("Alice's Hbar balance after Bob transfers 20 tokens to Charlie:", aliceBalance2.String())
 	println("Assessed fees according to transaction record:")
 	for _, k := range record1.AssessedCustomFees {
 		println(k.String())
@@ -395,14 +388,9 @@ func main() {
 	}
 
 	// Another account balance query to check alice's token balance before Bob transfers 20 tokens to Charlie
-	aliceBalance3, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance 3 for alice", err))
-	}
+	aliceBalance3 := tokenBalance(client, aliceId, tokenId, is(0))
 
-	println("Alice's token balance before Bob transfers 20 tokens to Charlie:", aliceBalance3.Tokens.Get(tokenId))
+	println("Alice's token balance before Bob transfers 20 tokens to Charlie:", aliceBalance3)
 
 	// Once again transfer 20 tokens from bob to charlie
 	transferTransaction, err = hiero.NewTransferTransaction().
@@ -426,14 +414,10 @@ func main() {
 	}
 
 	// Checking alice's token balance again
-	aliceBalance4, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(aliceId).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting account balance 2 for alice", err))
-	}
+	// The fractional fee is a tenth of the 20 transferred.
+	aliceBalance4 := tokenBalance(client, aliceId, tokenId, is(2))
 
-	println("Alice's token balance after Bob transfers 20 tokens to Charlie:", aliceBalance4.Tokens.Get(tokenId))
+	println("Alice's token balance after Bob transfers 20 tokens to Charlie:", aliceBalance4)
 	println("Token transfers according to transaction record:")
 	for token, transfer := range record2.TokenTransfers {
 		tokenT := ""
@@ -488,4 +472,44 @@ func main() {
 	_, _ = resp.GetReceipt(client)
 
 	_ = client.Close()
+}
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func anyBalance(hiero.Hbar) bool { return true }
+
+// tokenBalance polls the mirror node until ready accepts accountID's balance of tokenID; no relationship reads as 0.
+func tokenBalance(client *hiero.Client, accountID hiero.AccountID, tokenID hiero.TokenID, ready func(uint64) bool) uint64 {
+	for attempt := 1; ; attempt++ {
+		page, err := hiero.NewMirrorNodeTokenBalanceQuery().SetAccountID(accountID).SetTokenID(tokenID).Execute(client)
+		if err == nil {
+			var balance uint64
+			if len(page.Tokens) == 1 {
+				balance = page.Tokens[0].Balance
+			}
+			if ready(balance) {
+				return balance
+			}
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected %v balance for %v (last error: %v)", tokenID, accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func is(want uint64) func(uint64) bool {
+	return func(balance uint64) bool { return balance == want }
 }

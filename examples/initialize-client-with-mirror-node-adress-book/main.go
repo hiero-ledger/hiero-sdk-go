@@ -11,11 +11,27 @@ func main() {
 	var client *hiero.Client
 	var err error
 
-	// Initialize the client with the testnet mirror node. This will also get the address book from the mirror node and
-	// use it to populate the Client's consensus network.
-	client, err = hiero.ClientForMirrorNetwork([]string{"testnet.mirrornode.hedera.com:443"})
+	// Initialize the client with the mirror node of the network named by HEDERA_NETWORK. This will also get the
+	// address book from the mirror node and use it to populate the Client's consensus network.
+	network := os.Getenv("HEDERA_NETWORK")
+	preset, err := hiero.ClientForName(network)
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
+	}
+	defer preset.Close()
+
+	client, err = hiero.ClientForMirrorNetwork(preset.GetMirrorNetwork())
+	if err != nil {
+		panic(fmt.Sprintf("%v : error creating client", err))
+	}
+	fmt.Printf("Consensus nodes from the %s address book: %v\n", network, client.GetNetwork())
+
+	// A local network advertises the addresses its nodes have inside the cluster, which this machine cannot reach, so
+	// talk to the node through its local port instead.
+	if network == "local" || network == "localhost" {
+		if err := client.SetNetwork(preset.GetNetwork()); err != nil {
+			panic(fmt.Sprintf("%v : error setting the local network", err))
+		}
 	}
 
 	// Retrieving operator ID from environment variable OPERATOR_ID

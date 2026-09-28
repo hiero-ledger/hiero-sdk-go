@@ -114,9 +114,9 @@ func DisabledTestIntegrationClientPingAllBadNetwork(t *testing.T) { // nolint
 		i++
 	}
 
-	_, err = NewAccountBalanceQuery().
+	_, err = NewAccountInfoQuery().
 		SetAccountID(val[0]).
-		Execute(tempClient)
+		GetCost(tempClient)
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, len(tempClient.GetNetwork()))

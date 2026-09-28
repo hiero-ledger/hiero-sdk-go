@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -258,15 +259,31 @@ func main() {
 	 *
 	 * Show the new account ID owns the fungible token
 	 */
-	accountBalances, err := hiero.NewAccountBalanceQuery().SetAccountID(aliasAccountId2).Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error receiving account balance", err))
-	}
+	// The mirror node resolves the alias too
+	tokenBalance(client, aliasAccountId2, tokenId, is(10))
+	fmt.Println(`Account is created successfully using HTS "TransferTransaction"`)
+}
 
-	tokenBalanceAccountId2 := accountBalances.Tokens.Get(tokenId)
-	if tokenBalanceAccountId2 == 10 {
-		fmt.Println(`Account is created successfully using HTS "TransferTransaction"`)
-	} else {
-		fmt.Println("Creating account with HTS using public key alias failed")
+// tokenBalance polls the mirror node until ready accepts accountID's balance of tokenID; no relationship reads as 0.
+func tokenBalance(client *hiero.Client, accountID hiero.AccountID, tokenID hiero.TokenID, ready func(uint64) bool) uint64 {
+	for attempt := 1; ; attempt++ {
+		page, err := hiero.NewMirrorNodeTokenBalanceQuery().SetAccountID(accountID).SetTokenID(tokenID).Execute(client)
+		if err == nil {
+			var balance uint64
+			if len(page.Tokens) == 1 {
+				balance = page.Tokens[0].Balance
+			}
+			if ready(balance) {
+				return balance
+			}
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected %v balance for %v (last error: %v)", tokenID, accountID, err))
+		}
+		time.Sleep(time.Second)
 	}
+}
+
+func is(want uint64) func(uint64) bool {
+	return func(balance uint64) bool { return balance == want }
 }

@@ -52,16 +52,12 @@ func TestIntegrationTokenRejectTransactionCanExecuteForFungibleToken(t *testing.
 	require.NoError(t, err)
 
 	// verify the balance of the receiver is 0
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID1))
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, receiver, tokenID1, 0)
+	waitForMirrorTokenBalance(t, env, receiver, tokenID2, 0)
 
 	// verify the tokens are transferred back to the treasury
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(env.OperatorID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID1, 1_000_000)
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID2, 1_000_000)
 }
 
 func TestIntegrationTokenRejectTransactionCanExecuteForNFT(t *testing.T) {
@@ -114,10 +110,8 @@ func TestIntegrationTokenRejectTransactionCanExecuteForNFT(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the balance is decremented by 1
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1), tokenBalance.Tokens.Get(nftID1))
-	assert.Equal(t, uint64(1), tokenBalance.Tokens.Get(nftID2))
+	waitForMirrorTokenBalance(t, env, receiver, nftID1, 1)
+	waitForMirrorTokenBalance(t, env, receiver, nftID2, 1)
 
 	// verify the token is transferred back to the treasury
 	nftBalance, err := NewTokenNftInfoQuery().SetNftID(nftID1.Nft(serials[1])).Execute(env.Client)
@@ -200,18 +194,14 @@ func TestIntegrationTokenRejectTransactionCanExecuteForFTAndNFTAtTheSameTime(t *
 	require.NoError(t, err)
 
 	// verify the balance of the receiver
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID1))
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID2))
-	assert.Equal(t, uint64(1), tokenBalance.Tokens.Get(nftID1))
-	assert.Equal(t, uint64(1), tokenBalance.Tokens.Get(nftID2))
+	waitForMirrorTokenBalance(t, env, receiver, tokenID1, 0)
+	waitForMirrorTokenBalance(t, env, receiver, tokenID2, 0)
+	waitForMirrorTokenBalance(t, env, receiver, nftID1, 1)
+	waitForMirrorTokenBalance(t, env, receiver, nftID2, 1)
 
 	// verify the tokens are transferred back to the treasury
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(env.OperatorID).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID1))
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID2))
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID1, 1_000_000)
+	waitForMirrorTokenBalance(t, env, env.OperatorID, tokenID2, 1_000_000)
 
 	nftBalance, err := NewTokenNftInfoQuery().SetNftID(nftID1.Nft(serials[1])).Execute(env.Client)
 	require.NoError(t, err)
@@ -286,9 +276,7 @@ func TestIntegrationTokenRejectTransactionReceiverSigRequired(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the balance is decremented by 1
-	tokenBalance, err := NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1), tokenBalance.Tokens.Get(nftID))
+	waitForMirrorTokenBalance(t, env, receiver, nftID, 1)
 
 	// verify the token is transferred back to the treasury
 	nftBalance, err := NewTokenNftInfoQuery().SetNftID(nftID.Nft(serials[1])).Execute(env.Client)
@@ -327,14 +315,10 @@ func TestIntegrationTokenRejectTransactionReceiverSigRequired(t *testing.T) {
 	require.NoError(t, err)
 
 	// verify the balance of the receiver is 0
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(receiver).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Zero(t, tokenBalance.Tokens.Get(tokenID))
+	waitForMirrorTokenBalance(t, env, receiver, tokenID, 0)
 
 	// verify the tokens are transferred back to the treasury
-	tokenBalance, err = NewAccountBalanceQuery().SetAccountID(treasury).Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, uint64(1_000_000), tokenBalance.Tokens.Get(tokenID))
+	waitForMirrorTokenBalance(t, env, treasury, tokenID, 1_000_000)
 
 }
 

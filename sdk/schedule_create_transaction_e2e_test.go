@@ -783,18 +783,10 @@ func TestIntegrationScheduleCreateTransactionWaitForExpiry(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, scheduleInfo.ExecutedAt)
 
-	accountBalanceBefore, err := NewAccountBalanceQuery().
-		SetAccountID(accountId).
-		Execute(env.Client)
-	require.NoError(t, err)
-
 	time.Sleep(5 * time.Second)
 
-	accountBalanceAfter, err := NewAccountBalanceQuery().
-		SetAccountID(accountId).
-		Execute(env.Client)
-	require.NoError(t, err)
-	assert.Equal(t, accountBalanceBefore.Hbars.AsTinybar(), accountBalanceAfter.Hbars.AsTinybar()+100000000)
+	// The account started with 2 hbar and sends 1 when the schedule executes at expiry
+	waitForMirrorHbarBalance(t, env, accountId, NewHbar(1))
 
 	_, err = NewTransactionRecordQuery().
 		SetTransactionID(txId).

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -80,13 +81,8 @@ func main() {
 	fmt.Printf("Bob's account: %v\n", bobsID)
 
 	// Step 3: Read Bob's initial balance for the before/after comparison.
-	bobsInitialBalance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(bobsID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting Bob's balance", err))
-	}
-	fmt.Printf("Bob's balance before schedule: %v\n", bobsInitialBalance.Hbars)
+	bobsInitialBalance := hbarBalance(client, bobsID, anyBalance)
+	fmt.Printf("Bob's balance before schedule: %v\n", bobsInitialBalance)
 
 	// Step 4: Alice builds the transfer and wraps it in a scheduled tx.
 	// No Bob signature is added yet — the schedule will sit pending.
@@ -117,14 +113,9 @@ func main() {
 
 	// Step 5: Confirm Bob's balance hasn't changed — the schedule is pending
 	// because Bob's signature is still missing.
-	balancePending, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(bobsID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting Bob's balance", err))
-	}
-	fmt.Printf("Bob's balance while schedule pending: %v\n", balancePending.Hbars)
-	if balancePending.Hbars.AsTinybar() != bobsInitialBalance.Hbars.AsTinybar() {
+	balancePending := hbarBalance(client, bobsID, anyBalance)
+	fmt.Printf("Bob's balance while schedule pending: %v\n", balancePending)
+	if balancePending != bobsInitialBalance {
 		panic("expected Bob's balance to be unchanged while the schedule is pending")
 	}
 
@@ -164,14 +155,11 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting ScheduleSign receipt", err))
 	}
 
-	// Step 8: Confirm Bob's balance now reflects the transfer.
-	balanceAfter, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(bobsID).
-		Execute(client)
-	if err != nil {
-		panic(fmt.Sprintf("%v : error getting Bob's balance", err))
-	}
-	fmt.Printf("Bob's balance after Bob signs: %v\n", balanceAfter.Hbars)
+	// Step 8: Confirm Bob's balance is exactly 1 Hbar higher; the operator paid every fee.
+	balanceAfter := hbarBalance(client, bobsID, func(balance hiero.Hbar) bool {
+		return balance == hiero.HbarFromTinybar(bobsInitialBalance.AsTinybar()+hiero.NewHbar(1).AsTinybar())
+	})
+	fmt.Printf("Bob's balance after Bob signs: %v\n", balanceAfter)
 
 	// Step 9: ScheduleInfo should now show an executed timestamp.
 	infoAfter, err := hiero.NewScheduleInfoQuery().
@@ -207,3 +195,19 @@ func main() {
 	}
 	fmt.Println("Scheduled Transfer Example Complete!")
 }
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func anyBalance(hiero.Hbar) bool { return true }

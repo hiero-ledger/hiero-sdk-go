@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	hiero "github.com/hiero-ledger/hiero-sdk-go/v2/sdk"
 )
@@ -99,10 +100,9 @@ func main() {
 	println("Bob's ID:", bobID.String())
 	println("Charlie's ID:", charlieID.String())
 	println("Initial Balance:")
-	err = printBalance(client, aliceID, bobID, charlieID, []hiero.AccountID{transactionResponse.NodeID})
-	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving balances", err))
-	}
+	printBalance(client, aliceID, bobID, charlieID, func(_, charlie hiero.Hbar) bool {
+		return charlie == hiero.NewHbar(5)
+	})
 
 	println("Approve an allowance of 2 Hbar with owner Alice and spender Bob")
 
@@ -126,10 +126,9 @@ func main() {
 		panic(fmt.Sprintf("%v : error getting account allowance receipt", err))
 	}
 
-	err = printBalance(client, aliceID, bobID, charlieID, []hiero.AccountID{transactionResponse.NodeID})
-	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving balances", err))
-	}
+	printBalance(client, aliceID, bobID, charlieID, func(_, charlie hiero.Hbar) bool {
+		return charlie == hiero.NewHbar(5)
+	})
 
 	println("Transferring 1 Hbar from Alice to Charlie, but the transaction is signed _only_ by Bob (Bob is dipping into his allowance from Alice)")
 
@@ -156,10 +155,9 @@ func main() {
 	}
 
 	println("Transfer succeeded. Bob should now have 1 Hbar left in his allowance.")
-	err = printBalance(client, aliceID, bobID, charlieID, []hiero.AccountID{transactionResponse.NodeID})
-	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving balances", err))
-	}
+	bobBalance := printBalance(client, aliceID, bobID, charlieID, func(_, charlie hiero.Hbar) bool {
+		return charlie == hiero.NewHbar(6)
+	})
 
 	println("Attempting to transfer 2 Hbar from Alice to Charlie using Bob's allowance.")
 	println("This should fail, because there is only 1 Hbar left in Bob's allowance.")
@@ -208,10 +206,10 @@ func main() {
 		panic(fmt.Sprintf("%v : error retrieving account allowance adjust receipt", err))
 	}
 
-	err = printBalance(client, aliceID, bobID, charlieID, []hiero.AccountID{transactionResponse.NodeID})
-	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving balances", err))
-	}
+	// The failed transfer still charged Bob its fee.
+	printBalance(client, aliceID, bobID, charlieID, func(bob, _ hiero.Hbar) bool {
+		return bob != bobBalance
+	})
 
 	println("Attempting to transfer 2 Hbar from Alice to Charlie using Bob's allowance again.")
 	println("This time it should succeed.")
@@ -239,10 +237,9 @@ func main() {
 	}
 
 	println("Transfer succeeded.")
-	err = printBalance(client, aliceID, bobID, charlieID, []hiero.AccountID{transactionResponse.NodeID})
-	if err != nil {
-		panic(fmt.Sprintf("%v : error retrieving balances", err))
-	}
+	printBalance(client, aliceID, bobID, charlieID, func(_, charlie hiero.Hbar) bool {
+		return charlie == hiero.NewHbar(8)
+	})
 
 	println("Deleting Bob's allowance")
 
@@ -361,36 +358,38 @@ func main() {
 	}
 }
 
-func printBalance(client *hiero.Client, alice hiero.AccountID, bob hiero.AccountID, charlie hiero.AccountID, nodeID []hiero.AccountID) error {
-	println()
-
-	balance, err := hiero.NewAccountBalanceQuery().
-		SetAccountID(alice).
-		SetNodeAccountIDs(nodeID).
-		Execute(client)
-	if err != nil {
-		return err
+// printBalance waits until settled accepts Bob's and Charlie's balances, prints all three, and returns Bob's.
+func printBalance(client *hiero.Client, alice hiero.AccountID, bob hiero.AccountID, charlie hiero.AccountID, settled func(bob, charlie hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		bobBalance := hbarBalance(client, bob, anyBalance)
+		charlieBalance := hbarBalance(client, charlie, anyBalance)
+		if settled(bobBalance, charlieBalance) {
+			println()
+			println("Alice's balance:", hbarBalance(client, alice, anyBalance).String())
+			println("Bob's balance:", bobBalance.String())
+			println("Charlie's balance:", charlieBalance.String())
+			println()
+			return bobBalance
+		}
+		if attempt == 20 {
+			panic("mirror node did not catch up with the last transaction")
+		}
+		time.Sleep(time.Second)
 	}
-	println("Alice's balance:", balance.Hbars.String())
-
-	balance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(bob).
-		SetNodeAccountIDs(nodeID).
-		Execute(client)
-	if err != nil {
-		return err
-	}
-	println("Bob's balance:", balance.Hbars.String())
-
-	balance, err = hiero.NewAccountBalanceQuery().
-		SetAccountID(charlie).
-		SetNodeAccountIDs(nodeID).
-		Execute(client)
-	if err != nil {
-		return err
-	}
-	println("Charlie's balance:", balance.Hbars.String())
-
-	println()
-	return nil
 }
+
+// hbarBalance polls the mirror node until ready accepts accountID's balance, absorbing mirror node lag.
+func hbarBalance(client *hiero.Client, accountID hiero.AccountID, ready func(hiero.Hbar) bool) hiero.Hbar {
+	for attempt := 1; ; attempt++ {
+		balance, err := hiero.NewMirrorNodeAccountBalanceQuery().SetAccountID(accountID).Execute(client)
+		if err == nil && ready(balance.Hbars) {
+			return balance.Hbars
+		}
+		if attempt == 20 {
+			panic(fmt.Sprintf("mirror node did not show the expected balance for %v (last error: %v)", accountID, err))
+		}
+		time.Sleep(time.Second)
+	}
+}
+
+func anyBalance(hiero.Hbar) bool { return true }
