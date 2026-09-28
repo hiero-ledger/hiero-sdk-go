@@ -7,8 +7,11 @@ type AccountResponse struct {
 	Status    string `json:"status"`
 }
 
-type AccountBalanceResponse struct {
-	Hbar          string            `json:"hbars"`
-	TokenBalances map[string]uint64 `json:"tokenBalances,omitempty"`
-	TokenDecimals map[string]uint64 `json:"tokenDecimals,omitempty"`
+type MirrorNodeAccountBalanceResponse struct {
+	Hbar string `json:"hbars"`
+}
+
+type DeprecatedAccountBalanceQueryResponse struct {
+	ConstructionWarning *string `json:"constructionWarning"`
+	ExecutionError      *string `json:"executionError"`
 }
