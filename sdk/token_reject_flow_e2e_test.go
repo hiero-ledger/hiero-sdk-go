@@ -58,6 +58,10 @@ func TestIntegrationTokenRejectFlowCanExecuteForFungibleToken(t *testing.T) {
 	_, err = tx.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
 
+	// the mirror node must show the transfer before the reject can be verified
+	waitForMirrorTokenBalance(t, env, receiver, tokenID1, 10)
+	waitForMirrorTokenBalance(t, env, receiver, tokenID2, 10)
+
 	// reject the token + dissociate
 	frozenTxn, err := NewTokenRejectFlow().
 		SetOwnerID(receiver).
@@ -141,6 +145,10 @@ func TestIntegrationTokenRejectFlowCanExecuteForNFT(t *testing.T) {
 	require.NoError(t, err)
 	_, err = tx.SetValidateStatus(true).GetReceipt(env.Client)
 	require.NoError(t, err)
+
+	// the mirror node must show the transfer before the reject can be verified
+	waitForMirrorTokenBalance(t, env, receiver, nftID1, 2)
+	waitForMirrorTokenBalance(t, env, receiver, nftID2, 2)
 
 	// reject the token + dissociate
 	frozenTxn, err := NewTokenRejectFlow().

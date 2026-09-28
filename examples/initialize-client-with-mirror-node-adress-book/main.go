@@ -14,18 +14,13 @@ func main() {
 	// Initialize the client with the mirror node of the network named by HEDERA_NETWORK. This will also get the
 	// address book from the mirror node and use it to populate the Client's consensus network.
 	network := os.Getenv("HEDERA_NETWORK")
-	mirrorNodes := map[string]string{
-		"mainnet":    "mainnet-public.mirrornode.hedera.com:443",
-		"testnet":    "testnet.mirrornode.hedera.com:443",
-		"previewnet": "previewnet.mirrornode.hedera.com:443",
-		"localhost":  "127.0.0.1:5600",
+	preset, err := hiero.ClientForName(network)
+	if err != nil {
+		panic(fmt.Sprintf("%v : error creating client", err))
 	}
-	mirrorNode, ok := mirrorNodes[network]
-	if !ok {
-		panic(fmt.Sprintf("HEDERA_NETWORK %q has no known mirror node", network))
-	}
+	defer preset.Close()
 
-	client, err = hiero.ClientForMirrorNetwork([]string{mirrorNode})
+	client, err = hiero.ClientForMirrorNetwork(preset.GetMirrorNetwork())
 	if err != nil {
 		panic(fmt.Sprintf("%v : error creating client", err))
 	}
@@ -33,8 +28,8 @@ func main() {
 
 	// A local network advertises the addresses its nodes have inside the cluster, which this machine cannot reach, so
 	// talk to the node through its local port instead.
-	if network == "localhost" {
-		if err := client.SetNetwork(map[string]hiero.AccountID{"127.0.0.1:50211": {Account: 3}}); err != nil {
+	if network == "local" || network == "localhost" {
+		if err := client.SetNetwork(preset.GetNetwork()); err != nil {
 			panic(fmt.Sprintf("%v : error setting the local network", err))
 		}
 	}
