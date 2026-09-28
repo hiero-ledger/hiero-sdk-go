@@ -81,26 +81,18 @@ func (q *AccountBalanceQuery) GetContractID() ContractID {
 	return *q.contractID
 }
 
-func (q *AccountBalanceQuery) GetCost(client *Client) (Hbar, error) {
-	return q.Query.getCost(client, q)
+// GetCost returns the deprecation error without contacting the network.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
+func (q *AccountBalanceQuery) GetCost(*Client) (Hbar, error) {
+	return Hbar{}, errAccountBalanceQueryDeprecated
 }
 
-// Execute executes the query with the provided client
-func (q *AccountBalanceQuery) Execute(client *Client) (AccountBalance, error) {
-	if client == nil {
-		return AccountBalance{}, errNoClientProvided
-	}
-
-	err := q.validateNetworkOnIDs(client)
-	if err != nil {
-		return AccountBalance{}, err
-	}
-
-	resp, err := q.Query.execute(client, q)
-	if err != nil {
-		return AccountBalance{}, err
-	}
-	return _AccountBalanceFromProtobuf(resp.GetCryptogetAccountBalance()), nil
+// Execute returns the deprecation error without contacting the network.
+//
+// Deprecated: AccountBalanceQuery is no longer supported. Use MirrorNodeAccountBalanceQuery or the mirror node REST API (GET /api/v1/accounts/{id}) to retrieve account balances.
+func (q *AccountBalanceQuery) Execute(*Client) (AccountBalance, error) {
+	return AccountBalance{}, errAccountBalanceQueryDeprecated
 }
 
 // SetMaxQueryPayment sets the maximum payment allowed for this query.

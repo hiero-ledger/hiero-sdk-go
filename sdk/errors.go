@@ -22,6 +22,7 @@ var errNoClientOrTransactionIDOrNodeId = errors.New("`client` must be provided o
 var errClientOperatorSigning = errors.New("`client` must have an `_Operator` to sign with the _Operator")
 var errNoClientProvided = errors.New("`client` must be provided and have an _Operator")
 var errMirrorNodeAccountBalanceQueryNoAccountID = errors.New("`accountID` must be set on MirrorNodeAccountBalanceQuery")
+var errAccountBalanceQueryDeprecated = errors.New(accountBalanceQueryDeprecationMessage) //nolint:staticcheck // ST1005: the cross-SDK message is used verbatim
 var errMirrorNodeTokenBalanceQueryNoAccountID = errors.New("`accountID` or `nextPage` must be set on MirrorNodeTokenBalanceQuery")
 var errMirrorNodeTokenBalanceQueryNextPageConflict = errors.New("`nextPage` cannot be combined with `accountID` or `tokenID` on MirrorNodeTokenBalanceQuery")
 var errQueryPaymentRequiresOperator = errors.New("`client` must have an _Operator to pay for a query")

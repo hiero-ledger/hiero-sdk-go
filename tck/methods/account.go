@@ -535,9 +535,9 @@ func (a *AccountService) ExecuteDeprecatedAccountBalanceQuery(_ context.Context,
 
 	client := a.sdkService.GetClient(params.SessionId)
 	if operation == "getCost" {
-		_, err = query.GetCost(client)
+		_, err = query.GetCost(client) //nolint:staticcheck // this method exists to execute the deprecated query
 	} else {
-		_, err = query.Execute(client)
+		_, err = query.Execute(client) //nolint:staticcheck // this method exists to execute the deprecated query
 	}
 
 	var executionError *string
