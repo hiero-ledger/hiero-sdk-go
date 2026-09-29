@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -143,46 +144,51 @@ func TestUnitAccountBalanceQueryCoverage(t *testing.T) {
 	bal._ToProtobuf()
 }
 
-func TestUnitAccountBalanceQueryMock(t *testing.T) {
+// accountBalanceHandler records that a request reached the mock server and answers it successfully.
+func accountBalanceHandler(called *atomic.Bool, responseType services.ResponseType) func(*services.Query) *services.Response {
+	return func(*services.Query) *services.Response {
+		called.Store(true)
+		return &services.Response{
+			Response: &services.Response_CryptogetAccountBalance{
+				CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
+					Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: responseType},
+				},
+			},
+		}
+	}
+}
+
+func TestUnitAccountBalanceQueryExecuteSendsNoRequest(t *testing.T) {
 	t.Parallel()
 
-	responses := [][]interface{}{
-		{
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_COST_ANSWER, Cost: 0},
-						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
-							AccountNum: 1800,
-						}},
-						Balance: 2000,
-					},
-				},
-			},
-			&services.Response{
-				Response: &services.Response_CryptogetAccountBalance{
-					CryptogetAccountBalance: &services.CryptoGetAccountBalanceResponse{
-						Header: &services.ResponseHeader{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK, ResponseType: services.ResponseType_ANSWER_ONLY, Cost: 0},
-						AccountID: &services.AccountID{ShardNum: 0, RealmNum: 0, Account: &services.AccountID_AccountNum{
-							AccountNum: 1800,
-						}},
-						Balance: 2000,
-					},
-				},
-			},
-		},
-	}
-
-	client, server := NewMockClientAndServer(responses)
+	var called atomic.Bool
+	client, server := NewMockClientAndServer([][]interface{}{{accountBalanceHandler(&called, services.ResponseType_ANSWER_ONLY)}})
 	defer server.Close()
 
-	query := NewAccountBalanceQuery().
+	_, err := NewAccountBalanceQuery().
 		SetNodeAccountIDs([]AccountID{{Account: 3}}).
 		SetAccountID(AccountID{Account: 1800}).
-		SetContractID(ContractID{Contract: 3})
+		Execute(client)
 
-	_, err := query.Execute(client)
-	require.NoError(t, err)
+	require.ErrorIs(t, err, errAccountBalanceQueryDeprecated)
+	require.ErrorContains(t, err, "AccountBalanceQuery is no longer supported")
+	assert.False(t, called.Load())
+}
+
+func TestUnitAccountBalanceQueryGetCostSendsNoRequest(t *testing.T) {
+	t.Parallel()
+
+	var called atomic.Bool
+	client, server := NewMockClientAndServer([][]interface{}{{accountBalanceHandler(&called, services.ResponseType_COST_ANSWER)}})
+	defer server.Close()
+
+	_, err := NewAccountBalanceQuery().
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetAccountID(AccountID{Account: 1800}).
+		GetCost(client)
+
+	require.ErrorIs(t, err, errAccountBalanceQueryDeprecated)
+	assert.False(t, called.Load())
 }
 
 func TestUnitAccountBalanceQueryNoClient(t *testing.T) {
@@ -191,5 +197,5 @@ func TestUnitAccountBalanceQueryNoClient(t *testing.T) {
 	_, err := NewAccountBalanceQuery().
 		Execute(nil)
 
-	require.ErrorContains(t, err, "client` must be provided and have an _Operator")
+	require.ErrorIs(t, err, errAccountBalanceQueryDeprecated)
 }
