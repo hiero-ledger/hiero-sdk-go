@@ -1,3 +1,8 @@
+## v2.85.1
+
+### Deprecated
+- `AccountBalanceQuery.Execute` and `AccountBalanceQuery.GetCost` now return the deprecation error without contacting a consensus node, which no longer serves the query. This completes Stage 2 of the cross-SDK [`AccountBalanceQuery` deprecation proposal](https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/account-balance-query-deprecation.md) [#1847](https://github.com/hiero-ledger/hiero-sdk-go/pull/1847)
+
 ## v2.85.0
 
 ### Added
