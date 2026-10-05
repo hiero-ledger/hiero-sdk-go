@@ -49,6 +49,11 @@ type AccountAllowanceDeleteParams struct {
 	Allowances *[]DeleteAllowanceParams `json:"allowances,omitempty"`
 }
 
+type GetAccountInfoParams struct {
+	BaseParams
+	AccountId *string `json:"accountId"`
+}
+
 type GetMirrorNodeAccountBalanceParams struct {
 	BaseParams
 	AccountId *string `json:"accountId"`

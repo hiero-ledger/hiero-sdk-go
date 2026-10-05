@@ -101,6 +101,7 @@ func main() {
 		"deleteNode":                postHandler(HandleError, handler.New(nodeService.DeleteNode)),
 		"createEthereumTransaction": postHandler(HandleError, handler.New(ethereumService.CreateEthereumTransaction)),
 		"generateKey":               postHandler(HandleError, handler.New(methods.GenerateKey)),
+		"getAccountInfo":            postHandler(HandleError, handler.New(accountService.GetAccountInfo)),
 		"ping":                      postHandler(HandleError, handler.New(sdkService.Ping)),
 		"pingAll":                   postHandler(HandleError, handler.New(sdkService.PingAll)),
 
