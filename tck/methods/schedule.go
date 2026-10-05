@@ -128,6 +128,39 @@ func (s *ScheduleService) SignSchedule(_ context.Context, params param.ScheduleS
 	}, nil
 }
 
+// DeleteSchedule jRPC method for deleteSchedule
+func (s *ScheduleService) DeleteSchedule(_ context.Context, params param.ScheduleDeleteParams) (*response.ScheduleResponse, error) {
+	transaction := hiero.NewScheduleDeleteTransaction().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.ScheduleId != nil {
+		scheduleID, err := hiero.ScheduleIDFromString(*params.ScheduleId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse schedule ID: %w", err)
+		}
+		transaction.SetScheduleID(scheduleID)
+	}
+
+	if params.CommonTransactionParams != nil {
+		err := params.CommonTransactionParams.FillOutTransaction(transaction, s.sdkService.GetClient(params.SessionId))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	txResponse, err := transaction.Execute(s.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+	receipt, err := txResponse.SetValidateStatus(true).GetReceipt(s.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+
+	return &response.ScheduleResponse{
+		Status: receipt.Status.String(),
+	}, nil
+}
+
 // buildScheduledTransaction creates the appropriate transaction based on method name
 func (s *ScheduleService) buildScheduledTransaction(scheduledTx *param.ScheduledTransaction) (hiero.TransactionInterface, error) {
 	switch scheduledTx.Method {
