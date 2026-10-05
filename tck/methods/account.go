@@ -496,7 +496,7 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 
 // GetAccountInfo jRPC method for getAccountInfo
 func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccountInfoParams) (*response.AccountInfoResponse, error) {
-	query := hiero.NewAccountInfoQuery()
+	query := hiero.NewAccountInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
 
 	if err := utils.SetAccountIDIfPresent(params.AccountId, query.SetAccountID); err != nil {
 		return nil, err
@@ -524,6 +524,9 @@ func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccou
 		LedgerId:                      info.LedgerID.String(),
 		EthereumNonce:                 strconv.FormatInt(info.EthereumNonce, 10),
 		LiveHashes:                    liveHashesToResponse(info.LiveHashes),
+		HbarAllowances:                hbarAllowancesToResponse(info.HbarAllowances),
+		TokenAllowances:               tokenAllowancesToResponse(info.TokenAllowances),
+		NftAllowances:                 nftAllowancesToResponse(info.NftAllowances),
 		TokenRelationships:            tokenRelationshipsToResponse(info.TokenRelationships),
 		StakingInfo:                   stakingInfoToResponse(info.StakingInfo),
 	}
@@ -541,7 +544,7 @@ func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccou
 
 // Map sdk LiveHash to jRPC LiveHashResponse
 func liveHashesToResponse(liveHashes []*hiero.LiveHash) []response.LiveHashResponse {
-	if liveHashes == nil || len(liveHashes) == 0 {
+	if len(liveHashes) == 0 {
 		return []response.LiveHashResponse{}
 	}
 
@@ -566,7 +569,7 @@ func liveHashesToResponse(liveHashes []*hiero.LiveHash) []response.LiveHashRespo
 
 // Map sdk TokenRelationship to jRPC TokenRelationshipResponse
 func tokenRelationshipsToResponse(relationships []*hiero.TokenRelationship) map[string]response.TokenRelationshipInfo {
-	if relationships == nil || len(relationships) == 0 {
+	if len(relationships) == 0 {
 		return map[string]response.TokenRelationshipInfo{}
 	}
 
@@ -594,7 +597,7 @@ func tokenRelationshipsToResponse(relationships []*hiero.TokenRelationship) map[
 
 // Map sdk HbarAllowances to jRPC HbarAllowancesResponse
 func hbarAllowancesToResponse(allowances []hiero.HbarAllowance) []response.HbarAllowanceResponse {
-	if allowances == nil || len(allowances) == 0 {
+	if len(allowances) == 0 {
 		return []response.HbarAllowanceResponse{}
 	}
 
@@ -615,7 +618,7 @@ func hbarAllowancesToResponse(allowances []hiero.HbarAllowance) []response.HbarA
 func tokenAllowancesToResponse(
 	allowances []hiero.TokenAllowance,
 ) []response.TokenAllowanceResponse {
-	if allowances == nil || len(allowances) == 0 {
+	if len(allowances) == 0 {
 		return []response.TokenAllowanceResponse{}
 	}
 
@@ -638,7 +641,7 @@ func nftAllowancesToResponse(
 	allowances []hiero.TokenNftAllowance,
 ) []response.TokenNftAllowanceResponse {
 	if len(allowances) == 0 {
-		return nil
+		return []response.TokenNftAllowanceResponse{}
 	}
 
 	result := make([]response.TokenNftAllowanceResponse, 0, len(allowances))
