@@ -5,6 +5,7 @@ package methods
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -491,6 +492,138 @@ func (a *AccountService) TransferCrypto(_ context.Context, params param.Transfer
 	}
 
 	return &response.AccountResponse{Status: receipt.Status.String()}, nil
+}
+
+// GetAccountInfo jRPC method for getAccountInfo
+func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccountInfoParams) (*response.AccountInfoResponse, error) {
+	query := hiero.NewAccountInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	if err := utils.SetAccountIDIfPresent(params.AccountId, query.SetAccountID); err != nil {
+		return nil, err
+	}
+
+	info, err := query.Execute(a.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+
+	result := &response.AccountInfoResponse{
+		AccountId:                     info.AccountID.String(),
+		ContractAccountId:             info.ContractAccountID,
+		IsDeleted:                     info.IsDeleted,
+		ProxyReceived:                 strconv.FormatInt(info.ProxyReceived.AsTinybar(), 10),
+		Balance:                       strconv.FormatInt(info.Balance.AsTinybar(), 10),
+		SendRecordThreshold:           strconv.FormatInt(info.GenerateSendRecordThreshold.AsTinybar(), 10),
+		ReceiveRecordThreshold:        strconv.FormatInt(info.GenerateReceiveRecordThreshold.AsTinybar(), 10),
+		IsReceiverSignatureRequired:   info.ReceiverSigRequired,
+		ExpirationTime:                strconv.FormatInt(info.ExpirationTime.Unix(), 10),
+		AutoRenewPeriod:               strconv.FormatInt(int64(info.AutoRenewPeriod.Seconds()), 10),
+		AccountMemo:                   info.AccountMemo,
+		OwnedNfts:                     strconv.FormatInt(info.OwnedNfts, 10),
+		MaxAutomaticTokenAssociations: strconv.FormatUint(uint64(info.MaxAutomaticTokenAssociations), 10),
+		LedgerId:                      info.LedgerID.String(),
+		EthereumNonce:                 strconv.FormatInt(info.EthereumNonce, 10),
+		LiveHashes:                    liveHashesToResponse(info.LiveHashes),
+		HbarAllowances:                []response.HbarAllowanceResponse{},
+		TokenAllowances:               []response.TokenAllowanceResponse{},
+		NftAllowances:                 []response.TokenNftAllowanceResponse{},
+		TokenRelationships:            tokenRelationshipsToResponse(info.TokenRelationships),
+		StakingInfo:                   stakingInfoToResponse(info.StakingInfo),
+	}
+
+	if info.Key != nil {
+		result.Key = info.Key.String()
+	}
+
+	if info.AliasKey != nil {
+		aliasKey := info.AliasKey.String()
+		result.AliasKey = &aliasKey
+	}
+
+	return result, nil
+}
+
+// Map sdk LiveHash to jRPC LiveHashResponse
+func liveHashesToResponse(liveHashes []*hiero.LiveHash) []response.LiveHashResponse {
+	if len(liveHashes) == 0 {
+		return []response.LiveHashResponse{}
+	}
+
+	result := make([]response.LiveHashResponse, 0, len(liveHashes))
+
+	for _, liveHash := range liveHashes {
+		keys := []string{}
+		for _, key := range liveHash.Keys.GetKeys() {
+			keys = append(keys, key.String())
+		}
+
+		result = append(result, response.LiveHashResponse{
+			AccountId: liveHash.AccountID.String(),
+			Hash:      hex.EncodeToString(liveHash.Hash),
+			Keys:      keys,
+			Duration:  strconv.FormatInt(int64(liveHash.LiveHashDuration.Seconds()), 10),
+		})
+	}
+
+	return result
+}
+
+// Map sdk TokenRelationship to jRPC TokenRelationshipResponse
+func tokenRelationshipsToResponse(relationships []*hiero.TokenRelationship) map[string]response.TokenRelationshipInfo {
+	if len(relationships) == 0 {
+		return map[string]response.TokenRelationshipInfo{}
+	}
+
+	result := make(map[string]response.TokenRelationshipInfo, len(relationships))
+
+	for _, relationship := range relationships {
+		if relationship == nil {
+			continue
+		}
+
+		tokenID := relationship.TokenID.String()
+
+		result[tokenID] = response.TokenRelationshipInfo{
+			TokenId:              tokenID,
+			Symbol:               relationship.Symbol,
+			Balance:              strconv.FormatUint(relationship.Balance, 10),
+			IsKycGranted:         relationship.KycStatus,
+			IsFrozen:             relationship.FreezeStatus,
+			AutomaticAssociation: relationship.AutomaticAssociation,
+		}
+	}
+
+	return result
+}
+
+// Map sdk StakingInfo to jRPC StakingInfoResponse
+func stakingInfoToResponse(info *hiero.StakingInfo) *response.StakingInfoResponse {
+	if info == nil {
+		return nil
+	}
+
+	stakeInfo := &response.StakingInfoResponse{
+		DeclineStakingReward: info.DeclineStakingReward,
+		PendingReward:        strconv.FormatInt(info.PendingHbarReward.AsTinybar(), 10),
+		StakedToMe:           strconv.FormatInt(info.StakedToMe.AsTinybar(), 10),
+	}
+
+	if info.StakePeriodStart != nil && !info.StakePeriodStart.IsZero() {
+		stakePeriod := strconv.FormatInt(info.StakePeriodStart.Unix(), 10)
+		stakeInfo.StakePeriodStart = &stakePeriod
+	}
+
+	if info.StakedAccountID != nil {
+		stakedAccountId := info.StakedAccountID.String()
+		stakeInfo.StakedAccountId = &stakedAccountId
+	}
+
+	if info.StakedNodeID != nil {
+		stakedNodeId := strconv.FormatInt(*info.StakedNodeID, 10)
+		stakeInfo.StakedNodeId = &stakedNodeId
+	}
+
+	return stakeInfo
 }
 
 // GetMirrorNodeAccountBalance jRPC method for getMirrorNodeAccountBalance
