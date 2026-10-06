@@ -11,7 +11,7 @@ type AccountInfoResponse struct {
 	AccountId                     string                           `json:"accountId"`
 	ContractAccountId             string                           `json:"contractAccountId"`
 	IsDeleted                     bool                             `json:"isDeleted"`
-	ProxyAccountId                string                           `json:"proxyAccountId"`
+	ProxyAccountId                *string                          `json:"proxyAccountId"`
 	ProxyReceived                 string                           `json:"proxyReceived"`
 	Key                           string                           `json:"key"`
 	Balance                       string                           `json:"balance"`
@@ -25,7 +25,7 @@ type AccountInfoResponse struct {
 	AccountMemo                   string                           `json:"accountMemo"`
 	OwnedNfts                     string                           `json:"ownedNfts"`
 	MaxAutomaticTokenAssociations string                           `json:"maxAutomaticTokenAssociations"`
-	AliasKey                      string                           `json:"aliasKey"`
+	AliasKey                      *string                          `json:"aliasKey"`
 	LedgerId                      string                           `json:"ledgerId"`
 	HbarAllowances                []HbarAllowanceResponse          `json:"hbarAllowances"`
 	TokenAllowances               []TokenAllowanceResponse         `json:"tokenAllowances"`
@@ -73,13 +73,14 @@ type TokenNftAllowanceResponse struct {
 }
 
 type StakingInfoResponse struct {
-	DeclineStakingReward bool   `json:"declineStakingReward"`
-	StakePeriodStart     string `json:"stakePeriodStart"`
-	PendingReward        string `json:"pendingReward"`
-	StakedToMe           string `json:"stakedToMe"`
-	StakedAccountId      string `json:"stakedAccountId"`
-	StakedNodeId         string `json:"stakedNodeId"`
+	DeclineStakingReward bool    `json:"declineStakingReward"`
+	StakePeriodStart     *string `json:"stakePeriodStart"`
+	PendingReward        string  `json:"pendingReward"`
+	StakedToMe           string  `json:"stakedToMe"`
+	StakedAccountId      *string `json:"stakedAccountId"`
+	StakedNodeId         *string `json:"stakedNodeId"`
 }
+
 type MirrorNodeAccountBalanceResponse struct {
 	Hbar string `json:"hbars"`
 }

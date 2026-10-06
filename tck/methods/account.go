@@ -516,7 +516,7 @@ func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccou
 		SendRecordThreshold:           strconv.FormatInt(info.GenerateSendRecordThreshold.AsTinybar(), 10),
 		ReceiveRecordThreshold:        strconv.FormatInt(info.GenerateReceiveRecordThreshold.AsTinybar(), 10),
 		IsReceiverSignatureRequired:   info.ReceiverSigRequired,
-		ExpirationTime:                info.ExpirationTime.String(),
+		ExpirationTime:                strconv.FormatInt(info.ExpirationTime.Unix(), 10),
 		AutoRenewPeriod:               strconv.FormatInt(int64(info.AutoRenewPeriod.Seconds()), 10),
 		AccountMemo:                   info.AccountMemo,
 		OwnedNfts:                     strconv.FormatInt(info.OwnedNfts, 10),
@@ -524,9 +524,9 @@ func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccou
 		LedgerId:                      info.LedgerID.String(),
 		EthereumNonce:                 strconv.FormatInt(info.EthereumNonce, 10),
 		LiveHashes:                    liveHashesToResponse(info.LiveHashes),
-		HbarAllowances:                hbarAllowancesToResponse(info.HbarAllowances),
-		TokenAllowances:               tokenAllowancesToResponse(info.TokenAllowances),
-		NftAllowances:                 nftAllowancesToResponse(info.NftAllowances),
+		HbarAllowances:                []response.HbarAllowanceResponse{},
+		TokenAllowances:               []response.TokenAllowanceResponse{},
+		NftAllowances:                 []response.TokenNftAllowanceResponse{},
 		TokenRelationships:            tokenRelationshipsToResponse(info.TokenRelationships),
 		StakingInfo:                   stakingInfoToResponse(info.StakingInfo),
 	}
@@ -536,7 +536,8 @@ func (a *AccountService) GetAccountInfo(_ context.Context, params param.GetAccou
 	}
 
 	if info.AliasKey != nil {
-		result.AliasKey = info.AliasKey.String()
+		aliasKey := info.AliasKey.String()
+		result.AliasKey = &aliasKey
 	}
 
 	return result, nil
@@ -560,7 +561,7 @@ func liveHashesToResponse(liveHashes []*hiero.LiveHash) []response.LiveHashRespo
 			AccountId: liveHash.AccountID.String(),
 			Hash:      hex.EncodeToString(liveHash.Hash),
 			Keys:      keys,
-			Duration:  liveHash.Duration.String(),
+			Duration:  strconv.FormatInt(int64(liveHash.LiveHashDuration.Seconds()), 10),
 		})
 	}
 
@@ -595,80 +596,6 @@ func tokenRelationshipsToResponse(relationships []*hiero.TokenRelationship) map[
 	return result
 }
 
-// Map sdk HbarAllowances to jRPC HbarAllowancesResponse
-func hbarAllowancesToResponse(allowances []hiero.HbarAllowance) []response.HbarAllowanceResponse {
-	if len(allowances) == 0 {
-		return []response.HbarAllowanceResponse{}
-	}
-
-	result := make([]response.HbarAllowanceResponse, 0, len(allowances))
-
-	for _, allowance := range allowances {
-		result = append(result, response.HbarAllowanceResponse{
-			OwnerAccountId:   allowance.OwnerAccountID.String(),
-			SpenderAccountId: allowance.SpenderAccountID.String(),
-			Amount:           strconv.FormatInt(allowance.Amount, 10),
-		})
-	}
-
-	return result
-}
-
-// Map sdk TokenAllowances to jRPC TokenAllowancesResponse
-func tokenAllowancesToResponse(
-	allowances []hiero.TokenAllowance,
-) []response.TokenAllowanceResponse {
-	if len(allowances) == 0 {
-		return []response.TokenAllowanceResponse{}
-	}
-
-	result := make([]response.TokenAllowanceResponse, 0, len(allowances))
-
-	for _, allowance := range allowances {
-		result = append(result, response.TokenAllowanceResponse{
-			TokenId:          allowance.TokenID.String(),
-			OwnerAccountId:   allowance.OwnerAccountID.String(),
-			SpenderAccountId: allowance.SpenderAccountID.String(),
-			Amount:           strconv.FormatInt(allowance.Amount, 10),
-		})
-	}
-
-	return result
-}
-
-// Map sdk NftAllowances to jRPC NftAllowancesResponse
-func nftAllowancesToResponse(
-	allowances []hiero.TokenNftAllowance,
-) []response.TokenNftAllowanceResponse {
-	if len(allowances) == 0 {
-		return []response.TokenNftAllowanceResponse{}
-	}
-
-	result := make([]response.TokenNftAllowanceResponse, 0, len(allowances))
-
-	for _, allowance := range allowances {
-		serialNumbers := make([]string, 0, len(allowance.SerialNumbers))
-
-		for _, serialNumber := range allowance.SerialNumbers {
-			serialNumbers = append(
-				serialNumbers,
-				strconv.FormatInt(serialNumber, 10),
-			)
-		}
-
-		result = append(result, response.TokenNftAllowanceResponse{
-			TokenId:           allowance.TokenID.String(),
-			OwnerAccountId:    allowance.OwnerAccountID.String(),
-			SpenderAccountId:  allowance.SpenderAccountID.String(),
-			SerialNumbers:     serialNumbers,
-			AllSerials:        allowance.AllSerials,
-			DelegatingSpender: allowance.DelegatingSpender.String(),
-		})
-	}
-
-	return result
-}
-
 // Map sdk StakingInfo to jRPC StakingInfoResponse
 func stakingInfoToResponse(info *hiero.StakingInfo) *response.StakingInfoResponse {
 	if info == nil {
@@ -681,16 +608,19 @@ func stakingInfoToResponse(info *hiero.StakingInfo) *response.StakingInfoRespons
 		StakedToMe:           strconv.FormatInt(info.StakedToMe.AsTinybar(), 10),
 	}
 
-	if info.StakePeriodStart != nil {
-		stakeInfo.StakePeriodStart = strconv.FormatInt(int64(info.StakePeriodStart.Second()), 10)
+	if info.StakePeriodStart != nil && !info.StakePeriodStart.IsZero() {
+		stakePeriod := strconv.FormatInt(info.StakePeriodStart.Unix(), 10)
+		stakeInfo.StakePeriodStart = &stakePeriod
 	}
 
 	if info.StakedAccountID != nil {
-		stakeInfo.StakedAccountId = info.StakedAccountID.String()
+		stakedAccountId := info.StakedAccountID.String()
+		stakeInfo.StakedAccountId = &stakedAccountId
 	}
 
 	if info.StakedNodeID != nil {
-		stakeInfo.StakedNodeId = strconv.FormatInt(*info.StakedNodeID, 10)
+		stakedNodeId := strconv.FormatInt(*info.StakedNodeID, 10)
+		stakeInfo.StakedNodeId = &stakedNodeId
 	}
 
 	return stakeInfo
