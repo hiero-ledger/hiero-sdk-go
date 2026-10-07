@@ -26,3 +26,9 @@ type ScheduleSignParams struct {
 	BaseParams
 	ScheduleId *string `json:"scheduleId,omitempty"`
 }
+
+// ScheduleDeleteParams represents the parameters for deleting a schedule
+type ScheduleDeleteParams struct {
+	BaseParams
+	ScheduleId *string `json:"scheduleId,omitempty"`
+}
