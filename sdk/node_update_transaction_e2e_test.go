@@ -17,6 +17,27 @@ var (
 	originalNodeAccountId = AccountID{Account: 3}
 )
 
+// waitForMirrorNodeAccountID polls until the mirror node address book maps nodeID to accountID.
+func waitForMirrorNodeAccountID(t *testing.T, client *Client, nodeID uint64, accountID AccountID) {
+	t.Helper()
+
+	var book NodeAddressBook
+	var err error
+	for range 60 {
+		book, err = NewAddressBookQuery().SetFileID(FileIDForAddressBook()).Execute(client)
+		if err == nil {
+			for _, node := range book.NodeAddresses {
+				if node.NodeID == int64(nodeID) && node.AccountID != nil && node.AccountID.Equals(accountID) {
+					return
+				}
+			}
+		}
+		time.Sleep(1500 * time.Millisecond)
+	}
+	require.NoError(t, err)
+	require.FailNow(t, "mirror node address book never showed the new node account", "node %d, account %s", nodeID, accountID)
+}
+
 func TestIntegrationNodeUpdateTransactionCanExecute(t *testing.T) {
 	// Set the network
 	network := make(map[string]AccountID)
@@ -325,8 +346,7 @@ func TestIntegrationNodeUpdateTransactionCanChangeNodeAccountUpdateAddressbookAn
 	receipt, err = resp.SetValidateStatus(true).GetReceipt(client)
 	require.NoError(t, err)
 
-	// wait for mirror node to import data
-	time.Sleep(time.Second * 5)
+	waitForMirrorNodeAccountID(t, client, nodeIDToUpdate, newNodeAccountID)
 
 	newAccountKey, err = PrivateKeyGenerateEd25519()
 	require.NoError(t, err)
