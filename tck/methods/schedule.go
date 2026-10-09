@@ -161,6 +161,84 @@ func (s *ScheduleService) DeleteSchedule(_ context.Context, params param.Schedul
 	}, nil
 }
 
+// GetScheduleInfo jRPC method for getScheduleInfo
+func (s *ScheduleService) GetScheduleInfo(_ context.Context, params param.ScheduleInfoParams) (*response.ScheduleInfoResponse, error) {
+	query := hiero.NewScheduleInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.ScheduleId != nil {
+		scheduleID, err := hiero.ScheduleIDFromString(*params.ScheduleId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse schedule ID: %w", err)
+		}
+		query.SetScheduleID(scheduleID)
+	}
+
+	if params.GetCost != nil && *params.GetCost {
+		hbar, err := query.GetCost(s.sdkService.GetClient(params.SessionId))
+		if err != nil {
+			return nil, err
+		}
+
+		return &response.ScheduleInfoResponse{Cost: strconv.FormatInt(hbar.AsTinybar(), 10)}, nil
+	}
+
+	if params.MaxQueryPayment != nil {
+		maxQueryPayment, err := strconv.ParseInt(*params.MaxQueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse maxQuery payment: %w", err)
+		}
+		query.SetMaxQueryPayment(hiero.HbarFromTinybar(maxQueryPayment))
+	}
+
+	if params.QueryPayment != nil {
+		queryPayment, err := strconv.ParseInt(*params.QueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse query payment: %w", err)
+		}
+		query.SetQueryPayment(hiero.HbarFromTinybar(queryPayment))
+	}
+
+	info, err := query.Execute(s.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+
+	result := &response.ScheduleInfoResponse{
+		ScheduleId:       info.ScheduleID.String(),
+		CreatorAccountId: info.CreatorAccountID.String(),
+		PayerAccountId:   info.PayerAccountID.String(),
+		ExpirationTime:   strconv.FormatInt(info.ExpirationTime.Unix(), 10),
+		ScheduleMemo:     info.Memo,
+		WaitForExpiry:    info.WaitForExpiry,
+	}
+
+	if info.AdminKey != nil {
+		result.AdminKey = info.AdminKey.String()
+	}
+
+	if info.ExecutedAt != nil {
+		result.ExecutedAt = strconv.FormatInt(info.ExecutedAt.Unix(), 10)
+	}
+
+	if info.DeletedAt != nil {
+		result.DeletedAt = strconv.FormatInt(info.DeletedAt.Unix(), 10)
+	}
+
+	signers := []string{}
+	if info.Signatories != nil {
+		for _, key := range info.Signatories.GetKeys() {
+			signers = append(signers, key.String())
+		}
+	}
+	result.Signers = signers
+
+	if info.ScheduledTransactionID != nil {
+		result.ScheduledTransactionId = info.ScheduledTransactionID.String()
+	}
+
+	return result, nil
+}
+
 // buildScheduledTransaction creates the appropriate transaction based on method name
 func (s *ScheduleService) buildScheduledTransaction(scheduledTx *param.ScheduledTransaction) (hiero.TransactionInterface, error) {
 	switch scheduledTx.Method {
