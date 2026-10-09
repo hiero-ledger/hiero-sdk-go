@@ -872,6 +872,45 @@ func TestUnitMockExecutionRequestTimeout(t *testing.T) {
 	require.ErrorContains(t, err, "request timed out")
 }
 
+func TestUnitMockInvalidNodeAccountRetriesAndUpdatesAddressBook(t *testing.T) {
+	t.Parallel()
+	responses := [][]interface{}{
+		{&services.TransactionResponse{NodeTransactionPrecheckCode: services.ResponseCodeEnum_INVALID_NODE_ACCOUNT}},
+		{&services.TransactionResponse{NodeTransactionPrecheckCode: services.ResponseCodeEnum_OK}},
+	}
+	client, servers := NewMockClientAndServer(responses)
+	defer servers.Close()
+
+	newNodeAccountID := AccountID{Account: 1001}
+	nodeAddress := func(nodeID int64, accountID AccountID, server *MockServer) *services.NodeAddress {
+		addr := server.listener.Addr().(*net.TCPAddr)
+		return &services.NodeAddress{
+			NodeId:          nodeID,
+			NodeAccountId:   accountID._ToProtobuf(),
+			ServiceEndpoint: []*services.ServiceEndpoint{{IpAddressV4: addr.IP.To4(), Port: int32(addr.Port)}},
+		}
+	}
+	mirrorServer := NewMockServer([]interface{}{
+		nodeAddress(0, newNodeAccountID, servers.servers[0]),
+		nodeAddress(1, AccountID{Account: 4}, servers.servers[1]),
+	})
+	defer mirrorServer.Close()
+	client.SetMirrorNetwork([]string{mirrorServer.listener.Addr().String()})
+
+	resp, err := NewFileCreateTransaction().
+		SetContents([]byte("hello")).
+		SetNodeAccountIDs([]AccountID{{Account: 3}, {Account: 4}}).
+		Execute(client)
+	require.NoError(t, err)
+	require.Equal(t, AccountID{Account: 4}, resp.NodeID)
+
+	_, ok := client.network._GetNodeForAccountID(AccountID{Account: 3})
+	require.False(t, ok)
+	node, ok := client.network._GetNodeForAccountID(newNodeAccountID)
+	require.True(t, ok)
+	require.Equal(t, servers.servers[0].listener.Addr().String(), node.address._String())
+}
+
 // Define new handler types that accept context
 type MockTransactionHandlerFunc func(ctx context.Context, request *services.Transaction) *services.TransactionResponse
 type MockQueryHandlerFunc func(ctx context.Context, request *services.Query) *services.Response
