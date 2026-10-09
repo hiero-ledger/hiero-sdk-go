@@ -162,7 +162,7 @@ func (s *ScheduleService) DeleteSchedule(_ context.Context, params param.Schedul
 }
 
 // GetScheduleInfo jRPC method for getScheduleInfo
-func (s *ScheduleService) GetScheduleInfo(_ context.Context, params param.SchduleInfoParams) (*response.ScheduleInfoResponse, error) {
+func (s *ScheduleService) GetScheduleInfo(_ context.Context, params param.ScheduleInfoParams) (*response.ScheduleInfoResponse, error) {
 	query := hiero.NewScheduleInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
 
 	if params.ScheduleId != nil {
@@ -183,19 +183,19 @@ func (s *ScheduleService) GetScheduleInfo(_ context.Context, params param.Schdul
 	}
 
 	if params.MaxQueryPayment != nil {
-		maxQueryPayment, err := strconv.Atoi(*params.MaxQueryPayment)
+		maxQueryPayment, err := strconv.ParseInt(*params.MaxQueryPayment, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse maxQuery payment: %w", err)
 		}
-		query.SetMaxQueryPayment(hiero.HbarFromTinybar(int64(maxQueryPayment)))
+		query.SetMaxQueryPayment(hiero.HbarFromTinybar(maxQueryPayment))
 	}
 
 	if params.QueryPayment != nil {
-		queryPayment, err := strconv.Atoi(*params.QueryPayment)
+		queryPayment, err := strconv.ParseInt(*params.QueryPayment, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse query payment: %w", err)
 		}
-		query.SetQueryPayment(hiero.HbarFromTinybar(int64(queryPayment)))
+		query.SetQueryPayment(hiero.HbarFromTinybar(queryPayment))
 	}
 
 	info, err := query.Execute(s.sdkService.GetClient(params.SessionId))

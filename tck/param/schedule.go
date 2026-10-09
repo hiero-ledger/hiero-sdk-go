@@ -34,7 +34,7 @@ type ScheduleDeleteParams struct {
 }
 
 // ScheduleInfoParams represents the parameters for getting schedule info
-type SchduleInfoParams struct {
+type ScheduleInfoParams struct {
 	BaseParams
 	ScheduleId      *string `json:"scheduleId,omitempty"`
 	QueryPayment    *string `json:"queryPayment,omitempty"`
