@@ -1,9 +1,9 @@
 module github.com/hiero-ledger/hiero-sdk-go/v2
 
-go 1.26.0
+go 1.26.10
 
 require (
-	github.com/btcsuite/btcd/btcec/v2 v2.5.0
+	github.com/btcsuite/btcd/btcec/v2 v2.5.1
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.4.1
 	github.com/json-iterator/go v1.1.12
 	github.com/mitchellh/mapstructure v1.5.0
