@@ -2004,6 +2004,16 @@ func TransactionSetTransactionMemo(tx TransactionInterface, transactionMemo stri
 	return tx, nil
 }
 
+func TransactionGetHighVolume(tx TransactionInterface) (bool, error) {
+	return tx.getBaseTransaction().GetHighVolume(), nil
+}
+
+func TransactionSetHighVolume(tx TransactionInterface, highVolume bool) (TransactionInterface, error) {
+	baseTx := tx.getBaseTransaction()
+	baseTx.SetHighVolume(highVolume)
+	return tx, nil
+}
+
 func TransactionGetTransactionID(tx TransactionInterface) (TransactionID, error) {
 	return tx.getBaseTransaction().GetTransactionID(), nil
 }

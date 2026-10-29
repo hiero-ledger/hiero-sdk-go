@@ -15,6 +15,7 @@ type CommonTransactionParams struct {
 	Memo                     *string   `json:"memo"`
 	RegenerateTransactionId  *bool     `json:"regenerateTransactionId"`
 	Signers                  *[]string `json:"signers"`
+	HighVolume               *bool     `json:"highVolume"`
 }
 
 // BaseParams is embedded by all param structs to include common transaction parameters
@@ -62,6 +63,13 @@ func (common *CommonTransactionParams) FillOutTransaction(transactionInterface h
 
 	if common.RegenerateTransactionId != nil {
 		_, err := hiero.TransactionSetTransactionID(transactionInterface, hiero.TransactionIDGenerate(client.GetOperatorAccountID()))
+		if err != nil {
+			return err
+		}
+	}
+
+	if common.HighVolume != nil {
+		_, err := hiero.TransactionSetHighVolume(transactionInterface, *common.HighVolume)
 		if err != nil {
 			return err
 		}
