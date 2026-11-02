@@ -2626,3 +2626,227 @@ func TestUnitChunkedTopicMessageSubmitDivergentTopicIDRejected(t *testing.T) {
 	_, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body1), marshalBody(t, body2)})
 	require.Error(t, err, "chunked TopicMessageSubmitTransaction with divergent TopicIDs must be rejected")
 }
+
+func requireSignedOnWireBy(t *testing.T, tx *TransferTransaction, keys ...PublicKey) {
+	t.Helper()
+	signedTx := tx.signedTransactions._Get(0).(*services.SignedTransaction)
+	require.Len(t, signedTx.SigMap.SigPair, len(keys))
+	for _, key := range keys {
+		var matches [][]byte
+		for _, sigPair := range signedTx.SigMap.SigPair {
+			if bytes.Equal(sigPair.PubKeyPrefix, key.BytesRaw()) {
+				matches = append(matches, _SignaturePairBytes(sigPair))
+			}
+		}
+		require.Len(t, matches, 1, key.String())
+		require.True(t, key.VerifySignedMessage(signedTx.BodyBytes, matches[0]), key.String())
+	}
+}
+
+func TestUnitTransactionSignAfterBuild(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	newFrozen := func(t *testing.T, explicitID bool) *TransferTransaction {
+		transaction := NewTransferTransaction().
+			AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+			AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+			SetNodeAccountIDs([]AccountID{{Account: 3}})
+		if explicitID {
+			transaction.SetTransactionID(testTransactionID)
+		}
+		frozen, err := transaction.FreezeWith(client)
+		require.NoError(t, err)
+		return frozen
+	}
+
+	t.Run("Sign after ToBytes with explicit transaction ID", func(t *testing.T) {
+		frozen := newFrozen(t, true)
+		frozen.Sign(privateKey)
+		_, err := frozen.ToBytes()
+		require.NoError(t, err)
+
+		frozen.Sign(privateKeyECDSA)
+		_, err = frozen.ToBytes()
+		require.NoError(t, err)
+
+		requireSignedOnWireBy(t, frozen, privateKey.PublicKey(), privateKeyECDSA.PublicKey())
+	})
+
+	t.Run("Sign after GetTransactionHash with generated transaction ID", func(t *testing.T) {
+		frozen := newFrozen(t, false)
+		frozen.Sign(privateKeyECDSA)
+		_, err := frozen.GetTransactionHash()
+		require.NoError(t, err)
+
+		frozen.Sign(privateKey)
+		_, err = frozen.GetTransactionHash()
+		require.NoError(t, err)
+
+		requireSignedOnWireBy(t, frozen, privateKey.PublicKey(), privateKeyECDSA.PublicKey())
+	})
+
+	t.Run("Sign after ToBytes without transaction ID regeneration", func(t *testing.T) {
+		frozen := newFrozen(t, false)
+		frozen.SetRegenerateTransactionID(false)
+		frozen.Sign(privateKey)
+		_, err := frozen.ToBytes()
+		require.NoError(t, err)
+
+		frozen.Sign(privateKeyECDSA)
+		_, err = frozen.ToBytes()
+		require.NoError(t, err)
+
+		requireSignedOnWireBy(t, frozen, privateKey.PublicKey(), privateKeyECDSA.PublicKey())
+	})
+
+	t.Run("Rebuilding does not duplicate signatures", func(t *testing.T) {
+		thirdKey, err := PrivateKeyGenerateEd25519()
+		require.NoError(t, err)
+		nodeAccountID := AccountID{Account: 3}
+
+		frozen := newFrozen(t, true)
+		frozen.Sign(privateKey)
+		frozen, err = frozen.AddSignatureV2(privateKeyECDSA.PublicKey(), []byte{1, 2, 3}, testTransactionID, nodeAccountID)
+		require.NoError(t, err)
+		_, err = frozen.ToBytes()
+		require.NoError(t, err)
+
+		frozen.Sign(thirdKey)
+		_, err = frozen.ToBytes()
+		require.NoError(t, err)
+
+		sigPairs := frozen.signedTransactions._Get(0).(*services.SignedTransaction).SigMap.SigPair
+		require.Len(t, sigPairs, 3)
+		prefixes := make(map[string]struct{}, len(sigPairs))
+		for _, sigPair := range sigPairs {
+			prefixes[string(sigPair.PubKeyPrefix)] = struct{}{}
+		}
+		require.Len(t, prefixes, 3)
+	})
+
+	t.Run("Regenerated transaction ID is re-signed by every signer", func(t *testing.T) {
+		frozen := newFrozen(t, false)
+		frozen.Sign(privateKey).Sign(privateKeyECDSA)
+		_, err := frozen.GetTransactionHash()
+		require.NoError(t, err)
+		originalID := frozen.GetTransactionID()
+
+		require.True(t, frozen.regenerateID(client))
+		_, err = frozen.GetTransactionHash()
+		require.NoError(t, err)
+
+		require.NotEqual(t, originalID.String(), frozen.GetTransactionID().String())
+		requireSignedOnWireBy(t, frozen, privateKey.PublicKey(), privateKeyECDSA.PublicKey())
+	})
+
+	t.Run("Body change after a build re-signs signers and keeps injected signatures", func(t *testing.T) {
+		nodeAccountID := AccountID{Account: 3}
+		injected := []byte{1, 2, 3}
+
+		frozen := newFrozen(t, true)
+		frozen.Sign(privateKey)
+		frozen, err := frozen.AddSignatureV2(privateKeyECDSA.PublicKey(), injected, testTransactionID, nodeAccountID)
+		require.NoError(t, err)
+		_, err = frozen.ToBytes()
+		require.NoError(t, err)
+		before := frozen.signedTransactions._Get(0).(*services.SignedTransaction).GetBodyBytes()
+
+		frozen.SetMaxTransactionFee(NewHbar(5))
+		_, err = frozen.ToBytes()
+		require.NoError(t, err)
+
+		signedTx := frozen.signedTransactions._Get(0).(*services.SignedTransaction)
+		require.NotEqual(t, before, signedTx.BodyBytes)
+		require.Len(t, signedTx.SigMap.SigPair, 2)
+		for _, sigPair := range signedTx.SigMap.SigPair {
+			switch {
+			case bytes.Equal(sigPair.PubKeyPrefix, privateKey.PublicKey().BytesRaw()):
+				require.True(t, privateKey.PublicKey().VerifySignedMessage(signedTx.BodyBytes, _SignaturePairBytes(sigPair)))
+			case bytes.Equal(sigPair.PubKeyPrefix, privateKeyECDSA.PublicKey().BytesRaw()):
+				require.Equal(t, injected, _SignaturePairBytes(sigPair))
+			default:
+				t.Fatalf("unexpected signature pair for prefix %x", sigPair.PubKeyPrefix)
+			}
+		}
+	})
+
+	t.Run("Late signer does not re-run existing signers", func(t *testing.T) {
+		calls := map[string]int{}
+		counting := func(key PrivateKey) (PublicKey, TransactionSigner) {
+			publicKey := key.PublicKey()
+			return publicKey, func(message []byte) []byte {
+				calls[publicKey.String()]++
+				return key.Sign(message)
+			}
+		}
+		thirdKey, err := PrivateKeyGenerateEd25519()
+		require.NoError(t, err)
+
+		frozen := newFrozen(t, false)
+		frozen.SignWith(counting(privateKey))
+		frozen.SignWith(counting(privateKeyECDSA))
+		_, err = frozen.GetTransactionHash()
+		require.NoError(t, err)
+
+		frozen.SignWith(counting(thirdKey))
+		_, err = frozen.GetTransactionHash()
+		require.NoError(t, err)
+
+		requireSignedOnWireBy(t, frozen, privateKey.PublicKey(), privateKeyECDSA.PublicKey(), thirdKey.PublicKey())
+		require.Equal(t, map[string]int{
+			privateKey.PublicKey().String():      1,
+			privateKeyECDSA.PublicKey().String(): 1,
+			thirdKey.PublicKey().String():        1,
+		}, calls)
+	})
+}
+
+func TestUnitTransactionFromBytesWithoutSigMap(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	frozen, err := NewTransferTransaction().
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		SetNodeAccountIDs([]AccountID{{Account: 3}}).
+		SetTransactionID(testTransactionID).
+		FreezeWith(client)
+	require.NoError(t, err)
+	data, err := frozen.ToBytes()
+	require.NoError(t, err)
+
+	var list sdk.TransactionList
+	require.NoError(t, protobuf.Unmarshal(data, &list))
+	for _, transaction := range list.TransactionList {
+		var signedTx services.SignedTransaction
+		require.NoError(t, protobuf.Unmarshal(transaction.SignedTransactionBytes, &signedTx))
+		signedTx.SigMap = nil
+		transaction.SignedTransactionBytes, err = protobuf.Marshal(&signedTx)
+		require.NoError(t, err)
+	}
+	data, err = protobuf.Marshal(&list)
+	require.NoError(t, err)
+
+	restored, err := TransactionFromBytes(data)
+	require.NoError(t, err)
+	transfer, ok := restored.(TransferTransaction)
+	require.True(t, ok)
+
+	transfer.Sign(privateKey)
+	_, err = transfer.ToBytes()
+	require.NoError(t, err)
+	requireSignedOnWireBy(t, &transfer, privateKey.PublicKey())
+}
