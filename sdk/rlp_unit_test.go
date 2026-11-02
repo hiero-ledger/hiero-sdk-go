@@ -5,6 +5,7 @@ package hiero
 // SPDX-License-Identifier: Apache-2.0
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -113,5 +114,46 @@ func TestRLPItemDecodeList(t *testing.T) {
 	require.Equal(t, len(expectedList), len(item.childItems)) // Check length first
 	for i, expectedItem := range expectedList {
 		assert.Equal(t, expectedItem.itemValue, item.childItems[i].itemValue) // Compare item values
+	}
+}
+
+func TestRLPItemDecodeListWith55BytePayload(t *testing.T) {
+	t.Parallel()
+
+	// 55 bytes is the longest list payload that is encoded as a short list, with prefix 0xF7
+	listItem := NewRLPItem(LIST_TYPE)
+	listItem.PushBack(NewRLPItem(VALUE_TYPE))
+	listItem.childItems[0].AssignBytes(bytes.Repeat([]byte{0x01}, 53))
+	listItem.PushBack(NewRLPItem(VALUE_TYPE))
+	listItem.childItems[1].AssignBytes([]byte{0x02})
+
+	encoded, err := listItem.Write()
+	require.NoError(t, err)
+	require.Equal(t, byte(0xf7), encoded[0])
+
+	item := NewRLPItem(LIST_TYPE)
+	require.NoError(t, item.Read(encoded))
+	require.Len(t, item.childItems, 2)
+	assert.Equal(t, bytes.Repeat([]byte{0x01}, 53), item.childItems[0].itemValue)
+	assert.Equal(t, []byte{0x02}, item.childItems[1].itemValue)
+}
+
+func TestRLPItemDecodeMalformed(t *testing.T) {
+	t.Parallel()
+
+	inputs := [][]byte{
+		{0x83, 0x01},       // string shorter than its length
+		{0xb8},             // long string without its length
+		{0xb9, 0xff, 0xff}, // long string longer than the input
+		{0xbf, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, // long string length overflows int
+		{0xc3, 0x01},             // list shorter than its length
+		{0xc1, 0x82, 0x01, 0x02}, // child item extends past the end of the list
+		{0xf8},                   // long list without its length
+		{0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff}, // long list length overflows int
+	}
+
+	for _, input := range inputs {
+		item := NewRLPItem(LIST_TYPE)
+		assert.ErrorIs(t, item.Read(input), errRLPUnexpectedEnd, "input %x", input)
 	}
 }

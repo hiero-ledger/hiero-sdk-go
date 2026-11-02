@@ -4,6 +4,7 @@ package hiero
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"reflect"
 	"regexp"
@@ -457,6 +458,10 @@ func readType(l *lexer) (*Type, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to read array size '%s': %v", n.literal, err)
 			}
+			// reflect.ArrayOf panics if the size of the array overflows
+			if elemSize := max(uint64(tt.t.Size()), 1); size > math.MaxInt/elemSize {
+				return nil, fmt.Errorf("array size '%s' is too big", n.literal)
+			}
 
 			tAux = &Type{kind: KindArray, elem: tt, size: int(size), t: reflect.ArrayOf(int(size), tt.t)}
 			if l.nextToken().typ != rbracketToken {
@@ -498,7 +503,14 @@ func decodeSimpleType(str string) (*Type, error) {
 		if !ok {
 			bytes = 256
 		}
-	} else if t != "bytes" && ok {
+		if bytes == 0 || bytes > 256 || bytes%8 != 0 {
+			return nil, fmt.Errorf("type %s expects a multiple of 8 between 8 and 256 bits but found %d", t, bytes)
+		}
+	} else if t == "bytes" && ok {
+		if bytes == 0 || bytes > 32 {
+			return nil, fmt.Errorf("type bytes expects between 1 and 32 bytes but found %d", bytes)
+		}
+	} else if ok {
 		return nil, fmt.Errorf("type %s does not expect bytes", t)
 	}
 
@@ -515,9 +527,6 @@ func decodeSimpleType(str string) (*Type, error) {
 		case 64:
 			k = uint64T
 		default:
-			if bytes%8 != 0 {
-				panic(fmt.Errorf("number of bytes has to be M mod 8"))
-			}
 			k = bigIntT
 		}
 		return &Type{kind: KindUInt, size: bytes, t: k}, nil
@@ -534,9 +543,6 @@ func decodeSimpleType(str string) (*Type, error) {
 		case 64:
 			k = int64T
 		default:
-			if bytes%8 != 0 {
-				panic(fmt.Errorf("number of bytes has to be M mod 8"))
-			}
 			k = bigIntT
 		}
 		return &Type{kind: KindInt, size: bytes, t: k}, nil

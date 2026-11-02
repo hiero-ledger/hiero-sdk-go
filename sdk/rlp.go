@@ -134,6 +134,9 @@ func (item *RLPItem) Read(bytes []byte) error {
 
 // decodeBytes decodes the bytes starting from the given index.
 func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
+	if *index >= len(bytes) {
+		return errRLPUnexpectedEnd
+	}
 	prefix := bytes[*index]
 	(*index)++
 
@@ -147,6 +150,9 @@ func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
 	// Short string case
 	if prefix < 0xB8 {
 		stringLength := int(prefix) - 0x80
+		if stringLength > len(bytes)-*index {
+			return errRLPUnexpectedEnd
+		}
 		item.itemValue = bytes[*index : *index+stringLength]
 		item.itemType = VALUE_TYPE
 		*index += stringLength
@@ -155,11 +161,9 @@ func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
 
 	// Long string case
 	if prefix < 0xC0 {
-		stringLengthLength := int(prefix) - 0xB7
-		stringLength := 0
-		for i := 0; i < stringLengthLength; i++ {
-			stringLength = (stringLength << 8) + int(bytes[*index])
-			(*index)++
+		stringLength, err := decodeLength(bytes, index, int(prefix)-0xB7)
+		if err != nil {
+			return err
 		}
 		item.itemValue = bytes[*index : *index+stringLength]
 		item.itemType = VALUE_TYPE
@@ -168,35 +172,50 @@ func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
 	}
 
 	// Short list case
-	if prefix < 0xF7 {
+	if prefix < 0xF8 {
 		listLength := int(prefix) - 0xC0
-		startIndex := *index
-		for *index < startIndex+listLength {
-			childItem := NewRLPItem(LIST_TYPE)
-			if err := childItem.decodeBytes(bytes, index); err != nil {
-				return err
-			}
-			item.PushBack(childItem)
+		if listLength > len(bytes)-*index {
+			return errRLPUnexpectedEnd
 		}
-		item.itemType = LIST_TYPE
-		return nil
+		return item.decodeList(bytes, index, listLength)
 	}
 
 	// Long list case
-	listLengthLength := int(prefix) - 0xF7
-	listLength := 0
-	for i := 0; i < listLengthLength; i++ {
-		listLength = (listLength << 8) + int(bytes[*index])
-		(*index)++
+	listLength, err := decodeLength(bytes, index, int(prefix)-0xF7)
+	if err != nil {
+		return err
 	}
-	startIndex := *index
-	for *index < startIndex+listLength {
+	return item.decodeList(bytes, index, listLength)
+}
+
+// decodeList decodes the child items of a list whose payload starts at the given index.
+// Child items are not allowed to extend past the end of the list payload.
+func (item *RLPItem) decodeList(bytes []byte, index *int, listLength int) error {
+	end := *index + listLength
+	for *index < end {
 		childItem := NewRLPItem(LIST_TYPE)
-		if err := childItem.decodeBytes(bytes, index); err != nil {
+		if err := childItem.decodeBytes(bytes[:end], index); err != nil {
 			return err
 		}
 		item.PushBack(childItem)
 	}
 	item.itemType = LIST_TYPE
 	return nil
+}
+
+// decodeLength reads a big-endian length of lengthLength bytes starting at the given index
+// and checks that an item of that length fits in the remaining bytes.
+func decodeLength(bytes []byte, index *int, lengthLength int) (int, error) {
+	if lengthLength > len(bytes)-*index {
+		return 0, errRLPUnexpectedEnd
+	}
+	var length uint64
+	for i := 0; i < lengthLength; i++ {
+		length = (length << 8) | uint64(bytes[*index])
+		(*index)++
+	}
+	if length > uint64(len(bytes)-*index) {
+		return 0, errRLPUnexpectedEnd
+	}
+	return int(length), nil
 }
