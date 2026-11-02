@@ -23,3 +23,12 @@ func TestUnitStatusFromProtoToString(t *testing.T) {
 		assert.NotPanics(t, func() { _ = status.String() })
 	}
 }
+
+func TestUnitStatusClprStrings(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "CONFIG_FILE_PART_UPLOADED", CONFIG_FILE_PART_UPLOADED.String())
+	assert.Equal(t, "CLPR_NOT_ENABLED", CLPR_NOT_ENABLED.String())
+	assert.Equal(t, "CLPR_NO_PROGRESS", CLPR_NO_PROGRESS.String())
+	assert.Equal(t, Status(services.ResponseCodeEnum_CLPR_EMPTY_BUNDLE), CLPR_EMPTY_BUNDLE)
+}

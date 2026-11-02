@@ -181,15 +181,35 @@ const (
 	// Submit node public TSS encryption key
 	RequestTypeTssEncryptionKey RequestType = 99
 	// Submit signature of state root hash
-	RequestTypeStateSignatureTransaction  RequestType = 100
-	RequestTypeHintsKeyPublication        RequestType = 101
-	RequestTypeHintsPreprocessingVote     RequestType = 102
-	RequestTypeHintsPartialSignature      RequestType = 103
-	RequestTypeHistoryAssemblySignature   RequestType = 104
-	RequestTypeHistoryProofKeyPublication RequestType = 105
-	RequestTypeHistoryProofVote           RequestType = 106
-	RequestTypeCrsPublication             RequestType = 107
-	RequestTypeAtomicBatch                RequestType = 108
+	RequestTypeStateSignatureTransaction     RequestType = 100
+	RequestTypeHintsKeyPublication           RequestType = 101
+	RequestTypeHintsPreprocessingVote        RequestType = 102
+	RequestTypeHintsPartialSignature         RequestType = 103
+	RequestTypeHistoryAssemblySignature      RequestType = 104
+	RequestTypeHistoryProofKeyPublication    RequestType = 105
+	RequestTypeHistoryProofVote              RequestType = 106
+	RequestTypeCrsPublication                RequestType = 107
+	RequestTypeAtomicBatch                   RequestType = 108
+	RequestTypeLambdaSStore                  RequestType = 109
+	RequestTypeHookDispatch                  RequestType = 110
+	RequestTypeHookStore                     RequestType = 111
+	RequestTypeLedgerIdPublication           RequestType = 112
+	RequestTypeRegisteredNodeCreate          RequestType = 113
+	RequestTypeRegisteredNodeUpdate          RequestType = 114
+	RequestTypeRegisteredNodeDelete          RequestType = 115
+	RequestTypeMigrationRootHashVote         RequestType = 116
+	RequestTypeClprUpdateLedgerConfiguration RequestType = 117
+	RequestTypeClprRegisterChannel           RequestType = 118
+	RequestTypeClprCompleteChannel           RequestType = 119
+	RequestTypeClprCloseChannel              RequestType = 120
+	RequestTypeClprGetLedgerConfiguration    RequestType = 121
+	RequestTypeClprSubmitBundle              RequestType = 122
+	RequestTypeClprRegisterConnector         RequestType = 124
+	RequestTypeClprDeregisterConnector       RequestType = 125
+	RequestTypeClprCompleteConnector         RequestType = 126
+	RequestTypeClprEndpointPublication       RequestType = 127
+	RequestTypeClprGetEndpointManifest       RequestType = 128
+	RequestTypeClprMaintenance               RequestType = 129
 )
 
 // String() returns a string representation of the status
@@ -385,6 +405,46 @@ func (requestType RequestType) String() string { // nolint
 		return "CRS_PUBLICATION"
 	case RequestTypeAtomicBatch:
 		return "ATOMIC_BATCH"
+	case RequestTypeLambdaSStore:
+		return "LAMBDA_S_STORE"
+	case RequestTypeHookDispatch:
+		return "HOOK_DISPATCH"
+	case RequestTypeHookStore:
+		return "HOOK_STORE"
+	case RequestTypeLedgerIdPublication:
+		return "LEDGER_ID_PUBLICATION"
+	case RequestTypeRegisteredNodeCreate:
+		return "REGISTERED_NODE_CREATE"
+	case RequestTypeRegisteredNodeUpdate:
+		return "REGISTERED_NODE_UPDATE"
+	case RequestTypeRegisteredNodeDelete:
+		return "REGISTERED_NODE_DELETE"
+	case RequestTypeMigrationRootHashVote:
+		return "MIGRATION_ROOT_HASH_VOTE"
+	case RequestTypeClprUpdateLedgerConfiguration:
+		return "CLPR_UPDATE_LEDGER_CONFIGURATION"
+	case RequestTypeClprRegisterChannel:
+		return "CLPR_REGISTER_CHANNEL"
+	case RequestTypeClprCompleteChannel:
+		return "CLPR_COMPLETE_CHANNEL"
+	case RequestTypeClprCloseChannel:
+		return "CLPR_CLOSE_CHANNEL"
+	case RequestTypeClprGetLedgerConfiguration:
+		return "CLPR_GET_LEDGER_CONFIGURATION"
+	case RequestTypeClprSubmitBundle:
+		return "CLPR_SUBMIT_BUNDLE"
+	case RequestTypeClprRegisterConnector:
+		return "CLPR_REGISTER_CONNECTOR"
+	case RequestTypeClprDeregisterConnector:
+		return "CLPR_DEREGISTER_CONNECTOR"
+	case RequestTypeClprCompleteConnector:
+		return "CLPR_COMPLETE_CONNECTOR"
+	case RequestTypeClprEndpointPublication:
+		return "CLPR_ENDPOINT_PUBLICATION"
+	case RequestTypeClprGetEndpointManifest:
+		return "CLPR_GET_ENDPOINT_MANIFEST"
+	case RequestTypeClprMaintenance:
+		return "CLPR_MAINTENANCE"
 	}
 
 	panic(fmt.Sprintf("unreachable: RequestType.String() switch statement is non-exhaustive. RequestType: %v", uint32(requestType)))

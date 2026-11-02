@@ -128,7 +128,22 @@
       "registered_node_create.proto",
       "registered_node_update.proto",
       "registered_node_delete.proto",
-      "migration_root_hash_vote.proto"
+      "migration_root_hash_vote.proto",
+      "clpr_ledger_configuration.proto",
+      "clpr_update_ledger_configuration.proto",
+      "clpr_complete_channel.proto",
+      "clpr_register_channel.proto",
+      "clpr_close_channel.proto",
+      "clpr_register_connector.proto",
+      "clpr_deregister_connector.proto",
+      "clpr_complete_connector.proto",
+      "clpr_submit_bundle.proto",
+      "clpr_endpoint_publication.proto",
+      "clpr_maintenance.proto",
+      "clpr_get_ledger_configuration.proto",
+      "clpr_endpoint_manifest.proto",
+      "clpr_get_endpoint_manifest.proto",
+      "clpr_service.proto"
     ]
   }
   
