@@ -988,6 +988,8 @@ func (tx *Transaction[T]) GetSignatures() (map[AccountID]map[*PublicKey][]byte, 
 				inner[&key] = sigPair.GetContract()
 			case *services.SignaturePair_Ed25519:
 				inner[&key] = sigPair.GetEd25519()
+			case *services.SignaturePair_ECDSASecp256K1:
+				inner[&key] = sigPair.GetECDSASecp256K1()
 			}
 		}
 
