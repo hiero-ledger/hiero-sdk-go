@@ -1159,6 +1159,15 @@ func findSignaturesForKey(m map[PublicKey][][]byte, pub PublicKey) ([][]byte, bo
 	return nil, false
 }
 
+func findSignatureForKey(m map[*PublicKey][]byte, pub PublicKey) ([]byte, bool) {
+	for k, v := range m {
+		if k.String() == pub.String() {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
 func TestUnitRemoveSignature(t *testing.T) {
 	t.Parallel()
 
@@ -1486,6 +1495,76 @@ func TestUnitSignaturePairBytesUnsupportedType(t *testing.T) {
 		Signature:    &services.SignaturePair_Contract{Contract: []byte{4, 5, 6}},
 	}
 	require.Nil(t, _SignaturePairBytes(sigPair))
+}
+
+func TestUnitTransactionGetSignaturesECDSA(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	nodeAccountID := AccountID{Account: 3}
+	mockSignature := []byte{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	frozen, err := NewTransferTransaction().
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(testTransactionID).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	frozen, err = frozen.AddSignatureV2(privateKeyECDSA.PublicKey(), mockSignature, testTransactionID, nodeAccountID)
+	require.NoError(t, err)
+
+	signs, err := frozen.GetSignatures()
+	require.NoError(t, err)
+	require.Len(t, signs[nodeAccountID], 1)
+
+	signature, ok := findSignatureForKey(signs[nodeAccountID], privateKeyECDSA.PublicKey())
+	require.True(t, ok)
+	require.Equal(t, mockSignature, signature)
+}
+
+func TestUnitTransactionGetSignaturesMixedKeys(t *testing.T) {
+	t.Parallel()
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	client.SetLedgerID(*NewLedgerIDTestnet())
+
+	nodeAccountID := AccountID{Account: 3}
+	privateKey, err := PrivateKeyFromString(mockPrivateKey)
+	require.NoError(t, err)
+
+	frozen, err := NewTransferTransaction().
+		AddHbarTransfer(AccountID{Account: 2}, HbarFromTinybar(-1)).
+		AddHbarTransfer(AccountID{Account: 3}, HbarFromTinybar(1)).
+		SetNodeAccountIDs([]AccountID{nodeAccountID}).
+		SetTransactionID(testTransactionID).
+		FreezeWith(client)
+	require.NoError(t, err)
+
+	frozen.Sign(privateKey).Sign(privateKeyECDSA)
+	_, err = frozen.ToBytes()
+	require.NoError(t, err)
+
+	signs, err := frozen.GetSignatures()
+	require.NoError(t, err)
+	require.Len(t, signs[nodeAccountID], 2)
+
+	sigPairs := frozen.signedTransactions._Get(0).(*services.SignedTransaction).SigMap.SigPair
+	require.Len(t, sigPairs, 2)
+	for _, sigPair := range sigPairs {
+		key, err := PublicKeyFromBytes(sigPair.PubKeyPrefix)
+		require.NoError(t, err)
+
+		signature, ok := findSignatureForKey(signs[nodeAccountID], key)
+		require.True(t, ok)
+		require.Len(t, signature, 64)
+		require.Equal(t, _SignaturePairBytes(sigPair), signature)
+	}
 }
 
 // newRemoveSigFrozenTx builds a frozen FileAppendTransaction usable for signature-removal
