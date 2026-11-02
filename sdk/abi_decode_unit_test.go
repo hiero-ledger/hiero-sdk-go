@@ -24,6 +24,22 @@ func TestDecodeDynamicLengthOutOfBounds(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestDecodeArrayLongerThanInput(t *testing.T) {
+	// uint8[3] needs 3 words but the input only has 2
+	typ, err := NewType("uint8[3]")
+	require.NoError(t, err)
+	_, err = Decode(typ, make([]byte, 64))
+	require.ErrorContains(t, err, "size is too big")
+
+	// the slice has a length of 5 but only 2 words follow the length
+	typ, err = NewType("uint8[]")
+	require.NoError(t, err)
+	input := make([]byte, 96)
+	input[31] = 5
+	_, err = Decode(typ, input)
+	require.ErrorContains(t, err, "size is too big")
+}
+
 func TestDecodeLargeArrayFromShortInput(t *testing.T) {
 	sliceOfLengthOne := make([]byte, 128)
 	sliceOfLengthOne[31] = 1

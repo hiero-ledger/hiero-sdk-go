@@ -134,9 +134,6 @@ func (item *RLPItem) Read(bytes []byte) error {
 
 // decodeBytes decodes the bytes starting from the given index.
 func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
-	if *index >= len(bytes) {
-		return errRLPUnexpectedEnd
-	}
 	prefix := bytes[*index]
 	(*index)++
 

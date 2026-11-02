@@ -349,6 +349,10 @@ func TestType(t *testing.T) {
 			err: true,
 		},
 		{
+			s:   "bool8",
+			err: true,
+		},
+		{
 			s:   "uint256[4294967295][4294967295]",
 			err: true,
 		},
