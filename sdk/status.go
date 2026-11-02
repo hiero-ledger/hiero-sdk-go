@@ -404,6 +404,40 @@ const (
 	INVALID_REGISTERED_ENDPOINT_TYPE                               Status = 533
 	REGISTERED_NODE_STILL_ASSOCIATED                               Status = 534
 	MAX_REGISTERED_NODES_EXCEEDED                                  Status = 535
+	CONFIG_FILE_PART_UPLOADED                                      Status = 536
+	CLPR_NOT_ENABLED                                               Status = 537
+	INVALID_CLPR_CONFIGURATION                                     Status = 538
+	CLPR_CHAIN_ID_IMMUTABLE                                        Status = 539
+	CLPR_TOO_MANY_SEED_ENDPOINTS                                   Status = 540
+	CLPR_INVALID_SEED_ENDPOINT                                     Status = 541
+	CLPR_CHANNEL_ALREADY_EXISTS                                    Status = 542
+	CLPR_INVALID_SIGNATURE                                         Status = 543
+	CLPR_INVALID_VERIFIER_CONTRACT                                 Status = 544
+	CLPR_VERIFIER_CONFIG_FAILED                                    Status = 545
+	CLPR_COMMITMENT_MISMATCH                                       Status = 546
+	CLPR_CHANNEL_NOT_FOUND                                         Status = 547
+	CLPR_INVALID_CHANNEL_STATUS                                    Status = 548
+	CLPR_MESSAGE_NOT_FOUND                                         Status = 549
+	CLPR_INVALID_ENDPOINT_SIGNATURE                                Status = 551
+	CLPR_BUNDLE_VERIFICATION_FAILED                                Status = 552
+	CLPR_RUNNING_HASH_MISMATCH                                     Status = 553
+	CLPR_QUEUE_FULL                                                Status = 554
+	CLPR_CONNECTOR_NOT_FOUND                                       Status = 555
+	CLPR_CONNECTOR_ALREADY_EXISTS                                  Status = 556
+	CLPR_CONNECTOR_UNAUTHORIZED                                    Status = 557
+	CLPR_INVALID_CONNECTOR_ADDRESS                                 Status = 558
+	CLPR_INVALID_CONNECTOR_CONTRACT                                Status = 559
+	CLPR_INSUFFICIENT_STAKE                                        Status = 560
+	CLPR_PAYLOAD_TOO_LARGE                                         Status = 561
+	CLPR_AUTHORIZATION_FAILED                                      Status = 562
+	CLPR_QUEUE_QUOTA_EXCEEDED                                      Status = 564
+	CLPR_INSUFFICIENT_CONNECTOR_BALANCE                            Status = 565
+	CLPR_INTERNAL_STATE_CORRUPTION                                 Status = 566
+	CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES                          Status = 567
+	CLPR_BUNDLE_DECODE_FAILED                                      Status = 568
+	CLPR_EMPTY_BUNDLE                                              Status = 569
+	CLPR_RATE_LIMITED                                              Status = 570
+	CLPR_NO_PROGRESS                                               Status = 571
 )
 
 // String() returns a string representation of the status
@@ -1203,6 +1237,74 @@ func (status Status) String() string { // nolint
 		return "REGISTERED_NODE_STILL_ASSOCIATED"
 	case MAX_REGISTERED_NODES_EXCEEDED:
 		return "MAX_REGISTERED_NODES_EXCEEDED"
+	case CONFIG_FILE_PART_UPLOADED:
+		return "CONFIG_FILE_PART_UPLOADED"
+	case CLPR_NOT_ENABLED:
+		return "CLPR_NOT_ENABLED"
+	case INVALID_CLPR_CONFIGURATION:
+		return "INVALID_CLPR_CONFIGURATION"
+	case CLPR_CHAIN_ID_IMMUTABLE:
+		return "CLPR_CHAIN_ID_IMMUTABLE"
+	case CLPR_TOO_MANY_SEED_ENDPOINTS:
+		return "CLPR_TOO_MANY_SEED_ENDPOINTS"
+	case CLPR_INVALID_SEED_ENDPOINT:
+		return "CLPR_INVALID_SEED_ENDPOINT"
+	case CLPR_CHANNEL_ALREADY_EXISTS:
+		return "CLPR_CHANNEL_ALREADY_EXISTS"
+	case CLPR_INVALID_SIGNATURE:
+		return "CLPR_INVALID_SIGNATURE"
+	case CLPR_INVALID_VERIFIER_CONTRACT:
+		return "CLPR_INVALID_VERIFIER_CONTRACT"
+	case CLPR_VERIFIER_CONFIG_FAILED:
+		return "CLPR_VERIFIER_CONFIG_FAILED"
+	case CLPR_COMMITMENT_MISMATCH:
+		return "CLPR_COMMITMENT_MISMATCH"
+	case CLPR_CHANNEL_NOT_FOUND:
+		return "CLPR_CHANNEL_NOT_FOUND"
+	case CLPR_INVALID_CHANNEL_STATUS:
+		return "CLPR_INVALID_CHANNEL_STATUS"
+	case CLPR_MESSAGE_NOT_FOUND:
+		return "CLPR_MESSAGE_NOT_FOUND"
+	case CLPR_INVALID_ENDPOINT_SIGNATURE:
+		return "CLPR_INVALID_ENDPOINT_SIGNATURE"
+	case CLPR_BUNDLE_VERIFICATION_FAILED:
+		return "CLPR_BUNDLE_VERIFICATION_FAILED"
+	case CLPR_RUNNING_HASH_MISMATCH:
+		return "CLPR_RUNNING_HASH_MISMATCH"
+	case CLPR_QUEUE_FULL:
+		return "CLPR_QUEUE_FULL"
+	case CLPR_CONNECTOR_NOT_FOUND:
+		return "CLPR_CONNECTOR_NOT_FOUND"
+	case CLPR_CONNECTOR_ALREADY_EXISTS:
+		return "CLPR_CONNECTOR_ALREADY_EXISTS"
+	case CLPR_CONNECTOR_UNAUTHORIZED:
+		return "CLPR_CONNECTOR_UNAUTHORIZED"
+	case CLPR_INVALID_CONNECTOR_ADDRESS:
+		return "CLPR_INVALID_CONNECTOR_ADDRESS"
+	case CLPR_INVALID_CONNECTOR_CONTRACT:
+		return "CLPR_INVALID_CONNECTOR_CONTRACT"
+	case CLPR_INSUFFICIENT_STAKE:
+		return "CLPR_INSUFFICIENT_STAKE"
+	case CLPR_PAYLOAD_TOO_LARGE:
+		return "CLPR_PAYLOAD_TOO_LARGE"
+	case CLPR_AUTHORIZATION_FAILED:
+		return "CLPR_AUTHORIZATION_FAILED"
+	case CLPR_QUEUE_QUOTA_EXCEEDED:
+		return "CLPR_QUEUE_QUOTA_EXCEEDED"
+	case CLPR_INSUFFICIENT_CONNECTOR_BALANCE:
+		return "CLPR_INSUFFICIENT_CONNECTOR_BALANCE"
+	case CLPR_INTERNAL_STATE_CORRUPTION:
+		return "CLPR_INTERNAL_STATE_CORRUPTION"
+	case CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES:
+		return "CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES"
+	case CLPR_BUNDLE_DECODE_FAILED:
+		return "CLPR_BUNDLE_DECODE_FAILED"
+	case CLPR_EMPTY_BUNDLE:
+		return "CLPR_EMPTY_BUNDLE"
+	case CLPR_RATE_LIMITED:
+		return "CLPR_RATE_LIMITED"
+	case CLPR_NO_PROGRESS:
+		return "CLPR_NO_PROGRESS"
 	}
 
 	panic(fmt.Sprintf("unreachable: Status.String() switch statement is non-exhaustive. Status: %v", uint32(status)))

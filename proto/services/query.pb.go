@@ -70,6 +70,8 @@ type Query struct {
 	//	*Query_TokenGetNftInfos
 	//	*Query_NetworkGetExecutionTime
 	//	*Query_AccountDetails
+	//	*Query_ClprGetLedgerConfiguration
+	//	*Query_ClprGetEndpointManifest
 	Query         isQuery_Query `protobuf_oneof:"query"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -343,6 +345,24 @@ func (x *Query) GetAccountDetails() *GetAccountDetailsQuery {
 	return nil
 }
 
+func (x *Query) GetClprGetLedgerConfiguration() *ClprGetLedgerConfigurationQuery {
+	if x != nil {
+		if x, ok := x.Query.(*Query_ClprGetLedgerConfiguration); ok {
+			return x.ClprGetLedgerConfiguration
+		}
+	}
+	return nil
+}
+
+func (x *Query) GetClprGetEndpointManifest() *ClprGetEndpointManifestQuery {
+	if x != nil {
+		if x, ok := x.Query.(*Query_ClprGetEndpointManifest); ok {
+			return x.ClprGetEndpointManifest
+		}
+	}
+	return nil
+}
+
 type isQuery_Query interface {
 	isQuery_Query()
 }
@@ -547,6 +567,18 @@ type Query_AccountDetails struct {
 	AccountDetails *GetAccountDetailsQuery `protobuf:"bytes,58,opt,name=accountDetails,proto3,oneof"`
 }
 
+type Query_ClprGetLedgerConfiguration struct {
+	// *
+	// Get the current CLPR ledger configuration.
+	ClprGetLedgerConfiguration *ClprGetLedgerConfigurationQuery `protobuf:"bytes,59,opt,name=clprGetLedgerConfiguration,proto3,oneof"`
+}
+
+type Query_ClprGetEndpointManifest struct {
+	// *
+	// Get the current CLPR endpoint manifest (spec §6.5).
+	ClprGetEndpointManifest *ClprGetEndpointManifestQuery `protobuf:"bytes,60,opt,name=clprGetEndpointManifest,proto3,oneof"`
+}
+
 func (*Query_GetByKey) isQuery_Query() {}
 
 func (*Query_GetBySolidityID) isQuery_Query() {}
@@ -597,11 +629,15 @@ func (*Query_NetworkGetExecutionTime) isQuery_Query() {}
 
 func (*Query_AccountDetails) isQuery_Query() {}
 
+func (*Query_ClprGetLedgerConfiguration) isQuery_Query() {}
+
+func (*Query_ClprGetEndpointManifest) isQuery_Query() {}
+
 var File_query_proto protoreflect.FileDescriptor
 
 const file_query_proto_rawDesc = "" +
 	"\n" +
-	"\vquery.proto\x12\x05proto\x1a\x10get_by_key.proto\x1a\x18get_by_solidity_id.proto\x1a\x19contract_call_local.proto\x1a\x17contract_get_info.proto\x1a\x1bcontract_get_bytecode.proto\x1a\x1acontract_get_records.proto\x1a crypto_get_account_balance.proto\x1a crypto_get_account_records.proto\x1a\x15crypto_get_info.proto\x1a\x1acrypto_get_live_hash.proto\x1a\x18crypto_get_stakers.proto\x1a\x17file_get_contents.proto\x1a\x13file_get_info.proto\x1a\x1dtransaction_get_receipt.proto\x1a\x1ctransaction_get_record.proto\x1a!transaction_get_fast_record.proto\x1a\x1econsensus_get_topic_info.proto\x1a\x1enetwork_get_version_info.proto\x1a network_get_execution_time.proto\x1a\x14token_get_info.proto\x1a\x17schedule_get_info.proto\x1a!token_get_account_nft_infos.proto\x1a\x18token_get_nft_info.proto\x1a\x19token_get_nft_infos.proto\x1a\x19get_account_details.proto\"\x8a\x10\n" +
+	"\vquery.proto\x12\x05proto\x1a\x10get_by_key.proto\x1a\x18get_by_solidity_id.proto\x1a\x19contract_call_local.proto\x1a\x17contract_get_info.proto\x1a\x1bcontract_get_bytecode.proto\x1a\x1acontract_get_records.proto\x1a crypto_get_account_balance.proto\x1a crypto_get_account_records.proto\x1a\x15crypto_get_info.proto\x1a\x1acrypto_get_live_hash.proto\x1a\x18crypto_get_stakers.proto\x1a\x17file_get_contents.proto\x1a\x13file_get_info.proto\x1a\x1dtransaction_get_receipt.proto\x1a\x1ctransaction_get_record.proto\x1a!transaction_get_fast_record.proto\x1a\x1econsensus_get_topic_info.proto\x1a\x1enetwork_get_version_info.proto\x1a network_get_execution_time.proto\x1a\x14token_get_info.proto\x1a\x17schedule_get_info.proto\x1a!token_get_account_nft_infos.proto\x1a\x18token_get_nft_info.proto\x1a\x19token_get_nft_infos.proto\x1a\x19get_account_details.proto\x1a#clpr_get_ledger_configuration.proto\x1a clpr_get_endpoint_manifest.proto\"\xfd\x11\n" +
 	"\x05Query\x122\n" +
 	"\bgetByKey\x18\x01 \x01(\v2\x14.proto.GetByKeyQueryH\x00R\bgetByKey\x12G\n" +
 	"\x0fgetBySolidityID\x18\x02 \x01(\v2\x1b.proto.GetBySolidityIDQueryH\x00R\x0fgetBySolidityID\x12M\n" +
@@ -628,7 +664,9 @@ const file_query_proto_rawDesc = "" +
 	"\x0ftokenGetNftInfo\x187 \x01(\v2\x1b.proto.TokenGetNftInfoQueryH\x00R\x0ftokenGetNftInfo\x12N\n" +
 	"\x10tokenGetNftInfos\x188 \x01(\v2\x1c.proto.TokenGetNftInfosQueryB\x02\x18\x01H\x00R\x10tokenGetNftInfos\x12c\n" +
 	"\x17networkGetExecutionTime\x189 \x01(\v2#.proto.NetworkGetExecutionTimeQueryB\x02\x18\x01H\x00R\x17networkGetExecutionTime\x12G\n" +
-	"\x0eaccountDetails\x18: \x01(\v2\x1d.proto.GetAccountDetailsQueryH\x00R\x0eaccountDetailsB\a\n" +
+	"\x0eaccountDetails\x18: \x01(\v2\x1d.proto.GetAccountDetailsQueryH\x00R\x0eaccountDetails\x12|\n" +
+	"\x1aclprGetLedgerConfiguration\x18; \x01(\v2:.com.hedera.hapi.node.clpr.ClprGetLedgerConfigurationQueryH\x00R\x1aclprGetLedgerConfiguration\x12s\n" +
+	"\x17clprGetEndpointManifest\x18< \x01(\v27.com.hedera.hapi.node.clpr.ClprGetEndpointManifestQueryH\x00R\x17clprGetEndpointManifestB\a\n" +
 	"\x05queryB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
@@ -646,32 +684,34 @@ func file_query_proto_rawDescGZIP() []byte {
 
 var file_query_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_query_proto_goTypes = []any{
-	(*Query)(nil),                         // 0: proto.Query
-	(*GetByKeyQuery)(nil),                 // 1: proto.GetByKeyQuery
-	(*GetBySolidityIDQuery)(nil),          // 2: proto.GetBySolidityIDQuery
-	(*ContractCallLocalQuery)(nil),        // 3: proto.ContractCallLocalQuery
-	(*ContractGetInfoQuery)(nil),          // 4: proto.ContractGetInfoQuery
-	(*ContractGetBytecodeQuery)(nil),      // 5: proto.ContractGetBytecodeQuery
-	(*ContractGetRecordsQuery)(nil),       // 6: proto.ContractGetRecordsQuery
-	(*CryptoGetAccountBalanceQuery)(nil),  // 7: proto.CryptoGetAccountBalanceQuery
-	(*CryptoGetAccountRecordsQuery)(nil),  // 8: proto.CryptoGetAccountRecordsQuery
-	(*CryptoGetInfoQuery)(nil),            // 9: proto.CryptoGetInfoQuery
-	(*CryptoGetLiveHashQuery)(nil),        // 10: proto.CryptoGetLiveHashQuery
-	(*CryptoGetStakersQuery)(nil),         // 11: proto.CryptoGetStakersQuery
-	(*FileGetContentsQuery)(nil),          // 12: proto.FileGetContentsQuery
-	(*FileGetInfoQuery)(nil),              // 13: proto.FileGetInfoQuery
-	(*TransactionGetReceiptQuery)(nil),    // 14: proto.TransactionGetReceiptQuery
-	(*TransactionGetRecordQuery)(nil),     // 15: proto.TransactionGetRecordQuery
-	(*TransactionGetFastRecordQuery)(nil), // 16: proto.TransactionGetFastRecordQuery
-	(*ConsensusGetTopicInfoQuery)(nil),    // 17: proto.ConsensusGetTopicInfoQuery
-	(*NetworkGetVersionInfoQuery)(nil),    // 18: proto.NetworkGetVersionInfoQuery
-	(*TokenGetInfoQuery)(nil),             // 19: proto.TokenGetInfoQuery
-	(*ScheduleGetInfoQuery)(nil),          // 20: proto.ScheduleGetInfoQuery
-	(*TokenGetAccountNftInfosQuery)(nil),  // 21: proto.TokenGetAccountNftInfosQuery
-	(*TokenGetNftInfoQuery)(nil),          // 22: proto.TokenGetNftInfoQuery
-	(*TokenGetNftInfosQuery)(nil),         // 23: proto.TokenGetNftInfosQuery
-	(*NetworkGetExecutionTimeQuery)(nil),  // 24: proto.NetworkGetExecutionTimeQuery
-	(*GetAccountDetailsQuery)(nil),        // 25: proto.GetAccountDetailsQuery
+	(*Query)(nil),                           // 0: proto.Query
+	(*GetByKeyQuery)(nil),                   // 1: proto.GetByKeyQuery
+	(*GetBySolidityIDQuery)(nil),            // 2: proto.GetBySolidityIDQuery
+	(*ContractCallLocalQuery)(nil),          // 3: proto.ContractCallLocalQuery
+	(*ContractGetInfoQuery)(nil),            // 4: proto.ContractGetInfoQuery
+	(*ContractGetBytecodeQuery)(nil),        // 5: proto.ContractGetBytecodeQuery
+	(*ContractGetRecordsQuery)(nil),         // 6: proto.ContractGetRecordsQuery
+	(*CryptoGetAccountBalanceQuery)(nil),    // 7: proto.CryptoGetAccountBalanceQuery
+	(*CryptoGetAccountRecordsQuery)(nil),    // 8: proto.CryptoGetAccountRecordsQuery
+	(*CryptoGetInfoQuery)(nil),              // 9: proto.CryptoGetInfoQuery
+	(*CryptoGetLiveHashQuery)(nil),          // 10: proto.CryptoGetLiveHashQuery
+	(*CryptoGetStakersQuery)(nil),           // 11: proto.CryptoGetStakersQuery
+	(*FileGetContentsQuery)(nil),            // 12: proto.FileGetContentsQuery
+	(*FileGetInfoQuery)(nil),                // 13: proto.FileGetInfoQuery
+	(*TransactionGetReceiptQuery)(nil),      // 14: proto.TransactionGetReceiptQuery
+	(*TransactionGetRecordQuery)(nil),       // 15: proto.TransactionGetRecordQuery
+	(*TransactionGetFastRecordQuery)(nil),   // 16: proto.TransactionGetFastRecordQuery
+	(*ConsensusGetTopicInfoQuery)(nil),      // 17: proto.ConsensusGetTopicInfoQuery
+	(*NetworkGetVersionInfoQuery)(nil),      // 18: proto.NetworkGetVersionInfoQuery
+	(*TokenGetInfoQuery)(nil),               // 19: proto.TokenGetInfoQuery
+	(*ScheduleGetInfoQuery)(nil),            // 20: proto.ScheduleGetInfoQuery
+	(*TokenGetAccountNftInfosQuery)(nil),    // 21: proto.TokenGetAccountNftInfosQuery
+	(*TokenGetNftInfoQuery)(nil),            // 22: proto.TokenGetNftInfoQuery
+	(*TokenGetNftInfosQuery)(nil),           // 23: proto.TokenGetNftInfosQuery
+	(*NetworkGetExecutionTimeQuery)(nil),    // 24: proto.NetworkGetExecutionTimeQuery
+	(*GetAccountDetailsQuery)(nil),          // 25: proto.GetAccountDetailsQuery
+	(*ClprGetLedgerConfigurationQuery)(nil), // 26: com.hedera.hapi.node.clpr.ClprGetLedgerConfigurationQuery
+	(*ClprGetEndpointManifestQuery)(nil),    // 27: com.hedera.hapi.node.clpr.ClprGetEndpointManifestQuery
 }
 var file_query_proto_depIdxs = []int32{
 	1,  // 0: proto.Query.getByKey:type_name -> proto.GetByKeyQuery
@@ -699,11 +739,13 @@ var file_query_proto_depIdxs = []int32{
 	23, // 22: proto.Query.tokenGetNftInfos:type_name -> proto.TokenGetNftInfosQuery
 	24, // 23: proto.Query.networkGetExecutionTime:type_name -> proto.NetworkGetExecutionTimeQuery
 	25, // 24: proto.Query.accountDetails:type_name -> proto.GetAccountDetailsQuery
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	26, // 25: proto.Query.clprGetLedgerConfiguration:type_name -> com.hedera.hapi.node.clpr.ClprGetLedgerConfigurationQuery
+	27, // 26: proto.Query.clprGetEndpointManifest:type_name -> com.hedera.hapi.node.clpr.ClprGetEndpointManifestQuery
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_query_proto_init() }
@@ -736,6 +778,8 @@ func file_query_proto_init() {
 	file_token_get_nft_info_proto_init()
 	file_token_get_nft_infos_proto_init()
 	file_get_account_details_proto_init()
+	file_clpr_get_ledger_configuration_proto_init()
+	file_clpr_get_endpoint_manifest_proto_init()
 	file_query_proto_msgTypes[0].OneofWrappers = []any{
 		(*Query_GetByKey)(nil),
 		(*Query_GetBySolidityID)(nil),
@@ -762,6 +806,8 @@ func file_query_proto_init() {
 		(*Query_TokenGetNftInfos)(nil),
 		(*Query_NetworkGetExecutionTime)(nil),
 		(*Query_AccountDetails)(nil),
+		(*Query_ClprGetLedgerConfiguration)(nil),
+		(*Query_ClprGetEndpointManifest)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

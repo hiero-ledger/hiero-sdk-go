@@ -1288,6 +1288,143 @@ const (
 	// *
 	// The number of associated registered nodes exceeds the maximum allowed limit.
 	ResponseCodeEnum_MAX_REGISTERED_NODES_EXCEEDED ResponseCodeEnum = 535
+	// *
+	// The contents of a configuration system file (network properties or HAPI permissions)
+	// could not be parsed as a `ServicesConfigurationList`.<br/>
+	// The bytes were committed, but no configuration change was applied. This is expected
+	// for every part but the last of a multi-part upload.
+	ResponseCodeEnum_CONFIG_FILE_PART_UPLOADED ResponseCodeEnum = 536
+	// *
+	// The CLPR service is not enabled on this ledger.
+	ResponseCodeEnum_CLPR_NOT_ENABLED ResponseCodeEnum = 537
+	// *
+	// A CLPR configuration field has an invalid value.<br/>
+	// Throttle values such as max_messages_per_bundle, max_message_payload_bytes,
+	// and max_queue_depth must be greater than zero.
+	ResponseCodeEnum_INVALID_CLPR_CONFIGURATION ResponseCodeEnum = 538
+	// *
+	// The chain_id in a CLPR ledger configuration is immutable
+	// (set at genesis from configuration properties).
+	ResponseCodeEnum_CLPR_CHAIN_ID_IMMUTABLE ResponseCodeEnum = 539
+	// *
+	// Too many endpoints were specified in the CLPR configuration.<br/>
+	// The maximum number of endpoints is set by `max_local_endpoints` when
+	// that value is non-zero.
+	ResponseCodeEnum_CLPR_TOO_MANY_SEED_ENDPOINTS ResponseCodeEnum = 540
+	// *
+	// An endpoint in the CLPR configuration is missing required fields
+	// (service_endpoint, tls_certificate, or ecdsa_signing_key).
+	ResponseCodeEnum_CLPR_INVALID_SEED_ENDPOINT ResponseCodeEnum = 541
+	// *
+	// A CLPR Channel with the given channel_id already exists, or (on
+	// registerChannel) the ownership commitment is already registered, either
+	// pending reveal or bound to an existing Channel in any status, including
+	// CLOSED.
+	ResponseCodeEnum_CLPR_CHANNEL_ALREADY_EXISTS ResponseCodeEnum = 542
+	// *
+	// The signature on the CLPR channel completion is invalid.
+	ResponseCodeEnum_CLPR_INVALID_SIGNATURE ResponseCodeEnum = 543
+	// *
+	// The verifier contract account does not exist or is not a smart contract.
+	ResponseCodeEnum_CLPR_INVALID_VERIFIER_CONTRACT ResponseCodeEnum = 544
+	// *
+	// The verifier contract's verifyConfig call failed or returned invalid data.
+	ResponseCodeEnum_CLPR_VERIFIER_CONFIG_FAILED ResponseCodeEnum = 545
+	// *
+	// The keccak256(channel_id || public_key) does not match any stored
+	// ownership commitment.
+	ResponseCodeEnum_CLPR_COMMITMENT_MISMATCH ResponseCodeEnum = 546
+	// *
+	// The specified channel_id does not correspond to any known CLPR channel.
+	ResponseCodeEnum_CLPR_CHANNEL_NOT_FOUND ResponseCodeEnum = 547
+	// *
+	// The channel's current status does not allow the requested transition
+	// (e.g., attempting to close an already-closing or closed channel).
+	ResponseCodeEnum_CLPR_INVALID_CHANNEL_STATUS ResponseCodeEnum = 548
+	// *
+	// The specified message ID does not exist in the queue.
+	ResponseCodeEnum_CLPR_MESSAGE_NOT_FOUND ResponseCodeEnum = 549
+	// *
+	// The endpoint signature is invalid or the signer is not a registered endpoint.
+	ResponseCodeEnum_CLPR_INVALID_ENDPOINT_SIGNATURE ResponseCodeEnum = 551
+	// *
+	// The bundle proof verification failed.
+	ResponseCodeEnum_CLPR_BUNDLE_VERIFICATION_FAILED ResponseCodeEnum = 552
+	// *
+	// The running hash in the bundle does not match the expected value.
+	ResponseCodeEnum_CLPR_RUNNING_HASH_MISMATCH ResponseCodeEnum = 553
+	// *
+	// The message queue has reached the maximum depth for this Channel.
+	ResponseCodeEnum_CLPR_QUEUE_FULL ResponseCodeEnum = 554
+	// *
+	// The specified Connector does not exist.
+	ResponseCodeEnum_CLPR_CONNECTOR_NOT_FOUND ResponseCodeEnum = 555
+	// *
+	// A Connector with the same (channel_id, connector_id) already exists, or
+	// (on registerConnector) the commitment is already registered, either
+	// pending reveal or already used to create a Connector, including one that
+	// has since been deregistered.
+	ResponseCodeEnum_CLPR_CONNECTOR_ALREADY_EXISTS ResponseCodeEnum = 556
+	// *
+	// The caller is not the admin of the specified Connector.
+	ResponseCodeEnum_CLPR_CONNECTOR_UNAUTHORIZED ResponseCodeEnum = 557
+	// *
+	// The connector_id is missing or empty.
+	ResponseCodeEnum_CLPR_INVALID_CONNECTOR_ADDRESS ResponseCodeEnum = 558
+	// *
+	// The connector_contract does not refer to a deployed smart contract.
+	ResponseCodeEnum_CLPR_INVALID_CONNECTOR_CONTRACT ResponseCodeEnum = 559
+	// *
+	// The locked_stake amount is below the minimum required by ClprConfig.
+	ResponseCodeEnum_CLPR_INSUFFICIENT_STAKE ResponseCodeEnum = 560
+	// *
+	// The message payload exceeds the destination ledger's max_message_payload_bytes.
+	ResponseCodeEnum_CLPR_PAYLOAD_TOO_LARGE ResponseCodeEnum = 561
+	// *
+	// The Connector's authorization contract rejected the message.
+	ResponseCodeEnum_CLPR_AUTHORIZATION_FAILED ResponseCodeEnum = 562
+	// *
+	// The Connector has exceeded its per-Channel queue quota. Other
+	// Connectors may still enqueue messages on this Channel.
+	ResponseCodeEnum_CLPR_QUEUE_QUOTA_EXCEEDED ResponseCodeEnum = 564
+	// *
+	// The Connector's balance is insufficient to cover the queue fee
+	// (including any congestion escalation).
+	ResponseCodeEnum_CLPR_INSUFFICIENT_CONNECTOR_BALANCE ResponseCodeEnum = 565
+	// *
+	// Internal CLPR state is corrupt (e.g., an outbound message ID was assigned but the
+	// message does not exist in the queue). Requires investigation and possible data migration.
+	ResponseCodeEnum_CLPR_INTERNAL_STATE_CORRUPTION ResponseCodeEnum = 566
+	// *
+	// Cannot deregister a Connector that still has unresolved outbound in-flight messages.
+	// All enqueued DATA messages must be acknowledged by a terminal reply before deregistration.
+	ResponseCodeEnum_CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES ResponseCodeEnum = 567
+	// *
+	// A per-message protobuf decode failed inside a verifier-accepted bundle. Because the
+	// verifier already attested to the bundle contents, a decode failure means the verifier
+	// signed off on malformed data. The Channel is transitioned to PAUSED and remaining
+	// messages in the bundle are not processed.
+	ResponseCodeEnum_CLPR_BUNDLE_DECODE_FAILED ResponseCodeEnum = 568
+	// *
+	// The submitted bundle carries no application messages, no trust anchor advance, and
+	// no ack progress. Such a bundle has nothing to deliver and is rejected to prevent
+	// endpoints from posting empty proofs.
+	//
+	// @deprecated Use CLPR_NO_PROGRESS instead.
+	//
+	// Deprecated: Marked as deprecated in response_code.proto.
+	ResponseCodeEnum_CLPR_EMPTY_BUNDLE ResponseCodeEnum = 569
+	// *
+	// The submitting endpoint has exceeded its fair share of the per-ledger
+	// max_bundles_per_sec throttle. Each endpoint's share is
+	// max_bundles_per_sec / num_registered_endpoints; submissions beyond that
+	// within a one-second window are rejected and the endpoint is charged a
+	// misbehavior penalty.
+	ResponseCodeEnum_CLPR_RATE_LIMITED ResponseCodeEnum = 570
+	// *
+	// A submitted bundle satisfies none of the four Bundle Progress Criteria (spec §2.1.2).
+	// The submitting endpoint is charged a penalty fee.
+	ResponseCodeEnum_CLPR_NO_PROGRESS ResponseCodeEnum = 571
 )
 
 // Enum value maps for ResponseCodeEnum.
@@ -1690,6 +1827,40 @@ var (
 		533: "INVALID_REGISTERED_ENDPOINT_TYPE",
 		534: "REGISTERED_NODE_STILL_ASSOCIATED",
 		535: "MAX_REGISTERED_NODES_EXCEEDED",
+		536: "CONFIG_FILE_PART_UPLOADED",
+		537: "CLPR_NOT_ENABLED",
+		538: "INVALID_CLPR_CONFIGURATION",
+		539: "CLPR_CHAIN_ID_IMMUTABLE",
+		540: "CLPR_TOO_MANY_SEED_ENDPOINTS",
+		541: "CLPR_INVALID_SEED_ENDPOINT",
+		542: "CLPR_CHANNEL_ALREADY_EXISTS",
+		543: "CLPR_INVALID_SIGNATURE",
+		544: "CLPR_INVALID_VERIFIER_CONTRACT",
+		545: "CLPR_VERIFIER_CONFIG_FAILED",
+		546: "CLPR_COMMITMENT_MISMATCH",
+		547: "CLPR_CHANNEL_NOT_FOUND",
+		548: "CLPR_INVALID_CHANNEL_STATUS",
+		549: "CLPR_MESSAGE_NOT_FOUND",
+		551: "CLPR_INVALID_ENDPOINT_SIGNATURE",
+		552: "CLPR_BUNDLE_VERIFICATION_FAILED",
+		553: "CLPR_RUNNING_HASH_MISMATCH",
+		554: "CLPR_QUEUE_FULL",
+		555: "CLPR_CONNECTOR_NOT_FOUND",
+		556: "CLPR_CONNECTOR_ALREADY_EXISTS",
+		557: "CLPR_CONNECTOR_UNAUTHORIZED",
+		558: "CLPR_INVALID_CONNECTOR_ADDRESS",
+		559: "CLPR_INVALID_CONNECTOR_CONTRACT",
+		560: "CLPR_INSUFFICIENT_STAKE",
+		561: "CLPR_PAYLOAD_TOO_LARGE",
+		562: "CLPR_AUTHORIZATION_FAILED",
+		564: "CLPR_QUEUE_QUOTA_EXCEEDED",
+		565: "CLPR_INSUFFICIENT_CONNECTOR_BALANCE",
+		566: "CLPR_INTERNAL_STATE_CORRUPTION",
+		567: "CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES",
+		568: "CLPR_BUNDLE_DECODE_FAILED",
+		569: "CLPR_EMPTY_BUNDLE",
+		570: "CLPR_RATE_LIMITED",
+		571: "CLPR_NO_PROGRESS",
 	}
 	ResponseCodeEnum_value = map[string]int32{
 		"OK":                                                             0,
@@ -2089,6 +2260,40 @@ var (
 		"INVALID_REGISTERED_ENDPOINT_TYPE":                               533,
 		"REGISTERED_NODE_STILL_ASSOCIATED":                               534,
 		"MAX_REGISTERED_NODES_EXCEEDED":                                  535,
+		"CONFIG_FILE_PART_UPLOADED":                                      536,
+		"CLPR_NOT_ENABLED":                                               537,
+		"INVALID_CLPR_CONFIGURATION":                                     538,
+		"CLPR_CHAIN_ID_IMMUTABLE":                                        539,
+		"CLPR_TOO_MANY_SEED_ENDPOINTS":                                   540,
+		"CLPR_INVALID_SEED_ENDPOINT":                                     541,
+		"CLPR_CHANNEL_ALREADY_EXISTS":                                    542,
+		"CLPR_INVALID_SIGNATURE":                                         543,
+		"CLPR_INVALID_VERIFIER_CONTRACT":                                 544,
+		"CLPR_VERIFIER_CONFIG_FAILED":                                    545,
+		"CLPR_COMMITMENT_MISMATCH":                                       546,
+		"CLPR_CHANNEL_NOT_FOUND":                                         547,
+		"CLPR_INVALID_CHANNEL_STATUS":                                    548,
+		"CLPR_MESSAGE_NOT_FOUND":                                         549,
+		"CLPR_INVALID_ENDPOINT_SIGNATURE":                                551,
+		"CLPR_BUNDLE_VERIFICATION_FAILED":                                552,
+		"CLPR_RUNNING_HASH_MISMATCH":                                     553,
+		"CLPR_QUEUE_FULL":                                                554,
+		"CLPR_CONNECTOR_NOT_FOUND":                                       555,
+		"CLPR_CONNECTOR_ALREADY_EXISTS":                                  556,
+		"CLPR_CONNECTOR_UNAUTHORIZED":                                    557,
+		"CLPR_INVALID_CONNECTOR_ADDRESS":                                 558,
+		"CLPR_INVALID_CONNECTOR_CONTRACT":                                559,
+		"CLPR_INSUFFICIENT_STAKE":                                        560,
+		"CLPR_PAYLOAD_TOO_LARGE":                                         561,
+		"CLPR_AUTHORIZATION_FAILED":                                      562,
+		"CLPR_QUEUE_QUOTA_EXCEEDED":                                      564,
+		"CLPR_INSUFFICIENT_CONNECTOR_BALANCE":                            565,
+		"CLPR_INTERNAL_STATE_CORRUPTION":                                 566,
+		"CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES":                          567,
+		"CLPR_BUNDLE_DECODE_FAILED":                                      568,
+		"CLPR_EMPTY_BUNDLE":                                              569,
+		"CLPR_RATE_LIMITED":                                              570,
+		"CLPR_NO_PROGRESS":                                               571,
 	}
 )
 
@@ -2123,7 +2328,7 @@ var File_response_code_proto protoreflect.FileDescriptor
 
 const file_response_code_proto_rawDesc = "" +
 	"\n" +
-	"\x13response_code.proto\x12\x05proto*\x87i\n" +
+	"\x13response_code.proto\x12\x05proto*\xd6q\n" +
 	"\x10ResponseCodeEnum\x12\x06\n" +
 	"\x02OK\x10\x00\x12\x17\n" +
 	"\x13INVALID_TRANSACTION\x10\x01\x12\x1b\n" +
@@ -2522,7 +2727,41 @@ const file_response_code_proto_rawDesc = "" +
 	"#INVALID_REGISTERED_ENDPOINT_ADDRESS\x10\x94\x04\x12%\n" +
 	" INVALID_REGISTERED_ENDPOINT_TYPE\x10\x95\x04\x12%\n" +
 	" REGISTERED_NODE_STILL_ASSOCIATED\x10\x96\x04\x12\"\n" +
-	"\x1dMAX_REGISTERED_NODES_EXCEEDED\x10\x97\x04B&\n" +
+	"\x1dMAX_REGISTERED_NODES_EXCEEDED\x10\x97\x04\x12\x1e\n" +
+	"\x19CONFIG_FILE_PART_UPLOADED\x10\x98\x04\x12\x15\n" +
+	"\x10CLPR_NOT_ENABLED\x10\x99\x04\x12\x1f\n" +
+	"\x1aINVALID_CLPR_CONFIGURATION\x10\x9a\x04\x12\x1c\n" +
+	"\x17CLPR_CHAIN_ID_IMMUTABLE\x10\x9b\x04\x12!\n" +
+	"\x1cCLPR_TOO_MANY_SEED_ENDPOINTS\x10\x9c\x04\x12\x1f\n" +
+	"\x1aCLPR_INVALID_SEED_ENDPOINT\x10\x9d\x04\x12 \n" +
+	"\x1bCLPR_CHANNEL_ALREADY_EXISTS\x10\x9e\x04\x12\x1b\n" +
+	"\x16CLPR_INVALID_SIGNATURE\x10\x9f\x04\x12#\n" +
+	"\x1eCLPR_INVALID_VERIFIER_CONTRACT\x10\xa0\x04\x12 \n" +
+	"\x1bCLPR_VERIFIER_CONFIG_FAILED\x10\xa1\x04\x12\x1d\n" +
+	"\x18CLPR_COMMITMENT_MISMATCH\x10\xa2\x04\x12\x1b\n" +
+	"\x16CLPR_CHANNEL_NOT_FOUND\x10\xa3\x04\x12 \n" +
+	"\x1bCLPR_INVALID_CHANNEL_STATUS\x10\xa4\x04\x12\x1b\n" +
+	"\x16CLPR_MESSAGE_NOT_FOUND\x10\xa5\x04\x12$\n" +
+	"\x1fCLPR_INVALID_ENDPOINT_SIGNATURE\x10\xa7\x04\x12$\n" +
+	"\x1fCLPR_BUNDLE_VERIFICATION_FAILED\x10\xa8\x04\x12\x1f\n" +
+	"\x1aCLPR_RUNNING_HASH_MISMATCH\x10\xa9\x04\x12\x14\n" +
+	"\x0fCLPR_QUEUE_FULL\x10\xaa\x04\x12\x1d\n" +
+	"\x18CLPR_CONNECTOR_NOT_FOUND\x10\xab\x04\x12\"\n" +
+	"\x1dCLPR_CONNECTOR_ALREADY_EXISTS\x10\xac\x04\x12 \n" +
+	"\x1bCLPR_CONNECTOR_UNAUTHORIZED\x10\xad\x04\x12#\n" +
+	"\x1eCLPR_INVALID_CONNECTOR_ADDRESS\x10\xae\x04\x12$\n" +
+	"\x1fCLPR_INVALID_CONNECTOR_CONTRACT\x10\xaf\x04\x12\x1c\n" +
+	"\x17CLPR_INSUFFICIENT_STAKE\x10\xb0\x04\x12\x1b\n" +
+	"\x16CLPR_PAYLOAD_TOO_LARGE\x10\xb1\x04\x12\x1e\n" +
+	"\x19CLPR_AUTHORIZATION_FAILED\x10\xb2\x04\x12\x1e\n" +
+	"\x19CLPR_QUEUE_QUOTA_EXCEEDED\x10\xb4\x04\x12(\n" +
+	"#CLPR_INSUFFICIENT_CONNECTOR_BALANCE\x10\xb5\x04\x12#\n" +
+	"\x1eCLPR_INTERNAL_STATE_CORRUPTION\x10\xb6\x04\x12*\n" +
+	"%CLPR_CONNECTOR_HAS_IN_FLIGHT_MESSAGES\x10\xb7\x04\x12\x1e\n" +
+	"\x19CLPR_BUNDLE_DECODE_FAILED\x10\xb8\x04\x12\x1a\n" +
+	"\x11CLPR_EMPTY_BUNDLE\x10\xb9\x04\x1a\x02\b\x01\x12\x16\n" +
+	"\x11CLPR_RATE_LIMITED\x10\xba\x04\x12\x15\n" +
+	"\x10CLPR_NO_PROGRESS\x10\xbb\x04B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (
