@@ -792,61 +792,53 @@ func (tx *Transaction[T]) buildUnsignedTransaction(index int) (*services.Transac
 	return &services.Transaction{BodyBytes: bodyBytes}, nil
 }
 
-func (tx *Transaction[T]) _SignTransaction(index int) {
-	initialTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
-	bodyBytes := initialTx.GetBodyBytes()
-	if len(initialTx.SigMap.SigPair) != 0 {
-		for i, key := range tx.publicKeys {
-			if tx.transactionSigners[i] != nil {
-				if key.ed25519PublicKey != nil {
-					if bytes.Equal(initialTx.SigMap.SigPair[0].PubKeyPrefix, key.ed25519PublicKey.keyData) {
-						if !tx.regenerateTransactionID {
-							return
-						}
-						switch t := initialTx.SigMap.SigPair[0].Signature.(type) { //nolint
-						case *services.SignaturePair_Ed25519:
-							if bytes.Equal(t.Ed25519, tx.transactionSigners[0](bodyBytes)) && len(t.Ed25519) > 0 {
-								return
-							}
-						}
-					}
-				}
-				if key.ecdsaPublicKey != nil {
-					if bytes.Equal(initialTx.SigMap.SigPair[0].PubKeyPrefix, key.ecdsaPublicKey._BytesRaw()) {
-						if !tx.regenerateTransactionID {
-							return
-						}
-						switch t := initialTx.SigMap.SigPair[0].Signature.(type) { //nolint
-						case *services.SignaturePair_ECDSASecp256K1:
-							if bytes.Equal(t.ECDSASecp256K1, tx.transactionSigners[0](bodyBytes)) && len(t.ECDSASecp256K1) > 0 {
-								return
-							}
-						}
-					}
-				}
+// _SignTransaction materializes every queued signer into the signature map of the signed
+// transaction at index. When the body changed since the last build, signatures produced by a
+// signer are stale and are replaced; injected signatures (no signer) cannot be refreshed and stay.
+func (tx *Transaction[T]) _SignTransaction(index int, bodyChanged bool) {
+	signedTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
+	if signedTx.SigMap == nil {
+		signedTx.SigMap = &services.SignatureMap{}
+	}
+
+	if bodyChanged {
+		kept := signedTx.SigMap.SigPair[:0:0]
+		for _, sigPair := range signedTx.SigMap.SigPair {
+			if !tx._HasSignerForPrefix(sigPair.PubKeyPrefix) {
+				kept = append(kept, sigPair)
 			}
 		}
+		signedTx.SigMap.SigPair = kept
 	}
 
-	if tx.regenerateTransactionID && !tx.transactionIDs.locked {
-		modifiedTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
-		modifiedTx.SigMap.SigPair = make([]*services.SignaturePair, 0)
-		tx.signedTransactions._Set(index, modifiedTx)
-	}
-
-	for i := 0; i < len(tx.publicKeys); i++ {
-		publicKey := (tx.publicKeys)[i]
+	bodyBytes := signedTx.GetBodyBytes()
+	for i, publicKey := range tx.publicKeys {
 		signer := tx.transactionSigners[i]
-
-		if signer == nil {
+		if signer == nil || _SigMapContainsKey(signedTx.SigMap, publicKey) {
 			continue
 		}
-
-		signature := signer(bodyBytes)
-		modifiedTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
-		modifiedTx.SigMap.SigPair = append(modifiedTx.SigMap.SigPair, publicKey._ToSignaturePairProtobuf(signature))
-		tx.signedTransactions._Set(index, modifiedTx)
+		signedTx.SigMap.SigPair = append(signedTx.SigMap.SigPair, publicKey._ToSignaturePairProtobuf(signer(bodyBytes)))
 	}
+	tx.signedTransactions._Set(index, signedTx)
+}
+
+func (tx *Transaction[T]) _HasSignerForPrefix(prefix []byte) bool {
+	for i, publicKey := range tx.publicKeys {
+		if tx.transactionSigners[i] != nil && bytes.Equal(publicKey.BytesRaw(), prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func _SigMapContainsKey(sigMap *services.SignatureMap, publicKey PublicKey) bool {
+	prefix := publicKey.BytesRaw()
+	for _, sigPair := range sigMap.GetSigPair() {
+		if bytes.Equal(sigPair.PubKeyPrefix, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (tx *Transaction[T]) _BuildAllTransactions() ([]*services.Transaction, error) {
@@ -932,7 +924,7 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 
 	signedTx.BodyBytes = updatedBody
 	tx.signedTransactions._Set(index, signedTx)
-	tx._SignTransaction(index)
+	tx._SignTransaction(index, bodyChanged)
 
 	signed := tx.signedTransactions._Get(index).(*services.SignedTransaction)
 	data, err := protobuf.Marshal(signed)
