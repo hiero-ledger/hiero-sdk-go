@@ -476,23 +476,26 @@ func readType(l *lexer) (*Type, error) {
 	return tt, nil
 }
 
-// validateTypeSize checks the size suffix of a type, such as the 8 in uint8.
-// int and uint take a multiple of 8 bits up to 256, 'bytes' may have up to 32
-// bytes or no size, the rest dont have a size
-func validateTypeSize(t string, size int, hasSize bool) error {
+// typeSize checks the size suffix of a type, such as the 8 in uint8, and returns the size.
+// int and uint take a multiple of 8 bits up to 256 and default to 256, 'bytes' may
+// have up to 32 bytes or no size, the rest dont have a size
+func typeSize(t string, size int, hasSize bool) (int, error) {
 	switch {
 	case t == "int" || t == "uint":
+		if !hasSize {
+			return 256, nil
+		}
 		if size == 0 || size > 256 || size%8 != 0 {
-			return fmt.Errorf("type %s expects a multiple of 8 between 8 and 256 bits but found %d", t, size)
+			return 0, fmt.Errorf("type %s expects a multiple of 8 between 8 and 256 bits but found %d", t, size)
 		}
 	case t == "bytes" && hasSize:
 		if size == 0 || size > 32 {
-			return fmt.Errorf("type bytes expects between 1 and 32 bytes but found %d", size)
+			return 0, fmt.Errorf("type bytes expects between 1 and 32 bytes but found %d", size)
 		}
 	case hasSize:
-		return fmt.Errorf("type %s does not expect bytes", t)
+		return 0, fmt.Errorf("type %s does not expect bytes", t)
 	}
-	return nil
+	return size, nil
 }
 
 func decodeSimpleType(str string) (*Type, error) {
@@ -516,11 +519,8 @@ func decodeSimpleType(str string) (*Type, error) {
 		ok = true
 	}
 
-	// int and uint without bytes default to 256
-	if (t == "int" || t == "uint") && !ok {
-		bytes = 256
-	}
-	if err := validateTypeSize(t, bytes, ok); err != nil {
+	bytes, err = typeSize(t, bytes, ok)
+	if err != nil {
 		return nil, err
 	}
 
