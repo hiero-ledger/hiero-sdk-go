@@ -64,13 +64,28 @@ func NewBatchTransaction() *BatchTransaction {
 	return tx
 }
 
-func _BatchTransactionFromProtobuf(tx Transaction[*BatchTransaction], pb *services.TransactionBody) BatchTransaction {
+func _BatchTransactionFromProtobuf(tx Transaction[*BatchTransaction], pb *services.TransactionBody) (BatchTransaction, error) {
 	var innerTransactions []TransactionInterface
 	for _, innerTransaction := range pb.GetAtomicBatch().Transactions {
+		// Validate original child records before recursive import can discard
+		// repeated bodyBytes or recurse into a nested atomic batch.
+		body, err := _transactionBodyHashChild(innerTransaction)
+		if err != nil {
+			return BatchTransaction{}, err
+		}
+		if _, _, _, err := _transactionBodyHashBody(body, true); err != nil {
+			return BatchTransaction{}, err
+		}
 		var transaction services.Transaction
 		transaction.SignedTransactionBytes = innerTransaction
-		transactionBytes, _ := protobuf.Marshal(&transaction)
-		transactionFromBytes, _ := TransactionFromBytes(transactionBytes)
+		transactionBytes, err := protobuf.Marshal(&transaction)
+		if err != nil {
+			return BatchTransaction{}, err
+		}
+		transactionFromBytes, err := TransactionFromBytes(transactionBytes)
+		if err != nil {
+			return BatchTransaction{}, err
+		}
 		innerTransactions = append(innerTransactions, transactionFromBytes)
 	}
 
@@ -79,7 +94,7 @@ func _BatchTransactionFromProtobuf(tx Transaction[*BatchTransaction], pb *servic
 	}
 	tx.childTransaction = &batchTransaction
 	batchTransaction.Transaction = &tx
-	return batchTransaction
+	return batchTransaction, nil
 }
 
 // validateInnerTransaction validates if a transaction is allowed in a batch transaction.

@@ -112,6 +112,9 @@ func (tx *TopicMessageSubmitTransaction) GetChunkSize() uint64 {
 
 // SetCustomFeeLimits Sets the maximum custom fee that the user is willing to pay for the message.
 func (tx *TopicMessageSubmitTransaction) SetCustomFeeLimits(customFeeLimits []*CustomFeeLimit) *TopicMessageSubmitTransaction {
+	if tx._rejectBodyReviewEdit() {
+		return tx
+	}
 	tx._RequireNotFrozen()
 	// set max custom fees to base transaction
 	tx.Transaction.customFeeLimits = append(tx.Transaction.customFeeLimits, customFeeLimits...)
@@ -120,6 +123,9 @@ func (tx *TopicMessageSubmitTransaction) SetCustomFeeLimits(customFeeLimits []*C
 
 // AddCustomFeeLimit Adds the maximum custom fee that the user is willing to pay for the message.
 func (tx *TopicMessageSubmitTransaction) AddCustomFeeLimit(customFeeLimit *CustomFeeLimit) *TopicMessageSubmitTransaction {
+	if tx._rejectBodyReviewEdit() {
+		return tx
+	}
 	tx._RequireNotFrozen()
 	tx.Transaction.customFeeLimits = append(tx.Transaction.customFeeLimits, customFeeLimit)
 	return tx
@@ -127,6 +133,9 @@ func (tx *TopicMessageSubmitTransaction) AddCustomFeeLimit(customFeeLimit *Custo
 
 // ClearCustomFeeLimits Clears the maximum custom fee that the user is willing to pay for the message.
 func (tx *TopicMessageSubmitTransaction) ClearCustomFeeLimits() *TopicMessageSubmitTransaction {
+	if tx._rejectBodyReviewEdit() {
+		return tx
+	}
 	tx._RequireNotFrozen()
 	tx.Transaction.customFeeLimits = []*CustomFeeLimit{}
 	return tx
@@ -142,6 +151,9 @@ func (tx *TopicMessageSubmitTransaction) Freeze() (*TopicMessageSubmitTransactio
 }
 
 func (tx *TopicMessageSubmitTransaction) FreezeWith(client *Client) (*TopicMessageSubmitTransaction, error) {
+	if tx.bodyReviewed {
+		return tx, errTransactionIsFrozen
+	}
 	var err error
 	if tx.nodeAccountIDs._Length() == 0 {
 		if client == nil {
