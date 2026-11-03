@@ -24,6 +24,33 @@ type TransactionID struct {
 	Nonce      *int32
 }
 
+// Decoded identity excludes unknown fields, without normalizing timestamp or alias values.
+type _TransactionIDValue struct {
+	account   string
+	seconds   int64
+	nanos     int32
+	scheduled bool
+	nonce     int32
+}
+
+func _transactionIDValue(id *services.TransactionID) _TransactionIDValue {
+	return _TransactionIDValue{
+		account: _accountIDValueKey(id.GetAccountID()), seconds: id.GetTransactionValidStart().GetSeconds(),
+		nanos: id.GetTransactionValidStart().GetNanos(), scheduled: id.GetScheduled(), nonce: id.GetNonce(),
+	}
+}
+
+func _transactionIDsEqual(left, right *services.TransactionID) bool {
+	if left == nil || right == nil {
+		return left == right
+	}
+	return _transactionIDValue(left) == _transactionIDValue(right)
+}
+
+func _accountIDValueKey(id *services.AccountID) string {
+	return fmt.Sprintf("%d/%d/%d/%x", id.GetShardNum(), id.GetRealmNum(), id.GetAccountNum(), id.GetAlias())
+}
+
 // NewTransactionID constructs a new Transaction id struct with the provided AccountID and the valid start time set
 // to the current time - 10 seconds.
 func TransactionIDGenerate(accountID AccountID) TransactionID {
