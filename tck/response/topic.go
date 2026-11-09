@@ -12,13 +12,13 @@ type GetTopicInfoResponse struct {
 	TopicMemo          string               `json:"topicMemo"`
 	SequenceNumber     string               `json:"sequenceNumber"`
 	RunningHash        string               `json:"runningHash"`
-	AdminKey           *string              `json:"adminKey"`
-	SubmitKey          *string              `json:"submitKey"`
+	AdminKey           *string              `json:"adminKey,omitempty"`
+	SubmitKey          *string              `json:"submitKey,omitempty"`
 	AutoRenewAccountId *string              `json:"autoRenewAccountId"`
 	AutoRenewPeriod    string               `json:"autoRenewPeriod"`
 	ExpirationTime     string               `json:"expirationTime"`
-	FeeScheduleKey     *string              `json:"feeScheduleKey"`
-	FeeExemptKeys      *[]string            `json:"feeExemptKeys"`
+	FeeScheduleKey     *string              `json:"feeScheduleKey,omitempty"`
+	FeeExemptKeys      *[]string            `json:"feeExemptKeys,omitempty"`
 	CustomFees         *[]CustomFeeResponse `json:"customFees"`
 	LedgerId           string               `json:"ledgerId"`
 }

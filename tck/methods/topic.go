@@ -400,15 +400,17 @@ func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.Submit
 	}, nil
 }
 
+// GetTokenInfo method for jRPC getTokenInfo
 func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfoParams) (*response.GetTopicInfoResponse, error) {
 	query := hiero.NewTopicInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
 
-	if params.TopicId != nil {
-		topicId, err := hiero.TopicIDFromString(*params.TopicId)
+	topicId := params.TopicId
+	if topicId != nil {
+		id, err := hiero.TopicIDFromString(*params.TopicId)
 		if err != nil {
 			return nil, err
 		}
-		query.SetTopicID(topicId)
+		query.SetTopicID(id)
 	}
 
 	if params.MaxQueryPayment != nil {
@@ -433,32 +435,34 @@ func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfo
 	}
 
 	result := &response.GetTopicInfoResponse{
-		TopicId:         *params.TopicId,
+		TopicId:         *topicId,
 		TopicMemo:       info.TopicMemo,
 		RunningHash:     string(info.RunningHash),
 		SequenceNumber:  strconv.FormatInt(int64(info.SequenceNumber), 10),
-		AutoRenewPeriod: info.AutoRenewPeriod.String(),
+		AutoRenewPeriod: strconv.FormatInt(int64(info.AutoRenewPeriod.Seconds()), 10),
 		ExpirationTime:  strconv.FormatInt(info.ExpirationTime.Unix(), 10),
+		LedgerId:        info.LedgerID.String(),
+		CustomFees:      mapToCustomFixedFees(info.CustomFees),
 	}
 
 	if info.AdminKey != nil {
-		adminKey := info.AdminKey.String()
-		result.AdminKey = &adminKey
+		key := info.AdminKey.String()
+		result.AdminKey = &key
 	}
 
 	if info.SubmitKey != nil {
-		submitKey := info.SubmitKey.String()
-		result.SubmitKey = &submitKey
-	}
-
-	if info.AutoRenewAccountID != nil {
-		autoRenewAccountId := info.AutoRenewAccountID.String()
-		result.AutoRenewAccountId = &autoRenewAccountId
+		key := info.SubmitKey.String()
+		result.SubmitKey = &key
 	}
 
 	if info.FeeScheduleKey != nil {
-		feeScheduleKey := info.FeeScheduleKey.String()
-		result.FeeScheduleKey = &feeScheduleKey
+		key := info.FeeScheduleKey.String()
+		result.FeeScheduleKey = &key
+	}
+
+	if info.AutoRenewAccountID != nil {
+		id := info.AutoRenewAccountID.String()
+		result.AutoRenewAccountId = &id
 	}
 
 	if info.FeeExemptKeys != nil {
@@ -466,40 +470,42 @@ func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfo
 		for _, key := range info.FeeExemptKeys {
 			keys = append(keys, key.String())
 		}
+		result.FeeExemptKeys = &keys
 	}
-
-	mapToCustomFixedFee(info.CustomFees)
 
 	return result, nil
 }
 
-func mapToCustomFixedFee(fees []*hiero.CustomFixedFee) *[]response.CustomFeeResponse {
-	if fees == nil {
-		return nil
-	}
+// mapToCustomFixedFees maps a CustomFixedFee to jRPC response
+func mapToCustomFixedFees(fees []*hiero.CustomFixedFee) *[]response.CustomFeeResponse {
+	result := make([]response.CustomFeeResponse, 0, len(fees))
 
-	fixedFees := []response.CustomFeeResponse{}
 	for _, fee := range fees {
+		if fee == nil {
+			continue
+		}
+
 		fixedFee := response.FixedFeeResponse{
 			Amount: strconv.FormatInt(fee.Amount, 10),
 		}
+
 		if fee.DenominationTokenID != nil {
-			tokenId := fee.DenominationTokenID.String()
-			fixedFee.DenominatingTokenId = &tokenId
+			id := fee.DenominationTokenID.String()
+			fixedFee.DenominatingTokenId = &id
 		}
 
-		customFee := response.CustomFeeResponse{
+		customFixedFee := response.CustomFeeResponse{
 			AllCollectorsAreExempt: fee.AllCollectorsAreExempt,
 			FixedFee:               fixedFee,
 		}
 
 		if fee.FeeCollectorAccountID != nil {
-			accountId := fee.FeeCollectorAccountID.String()
-			customFee.FeeCollectorAccountId = &accountId
+			id := fee.FeeCollectorAccountID.String()
+			customFixedFee.FeeCollectorAccountId = &id
 		}
 
-		fixedFees = append(fixedFees, customFee)
+		result = append(result, customFixedFee)
 	}
 
-	return &fixedFees
+	return &result
 }
