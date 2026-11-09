@@ -4,6 +4,7 @@ package methods
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -397,4 +398,108 @@ func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.Submit
 	return &response.TopicResponse{
 		Status: receipt.Status.String(),
 	}, nil
+}
+
+func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfoParams) (*response.GetTopicInfoResponse, error) {
+	query := hiero.NewTopicInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.TopicId != nil {
+		topicId, err := hiero.TopicIDFromString(*params.TopicId)
+		if err != nil {
+			return nil, err
+		}
+		query.SetTopicID(topicId)
+	}
+
+	if params.MaxQueryPayment != nil {
+		maxQueryPayment, err := strconv.ParseInt(*params.MaxQueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse maxQuery payment: %w", err)
+		}
+		query.SetMaxQueryPayment(hiero.HbarFromTinybar(maxQueryPayment))
+	}
+
+	if params.QueryPayment != nil {
+		queryPayment, err := strconv.ParseInt(*params.QueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse query payment: %w", err)
+		}
+		query.SetQueryPayment(hiero.HbarFromTinybar(queryPayment))
+	}
+
+	info, err := query.Execute(t.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+
+	result := &response.GetTopicInfoResponse{
+		TopicId:         *params.TopicId,
+		TopicMemo:       info.TopicMemo,
+		RunningHash:     string(info.RunningHash),
+		SequenceNumber:  strconv.FormatInt(int64(info.SequenceNumber), 10),
+		AutoRenewPeriod: info.AutoRenewPeriod.String(),
+		ExpirationTime:  strconv.FormatInt(info.ExpirationTime.Unix(), 10),
+	}
+
+	if info.AdminKey != nil {
+		adminKey := info.AdminKey.String()
+		result.AdminKey = &adminKey
+	}
+
+	if info.SubmitKey != nil {
+		submitKey := info.SubmitKey.String()
+		result.SubmitKey = &submitKey
+	}
+
+	if info.AutoRenewAccountID != nil {
+		autoRenewAccountId := info.AutoRenewAccountID.String()
+		result.AutoRenewAccountId = &autoRenewAccountId
+	}
+
+	if info.FeeScheduleKey != nil {
+		feeScheduleKey := info.FeeScheduleKey.String()
+		result.FeeScheduleKey = &feeScheduleKey
+	}
+
+	if info.FeeExemptKeys != nil {
+		keys := []string{}
+		for _, key := range info.FeeExemptKeys {
+			keys = append(keys, key.String())
+		}
+	}
+
+	mapToCustomFixedFee(info.CustomFees)
+
+	return result, nil
+}
+
+func mapToCustomFixedFee(fees []*hiero.CustomFixedFee) *[]response.CustomFeeResponse {
+	if fees == nil {
+		return nil
+	}
+
+	fixedFees := []response.CustomFeeResponse{}
+	for _, fee := range fees {
+		fixedFee := response.FixedFeeResponse{
+			Amount: strconv.FormatInt(fee.Amount, 10),
+		}
+		if fee.DenominationTokenID != nil {
+			tokenId := fee.DenominationTokenID.String()
+			fixedFee.DenominatingTokenId = &tokenId
+		}
+
+		customFee := response.CustomFeeResponse{
+			AllCollectorsAreExempt: fee.AllCollectorsAreExempt,
+			FixedFee:               fixedFee,
+		}
+
+		if fee.FeeCollectorAccountID != nil {
+			accountId := fee.FeeCollectorAccountID.String()
+			customFee.FeeCollectorAccountId = &accountId
+		}
+
+		fixedFees = append(fixedFees, customFee)
+	}
+
+	return &fixedFees
 }

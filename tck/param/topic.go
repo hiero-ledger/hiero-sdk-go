@@ -45,3 +45,10 @@ type CustomFeeLimit struct {
 	PayerId   *string     `json:"payerId"`
 	FixedFees *[]FixedFee `json:"fixedFees"`
 }
+
+type GetTopicInfoParams struct {
+	BaseParams
+	TopicId         *string `json:"topicId"`
+	QueryPayment    *string `json:"queryPayment"`
+	MaxQueryPayment *string `json:"maxQueryPayment"`
+}
