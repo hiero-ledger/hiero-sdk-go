@@ -4,6 +4,7 @@ package methods
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"time"
@@ -400,8 +401,8 @@ func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.Submit
 	}, nil
 }
 
-// GetTokenInfo method for jRPC getTokenInfo
-func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfoParams) (*response.GetTopicInfoResponse, error) {
+// GetTokenInfo jRPC method for getTokenInfo
+func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfoParams) (*response.TopicInfoResponse, error) {
 	query := hiero.NewTopicInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
 
 	topicId := params.TopicId
@@ -434,10 +435,10 @@ func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfo
 		return nil, err
 	}
 
-	result := &response.GetTopicInfoResponse{
+	result := &response.TopicInfoResponse{
 		TopicId:         *topicId,
 		TopicMemo:       info.TopicMemo,
-		RunningHash:     string(info.RunningHash),
+		RunningHash:     hex.EncodeToString(info.RunningHash),
 		SequenceNumber:  strconv.FormatInt(int64(info.SequenceNumber), 10),
 		AutoRenewPeriod: strconv.FormatInt(int64(info.AutoRenewPeriod.Seconds()), 10),
 		ExpirationTime:  strconv.FormatInt(info.ExpirationTime.Unix(), 10),
