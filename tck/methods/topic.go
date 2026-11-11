@@ -4,6 +4,8 @@ package methods
 
 import (
 	"context"
+	"encoding/hex"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -397,4 +399,114 @@ func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.Submit
 	return &response.TopicResponse{
 		Status: receipt.Status.String(),
 	}, nil
+}
+
+// GetTopicInfo jRPC method for getTopicInfo
+func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfoParams) (*response.TopicInfoResponse, error) {
+	query := hiero.NewTopicInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	topicId := params.TopicId
+	if topicId != nil {
+		id, err := hiero.TopicIDFromString(*params.TopicId)
+		if err != nil {
+			return nil, err
+		}
+		query.SetTopicID(id)
+	}
+
+	if params.MaxQueryPayment != nil {
+		maxQueryPayment, err := strconv.ParseInt(*params.MaxQueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse maxQuery payment: %w", err)
+		}
+		query.SetMaxQueryPayment(hiero.HbarFromTinybar(maxQueryPayment))
+	}
+
+	if params.QueryPayment != nil {
+		queryPayment, err := strconv.ParseInt(*params.QueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse query payment: %w", err)
+		}
+		query.SetQueryPayment(hiero.HbarFromTinybar(queryPayment))
+	}
+
+	info, err := query.Execute(t.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+
+	result := &response.TopicInfoResponse{
+		TopicId:         *topicId,
+		TopicMemo:       info.TopicMemo,
+		RunningHash:     hex.EncodeToString(info.RunningHash),
+		SequenceNumber:  strconv.FormatInt(int64(info.SequenceNumber), 10),
+		AutoRenewPeriod: strconv.FormatInt(int64(info.AutoRenewPeriod.Seconds()), 10),
+		ExpirationTime:  strconv.FormatInt(info.ExpirationTime.Unix(), 10),
+		LedgerId:        info.LedgerID.String(),
+		CustomFees:      mapToCustomFixedFees(info.CustomFees),
+	}
+
+	if info.AdminKey != nil {
+		key := info.AdminKey.String()
+		result.AdminKey = &key
+	}
+
+	if info.SubmitKey != nil {
+		key := info.SubmitKey.String()
+		result.SubmitKey = &key
+	}
+
+	if info.FeeScheduleKey != nil {
+		key := info.FeeScheduleKey.String()
+		result.FeeScheduleKey = &key
+	}
+
+	if info.AutoRenewAccountID != nil {
+		id := info.AutoRenewAccountID.String()
+		result.AutoRenewAccountId = &id
+	}
+
+	if info.FeeExemptKeys != nil {
+		keys := []string{}
+		for _, key := range info.FeeExemptKeys {
+			keys = append(keys, key.String())
+		}
+		result.FeeExemptKeys = &keys
+	}
+
+	return result, nil
+}
+
+// mapToCustomFixedFees maps a CustomFixedFee to jRPC response
+func mapToCustomFixedFees(fees []*hiero.CustomFixedFee) *[]response.CustomFeeResponse {
+	result := make([]response.CustomFeeResponse, 0, len(fees))
+
+	for _, fee := range fees {
+		if fee == nil {
+			continue
+		}
+
+		fixedFee := response.FixedFeeResponse{
+			Amount: strconv.FormatInt(fee.Amount, 10),
+		}
+
+		if fee.DenominationTokenID != nil {
+			id := fee.DenominationTokenID.String()
+			fixedFee.DenominatingTokenId = &id
+		}
+
+		customFixedFee := response.CustomFeeResponse{
+			AllCollectorsAreExempt: fee.AllCollectorsAreExempt,
+			FixedFee:               fixedFee,
+		}
+
+		if fee.FeeCollectorAccountID != nil {
+			id := fee.FeeCollectorAccountID.String()
+			customFixedFee.FeeCollectorAccountId = &id
+		}
+
+		result = append(result, customFixedFee)
+	}
+
+	return &result
 }
