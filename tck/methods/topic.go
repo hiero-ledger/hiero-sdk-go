@@ -401,7 +401,7 @@ func (t *TopicService) SubmitTopicMessage(_ context.Context, params param.Submit
 	}, nil
 }
 
-// GetTokenInfo jRPC method for getTokenInfo
+// GetTopicInfo jRPC method for getTopicInfo
 func (t *TopicService) GetTopicInfo(_ context.Context, params param.GetTopicInfoParams) (*response.TopicInfoResponse, error) {
 	query := hiero.NewTopicInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
 
