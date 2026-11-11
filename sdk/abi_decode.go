@@ -19,7 +19,8 @@ func Decode(t *Type, input []byte) (interface{}, error) {
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input")
 	}
-	val, _, err := decode(t, input)
+	budget := len(input)
+	val, _, err := decode(t, input, &budget)
 	return val, err
 }
 
@@ -45,7 +46,24 @@ func DecodeStruct(t *Type, input []byte, out interface{}) error {
 	return nil
 }
 
-func decode(t *Type, input []byte) (interface{}, []byte, error) {
+// takeDecodeBudget charges n decoded values to the budget, and fails once it runs out.
+//
+// Dynamic values are read through offsets, and nothing stops many offsets from pointing to the same
+// data, so without a limit a short input could decode into a huge number of values: each level of
+// nested dynamic arrays multiplies them. Decode allows one value per byte of input. A valid encoding
+// takes 32 bytes per value, apart from the static arrays and tuples that contain them, which leaves
+// room for 32 levels of such nesting.
+func takeDecodeBudget(budget *int, n int) error {
+	if n > *budget {
+		return errABIDecodeBudgetExceeded
+	}
+	*budget -= n
+	return nil
+}
+
+// decode decodes a value of type t from the start of input.
+// budget is the number of values that may still be decoded, see takeDecodeBudget.
+func decode(t *Type, input []byte, budget *int) (interface{}, []byte, error) {
 	var data []byte
 	var length int
 	var err error
@@ -66,13 +84,13 @@ func decode(t *Type, input []byte) (interface{}, []byte, error) {
 
 	switch t.kind {
 	case KindTuple:
-		return decodeTuple(t, input)
+		return decodeTuple(t, input, budget)
 
 	case KindSlice:
-		return decodeArraySlice(t, input[32:], length)
+		return decodeArraySlice(t, input[32:], length, budget)
 
 	case KindArray:
-		return decodeArraySlice(t, input, t.size)
+		return decodeArraySlice(t, input, t.size, budget)
 	}
 
 	var val interface{}
@@ -259,7 +277,10 @@ func readFixedBytes(t *Type, word []byte) (interface{}, error) {
 	return array.Interface(), nil
 }
 
-func decodeTuple(t *Type, data []byte) (interface{}, []byte, error) {
+func decodeTuple(t *Type, data []byte, budget *int) (interface{}, []byte, error) {
+	if err := takeDecodeBudget(budget, len(t.tuple)); err != nil {
+		return nil, nil, err
+	}
 	res := make(map[string]interface{})
 
 	orig := data
@@ -278,7 +299,7 @@ func decodeTuple(t *Type, data []byte) (interface{}, []byte, error) {
 			entry = orig[offset:]
 		}
 
-		val, tail, err := decode(arg.Elem, entry)
+		val, tail, err := decode(arg.Elem, entry, budget)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -302,7 +323,7 @@ func decodeTuple(t *Type, data []byte) (interface{}, []byte, error) {
 	return res, data, nil
 }
 
-func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, error) {
+func decodeArraySlice(t *Type, data []byte, size int, budget *int) (interface{}, []byte, error) {
 	if size < 0 {
 		return nil, nil, fmt.Errorf("size is lower than zero")
 	}
@@ -310,6 +331,9 @@ func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, erro
 	// so a short input cannot make us allocate a large array
 	if size > len(data)/max(32, int(t.elem.t.Size())) {
 		return nil, nil, fmt.Errorf("size is too big")
+	}
+	if err := takeDecodeBudget(budget, size); err != nil {
+		return nil, nil, err
 	}
 
 	var res reflect.Value
@@ -338,7 +362,7 @@ func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, erro
 			entry = orig[offset:]
 		}
 
-		val, tail, err := decode(t.elem, entry)
+		val, tail, err := decode(t.elem, entry, budget)
 		if err != nil {
 			return nil, nil, err
 		}
