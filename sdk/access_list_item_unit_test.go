@@ -166,3 +166,17 @@ func TestUnitAccessListItemFromBytesError(t *testing.T) {
 	_, err = _accessListItemFromBytes(notAList)
 	assert.Error(t, err)
 }
+
+func TestUnitAccessListItemRoundTripOneStorageKey(t *testing.T) {
+	t.Parallel()
+
+	// A 20-byte address and one 32-byte storage key make a 55-byte list, the longest short list (prefix 0xF7)
+	original := NewAccessListItem(bytes.Repeat([]byte{0xAA}, 20), [][]byte{bytes.Repeat([]byte{0xBB}, 32)})
+
+	encoded := _accessListItemToBytes(original)
+	require.Equal(t, byte(0xF7), encoded[0])
+
+	decoded, err := _accessListItemFromBytes(encoded)
+	require.NoError(t, err)
+	assert.Equal(t, original, decoded)
+}

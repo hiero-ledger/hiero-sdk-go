@@ -46,6 +46,7 @@ var errEvmAddressIsNotCorrectSize = errors.New("EVM address is not the correct s
 var errInvalidChunkSize = errors.New("chunk size must be greater than 0")
 var errPublicKeyHasNotSigned = errors.New("the public key has not signed this transaction")
 var errRLPUnexpectedEnd = errors.New("rlp: item length exceeds available bytes")
+var errRLPMaxDepthExceeded = errors.New("rlp: lists are nested too deeply")
 
 // Endpoint validation errors
 var errEndpointMustHaveAddressOrDomainName = errors.New("endpoint must have either address or domain name")

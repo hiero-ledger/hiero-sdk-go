@@ -6,6 +6,7 @@ package hiero
 
 import (
 	"bytes"
+	"encoding/binary"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -156,4 +157,44 @@ func TestRLPItemDecodeMalformed(t *testing.T) {
 		item := NewRLPItem(LIST_TYPE)
 		assert.ErrorIs(t, item.Read(input), errRLPUnexpectedEnd, "input %x", input)
 	}
+}
+
+// nestedRLPLists returns the encoding of depth lists nested in each other, with an empty list innermost.
+func nestedRLPLists(t *testing.T, depth int) []byte {
+	item := NewRLPItem(LIST_TYPE)
+	for i := 1; i < depth; i++ {
+		parent := NewRLPItem(LIST_TYPE)
+		parent.PushBack(item)
+		item = parent
+	}
+	encoded, err := item.Write()
+	require.NoError(t, err)
+	return encoded
+}
+
+func TestRLPItemDecodeMaxDepth(t *testing.T) {
+	t.Parallel()
+
+	item := NewRLPItem(LIST_TYPE)
+	require.NoError(t, item.Read(nestedRLPLists(t, maxRLPDepth)))
+
+	item = NewRLPItem(LIST_TYPE)
+	assert.ErrorIs(t, item.Read(nestedRLPLists(t, maxRLPDepth+1)), errRLPMaxDepthExceeded)
+}
+
+func TestRLPItemDecodeDeeplyNestedInput(t *testing.T) {
+	t.Parallel()
+
+	// 5 million nested lists in 25 MB. Each list header is 0xFB and a 4-byte length covering the rest of
+	// the input, with an empty list innermost. Without a depth limit, this input overflows the stack.
+	const depth = 5_000_000
+	input := make([]byte, 0, 5*(depth-1)+1)
+	for i := 0; i < depth-1; i++ {
+		input = append(input, 0xfb)
+		input = binary.BigEndian.AppendUint32(input, uint32(5*(depth-2-i)+1))
+	}
+	input = append(input, 0xc0)
+
+	item := NewRLPItem(LIST_TYPE)
+	assert.ErrorIs(t, item.Read(input), errRLPMaxDepthExceeded)
 }

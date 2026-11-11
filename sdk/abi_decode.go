@@ -306,12 +306,9 @@ func decodeArraySlice(t *Type, data []byte, size int) (interface{}, []byte, erro
 	if size < 0 {
 		return nil, nil, fmt.Errorf("size is lower than zero")
 	}
-	if size > len(data)/32 {
-		return nil, nil, fmt.Errorf("size is too big")
-	}
-	// A valid encoding of an element is never smaller than the decoded element in memory,
+	// Every element takes at least 32 bytes of input, and never more memory than its encoding,
 	// so a short input cannot make us allocate a large array
-	if size > 0 && t.elem.t.Size() > uintptr(len(data)/size) {
+	if size > len(data)/max(32, int(t.elem.t.Size())) {
 		return nil, nil, fmt.Errorf("size is too big")
 	}
 

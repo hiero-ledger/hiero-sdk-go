@@ -120,6 +120,10 @@ func (item *RLPItem) Write() ([]byte, error) {
 	return append(encodeLength(len(bytes), 0xC0), bytes...), nil
 }
 
+// maxRLPDepth is the deepest list nesting Read accepts. Without a limit, deeply nested input
+// would recurse until the goroutine stack overflows, which cannot be recovered.
+const maxRLPDepth = 1024
+
 // Read decodes a byte slice into an RLPItem.
 func (item *RLPItem) Read(bytes []byte) error {
 	item.Clear()
@@ -129,11 +133,12 @@ func (item *RLPItem) Read(bytes []byte) error {
 	}
 
 	index := 0
-	return item.decodeBytes(bytes, &index)
+	return item.decodeBytes(bytes, &index, 0)
 }
 
 // decodeBytes decodes the bytes starting from the given index.
-func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
+// depth is the number of lists the item is nested in.
+func (item *RLPItem) decodeBytes(bytes []byte, index *int, depth int) error {
 	prefix := bytes[*index]
 	(*index)++
 
@@ -174,7 +179,7 @@ func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
 		if listLength > len(bytes)-*index {
 			return errRLPUnexpectedEnd
 		}
-		return item.decodeList(bytes, index, listLength)
+		return item.decodeList(bytes, index, listLength, depth)
 	}
 
 	// Long list case
@@ -182,16 +187,19 @@ func (item *RLPItem) decodeBytes(bytes []byte, index *int) error {
 	if err != nil {
 		return err
 	}
-	return item.decodeList(bytes, index, listLength)
+	return item.decodeList(bytes, index, listLength, depth)
 }
 
 // decodeList decodes the child items of a list whose payload starts at the given index.
 // Child items are not allowed to extend past the end of the list payload.
-func (item *RLPItem) decodeList(bytes []byte, index *int, listLength int) error {
+func (item *RLPItem) decodeList(bytes []byte, index *int, listLength int, depth int) error {
+	if depth >= maxRLPDepth {
+		return errRLPMaxDepthExceeded
+	}
 	end := *index + listLength
 	for *index < end {
 		childItem := NewRLPItem(LIST_TYPE)
-		if err := childItem.decodeBytes(bytes[:end], index); err != nil {
+		if err := childItem.decodeBytes(bytes[:end], index, depth+1); err != nil {
 			return err
 		}
 		item.PushBack(childItem)
