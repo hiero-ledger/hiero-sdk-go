@@ -52,6 +52,7 @@ type BaseTransaction struct {
 	transactionSigners []TransactionSigner
 	customFeeLimits    []*CustomFeeLimit
 	batchKey           Key
+	bodyReviewed       bool
 }
 
 // Transaction is base struct for all transactions that may be built and submitted to hiero.
@@ -143,8 +144,9 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 	}
 
 	var first *services.TransactionBody = nil
-	// We introduce a boolean value to distinguish flow for signed tx vs unsigned transactions
-	txIsSigned := true
+	// Preserve every raw entry if any entry is already prepared. Incomplete
+	// legacy entries must not disappear from a partially prepared collection.
+	hasPreparedBodies := false
 
 	if len(list.TransactionList) == 0 {
 		// Single transaction case
@@ -174,6 +176,10 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			transaction.SignedTransactionBytes = signedBytes
 			transaction.BodyBytes = nil // nolint
 			transaction.SigMap = nil    // nolint
+			if body.TransactionID != nil && body.NodeAccountID != nil {
+				baseTx.signedTransactions._Push(signedTx)
+				hasPreparedBodies = true
+			}
 		} else {
 			signedTx := &services.SignedTransaction{}
 			err = protobuf.Unmarshal(transaction.SignedTransactionBytes, signedTx)
@@ -187,6 +193,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 				return nil, errors.Wrap(err, "error deserializing body bytes from signed transaction")
 			}
 			baseTx.signedTransactions = baseTx.signedTransactions._Push(signedTx)
+			hasPreparedBodies = true
 		}
 
 		transactions._Push(&transaction)
@@ -196,15 +203,21 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			return nil, err
 		}
 	} else {
-		for i, transactionFromList := range list.TransactionList {
+		for _, transactionFromList := range list.TransactionList {
 			var signedTransaction services.SignedTransaction
 			var body services.TransactionBody
 
 			// If the transaction is not signed/locked:
 			if len(transactionFromList.SignedTransactionBytes) == 0 {
-				txIsSigned = false
 				if err := protobuf.Unmarshal(transactionFromList.BodyBytes, &body); err != nil { // nolint
 					return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
+				}
+				baseTx.signedTransactions._Push(&services.SignedTransaction{
+					BodyBytes: transactionFromList.BodyBytes,
+					SigMap:    transactionFromList.SigMap,
+				})
+				if body.TransactionID != nil && body.NodeAccountID != nil {
+					hasPreparedBodies = true
 				}
 			} else { // If the transaction is signed/locked
 				if err := protobuf.Unmarshal(transactionFromList.SignedTransactionBytes, &signedTransaction); err != nil {
@@ -212,20 +225,9 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 				}
 			}
 
-			if txIsSigned {
+			if len(transactionFromList.SignedTransactionBytes) != 0 {
 				baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
-
-				if i == 0 {
-					for _, sigPair := range signedTransaction.GetSigMap().GetSigPair() {
-						key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
-						if err != nil {
-							return nil, err
-						}
-
-						baseTx.publicKeys = append(baseTx.publicKeys, key)
-						baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
-					}
-				}
+				hasPreparedBodies = true
 
 				if err := protobuf.Unmarshal(signedTransaction.GetBodyBytes(), &body); err != nil {
 					return nil, errors.Wrap(err, "error deserializing BodyBytes in TransactionFromBytes")
@@ -241,7 +243,23 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		}
 	}
 
-	if txIsSigned {
+	if !hasPreparedBodies {
+		baseTx.signedTransactions = _NewLockableSlice()
+	}
+	// Original signatures occupy signer slots for every retained import form.
+	for _, value := range baseTx.signedTransactions.slice {
+		for _, sigPair := range value.(*services.SignedTransaction).GetSigMap().GetSigPair() {
+			key, err := PublicKeyFromBytes(sigPair.GetPubKeyPrefix())
+			if err != nil {
+				return nil, err
+			}
+			if !baseTx._KeyAlreadySigned(key) {
+				baseTx.publicKeys = append(baseTx.publicKeys, key)
+				baseTx.transactionSigners = append(baseTx.transactionSigners, nil)
+			}
+		}
+	}
+	if baseTx.IsFrozen() {
 		if baseTx.transactionIDs._Length() > 0 {
 			baseTx.transactionIDs.locked = true
 		}
@@ -367,7 +385,10 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 	case *services.TransactionBody_TokenClaimAirdrop:
 		childTx = _TokenClaimAirdropTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*TokenClaimAirdropTransaction](baseTx), first)
 	case *services.TransactionBody_AtomicBatch:
-		childTx = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
+		childTx, err = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
+		if err != nil {
+			return nil, err
+		}
 	case *services.TransactionBody_HookStore:
 		childTx = _HookStoreTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*HookStoreTransaction](baseTx), first)
 	default:
@@ -607,28 +628,42 @@ func _isChunkedTransactionType(body *services.TransactionBody) bool {
 }
 
 func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
-	if len(list.TransactionList) <= 1 {
+	bodies := make([]*services.TransactionBody, 0, len(list.TransactionList))
+	for _, transaction := range list.TransactionList {
+		body, err := _extractBody(transaction)
+		if err != nil {
+			return false, err
+		}
+		bodies = append(bodies, body)
+	}
+	return _transactionBodiesEqual(bodies)
+}
+
+// Shared content validation for imports and body hashing; normalization must not
+// discard IDs or content from the caller's decoded bodies.
+func _transactionBodiesEqual(bodies []*services.TransactionBody) (bool, error) {
+	if len(bodies) <= 1 {
 		return true, nil
 	}
-
-	refBody, err := _extractBody(list.TransactionList[0])
-	if err != nil {
+	refBody := protobuf.Clone(bodies[0]).(*services.TransactionBody)
+	chunked := _isChunkedTransactionType(refBody)
+	if err := _normalizeBodyForComparison(refBody, chunked); err != nil {
 		return false, err
 	}
-	chunked := _isChunkedTransactionType(refBody)
-	_normalizeBodyForComparison(refBody, chunked)
 
 	refBytes, err := protobuf.Marshal(refBody)
 	if err != nil {
 		return false, err
 	}
 
-	for i := 1; i < len(list.TransactionList); i++ {
-		body, err := _extractBody(list.TransactionList[i])
-		if err != nil {
+	for _, original := range bodies[1:] {
+		if !chunked && !_transactionIDsEqual(bodies[0].TransactionID, original.TransactionID) {
+			return false, nil
+		}
+		body := protobuf.Clone(original).(*services.TransactionBody)
+		if err := _normalizeBodyForComparison(body, chunked); err != nil {
 			return false, err
 		}
-		_normalizeBodyForComparison(body, chunked)
 
 		bodyBytes, err := protobuf.Marshal(body)
 		if err != nil {
@@ -643,26 +678,40 @@ func _TransactionCompare(list *sdk.TransactionList) (bool, error) {
 
 // _extractBody deserializes a Transaction into its TransactionBody.
 func _extractBody(tx *services.Transaction) (*services.TransactionBody, error) {
-	var signed services.SignedTransaction
-	if err := protobuf.Unmarshal(tx.SignedTransactionBytes, &signed); err != nil {
-		return nil, err
+	bodyBytes := tx.BodyBytes // nolint
+	if len(tx.SignedTransactionBytes) != 0 {
+		var signed services.SignedTransaction
+		if err := protobuf.Unmarshal(tx.SignedTransactionBytes, &signed); err != nil {
+			return nil, err
+		}
+		bodyBytes = signed.BodyBytes
 	}
 	var body services.TransactionBody
-	if err := protobuf.Unmarshal(signed.BodyBytes, &body); err != nil {
+	if err := protobuf.Unmarshal(bodyBytes, &body); err != nil {
 		return nil, err
 	}
 	return &body, nil
 }
 
 // _normalizeBodyForComparison nils out fields that legitimately vary across transactions
-func _normalizeBodyForComparison(body *services.TransactionBody, chunked bool) {
+func _normalizeBodyForComparison(body *services.TransactionBody, chunked bool) error {
 	body.NodeAccountID = nil
-
-	if !chunked {
-		return
+	body.TransactionID = nil
+	if batch := body.GetAtomicBatch(); batch != nil {
+		for i, envelope := range batch.Transactions {
+			child, err := _transactionBodyHashChild(envelope)
+			if err != nil {
+				return err
+			}
+			// Comparison only: preserve raw child bodies and order, exclude envelope metadata.
+			batch.Transactions[i] = child
+		}
 	}
 
-	body.TransactionID = nil
+	if !chunked {
+		return nil
+	}
+
 	switch d := body.Data.(type) {
 	case *services.TransactionBody_FileAppend:
 		d.FileAppend.Contents = nil
@@ -672,6 +721,7 @@ func _normalizeBodyForComparison(body *services.TransactionBody, chunked bool) {
 			d.ConsensusSubmitMessage.ChunkInfo.Number = 0
 		}
 	}
+	return nil
 }
 
 // Sets the maxTransaction fee based on priority:
@@ -795,7 +845,7 @@ func (tx *Transaction[T]) buildUnsignedTransaction(index int) (*services.Transac
 func (tx *Transaction[T]) _SignTransaction(index int) {
 	initialTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
 	bodyBytes := initialTx.GetBodyBytes()
-	if len(initialTx.SigMap.SigPair) != 0 {
+	if len(initialTx.GetSigMap().GetSigPair()) != 0 {
 		for i, key := range tx.publicKeys {
 			if tx.transactionSigners[i] != nil {
 				if key.ed25519PublicKey != nil {
@@ -830,7 +880,9 @@ func (tx *Transaction[T]) _SignTransaction(index int) {
 
 	if tx.regenerateTransactionID && !tx.transactionIDs.locked {
 		modifiedTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
-		modifiedTx.SigMap.SigPair = make([]*services.SignaturePair, 0)
+		if modifiedTx.SigMap != nil {
+			modifiedTx.SigMap.SigPair = make([]*services.SignaturePair, 0)
+		}
 		tx.signedTransactions._Set(index, modifiedTx)
 	}
 
@@ -844,14 +896,34 @@ func (tx *Transaction[T]) _SignTransaction(index int) {
 
 		signature := signer(bodyBytes)
 		modifiedTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
+		if modifiedTx.SigMap == nil {
+			modifiedTx.SigMap = &services.SignatureMap{}
+		}
 		modifiedTx.SigMap.SigPair = append(modifiedTx.SigMap.SigPair, publicKey._ToSignaturePairProtobuf(signature))
 		tx.signedTransactions._Set(index, modifiedTx)
 	}
 }
 
 func (tx *Transaction[T]) _BuildAllTransactions() ([]*services.Transaction, error) {
+	if err := tx._validateReviewedBodies(); err != nil {
+		return nil, err
+	}
 	allTx := make([]*services.Transaction, 0)
+	currentIDIndex := tx.transactionIDs.index
+	defer func() { tx.transactionIDs.index = currentIDIndex }()
 	for i := 0; i < tx.signedTransactions._Length(); i++ {
+		// Entries may be chunk-major or node-major. Select their original ID
+		// rather than assigning the next chunk ID to each successive node.
+		var body services.TransactionBody
+		if err := protobuf.Unmarshal(tx.signedTransactions._Get(i).(*services.SignedTransaction).BodyBytes, &body); err != nil {
+			return nil, err
+		}
+		for index, value := range tx.transactionIDs.slice {
+			if _transactionIDsEqual(value.(TransactionID)._ToProtobuf(), body.TransactionID) {
+				tx.transactionIDs.index = index
+				break
+			}
+		}
 		curr, err := tx._BuildTransaction(i)
 		tx.transactionIDs._Advance()
 		if err != nil {
@@ -868,42 +940,24 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 
 	txID := tx.transactionIDs._GetCurrent().(TransactionID)
 	originalBody := services.TransactionBody{}
-	_ = protobuf.Unmarshal(signedTx.BodyBytes, &originalBody)
+	if err := protobuf.Unmarshal(signedTx.BodyBytes, &originalBody); err != nil {
+		return nil, err
+	}
 
 	// Apply updates to a clone so we can skip re-marshalling an unchanged body,
 	// since non-deterministic serialization would otherwise invalidate signatures.
-	updatedBodyProto := protobuf.Clone(&originalBody).(*services.TransactionBody)
-
-	if updatedBodyProto.NodeAccountID == nil {
-		updatedBodyProto.NodeAccountID = tx.nodeAccountIDs._GetCurrent().(AccountID)._ToProtobuf()
+	var node *services.AccountID
+	if originalBody.NodeAccountID == nil {
+		node = tx.nodeAccountIDs._GetCurrent().(AccountID)._ToProtobuf()
 	}
-
-	if updatedBodyProto.TransactionID.String() != txID._ToProtobuf().String() {
-		updatedBodyProto.TransactionID = txID._ToProtobuf()
-	}
-
-	updatedBodyProto.Memo = tx.memo
-	updatedBodyProto.HighVolume = tx.highVolume
-	if tx.transactionFee != 0 {
-		updatedBodyProto.TransactionFee = tx.transactionFee
-	} else {
-		updatedBodyProto.TransactionFee = tx.defaultMaxTransactionFee
-	}
-
-	if tx.customFeeLimits != nil {
-		updatedBodyProto.MaxCustomFees = make([]*services.CustomFeeLimit, 0, len(tx.customFeeLimits))
-		for _, customFeeLimit := range tx.customFeeLimits {
-			updatedBodyProto.MaxCustomFees = append(updatedBodyProto.MaxCustomFees, customFeeLimit.toProtobuf())
-		}
-	}
-
-	if tx.batchKey != nil {
-		updatedBodyProto.BatchKey = tx.batchKey._ToProtoKey()
-	}
+	updatedBodyProto := tx._updatedTransactionBody(&originalBody, txID._ToProtobuf(), node)
 
 	// Only re-serialize the body when a field actually changed. When nothing
 	// changed, reuse the original bytes verbatim so existing signatures stay valid.
 	bodyChanged := !protobuf.Equal(&originalBody, updatedBodyProto)
+	if tx.bodyReviewed && (bodyChanged || tx._hasPendingCommonBodyChanges(&originalBody)) {
+		return nil, errTransactionIsFrozen
+	}
 	updatedBody := signedTx.BodyBytes
 	if bodyChanged {
 		var err error
@@ -1086,6 +1140,9 @@ func (tx *Transaction[T]) GetMaxTransactionFee() Hbar {
 
 // SetMaxTransactionFee sets the maximum transaction fee the operator (paying account) is willing to pay.
 func (tx *Transaction[T]) SetMaxTransactionFee(fee Hbar) T {
+	if uint64(fee.AsTinybar()) != tx.transactionFee && tx._rejectBodyReviewEdit() {
+		return tx.childTransaction
+	}
 	tx.transactionFee = uint64(fee.AsTinybar())
 	return tx.childTransaction
 }
@@ -1094,6 +1151,9 @@ func (tx *Transaction[T]) GetDefaultMaxTransactionFee() Hbar {
 }
 
 func (tx *Transaction[T]) _SetDefaultMaxTransactionFee(fee Hbar) {
+	if uint64(fee.AsTinybar()) != tx.defaultMaxTransactionFee && tx._rejectBodyReviewEdit() {
+		return
+	}
 	tx.defaultMaxTransactionFee = uint64(fee.AsTinybar())
 }
 
@@ -1115,6 +1175,9 @@ func (tx *Transaction[T]) GetTransactionMemo() string {
 
 // SetTransactionMemo sets the memo for this transaction.
 func (tx *Transaction[T]) SetTransactionMemo(memo string) T {
+	if memo != tx.memo && tx._rejectBodyReviewEdit() {
+		return tx.childTransaction
+	}
 	tx.memo = memo
 	return tx.childTransaction
 }
@@ -1130,6 +1193,9 @@ func (tx *Transaction[T]) GetTransactionValidDuration() time.Duration {
 
 // SetTransactionValidDuration sets the valid duration for this transaction.
 func (tx *Transaction[T]) SetTransactionValidDuration(duration time.Duration) T {
+	if duration != tx.GetTransactionValidDuration() && tx._rejectBodyReviewEdit() {
+		return tx.childTransaction
+	}
 	tx.transactionValidDuration = &duration
 	return tx.childTransaction
 }
@@ -1242,6 +1308,9 @@ func (tx *Transaction[T]) GetTransactionBodySizeAllChunks() ([]int, error) {
 
 // SetTransactionID sets the TransactionID for this transaction.
 func (tx *Transaction[T]) SetTransactionID(transactionID TransactionID) T {
+	if tx._rejectBodyReviewEdit() {
+		return tx.childTransaction
+	}
 	deepCopied := transactionID.deepCopy()
 
 	tx.transactionIDs._Clear()._Push(deepCopied)._SetLocked(true)
@@ -1250,6 +1319,9 @@ func (tx *Transaction[T]) SetTransactionID(transactionID TransactionID) T {
 
 // SetNodeAccountIDs sets the node AccountID for this transaction.
 func (tx *Transaction[T]) SetNodeAccountIDs(nodeAccountIDs []AccountID) T {
+	if tx._rejectBodyReviewEdit() {
+		return tx.childTransaction
+	}
 	for _, nodeAccountID := range nodeAccountIDs {
 		tx.nodeAccountIDs._Push(nodeAccountID)
 	}
@@ -1282,6 +1354,9 @@ func (tx *Transaction[T]) GetHighVolume() bool {
 // FileCreate, FileAppend, ScheduleCreate, TokenAirdrop, TokenAssociate,
 // TokenClaimAirdrop, TokenMint, TransferTransaction, AccountAllowanceApprove, HookStore.
 func (tx *Transaction[T]) SetHighVolume(highVolume bool) T {
+	if highVolume != tx.highVolume && tx._rejectBodyReviewEdit() {
+		return tx.childTransaction
+	}
 	tx.highVolume = highVolume
 	return tx.childTransaction
 }
@@ -1359,6 +1434,9 @@ func (tx *Transaction[T]) AddSignatureV2(publicKey PublicKey, signature []byte, 
 		bodyNodeID := _AccountIDFromProtobuf(body.NodeAccountID)
 		// check if the transaction id and node id match the input
 		if bodyTxID.String() == transactionID.String() && bodyNodeID.String() == nodeID.String() {
+			if temp.SigMap == nil {
+				temp.SigMap = &services.SignatureMap{}
+			}
 			// check if the signature is already in the signature map
 			var found bool
 			for _, sig := range temp.SigMap.SigPair {
@@ -1407,6 +1485,9 @@ func (tx *Transaction[T]) AddSignature(publicKey PublicKey, signature []byte) T 
 		switch t := tx.signedTransactions._Get(index).(type) { //nolint
 		case *services.SignedTransaction:
 			temp = t
+		}
+		if temp.SigMap == nil {
+			temp.SigMap = &services.SignatureMap{}
 		}
 		temp.SigMap.SigPair = append(
 			temp.SigMap.SigPair,
@@ -1568,13 +1649,15 @@ func (tx *Transaction[T]) validateTransactionFields() error {
 
 // buildTransactionBody constructs a TransactionBody with the common fields shared by all transactions.
 func (tx *Transaction[T]) buildTransactionBody() *services.TransactionBody {
-	return &services.TransactionBody{
+	body := &services.TransactionBody{
 		TransactionFee:           tx.transactionFee,
 		Memo:                     tx.memo,
 		TransactionValidDuration: _DurationToProtobuf(tx.GetTransactionValidDuration()),
 		TransactionID:            tx.transactionID._ToProtobuf(),
 		HighVolume:               tx.highVolume,
 	}
+	tx._populateCommonFeeLimitsAndBatchKey(body)
+	return body
 }
 
 // buildSchedulableTransactionBody constructs a SchedulableTransactionBody with the common fields shared by all schedulable transactions.
@@ -1620,8 +1703,22 @@ func (tx *Transaction[T]) shouldRetry(_ Executable, response interface{}) _Execu
 }
 
 func (tx *Transaction[T]) makeRequest() interface{} {
+	if tx.transactionIDs._IsEmpty() || tx.nodeAccountIDs._IsEmpty() {
+		return errNoClientOrTransactionIDOrNodeId
+	}
+	// Unreviewed IDs may regenerate and need the builder to update their bodies.
 	index := tx.nodeAccountIDs._Length()*tx.transactionIDs.index + tx.nodeAccountIDs.index
-	built, _ := tx._BuildTransaction(index)
+	if tx.bodyReviewed {
+		var err error
+		index, err = tx._preparedTransactionIndex(tx.GetTransactionID()._ToProtobuf(), tx.getNodeAccountID()._ToProtobuf())
+		if err != nil {
+			return err
+		}
+	}
+	built, err := tx._BuildTransaction(index)
+	if err != nil {
+		return err
+	}
 
 	return built
 }
@@ -1696,6 +1793,9 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 
 	if tx.freezeError != nil {
 		return TransactionResponse{}, tx.freezeError
+	}
+	if err := tx._validateReviewedBodies(); err != nil {
+		return TransactionResponse{}, err
 	}
 
 	if !tx.IsFrozen() {
@@ -1969,7 +2069,7 @@ func TransactionSetNodeAccountIDs(tx TransactionInterface, nodeAccountIDs []Acco
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetNodeAccountIDs(nodeAccountIDs)
 
-	return tx, nil
+	return tx, baseTx._bodyReviewMutationError()
 }
 
 func TransactionGetTransactionValidDuration(tx TransactionInterface) (time.Duration, error) {
@@ -1980,7 +2080,7 @@ func TransactionSetTransactionValidDuration(tx TransactionInterface, transaction
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetTransactionValidDuration(transactionValidDuration)
 
-	return tx, nil
+	return tx, baseTx._bodyReviewMutationError()
 }
 
 func TransactionGetMaxTransactionFee(tx TransactionInterface) (Hbar, error) {
@@ -1991,7 +2091,7 @@ func TransactionSetMaxTransactionFee(tx TransactionInterface, maxTransactionFee 
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetMaxTransactionFee(maxTransactionFee)
 
-	return tx, nil
+	return tx, baseTx._bodyReviewMutationError()
 }
 
 func TransactionGetTransactionMemo(tx TransactionInterface) (string, error) {
@@ -2001,7 +2101,7 @@ func TransactionGetTransactionMemo(tx TransactionInterface) (string, error) {
 func TransactionSetTransactionMemo(tx TransactionInterface, transactionMemo string) (TransactionInterface, error) {
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetTransactionMemo(transactionMemo)
-	return tx, nil
+	return tx, baseTx._bodyReviewMutationError()
 }
 
 func TransactionGetHighVolume(tx TransactionInterface) (bool, error) {
@@ -2011,7 +2111,7 @@ func TransactionGetHighVolume(tx TransactionInterface) (bool, error) {
 func TransactionSetHighVolume(tx TransactionInterface, highVolume bool) (TransactionInterface, error) {
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetHighVolume(highVolume)
-	return tx, nil
+	return tx, baseTx._bodyReviewMutationError()
 }
 
 func TransactionGetTransactionID(tx TransactionInterface) (TransactionID, error) {
@@ -2021,7 +2121,7 @@ func TransactionGetTransactionID(tx TransactionInterface) (TransactionID, error)
 func TransactionSetTransactionID(tx TransactionInterface, transactionID TransactionID) (TransactionInterface, error) {
 	baseTx := tx.getBaseTransaction()
 	baseTx.SetTransactionID(transactionID)
-	return tx, nil
+	return tx, baseTx._bodyReviewMutationError()
 }
 
 func TransactionGetSignatures(tx TransactionInterface) (map[AccountID]map[*PublicKey][]byte, error) {
@@ -2107,7 +2207,7 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 		nodeAccountID = *_AccountIDFromProtobuf(body.GetNodeAccountID())
 	}
 
-	if body.GetMaxCustomFees() != nil {
+	if body.GetMaxCustomFees() != nil && baseTx.customFeeLimits == nil {
 		for _, customFeeLimit := range body.GetMaxCustomFees() {
 			baseTx.customFeeLimits = append(baseTx.customFeeLimits, customFeeLimitFromProtobuf(customFeeLimit))
 		}
@@ -2133,10 +2233,10 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 
 	// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
 	// A chunked transaction has one body per chunk per node, so each ID is kept once.
-	if transactionID.AccountID.Account != 0 && !containsID(baseTx.transactionIDs, transactionID.String()) {
+	if transactionID.AccountID != nil && transactionID.AccountID.Account != 0 && !containsID(baseTx.transactionIDs, transactionID.String()) {
 		baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
 	}
-	if !nodeAccountID._IsZero() && !containsID(baseTx.nodeAccountIDs, nodeAccountID.String()) {
+	if body.NodeAccountID != nil && !containsID(baseTx.nodeAccountIDs, nodeAccountID.String()) {
 		baseTx.nodeAccountIDs = baseTx.nodeAccountIDs._Push(nodeAccountID)
 	}
 
