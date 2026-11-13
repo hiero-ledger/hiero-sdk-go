@@ -287,3 +287,73 @@ jobs:
                   skip-cache: true
                   args: --timeout=5m   
                   working-directory: ./tck 
+
+    tck-compatibility:
+        name: TCK Compatibility
+        runs-on: hiero-client-sdk-linux-medium
+        needs:
+            - build
+            - test
+        timeout-minutes: 45
+        steps:
+            - name: Harden Runner
+              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              with:
+                egress-policy: audit
+
+            - name: Setup GCC
+              run: |
+                sudo apt-get update
+                sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
+
+            - name: Set up Go ${{ env.GO_VERSION }}
+              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              with:
+                  go-version: ${{ env.GO_VERSION }}
+              id: go
+
+            - name: Check out code into the Go module directory
+              uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+            # A built binary instead of go run, so the saved pid is the server's own.
+            - name: Build and start the TCK server
+              id: tck-server
+              working-directory: ./tck
+              run: |
+                go mod tidy
+                go build -o "${RUNNER_TEMP}/tck-server" ./cmd
+                nohup "${RUNNER_TEMP}/tck-server" > "${RUNNER_TEMP}/tck-server.log" 2>&1 &
+                echo "pid=$!" >> "${GITHUB_OUTPUT}"
+
+            - name: Prepare Hiero Solo
+              uses: hiero-ledger/hiero-solo-action@c982fe02b37db2a25a6a5e61139d9fe5d0917cff # v0.26.0
+              with:
+                installMirrorNode: true
+                hieroVersion: ${{ env.HIERO_VERSION }}
+                mirrorNodeVersion: ${{ env.MIRROR_NODE_VERSION }}
+                soloVersion: ${{ env.SOLO_VERSION }}
+
+            # Pinned to the commit of a TCK release tag. Bump it on purpose with the next TCK release.
+            - name: Run the TCK
+              timeout-minutes: 20
+              uses: hiero-ledger/hiero-sdk-tck@c9e7169888d86be4793cde5932ce57d9450a9761 # v0.14.0
+              with:
+                  node-ip: 127.0.0.1:35211
+                  mirror-node-rest-url: http://127.0.0.1:38081
+                  artifact-name: tck-compatibility
+
+            - name: Show the TCK server log
+              if: failure()
+              run: cat "${RUNNER_TEMP}/tck-server.log" || true
+
+            - name: Upload the TCK server log
+              if: failure()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+              with:
+                  name: tck-compatibility-logs
+                  path: ${{ runner.temp }}/tck-server.log
+                  if-no-files-found: ignore
+
+            - name: Stop the TCK server
+              if: always()
+              run: kill "${{ steps.tck-server.outputs.pid }}" 2>/dev/null || true
