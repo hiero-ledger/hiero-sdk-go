@@ -303,6 +303,16 @@ type TransactionBody struct {
 	//	*TransactionBody_RegisteredNodeUpdate
 	//	*TransactionBody_RegisteredNodeDelete
 	//	*TransactionBody_MigrationRootHashVote
+	//	*TransactionBody_ClprUpdateLedgerConfiguration
+	//	*TransactionBody_ClprRegisterChannel
+	//	*TransactionBody_ClprCompleteChannel
+	//	*TransactionBody_ClprCloseChannel
+	//	*TransactionBody_ClprSubmitBundle
+	//	*TransactionBody_ClprRegisterConnector
+	//	*TransactionBody_ClprDeregisterConnector
+	//	*TransactionBody_ClprCompleteConnector
+	//	*TransactionBody_ClprEndpointPublication
+	//	*TransactionBody_ClprMaintenance
 	Data isTransactionBody_Data `protobuf_oneof:"data"`
 	// *
 	// A list of maximum custom fees that the users are willing to pay.
@@ -1030,6 +1040,96 @@ func (x *TransactionBody) GetMigrationRootHashVote() *MigrationRootHashVoteTrans
 	return nil
 }
 
+func (x *TransactionBody) GetClprUpdateLedgerConfiguration() *ClprUpdateLedgerConfigurationTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprUpdateLedgerConfiguration); ok {
+			return x.ClprUpdateLedgerConfiguration
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprRegisterChannel() *ClprRegisterChannelTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprRegisterChannel); ok {
+			return x.ClprRegisterChannel
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprCompleteChannel() *ClprCompleteChannelTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprCompleteChannel); ok {
+			return x.ClprCompleteChannel
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprCloseChannel() *ClprCloseChannelTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprCloseChannel); ok {
+			return x.ClprCloseChannel
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprSubmitBundle() *ClprSubmitBundleTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprSubmitBundle); ok {
+			return x.ClprSubmitBundle
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprRegisterConnector() *ClprRegisterConnectorTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprRegisterConnector); ok {
+			return x.ClprRegisterConnector
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprDeregisterConnector() *ClprDeregisterConnectorTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprDeregisterConnector); ok {
+			return x.ClprDeregisterConnector
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprCompleteConnector() *ClprCompleteConnectorTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprCompleteConnector); ok {
+			return x.ClprCompleteConnector
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprEndpointPublication() *ClprEndpointPublicationTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprEndpointPublication); ok {
+			return x.ClprEndpointPublication
+		}
+	}
+	return nil
+}
+
+func (x *TransactionBody) GetClprMaintenance() *ClprMaintenanceTransactionBody {
+	if x != nil {
+		if x, ok := x.Data.(*TransactionBody_ClprMaintenance); ok {
+			return x.ClprMaintenance
+		}
+	}
+	return nil
+}
+
 func (x *TransactionBody) GetMaxCustomFees() []*CustomFeeLimit {
 	if x != nil {
 		return x.MaxCustomFees
@@ -1571,6 +1671,68 @@ type TransactionBody_MigrationRootHashVote struct {
 	MigrationRootHashVote *MigrationRootHashVoteTransactionBody `protobuf:"bytes,81,opt,name=migration_root_hash_vote,json=migrationRootHashVote,proto3,oneof"`
 }
 
+type TransactionBody_ClprUpdateLedgerConfiguration struct {
+	// *
+	// Update the local CLPR ledger configuration.
+	ClprUpdateLedgerConfiguration *ClprUpdateLedgerConfigurationTransactionBody `protobuf:"bytes,82,opt,name=clprUpdateLedgerConfiguration,proto3,oneof"`
+}
+
+type TransactionBody_ClprRegisterChannel struct {
+	// *
+	// Phase 1 (Commit): Claim a CLPR Channel ID. Creates in PENDING state.
+	ClprRegisterChannel *ClprRegisterChannelTransactionBody `protobuf:"bytes,83,opt,name=clprRegisterChannel,proto3,oneof"`
+}
+
+type TransactionBody_ClprCompleteChannel struct {
+	// *
+	// Phase 2 (Reveal): Complete a PENDING Channel. Transitions to ACTIVE.
+	ClprCompleteChannel *ClprCompleteChannelTransactionBody `protobuf:"bytes,84,opt,name=clprCompleteChannel,proto3,oneof"`
+}
+
+type TransactionBody_ClprCloseChannel struct {
+	// *
+	// Initiate graceful closure of a CLPR Channel.
+	ClprCloseChannel *ClprCloseChannelTransactionBody `protobuf:"bytes,85,opt,name=clprCloseChannel,proto3,oneof"`
+}
+
+type TransactionBody_ClprSubmitBundle struct {
+	// *
+	// Submit a bundle of cross-ledger messages from a peer sync.
+	ClprSubmitBundle *ClprSubmitBundleTransactionBody `protobuf:"bytes,86,opt,name=clprSubmitBundle,proto3,oneof"`
+}
+
+type TransactionBody_ClprRegisterConnector struct {
+	// *
+	// Register a Connector on the CLPR Service.
+	ClprRegisterConnector *ClprRegisterConnectorTransactionBody `protobuf:"bytes,88,opt,name=clprRegisterConnector,proto3,oneof"`
+}
+
+type TransactionBody_ClprDeregisterConnector struct {
+	// *
+	// Remove a Connector from the CLPR Service.
+	ClprDeregisterConnector *ClprDeregisterConnectorTransactionBody `protobuf:"bytes,89,opt,name=clprDeregisterConnector,proto3,oneof"`
+}
+
+type TransactionBody_ClprCompleteConnector struct {
+	// *
+	// Phase 2 (Reveal): Complete a pending Connector commitment.
+	ClprCompleteConnector *ClprCompleteConnectorTransactionBody `protobuf:"bytes,90,opt,name=clprCompleteConnector,proto3,oneof"`
+}
+
+type TransactionBody_ClprEndpointPublication struct {
+	// *
+	// A node self-publishes its own CLPR endpoint into a manifest construction (see
+	// `dev-context/clpr-endpoint-self-publication-design.md`).
+	ClprEndpointPublication *ClprEndpointPublicationTransactionBody `protobuf:"bytes,91,opt,name=clpr_endpoint_publication,json=clprEndpointPublication,proto3,oneof"`
+}
+
+type TransactionBody_ClprMaintenance struct {
+	// *
+	// An internal-only transaction body for externalizing CLPR singleton
+	// maintenance done outside of transaction handling.
+	ClprMaintenance *ClprMaintenanceTransactionBody `protobuf:"bytes,92,opt,name=clpr_maintenance,json=clprMaintenance,proto3,oneof"`
+}
+
 func (*TransactionBody_ContractCall) isTransactionBody_Data() {}
 
 func (*TransactionBody_ContractCreateInstance) isTransactionBody_Data() {}
@@ -1709,6 +1871,26 @@ func (*TransactionBody_RegisteredNodeDelete) isTransactionBody_Data() {}
 
 func (*TransactionBody_MigrationRootHashVote) isTransactionBody_Data() {}
 
+func (*TransactionBody_ClprUpdateLedgerConfiguration) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprRegisterChannel) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprCompleteChannel) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprCloseChannel) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprSubmitBundle) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprRegisterConnector) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprDeregisterConnector) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprCompleteConnector) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprEndpointPublication) isTransactionBody_Data() {}
+
+func (*TransactionBody_ClprMaintenance) isTransactionBody_Data() {}
+
 // *
 // A transaction body for handling a set of transactions atomically.
 type AtomicBatchTransactionBody struct {
@@ -1761,13 +1943,13 @@ var File_transaction_proto protoreflect.FileDescriptor
 
 const file_transaction_proto_rawDesc = "" +
 	"\n" +
-	"\x11transaction.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13system_delete.proto\x1a\x15system_undelete.proto\x1a\ffreeze.proto\x1a\x13contract_call.proto\x1a\x15contract_create.proto\x1a\x15contract_update.proto\x1a\x1acrypto_add_live_hash.proto\x1a\x13crypto_create.proto\x1a\x13crypto_delete.proto\x1a\x1dcrypto_delete_live_hash.proto\x1a\x15crypto_transfer.proto\x1a\x13crypto_update.proto\x1a\x1ecrypto_approve_allowance.proto\x1a\x1dcrypto_delete_allowance.proto\x1a\x1aethereum_transaction.proto\x1a\x11file_append.proto\x1a\x11file_create.proto\x1a\x11file_delete.proto\x1a\x11file_update.proto\x1a\x0eduration.proto\x1a\x15contract_delete.proto\x1a\x1cconsensus_create_topic.proto\x1a\x1cconsensus_update_topic.proto\x1a\x1cconsensus_delete_topic.proto\x1a\x1econsensus_submit_message.proto\x1a\x16unchecked_submit.proto\x1a\x12token_create.proto\x1a\x1atoken_freeze_account.proto\x1a\x1ctoken_unfreeze_account.proto\x1a\x15token_grant_kyc.proto\x1a\x16token_revoke_kyc.proto\x1a\x12token_delete.proto\x1a\x12token_update.proto\x1a\x10token_mint.proto\x1a\x10token_burn.proto\x1a\x18token_wipe_account.proto\x1a\x15token_associate.proto\x1a\x16token_dissociate.proto\x1a\x1ftoken_fee_schedule_update.proto\x1a\x11token_pause.proto\x1a\x13token_unpause.proto\x1a\x17token_update_nfts.proto\x1a\x12token_reject.proto\x1a\x13token_airdrop.proto\x1a\x1atoken_cancel_airdrop.proto\x1a\x19token_claim_airdrop.proto\x1a\x15schedule_create.proto\x1a\x15schedule_delete.proto\x1a\x13schedule_sign.proto\x1a\x17node_stake_update.proto\x1a\x0futil_prng.proto\x1a\x11node_create.proto\x1a\x11node_update.proto\x1a\x11node_delete.proto\x1a\x11custom_fees.proto\x1a!state_signature_transaction.proto\x1a\x1bhints_key_publication.proto\x1a\x1ehints_preprocessing_vote.proto\x1a\x1dhints_partial_signature.proto\x1a\x15crs_publication.proto\x1a\x1dhistory_proof_signature.proto\x1a#history_proof_key_publication.proto\x1a\x18history_proof_vote.proto\x1a\x1bledger_id_publication.proto\x1a\x1emigration_root_hash_vote.proto\x1a\x10hook_store.proto\x1a\x13hook_dispatch.proto\x1a\x1cregistered_node_create.proto\x1a\x1cregistered_node_update.proto\x1a\x1cregistered_node_delete.proto\"\xf6\x01\n" +
+	"\x11transaction.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x13system_delete.proto\x1a\x15system_undelete.proto\x1a\ffreeze.proto\x1a\x13contract_call.proto\x1a\x15contract_create.proto\x1a\x15contract_update.proto\x1a\x1acrypto_add_live_hash.proto\x1a\x13crypto_create.proto\x1a\x13crypto_delete.proto\x1a\x1dcrypto_delete_live_hash.proto\x1a\x15crypto_transfer.proto\x1a\x13crypto_update.proto\x1a\x1ecrypto_approve_allowance.proto\x1a\x1dcrypto_delete_allowance.proto\x1a\x1aethereum_transaction.proto\x1a\x11file_append.proto\x1a\x11file_create.proto\x1a\x11file_delete.proto\x1a\x11file_update.proto\x1a\x0eduration.proto\x1a\x15contract_delete.proto\x1a\x1cconsensus_create_topic.proto\x1a\x1cconsensus_update_topic.proto\x1a\x1cconsensus_delete_topic.proto\x1a\x1econsensus_submit_message.proto\x1a\x16unchecked_submit.proto\x1a\x12token_create.proto\x1a\x1atoken_freeze_account.proto\x1a\x1ctoken_unfreeze_account.proto\x1a\x15token_grant_kyc.proto\x1a\x16token_revoke_kyc.proto\x1a\x12token_delete.proto\x1a\x12token_update.proto\x1a\x10token_mint.proto\x1a\x10token_burn.proto\x1a\x18token_wipe_account.proto\x1a\x15token_associate.proto\x1a\x16token_dissociate.proto\x1a\x1ftoken_fee_schedule_update.proto\x1a\x11token_pause.proto\x1a\x13token_unpause.proto\x1a\x17token_update_nfts.proto\x1a\x12token_reject.proto\x1a\x13token_airdrop.proto\x1a\x1atoken_cancel_airdrop.proto\x1a\x19token_claim_airdrop.proto\x1a\x15schedule_create.proto\x1a\x15schedule_delete.proto\x1a\x13schedule_sign.proto\x1a\x17node_stake_update.proto\x1a\x0futil_prng.proto\x1a\x11node_create.proto\x1a\x11node_update.proto\x1a\x11node_delete.proto\x1a\x11custom_fees.proto\x1a&clpr_update_ledger_configuration.proto\x1a\x1bclpr_complete_channel.proto\x1a\x1bclpr_register_channel.proto\x1a\x18clpr_close_channel.proto\x1a\x1dclpr_register_connector.proto\x1a\x1fclpr_deregister_connector.proto\x1a\x1dclpr_complete_connector.proto\x1a\x18clpr_submit_bundle.proto\x1a!state_signature_transaction.proto\x1a\x1bhints_key_publication.proto\x1a\x1ehints_preprocessing_vote.proto\x1a\x1dhints_partial_signature.proto\x1a\x15crs_publication.proto\x1a\x1dhistory_proof_signature.proto\x1a\x1fclpr_endpoint_publication.proto\x1a\x16clpr_maintenance.proto\x1a#history_proof_key_publication.proto\x1a\x18history_proof_vote.proto\x1a\x1bledger_id_publication.proto\x1a\x1emigration_root_hash_vote.proto\x1a\x10hook_store.proto\x1a\x13hook_dispatch.proto\x1a\x1cregistered_node_create.proto\x1a\x1cregistered_node_update.proto\x1a\x1cregistered_node_delete.proto\"\xf6\x01\n" +
 	"\vTransaction\x12.\n" +
 	"\x04body\x18\x01 \x01(\v2\x16.proto.TransactionBodyB\x02\x18\x01R\x04body\x12,\n" +
 	"\x04sigs\x18\x02 \x01(\v2\x14.proto.SignatureListB\x02\x18\x01R\x04sigs\x12/\n" +
 	"\x06sigMap\x18\x03 \x01(\v2\x13.proto.SignatureMapB\x02\x18\x01R\x06sigMap\x12 \n" +
 	"\tbodyBytes\x18\x04 \x01(\fB\x02\x18\x01R\tbodyBytes\x126\n" +
-	"\x16signedTransactionBytes\x18\x05 \x01(\fR\x16signedTransactionBytes\"\xe25\n" +
+	"\x16signedTransactionBytes\x18\x05 \x01(\fR\x16signedTransactionBytes\"\xa5?\n" +
 	"\x0fTransactionBody\x12:\n" +
 	"\rtransactionID\x18\x01 \x01(\v2\x14.proto.TransactionIDR\rtransactionID\x126\n" +
 	"\rnodeAccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\rnodeAccountID\x12&\n" +
@@ -1862,7 +2044,17 @@ const file_transaction_proto_rawDesc = "" +
 	"\x14registeredNodeCreate\x18N \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeCreateTransactionBodyH\x00R\x14registeredNodeCreate\x12{\n" +
 	"\x14registeredNodeUpdate\x18O \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBodyH\x00R\x14registeredNodeUpdate\x12{\n" +
 	"\x14registeredNodeDelete\x18P \x01(\v2E.com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBodyH\x00R\x14registeredNodeDelete\x12\x90\x01\n" +
-	"\x18migration_root_hash_vote\x18Q \x01(\v2U.com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBodyH\x00R\x15migrationRootHashVote\x12>\n" +
+	"\x18migration_root_hash_vote\x18Q \x01(\v2U.com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBodyH\x00R\x15migrationRootHashVote\x12\x8f\x01\n" +
+	"\x1dclprUpdateLedgerConfiguration\x18R \x01(\v2G.com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBodyH\x00R\x1dclprUpdateLedgerConfiguration\x12q\n" +
+	"\x13clprRegisterChannel\x18S \x01(\v2=.com.hedera.hapi.node.clpr.ClprRegisterChannelTransactionBodyH\x00R\x13clprRegisterChannel\x12q\n" +
+	"\x13clprCompleteChannel\x18T \x01(\v2=.com.hedera.hapi.node.clpr.ClprCompleteChannelTransactionBodyH\x00R\x13clprCompleteChannel\x12h\n" +
+	"\x10clprCloseChannel\x18U \x01(\v2:.com.hedera.hapi.node.clpr.ClprCloseChannelTransactionBodyH\x00R\x10clprCloseChannel\x12h\n" +
+	"\x10clprSubmitBundle\x18V \x01(\v2:.com.hedera.hapi.node.clpr.ClprSubmitBundleTransactionBodyH\x00R\x10clprSubmitBundle\x12w\n" +
+	"\x15clprRegisterConnector\x18X \x01(\v2?.com.hedera.hapi.node.clpr.ClprRegisterConnectorTransactionBodyH\x00R\x15clprRegisterConnector\x12}\n" +
+	"\x17clprDeregisterConnector\x18Y \x01(\v2A.com.hedera.hapi.node.clpr.ClprDeregisterConnectorTransactionBodyH\x00R\x17clprDeregisterConnector\x12w\n" +
+	"\x15clprCompleteConnector\x18Z \x01(\v2?.com.hedera.hapi.node.clpr.ClprCompleteConnectorTransactionBodyH\x00R\x15clprCompleteConnector\x12\x8d\x01\n" +
+	"\x19clpr_endpoint_publication\x18[ \x01(\v2O.com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBodyH\x00R\x17clprEndpointPublication\x12t\n" +
+	"\x10clpr_maintenance\x18\\ \x01(\v2G.com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceTransactionBodyH\x00R\x0fclprMaintenance\x12>\n" +
 	"\x0fmax_custom_fees\x18\xe9\a \x03(\v2\x15.proto.CustomFeeLimitR\rmaxCustomFees\x12 \n" +
 	"\vhigh_volume\x18\xea\a \x01(\bR\n" +
 	"highVolumeB\x06\n" +
@@ -1886,84 +2078,94 @@ func file_transaction_proto_rawDescGZIP() []byte {
 
 var file_transaction_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_transaction_proto_goTypes = []any{
-	(*Transaction)(nil),                               // 0: proto.Transaction
-	(*TransactionBody)(nil),                           // 1: proto.TransactionBody
-	(*AtomicBatchTransactionBody)(nil),                // 2: proto.AtomicBatchTransactionBody
-	(*SignatureList)(nil),                             // 3: proto.SignatureList
-	(*SignatureMap)(nil),                              // 4: proto.SignatureMap
-	(*TransactionID)(nil),                             // 5: proto.TransactionID
-	(*AccountID)(nil),                                 // 6: proto.AccountID
-	(*Duration)(nil),                                  // 7: proto.Duration
-	(*Key)(nil),                                       // 8: proto.Key
-	(*ContractCallTransactionBody)(nil),               // 9: proto.ContractCallTransactionBody
-	(*ContractCreateTransactionBody)(nil),             // 10: proto.ContractCreateTransactionBody
-	(*ContractUpdateTransactionBody)(nil),             // 11: proto.ContractUpdateTransactionBody
-	(*CryptoAddLiveHashTransactionBody)(nil),          // 12: proto.CryptoAddLiveHashTransactionBody
-	(*CryptoCreateTransactionBody)(nil),               // 13: proto.CryptoCreateTransactionBody
-	(*CryptoDeleteTransactionBody)(nil),               // 14: proto.CryptoDeleteTransactionBody
-	(*CryptoDeleteLiveHashTransactionBody)(nil),       // 15: proto.CryptoDeleteLiveHashTransactionBody
-	(*CryptoTransferTransactionBody)(nil),             // 16: proto.CryptoTransferTransactionBody
-	(*CryptoUpdateTransactionBody)(nil),               // 17: proto.CryptoUpdateTransactionBody
-	(*FileAppendTransactionBody)(nil),                 // 18: proto.FileAppendTransactionBody
-	(*FileCreateTransactionBody)(nil),                 // 19: proto.FileCreateTransactionBody
-	(*FileDeleteTransactionBody)(nil),                 // 20: proto.FileDeleteTransactionBody
-	(*FileUpdateTransactionBody)(nil),                 // 21: proto.FileUpdateTransactionBody
-	(*SystemDeleteTransactionBody)(nil),               // 22: proto.SystemDeleteTransactionBody
-	(*SystemUndeleteTransactionBody)(nil),             // 23: proto.SystemUndeleteTransactionBody
-	(*ContractDeleteTransactionBody)(nil),             // 24: proto.ContractDeleteTransactionBody
-	(*FreezeTransactionBody)(nil),                     // 25: proto.FreezeTransactionBody
-	(*ConsensusCreateTopicTransactionBody)(nil),       // 26: proto.ConsensusCreateTopicTransactionBody
-	(*ConsensusUpdateTopicTransactionBody)(nil),       // 27: proto.ConsensusUpdateTopicTransactionBody
-	(*ConsensusDeleteTopicTransactionBody)(nil),       // 28: proto.ConsensusDeleteTopicTransactionBody
-	(*ConsensusSubmitMessageTransactionBody)(nil),     // 29: proto.ConsensusSubmitMessageTransactionBody
-	(*UncheckedSubmitBody)(nil),                       // 30: proto.UncheckedSubmitBody
-	(*TokenCreateTransactionBody)(nil),                // 31: proto.TokenCreateTransactionBody
-	(*TokenFreezeAccountTransactionBody)(nil),         // 32: proto.TokenFreezeAccountTransactionBody
-	(*TokenUnfreezeAccountTransactionBody)(nil),       // 33: proto.TokenUnfreezeAccountTransactionBody
-	(*TokenGrantKycTransactionBody)(nil),              // 34: proto.TokenGrantKycTransactionBody
-	(*TokenRevokeKycTransactionBody)(nil),             // 35: proto.TokenRevokeKycTransactionBody
-	(*TokenDeleteTransactionBody)(nil),                // 36: proto.TokenDeleteTransactionBody
-	(*TokenUpdateTransactionBody)(nil),                // 37: proto.TokenUpdateTransactionBody
-	(*TokenMintTransactionBody)(nil),                  // 38: proto.TokenMintTransactionBody
-	(*TokenBurnTransactionBody)(nil),                  // 39: proto.TokenBurnTransactionBody
-	(*TokenWipeAccountTransactionBody)(nil),           // 40: proto.TokenWipeAccountTransactionBody
-	(*TokenAssociateTransactionBody)(nil),             // 41: proto.TokenAssociateTransactionBody
-	(*TokenDissociateTransactionBody)(nil),            // 42: proto.TokenDissociateTransactionBody
-	(*ScheduleCreateTransactionBody)(nil),             // 43: proto.ScheduleCreateTransactionBody
-	(*ScheduleDeleteTransactionBody)(nil),             // 44: proto.ScheduleDeleteTransactionBody
-	(*ScheduleSignTransactionBody)(nil),               // 45: proto.ScheduleSignTransactionBody
-	(*TokenFeeScheduleUpdateTransactionBody)(nil),     // 46: proto.TokenFeeScheduleUpdateTransactionBody
-	(*TokenPauseTransactionBody)(nil),                 // 47: proto.TokenPauseTransactionBody
-	(*TokenUnpauseTransactionBody)(nil),               // 48: proto.TokenUnpauseTransactionBody
-	(*CryptoApproveAllowanceTransactionBody)(nil),     // 49: proto.CryptoApproveAllowanceTransactionBody
-	(*CryptoDeleteAllowanceTransactionBody)(nil),      // 50: proto.CryptoDeleteAllowanceTransactionBody
-	(*EthereumTransactionBody)(nil),                   // 51: proto.EthereumTransactionBody
-	(*NodeStakeUpdateTransactionBody)(nil),            // 52: proto.NodeStakeUpdateTransactionBody
-	(*UtilPrngTransactionBody)(nil),                   // 53: proto.UtilPrngTransactionBody
-	(*TokenUpdateNftsTransactionBody)(nil),            // 54: proto.TokenUpdateNftsTransactionBody
-	(*NodeCreateTransactionBody)(nil),                 // 55: com.hedera.hapi.node.addressbook.NodeCreateTransactionBody
-	(*NodeUpdateTransactionBody)(nil),                 // 56: com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody
-	(*NodeDeleteTransactionBody)(nil),                 // 57: com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody
-	(*TokenRejectTransactionBody)(nil),                // 58: proto.TokenRejectTransactionBody
-	(*TokenAirdropTransactionBody)(nil),               // 59: proto.TokenAirdropTransactionBody
-	(*TokenCancelAirdropTransactionBody)(nil),         // 60: proto.TokenCancelAirdropTransactionBody
-	(*TokenClaimAirdropTransactionBody)(nil),          // 61: proto.TokenClaimAirdropTransactionBody
-	(*StateSignatureTransaction)(nil),                 // 62: com.hedera.hapi.platform.event.StateSignatureTransaction
-	(*HintsPreprocessingVoteTransactionBody)(nil),     // 63: com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody
-	(*HintsKeyPublicationTransactionBody)(nil),        // 64: com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody
-	(*HintsPartialSignatureTransactionBody)(nil),      // 65: com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody
-	(*HistoryProofSignatureTransactionBody)(nil),      // 66: com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody
-	(*HistoryProofKeyPublicationTransactionBody)(nil), // 67: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody
-	(*HistoryProofVoteTransactionBody)(nil),           // 68: com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody
-	(*CrsPublicationTransactionBody)(nil),             // 69: com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody
-	(*HookStoreTransactionBody)(nil),                  // 70: com.hedera.hapi.node.hooks.HookStoreTransactionBody
-	(*HookDispatchTransactionBody)(nil),               // 71: com.hedera.hapi.node.hooks.HookDispatchTransactionBody
-	(*LedgerIdPublicationTransactionBody)(nil),        // 72: com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBody
-	(*RegisteredNodeCreateTransactionBody)(nil),       // 73: com.hedera.hapi.node.addressbook.RegisteredNodeCreateTransactionBody
-	(*RegisteredNodeUpdateTransactionBody)(nil),       // 74: com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBody
-	(*RegisteredNodeDeleteTransactionBody)(nil),       // 75: com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBody
-	(*MigrationRootHashVoteTransactionBody)(nil),      // 76: com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody
-	(*CustomFeeLimit)(nil),                            // 77: proto.CustomFeeLimit
+	(*Transaction)(nil),                                  // 0: proto.Transaction
+	(*TransactionBody)(nil),                              // 1: proto.TransactionBody
+	(*AtomicBatchTransactionBody)(nil),                   // 2: proto.AtomicBatchTransactionBody
+	(*SignatureList)(nil),                                // 3: proto.SignatureList
+	(*SignatureMap)(nil),                                 // 4: proto.SignatureMap
+	(*TransactionID)(nil),                                // 5: proto.TransactionID
+	(*AccountID)(nil),                                    // 6: proto.AccountID
+	(*Duration)(nil),                                     // 7: proto.Duration
+	(*Key)(nil),                                          // 8: proto.Key
+	(*ContractCallTransactionBody)(nil),                  // 9: proto.ContractCallTransactionBody
+	(*ContractCreateTransactionBody)(nil),                // 10: proto.ContractCreateTransactionBody
+	(*ContractUpdateTransactionBody)(nil),                // 11: proto.ContractUpdateTransactionBody
+	(*CryptoAddLiveHashTransactionBody)(nil),             // 12: proto.CryptoAddLiveHashTransactionBody
+	(*CryptoCreateTransactionBody)(nil),                  // 13: proto.CryptoCreateTransactionBody
+	(*CryptoDeleteTransactionBody)(nil),                  // 14: proto.CryptoDeleteTransactionBody
+	(*CryptoDeleteLiveHashTransactionBody)(nil),          // 15: proto.CryptoDeleteLiveHashTransactionBody
+	(*CryptoTransferTransactionBody)(nil),                // 16: proto.CryptoTransferTransactionBody
+	(*CryptoUpdateTransactionBody)(nil),                  // 17: proto.CryptoUpdateTransactionBody
+	(*FileAppendTransactionBody)(nil),                    // 18: proto.FileAppendTransactionBody
+	(*FileCreateTransactionBody)(nil),                    // 19: proto.FileCreateTransactionBody
+	(*FileDeleteTransactionBody)(nil),                    // 20: proto.FileDeleteTransactionBody
+	(*FileUpdateTransactionBody)(nil),                    // 21: proto.FileUpdateTransactionBody
+	(*SystemDeleteTransactionBody)(nil),                  // 22: proto.SystemDeleteTransactionBody
+	(*SystemUndeleteTransactionBody)(nil),                // 23: proto.SystemUndeleteTransactionBody
+	(*ContractDeleteTransactionBody)(nil),                // 24: proto.ContractDeleteTransactionBody
+	(*FreezeTransactionBody)(nil),                        // 25: proto.FreezeTransactionBody
+	(*ConsensusCreateTopicTransactionBody)(nil),          // 26: proto.ConsensusCreateTopicTransactionBody
+	(*ConsensusUpdateTopicTransactionBody)(nil),          // 27: proto.ConsensusUpdateTopicTransactionBody
+	(*ConsensusDeleteTopicTransactionBody)(nil),          // 28: proto.ConsensusDeleteTopicTransactionBody
+	(*ConsensusSubmitMessageTransactionBody)(nil),        // 29: proto.ConsensusSubmitMessageTransactionBody
+	(*UncheckedSubmitBody)(nil),                          // 30: proto.UncheckedSubmitBody
+	(*TokenCreateTransactionBody)(nil),                   // 31: proto.TokenCreateTransactionBody
+	(*TokenFreezeAccountTransactionBody)(nil),            // 32: proto.TokenFreezeAccountTransactionBody
+	(*TokenUnfreezeAccountTransactionBody)(nil),          // 33: proto.TokenUnfreezeAccountTransactionBody
+	(*TokenGrantKycTransactionBody)(nil),                 // 34: proto.TokenGrantKycTransactionBody
+	(*TokenRevokeKycTransactionBody)(nil),                // 35: proto.TokenRevokeKycTransactionBody
+	(*TokenDeleteTransactionBody)(nil),                   // 36: proto.TokenDeleteTransactionBody
+	(*TokenUpdateTransactionBody)(nil),                   // 37: proto.TokenUpdateTransactionBody
+	(*TokenMintTransactionBody)(nil),                     // 38: proto.TokenMintTransactionBody
+	(*TokenBurnTransactionBody)(nil),                     // 39: proto.TokenBurnTransactionBody
+	(*TokenWipeAccountTransactionBody)(nil),              // 40: proto.TokenWipeAccountTransactionBody
+	(*TokenAssociateTransactionBody)(nil),                // 41: proto.TokenAssociateTransactionBody
+	(*TokenDissociateTransactionBody)(nil),               // 42: proto.TokenDissociateTransactionBody
+	(*ScheduleCreateTransactionBody)(nil),                // 43: proto.ScheduleCreateTransactionBody
+	(*ScheduleDeleteTransactionBody)(nil),                // 44: proto.ScheduleDeleteTransactionBody
+	(*ScheduleSignTransactionBody)(nil),                  // 45: proto.ScheduleSignTransactionBody
+	(*TokenFeeScheduleUpdateTransactionBody)(nil),        // 46: proto.TokenFeeScheduleUpdateTransactionBody
+	(*TokenPauseTransactionBody)(nil),                    // 47: proto.TokenPauseTransactionBody
+	(*TokenUnpauseTransactionBody)(nil),                  // 48: proto.TokenUnpauseTransactionBody
+	(*CryptoApproveAllowanceTransactionBody)(nil),        // 49: proto.CryptoApproveAllowanceTransactionBody
+	(*CryptoDeleteAllowanceTransactionBody)(nil),         // 50: proto.CryptoDeleteAllowanceTransactionBody
+	(*EthereumTransactionBody)(nil),                      // 51: proto.EthereumTransactionBody
+	(*NodeStakeUpdateTransactionBody)(nil),               // 52: proto.NodeStakeUpdateTransactionBody
+	(*UtilPrngTransactionBody)(nil),                      // 53: proto.UtilPrngTransactionBody
+	(*TokenUpdateNftsTransactionBody)(nil),               // 54: proto.TokenUpdateNftsTransactionBody
+	(*NodeCreateTransactionBody)(nil),                    // 55: com.hedera.hapi.node.addressbook.NodeCreateTransactionBody
+	(*NodeUpdateTransactionBody)(nil),                    // 56: com.hedera.hapi.node.addressbook.NodeUpdateTransactionBody
+	(*NodeDeleteTransactionBody)(nil),                    // 57: com.hedera.hapi.node.addressbook.NodeDeleteTransactionBody
+	(*TokenRejectTransactionBody)(nil),                   // 58: proto.TokenRejectTransactionBody
+	(*TokenAirdropTransactionBody)(nil),                  // 59: proto.TokenAirdropTransactionBody
+	(*TokenCancelAirdropTransactionBody)(nil),            // 60: proto.TokenCancelAirdropTransactionBody
+	(*TokenClaimAirdropTransactionBody)(nil),             // 61: proto.TokenClaimAirdropTransactionBody
+	(*StateSignatureTransaction)(nil),                    // 62: com.hedera.hapi.platform.event.StateSignatureTransaction
+	(*HintsPreprocessingVoteTransactionBody)(nil),        // 63: com.hedera.hapi.services.auxiliary.hints.HintsPreprocessingVoteTransactionBody
+	(*HintsKeyPublicationTransactionBody)(nil),           // 64: com.hedera.hapi.services.auxiliary.hints.HintsKeyPublicationTransactionBody
+	(*HintsPartialSignatureTransactionBody)(nil),         // 65: com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody
+	(*HistoryProofSignatureTransactionBody)(nil),         // 66: com.hedera.hapi.services.auxiliary.history.HistoryProofSignatureTransactionBody
+	(*HistoryProofKeyPublicationTransactionBody)(nil),    // 67: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody
+	(*HistoryProofVoteTransactionBody)(nil),              // 68: com.hedera.hapi.services.auxiliary.history.HistoryProofVoteTransactionBody
+	(*CrsPublicationTransactionBody)(nil),                // 69: com.hedera.hapi.services.auxiliary.hints.CrsPublicationTransactionBody
+	(*HookStoreTransactionBody)(nil),                     // 70: com.hedera.hapi.node.hooks.HookStoreTransactionBody
+	(*HookDispatchTransactionBody)(nil),                  // 71: com.hedera.hapi.node.hooks.HookDispatchTransactionBody
+	(*LedgerIdPublicationTransactionBody)(nil),           // 72: com.hedera.hapi.node.tss.LedgerIdPublicationTransactionBody
+	(*RegisteredNodeCreateTransactionBody)(nil),          // 73: com.hedera.hapi.node.addressbook.RegisteredNodeCreateTransactionBody
+	(*RegisteredNodeUpdateTransactionBody)(nil),          // 74: com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBody
+	(*RegisteredNodeDeleteTransactionBody)(nil),          // 75: com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBody
+	(*MigrationRootHashVoteTransactionBody)(nil),         // 76: com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody
+	(*ClprUpdateLedgerConfigurationTransactionBody)(nil), // 77: com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody
+	(*ClprRegisterChannelTransactionBody)(nil),           // 78: com.hedera.hapi.node.clpr.ClprRegisterChannelTransactionBody
+	(*ClprCompleteChannelTransactionBody)(nil),           // 79: com.hedera.hapi.node.clpr.ClprCompleteChannelTransactionBody
+	(*ClprCloseChannelTransactionBody)(nil),              // 80: com.hedera.hapi.node.clpr.ClprCloseChannelTransactionBody
+	(*ClprSubmitBundleTransactionBody)(nil),              // 81: com.hedera.hapi.node.clpr.ClprSubmitBundleTransactionBody
+	(*ClprRegisterConnectorTransactionBody)(nil),         // 82: com.hedera.hapi.node.clpr.ClprRegisterConnectorTransactionBody
+	(*ClprDeregisterConnectorTransactionBody)(nil),       // 83: com.hedera.hapi.node.clpr.ClprDeregisterConnectorTransactionBody
+	(*ClprCompleteConnectorTransactionBody)(nil),         // 84: com.hedera.hapi.node.clpr.ClprCompleteConnectorTransactionBody
+	(*ClprEndpointPublicationTransactionBody)(nil),       // 85: com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBody
+	(*ClprMaintenanceTransactionBody)(nil),               // 86: com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceTransactionBody
+	(*CustomFeeLimit)(nil),                               // 87: proto.CustomFeeLimit
 }
 var file_transaction_proto_depIdxs = []int32{
 	1,  // 0: proto.Transaction.body:type_name -> proto.TransactionBody
@@ -2042,12 +2244,22 @@ var file_transaction_proto_depIdxs = []int32{
 	74, // 73: proto.TransactionBody.registeredNodeUpdate:type_name -> com.hedera.hapi.node.addressbook.RegisteredNodeUpdateTransactionBody
 	75, // 74: proto.TransactionBody.registeredNodeDelete:type_name -> com.hedera.hapi.node.addressbook.RegisteredNodeDeleteTransactionBody
 	76, // 75: proto.TransactionBody.migration_root_hash_vote:type_name -> com.hedera.hapi.services.auxiliary.blockrecords.MigrationRootHashVoteTransactionBody
-	77, // 76: proto.TransactionBody.max_custom_fees:type_name -> proto.CustomFeeLimit
-	77, // [77:77] is the sub-list for method output_type
-	77, // [77:77] is the sub-list for method input_type
-	77, // [77:77] is the sub-list for extension type_name
-	77, // [77:77] is the sub-list for extension extendee
-	0,  // [0:77] is the sub-list for field type_name
+	77, // 76: proto.TransactionBody.clprUpdateLedgerConfiguration:type_name -> com.hedera.hapi.node.clpr.ClprUpdateLedgerConfigurationTransactionBody
+	78, // 77: proto.TransactionBody.clprRegisterChannel:type_name -> com.hedera.hapi.node.clpr.ClprRegisterChannelTransactionBody
+	79, // 78: proto.TransactionBody.clprCompleteChannel:type_name -> com.hedera.hapi.node.clpr.ClprCompleteChannelTransactionBody
+	80, // 79: proto.TransactionBody.clprCloseChannel:type_name -> com.hedera.hapi.node.clpr.ClprCloseChannelTransactionBody
+	81, // 80: proto.TransactionBody.clprSubmitBundle:type_name -> com.hedera.hapi.node.clpr.ClprSubmitBundleTransactionBody
+	82, // 81: proto.TransactionBody.clprRegisterConnector:type_name -> com.hedera.hapi.node.clpr.ClprRegisterConnectorTransactionBody
+	83, // 82: proto.TransactionBody.clprDeregisterConnector:type_name -> com.hedera.hapi.node.clpr.ClprDeregisterConnectorTransactionBody
+	84, // 83: proto.TransactionBody.clprCompleteConnector:type_name -> com.hedera.hapi.node.clpr.ClprCompleteConnectorTransactionBody
+	85, // 84: proto.TransactionBody.clpr_endpoint_publication:type_name -> com.hedera.hapi.services.auxiliary.clpr.ClprEndpointPublicationTransactionBody
+	86, // 85: proto.TransactionBody.clpr_maintenance:type_name -> com.hedera.hapi.services.auxiliary.clpr.ClprMaintenanceTransactionBody
+	87, // 86: proto.TransactionBody.max_custom_fees:type_name -> proto.CustomFeeLimit
+	87, // [87:87] is the sub-list for method output_type
+	87, // [87:87] is the sub-list for method input_type
+	87, // [87:87] is the sub-list for extension type_name
+	87, // [87:87] is the sub-list for extension extendee
+	0,  // [0:87] is the sub-list for field type_name
 }
 
 func init() { file_transaction_proto_init() }
@@ -2111,12 +2323,22 @@ func file_transaction_proto_init() {
 	file_node_update_proto_init()
 	file_node_delete_proto_init()
 	file_custom_fees_proto_init()
+	file_clpr_update_ledger_configuration_proto_init()
+	file_clpr_complete_channel_proto_init()
+	file_clpr_register_channel_proto_init()
+	file_clpr_close_channel_proto_init()
+	file_clpr_register_connector_proto_init()
+	file_clpr_deregister_connector_proto_init()
+	file_clpr_complete_connector_proto_init()
+	file_clpr_submit_bundle_proto_init()
 	file_state_signature_transaction_proto_init()
 	file_hints_key_publication_proto_init()
 	file_hints_preprocessing_vote_proto_init()
 	file_hints_partial_signature_proto_init()
 	file_crs_publication_proto_init()
 	file_history_proof_signature_proto_init()
+	file_clpr_endpoint_publication_proto_init()
+	file_clpr_maintenance_proto_init()
 	file_history_proof_key_publication_proto_init()
 	file_history_proof_vote_proto_init()
 	file_ledger_id_publication_proto_init()
@@ -2196,6 +2418,16 @@ func file_transaction_proto_init() {
 		(*TransactionBody_RegisteredNodeUpdate)(nil),
 		(*TransactionBody_RegisteredNodeDelete)(nil),
 		(*TransactionBody_MigrationRootHashVote)(nil),
+		(*TransactionBody_ClprUpdateLedgerConfiguration)(nil),
+		(*TransactionBody_ClprRegisterChannel)(nil),
+		(*TransactionBody_ClprCompleteChannel)(nil),
+		(*TransactionBody_ClprCloseChannel)(nil),
+		(*TransactionBody_ClprSubmitBundle)(nil),
+		(*TransactionBody_ClprRegisterConnector)(nil),
+		(*TransactionBody_ClprDeregisterConnector)(nil),
+		(*TransactionBody_ClprCompleteConnector)(nil),
+		(*TransactionBody_ClprEndpointPublication)(nil),
+		(*TransactionBody_ClprMaintenance)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{

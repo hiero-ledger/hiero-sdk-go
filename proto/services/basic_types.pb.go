@@ -72,21 +72,26 @@ type BlockHashAlgorithm int32
 
 const (
 	// *
-	// A SHA2 algorithm SHA-384 hash.
+	// A SHA2 algorithm SHA-256 hash.
 	// <p>
 	// This is the default value, if a field of this enumerated type is
 	// not set, then this is the value that will be decoded when the
 	// serialized message is read.
-	BlockHashAlgorithm_SHA2_384 BlockHashAlgorithm = 0
+	BlockHashAlgorithm_SHA2_256 BlockHashAlgorithm = 0
+	// *
+	// A SHA2 algorithm SHA-384 hash.
+	BlockHashAlgorithm_SHA2_384 BlockHashAlgorithm = 1
 )
 
 // Enum value maps for BlockHashAlgorithm.
 var (
 	BlockHashAlgorithm_name = map[int32]string{
-		0: "SHA2_384",
+		0: "SHA2_256",
+		1: "SHA2_384",
 	}
 	BlockHashAlgorithm_value = map[string]int32{
-		"SHA2_384": 0,
+		"SHA2_256": 0,
+		"SHA2_384": 1,
 	}
 )
 
@@ -980,6 +985,43 @@ const (
 	// *
 	// Vote on wrapped record migration hash state.
 	HederaFunctionality_MigrationRootHashVote HederaFunctionality = 116
+	// *
+	// Update the local CLPR ledger configuration.
+	HederaFunctionality_ClprUpdateLedgerConfiguration HederaFunctionality = 117
+	// *
+	// Register a new CLPR Channel to a peer ledger.
+	HederaFunctionality_ClprRegisterChannel HederaFunctionality = 118
+	// *
+	// Complete a PENDING CLPR Channel (reveal phase).
+	HederaFunctionality_ClprCompleteChannel HederaFunctionality = 119
+	// *
+	// Initiate graceful closure of a CLPR Channel.
+	HederaFunctionality_ClprCloseChannel HederaFunctionality = 120
+	// *
+	// Get the current CLPR ledger configuration.
+	HederaFunctionality_ClprGetLedgerConfiguration HederaFunctionality = 121
+	// *
+	// Submit a bundle of cross-ledger messages from a peer sync.
+	HederaFunctionality_ClprSubmitBundle HederaFunctionality = 122
+	// *
+	// Register a Connector on the CLPR Service.
+	HederaFunctionality_ClprRegisterConnector HederaFunctionality = 124
+	// *
+	// Remove a Connector from the CLPR Service.
+	HederaFunctionality_ClprDeregisterConnector HederaFunctionality = 125
+	// *
+	// Complete a Connector registration (reveal phase).
+	HederaFunctionality_ClprCompleteConnector HederaFunctionality = 126
+	// *
+	// Self-publish a node's CLPR endpoint into a manifest construction (spec §2.4.1 /
+	// `dev-context/clpr-endpoint-self-publication-design.md`).
+	HederaFunctionality_ClprEndpointPublication HederaFunctionality = 127
+	// *
+	// Get the current CLPR endpoint manifest (spec §6.5).
+	HederaFunctionality_ClprGetEndpointManifest HederaFunctionality = 128
+	// *
+	// (Internal-only) Externalize CLPR singleton maintenance.
+	HederaFunctionality_ClprMaintenance HederaFunctionality = 129
 )
 
 // Enum value maps for HederaFunctionality.
@@ -1084,107 +1126,131 @@ var (
 		114: "RegisteredNodeUpdate",
 		115: "RegisteredNodeDelete",
 		116: "MigrationRootHashVote",
+		117: "ClprUpdateLedgerConfiguration",
+		118: "ClprRegisterChannel",
+		119: "ClprCompleteChannel",
+		120: "ClprCloseChannel",
+		121: "ClprGetLedgerConfiguration",
+		122: "ClprSubmitBundle",
+		124: "ClprRegisterConnector",
+		125: "ClprDeregisterConnector",
+		126: "ClprCompleteConnector",
+		127: "ClprEndpointPublication",
+		128: "ClprGetEndpointManifest",
+		129: "ClprMaintenance",
 	}
 	HederaFunctionality_value = map[string]int32{
-		"NONE":                       0,
-		"CryptoTransfer":             1,
-		"CryptoUpdate":               2,
-		"CryptoDelete":               3,
-		"CryptoAddLiveHash":          4,
-		"CryptoDeleteLiveHash":       5,
-		"ContractCall":               6,
-		"ContractCreate":             7,
-		"ContractUpdate":             8,
-		"FileCreate":                 9,
-		"FileAppend":                 10,
-		"FileUpdate":                 11,
-		"FileDelete":                 12,
-		"CryptoGetAccountBalance":    13,
-		"CryptoGetAccountRecords":    14,
-		"CryptoGetInfo":              15,
-		"ContractCallLocal":          16,
-		"ContractGetInfo":            17,
-		"ContractGetBytecode":        18,
-		"GetBySolidityID":            19,
-		"GetByKey":                   20,
-		"CryptoGetLiveHash":          21,
-		"CryptoGetStakers":           22,
-		"FileGetContents":            23,
-		"FileGetInfo":                24,
-		"TransactionGetRecord":       25,
-		"ContractGetRecords":         26,
-		"CryptoCreate":               27,
-		"SystemDelete":               28,
-		"SystemUndelete":             29,
-		"ContractDelete":             30,
-		"Freeze":                     31,
-		"CreateTransactionRecord":    32,
-		"CryptoAccountAutoRenew":     33,
-		"ContractAutoRenew":          34,
-		"GetVersionInfo":             35,
-		"TransactionGetReceipt":      36,
-		"ConsensusCreateTopic":       50,
-		"ConsensusUpdateTopic":       51,
-		"ConsensusDeleteTopic":       52,
-		"ConsensusGetTopicInfo":      53,
-		"ConsensusSubmitMessage":     54,
-		"UncheckedSubmit":            55,
-		"TokenCreate":                56,
-		"TokenGetInfo":               58,
-		"TokenFreezeAccount":         59,
-		"TokenUnfreezeAccount":       60,
-		"TokenGrantKycToAccount":     61,
-		"TokenRevokeKycFromAccount":  62,
-		"TokenDelete":                63,
-		"TokenUpdate":                64,
-		"TokenMint":                  65,
-		"TokenBurn":                  66,
-		"TokenAccountWipe":           67,
-		"TokenAssociateToAccount":    68,
-		"TokenDissociateFromAccount": 69,
-		"ScheduleCreate":             70,
-		"ScheduleDelete":             71,
-		"ScheduleSign":               72,
-		"ScheduleGetInfo":            73,
-		"TokenGetAccountNftInfos":    74,
-		"TokenGetNftInfo":            75,
-		"TokenGetNftInfos":           76,
-		"TokenFeeScheduleUpdate":     77,
-		"NetworkGetExecutionTime":    78,
-		"TokenPause":                 79,
-		"TokenUnpause":               80,
-		"CryptoApproveAllowance":     81,
-		"CryptoDeleteAllowance":      82,
-		"GetAccountDetails":          83,
-		"EthereumTransaction":        84,
-		"NodeStakeUpdate":            85,
-		"UtilPrng":                   86,
-		"TransactionGetFastRecord":   87,
-		"TokenUpdateNfts":            88,
-		"NodeCreate":                 89,
-		"NodeUpdate":                 90,
-		"NodeDelete":                 91,
-		"TokenReject":                92,
-		"TokenAirdrop":               93,
-		"TokenCancelAirdrop":         94,
-		"TokenClaimAirdrop":          95,
-		"StateSignatureTransaction":  100,
-		"HintsKeyPublication":        101,
-		"HintsPreprocessingVote":     102,
-		"HintsPartialSignature":      103,
-		"HistoryAssemblySignature":   104,
-		"HistoryProofKeyPublication": 105,
-		"HistoryProofVote":           106,
-		"CrsPublication":             107,
-		"AtomicBatch":                108,
-		"LambdaSStore":               109,
-		"HookDispatch":               110,
-		"HookStore":                  111,
-		"LedgerIdPublication":        112,
-		"RegisteredNodeCreate":       113,
-		"RegisteredNodeUpdate":       114,
-		"RegisteredNodeDelete":       115,
-		"MigrationRootHashVote":      116,
+		"NONE":                          0,
+		"CryptoTransfer":                1,
+		"CryptoUpdate":                  2,
+		"CryptoDelete":                  3,
+		"CryptoAddLiveHash":             4,
+		"CryptoDeleteLiveHash":          5,
+		"ContractCall":                  6,
+		"ContractCreate":                7,
+		"ContractUpdate":                8,
+		"FileCreate":                    9,
+		"FileAppend":                    10,
+		"FileUpdate":                    11,
+		"FileDelete":                    12,
+		"CryptoGetAccountBalance":       13,
+		"CryptoGetAccountRecords":       14,
+		"CryptoGetInfo":                 15,
+		"ContractCallLocal":             16,
+		"ContractGetInfo":               17,
+		"ContractGetBytecode":           18,
+		"GetBySolidityID":               19,
+		"GetByKey":                      20,
+		"CryptoGetLiveHash":             21,
+		"CryptoGetStakers":              22,
+		"FileGetContents":               23,
+		"FileGetInfo":                   24,
+		"TransactionGetRecord":          25,
+		"ContractGetRecords":            26,
+		"CryptoCreate":                  27,
+		"SystemDelete":                  28,
+		"SystemUndelete":                29,
+		"ContractDelete":                30,
+		"Freeze":                        31,
+		"CreateTransactionRecord":       32,
+		"CryptoAccountAutoRenew":        33,
+		"ContractAutoRenew":             34,
+		"GetVersionInfo":                35,
+		"TransactionGetReceipt":         36,
+		"ConsensusCreateTopic":          50,
+		"ConsensusUpdateTopic":          51,
+		"ConsensusDeleteTopic":          52,
+		"ConsensusGetTopicInfo":         53,
+		"ConsensusSubmitMessage":        54,
+		"UncheckedSubmit":               55,
+		"TokenCreate":                   56,
+		"TokenGetInfo":                  58,
+		"TokenFreezeAccount":            59,
+		"TokenUnfreezeAccount":          60,
+		"TokenGrantKycToAccount":        61,
+		"TokenRevokeKycFromAccount":     62,
+		"TokenDelete":                   63,
+		"TokenUpdate":                   64,
+		"TokenMint":                     65,
+		"TokenBurn":                     66,
+		"TokenAccountWipe":              67,
+		"TokenAssociateToAccount":       68,
+		"TokenDissociateFromAccount":    69,
+		"ScheduleCreate":                70,
+		"ScheduleDelete":                71,
+		"ScheduleSign":                  72,
+		"ScheduleGetInfo":               73,
+		"TokenGetAccountNftInfos":       74,
+		"TokenGetNftInfo":               75,
+		"TokenGetNftInfos":              76,
+		"TokenFeeScheduleUpdate":        77,
+		"NetworkGetExecutionTime":       78,
+		"TokenPause":                    79,
+		"TokenUnpause":                  80,
+		"CryptoApproveAllowance":        81,
+		"CryptoDeleteAllowance":         82,
+		"GetAccountDetails":             83,
+		"EthereumTransaction":           84,
+		"NodeStakeUpdate":               85,
+		"UtilPrng":                      86,
+		"TransactionGetFastRecord":      87,
+		"TokenUpdateNfts":               88,
+		"NodeCreate":                    89,
+		"NodeUpdate":                    90,
+		"NodeDelete":                    91,
+		"TokenReject":                   92,
+		"TokenAirdrop":                  93,
+		"TokenCancelAirdrop":            94,
+		"TokenClaimAirdrop":             95,
+		"StateSignatureTransaction":     100,
+		"HintsKeyPublication":           101,
+		"HintsPreprocessingVote":        102,
+		"HintsPartialSignature":         103,
+		"HistoryAssemblySignature":      104,
+		"HistoryProofKeyPublication":    105,
+		"HistoryProofVote":              106,
+		"CrsPublication":                107,
+		"AtomicBatch":                   108,
+		"LambdaSStore":                  109,
+		"HookDispatch":                  110,
+		"HookStore":                     111,
+		"LedgerIdPublication":           112,
+		"RegisteredNodeCreate":          113,
+		"RegisteredNodeUpdate":          114,
+		"RegisteredNodeDelete":          115,
+		"MigrationRootHashVote":         116,
+		"ClprUpdateLedgerConfiguration": 117,
+		"ClprRegisterChannel":           118,
+		"ClprCompleteChannel":           119,
+		"ClprCloseChannel":              120,
+		"ClprGetLedgerConfiguration":    121,
+		"ClprSubmitBundle":              122,
+		"ClprRegisterConnector":         124,
+		"ClprDeregisterConnector":       125,
+		"ClprCompleteConnector":         126,
+		"ClprEndpointPublication":       127,
+		"ClprGetEndpointManifest":       128,
+		"ClprMaintenance":               129,
 	}
 )
 
@@ -2042,16 +2108,18 @@ type TransactionID struct {
 	// *
 	// An identifier for an internal transaction.<br/>
 	// An internal transaction is one that was spawned as part of handling a
-	// user transaction. These internal transactions share the
-	// transactionValidStart and accountID of the user transaction, so a nonce
-	// is necessary to give them a unique TransactionID.
+	// user transaction, or an inner transaction of an
+	// `AtomicBatchTransactionBody`. These internal transactions share the
+	// transactionValidStart and accountID of the transaction that spawned
+	// them, so a nonce is necessary to give them a unique TransactionID.
 	// <p>
 	// An example is when a "parent" ContractCreate or ContractCall transaction
 	// calls one or more HTS precompiled contracts; each of the "child"
 	// transactions spawned for a precompile has a transaction id with a
 	// different nonce.
 	// <p>
-	// This value MUST be unset for user-submitted transactions.
+	// This value MUST be unset for user-submitted transactions, including
+	// the inner transactions of an atomic batch.
 	Nonce         int32 `protobuf:"varint,4,opt,name=nonce,proto3" json:"nonce,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -5377,6 +5445,69 @@ func (x *TokenAssociation) GetAccountId() *AccountID {
 }
 
 // *
+// An association between an account and a token; this message exists in addition
+// to TokenAssociation because we wanted a more readable name for EntityIDPair;
+// but for the block stream state changes, we *also* needed to preserve the relative
+// order of the account id and token id. (TokenAssociation accidentally reversed the
+// order of those fields, changing the serialized bytes and breaking binary-only
+// replay of state changes.)
+type AccountTokenAssociation struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// *
+	// An account identifier for the associated account.
+	AccountId *AccountID `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
+	// *
+	// A token identifier for the associated token.
+	TokenId       *TokenID `protobuf:"bytes,2,opt,name=token_id,json=tokenId,proto3" json:"token_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AccountTokenAssociation) Reset() {
+	*x = AccountTokenAssociation{}
+	mi := &file_basic_types_proto_msgTypes[42]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AccountTokenAssociation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AccountTokenAssociation) ProtoMessage() {}
+
+func (x *AccountTokenAssociation) ProtoReflect() protoreflect.Message {
+	mi := &file_basic_types_proto_msgTypes[42]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AccountTokenAssociation.ProtoReflect.Descriptor instead.
+func (*AccountTokenAssociation) Descriptor() ([]byte, []int) {
+	return file_basic_types_proto_rawDescGZIP(), []int{42}
+}
+
+func (x *AccountTokenAssociation) GetAccountId() *AccountID {
+	if x != nil {
+		return x.AccountId
+	}
+	return nil
+}
+
+func (x *AccountTokenAssociation) GetTokenId() *TokenID {
+	if x != nil {
+		return x.TokenId
+	}
+	return nil
+}
+
+// *
 // Staking information for an account or a contract.
 //
 // This is used for responses returned from `CryptoGetInfo` or
@@ -5418,7 +5549,7 @@ type StakingInfo struct {
 
 func (x *StakingInfo) Reset() {
 	*x = StakingInfo{}
-	mi := &file_basic_types_proto_msgTypes[42]
+	mi := &file_basic_types_proto_msgTypes[43]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5430,7 +5561,7 @@ func (x *StakingInfo) String() string {
 func (*StakingInfo) ProtoMessage() {}
 
 func (x *StakingInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_basic_types_proto_msgTypes[42]
+	mi := &file_basic_types_proto_msgTypes[43]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5443,7 +5574,7 @@ func (x *StakingInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StakingInfo.ProtoReflect.Descriptor instead.
 func (*StakingInfo) Descriptor() ([]byte, []int) {
-	return file_basic_types_proto_rawDescGZIP(), []int{42}
+	return file_basic_types_proto_rawDescGZIP(), []int{43}
 }
 
 func (x *StakingInfo) GetDeclineReward() bool {
@@ -5557,7 +5688,7 @@ type PendingAirdropId struct {
 
 func (x *PendingAirdropId) Reset() {
 	*x = PendingAirdropId{}
-	mi := &file_basic_types_proto_msgTypes[43]
+	mi := &file_basic_types_proto_msgTypes[44]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5569,7 +5700,7 @@ func (x *PendingAirdropId) String() string {
 func (*PendingAirdropId) ProtoMessage() {}
 
 func (x *PendingAirdropId) ProtoReflect() protoreflect.Message {
-	mi := &file_basic_types_proto_msgTypes[43]
+	mi := &file_basic_types_proto_msgTypes[44]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5582,7 +5713,7 @@ func (x *PendingAirdropId) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingAirdropId.ProtoReflect.Descriptor instead.
 func (*PendingAirdropId) Descriptor() ([]byte, []int) {
-	return file_basic_types_proto_rawDescGZIP(), []int{43}
+	return file_basic_types_proto_rawDescGZIP(), []int{44}
 }
 
 func (x *PendingAirdropId) GetSenderId() *AccountID {
@@ -5685,7 +5816,7 @@ type PendingAirdropValue struct {
 
 func (x *PendingAirdropValue) Reset() {
 	*x = PendingAirdropValue{}
-	mi := &file_basic_types_proto_msgTypes[44]
+	mi := &file_basic_types_proto_msgTypes[45]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5697,7 +5828,7 @@ func (x *PendingAirdropValue) String() string {
 func (*PendingAirdropValue) ProtoMessage() {}
 
 func (x *PendingAirdropValue) ProtoReflect() protoreflect.Message {
-	mi := &file_basic_types_proto_msgTypes[44]
+	mi := &file_basic_types_proto_msgTypes[45]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5710,7 +5841,7 @@ func (x *PendingAirdropValue) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PendingAirdropValue.ProtoReflect.Descriptor instead.
 func (*PendingAirdropValue) Descriptor() ([]byte, []int) {
-	return file_basic_types_proto_rawDescGZIP(), []int{44}
+	return file_basic_types_proto_rawDescGZIP(), []int{45}
 }
 
 func (x *PendingAirdropValue) GetAmount() uint64 {
@@ -5938,7 +6069,11 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x10TokenAssociation\x12)\n" +
 	"\btoken_id\x18\x01 \x01(\v2\x0e.proto.TokenIDR\atokenId\x12/\n" +
 	"\n" +
-	"account_id\x18\x02 \x01(\v2\x10.proto.AccountIDR\taccountId\"\xb2\x02\n" +
+	"account_id\x18\x02 \x01(\v2\x10.proto.AccountIDR\taccountId\"u\n" +
+	"\x17AccountTokenAssociation\x12/\n" +
+	"\n" +
+	"account_id\x18\x01 \x01(\v2\x10.proto.AccountIDR\taccountId\x12)\n" +
+	"\btoken_id\x18\x02 \x01(\v2\x0e.proto.TokenIDR\atokenId\"\xb2\x02\n" +
 	"\vStakingInfo\x12%\n" +
 	"\x0edecline_reward\x18\x01 \x01(\bR\rdeclineReward\x12>\n" +
 	"\x12stake_period_start\x18\x02 \x01(\v2\x10.proto.TimestampR\x10stakePeriodStart\x12%\n" +
@@ -5956,9 +6091,10 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x12non_fungible_token\x18\x04 \x01(\v2\f.proto.NftIDH\x00R\x10nonFungibleTokenB\x11\n" +
 	"\x0ftoken_reference\"-\n" +
 	"\x13PendingAirdropValue\x12\x16\n" +
-	"\x06amount\x18\x01 \x01(\x04R\x06amount*\"\n" +
+	"\x06amount\x18\x01 \x01(\x04R\x06amount*0\n" +
 	"\x12BlockHashAlgorithm\x12\f\n" +
-	"\bSHA2_384\x10\x00*9\n" +
+	"\bSHA2_256\x10\x00\x12\f\n" +
+	"\bSHA2_384\x10\x01*9\n" +
 	"\tTokenType\x12\x13\n" +
 	"\x0fFUNGIBLE_COMMON\x10\x00\x12\x17\n" +
 	"\x13NON_FUNGIBLE_UNIQUE\x10\x01*\xb7\x02\n" +
@@ -5992,7 +6128,7 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x12PauseNotApplicable\x10\x00\x12\n" +
 	"\n" +
 	"\x06Paused\x10\x01\x12\f\n" +
-	"\bUnpaused\x10\x02*\xc2\x11\n" +
+	"\bUnpaused\x10\x02*\x87\x14\n" +
 	"\x13HederaFunctionality\x12\b\n" +
 	"\x04NONE\x10\x00\x12\x12\n" +
 	"\x0eCryptoTransfer\x10\x01\x12\x10\n" +
@@ -6102,7 +6238,19 @@ const file_basic_types_proto_rawDesc = "" +
 	"\x14RegisteredNodeCreate\x10q\x12\x18\n" +
 	"\x14RegisteredNodeUpdate\x10r\x12\x18\n" +
 	"\x14RegisteredNodeDelete\x10s\x12\x19\n" +
-	"\x15MigrationRootHashVote\x10tB&\n" +
+	"\x15MigrationRootHashVote\x10t\x12!\n" +
+	"\x1dClprUpdateLedgerConfiguration\x10u\x12\x17\n" +
+	"\x13ClprRegisterChannel\x10v\x12\x17\n" +
+	"\x13ClprCompleteChannel\x10w\x12\x14\n" +
+	"\x10ClprCloseChannel\x10x\x12\x1e\n" +
+	"\x1aClprGetLedgerConfiguration\x10y\x12\x14\n" +
+	"\x10ClprSubmitBundle\x10z\x12\x19\n" +
+	"\x15ClprRegisterConnector\x10|\x12\x1b\n" +
+	"\x17ClprDeregisterConnector\x10}\x12\x19\n" +
+	"\x15ClprCompleteConnector\x10~\x12\x1b\n" +
+	"\x17ClprEndpointPublication\x10\x7f\x12\x1c\n" +
+	"\x17ClprGetEndpointManifest\x10\x80\x01\x12\x14\n" +
+	"\x0fClprMaintenance\x10\x81\x01B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (
@@ -6118,7 +6266,7 @@ func file_basic_types_proto_rawDescGZIP() []byte {
 }
 
 var file_basic_types_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_basic_types_proto_msgTypes = make([]protoimpl.MessageInfo, 45)
+var file_basic_types_proto_msgTypes = make([]protoimpl.MessageInfo, 46)
 var file_basic_types_proto_goTypes = []any{
 	(BlockHashAlgorithm)(0),           // 0: proto.BlockHashAlgorithm
 	(TokenType)(0),                    // 1: proto.TokenType
@@ -6171,16 +6319,17 @@ var file_basic_types_proto_goTypes = []any{
 	(*TokenBalance)(nil),              // 48: proto.TokenBalance
 	(*TokenBalances)(nil),             // 49: proto.TokenBalances
 	(*TokenAssociation)(nil),          // 50: proto.TokenAssociation
-	(*StakingInfo)(nil),               // 51: proto.StakingInfo
-	(*PendingAirdropId)(nil),          // 52: proto.PendingAirdropId
-	(*PendingAirdropValue)(nil),       // 53: proto.PendingAirdropValue
-	(*Timestamp)(nil),                 // 54: proto.Timestamp
-	(*wrapperspb.UInt32Value)(nil),    // 55: google.protobuf.UInt32Value
-	(*TimestampSeconds)(nil),          // 56: proto.TimestampSeconds
+	(*AccountTokenAssociation)(nil),   // 51: proto.AccountTokenAssociation
+	(*StakingInfo)(nil),               // 52: proto.StakingInfo
+	(*PendingAirdropId)(nil),          // 53: proto.PendingAirdropId
+	(*PendingAirdropValue)(nil),       // 54: proto.PendingAirdropValue
+	(*Timestamp)(nil),                 // 55: proto.Timestamp
+	(*wrapperspb.UInt32Value)(nil),    // 56: google.protobuf.UInt32Value
+	(*TimestampSeconds)(nil),          // 57: proto.TimestampSeconds
 }
 var file_basic_types_proto_depIdxs = []int32{
 	11, // 0: proto.NftID.token_ID:type_name -> proto.TokenID
-	54, // 1: proto.TransactionID.transactionValidStart:type_name -> proto.Timestamp
+	55, // 1: proto.TransactionID.transactionValidStart:type_name -> proto.Timestamp
 	12, // 2: proto.TransactionID.accountID:type_name -> proto.AccountID
 	20, // 3: proto.HookId.entity_id:type_name -> proto.HookEntityId
 	12, // 4: proto.HookEntityId.account_id:type_name -> proto.AccountID
@@ -6199,7 +6348,7 @@ var file_basic_types_proto_depIdxs = []int32{
 	11, // 17: proto.TokenTransferList.token:type_name -> proto.TokenID
 	23, // 18: proto.TokenTransferList.transfers:type_name -> proto.AccountAmount
 	25, // 19: proto.TokenTransferList.nftTransfers:type_name -> proto.NftTransfer
-	55, // 20: proto.TokenTransferList.expected_decimals:type_name -> google.protobuf.UInt32Value
+	56, // 20: proto.TokenTransferList.expected_decimals:type_name -> google.protobuf.UInt32Value
 	15, // 21: proto.Key.contractID:type_name -> proto.ContractID
 	29, // 22: proto.Key.thresholdKey:type_name -> proto.ThresholdKey
 	30, // 23: proto.Key.keyList:type_name -> proto.KeyList
@@ -6219,7 +6368,7 @@ var file_basic_types_proto_depIdxs = []int32{
 	36, // 37: proto.FeeData.servicedata:type_name -> proto.FeeComponents
 	2,  // 38: proto.FeeData.subType:type_name -> proto.SubType
 	37, // 39: proto.FeeSchedule.transactionFeeSchedule:type_name -> proto.TransactionFeeSchedule
-	56, // 40: proto.FeeSchedule.expiryTime:type_name -> proto.TimestampSeconds
+	57, // 40: proto.FeeSchedule.expiryTime:type_name -> proto.TimestampSeconds
 	39, // 41: proto.CurrentAndNextFeeSchedule.currentFeeSchedule:type_name -> proto.FeeSchedule
 	39, // 42: proto.CurrentAndNextFeeSchedule.nextFeeSchedule:type_name -> proto.FeeSchedule
 	12, // 43: proto.NodeAddress.nodeAccountId:type_name -> proto.AccountID
@@ -6233,17 +6382,19 @@ var file_basic_types_proto_depIdxs = []int32{
 	48, // 51: proto.TokenBalances.tokenBalances:type_name -> proto.TokenBalance
 	11, // 52: proto.TokenAssociation.token_id:type_name -> proto.TokenID
 	12, // 53: proto.TokenAssociation.account_id:type_name -> proto.AccountID
-	54, // 54: proto.StakingInfo.stake_period_start:type_name -> proto.Timestamp
-	12, // 55: proto.StakingInfo.staked_account_id:type_name -> proto.AccountID
-	12, // 56: proto.PendingAirdropId.sender_id:type_name -> proto.AccountID
-	12, // 57: proto.PendingAirdropId.receiver_id:type_name -> proto.AccountID
-	11, // 58: proto.PendingAirdropId.fungible_token_type:type_name -> proto.TokenID
-	13, // 59: proto.PendingAirdropId.non_fungible_token:type_name -> proto.NftID
-	60, // [60:60] is the sub-list for method output_type
-	60, // [60:60] is the sub-list for method input_type
-	60, // [60:60] is the sub-list for extension type_name
-	60, // [60:60] is the sub-list for extension extendee
-	0,  // [0:60] is the sub-list for field type_name
+	12, // 54: proto.AccountTokenAssociation.account_id:type_name -> proto.AccountID
+	11, // 55: proto.AccountTokenAssociation.token_id:type_name -> proto.TokenID
+	55, // 56: proto.StakingInfo.stake_period_start:type_name -> proto.Timestamp
+	12, // 57: proto.StakingInfo.staked_account_id:type_name -> proto.AccountID
+	12, // 58: proto.PendingAirdropId.sender_id:type_name -> proto.AccountID
+	12, // 59: proto.PendingAirdropId.receiver_id:type_name -> proto.AccountID
+	11, // 60: proto.PendingAirdropId.fungible_token_type:type_name -> proto.TokenID
+	13, // 61: proto.PendingAirdropId.non_fungible_token:type_name -> proto.NftID
+	62, // [62:62] is the sub-list for method output_type
+	62, // [62:62] is the sub-list for method input_type
+	62, // [62:62] is the sub-list for extension type_name
+	62, // [62:62] is the sub-list for extension extendee
+	0,  // [0:62] is the sub-list for field type_name
 }
 
 func init() { file_basic_types_proto_init() }
@@ -6303,11 +6454,11 @@ func file_basic_types_proto_init() {
 		(*SignaturePair_ECDSA_384)(nil),
 		(*SignaturePair_ECDSASecp256K1)(nil),
 	}
-	file_basic_types_proto_msgTypes[42].OneofWrappers = []any{
+	file_basic_types_proto_msgTypes[43].OneofWrappers = []any{
 		(*StakingInfo_StakedAccountId)(nil),
 		(*StakingInfo_StakedNodeId)(nil),
 	}
-	file_basic_types_proto_msgTypes[43].OneofWrappers = []any{
+	file_basic_types_proto_msgTypes[44].OneofWrappers = []any{
 		(*PendingAirdropId_FungibleTokenType)(nil),
 		(*PendingAirdropId_NonFungibleToken)(nil),
 	}
@@ -6317,7 +6468,7 @@ func file_basic_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_basic_types_proto_rawDesc), len(file_basic_types_proto_rawDesc)),
 			NumEnums:      9,
-			NumMessages:   45,
+			NumMessages:   46,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
