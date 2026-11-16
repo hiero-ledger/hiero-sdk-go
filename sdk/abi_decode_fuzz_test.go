@@ -66,6 +66,8 @@ func FuzzABIDecode(f *testing.F) {
 	// Regression inputs from abi_decode_unit_test.go
 	f.Add("tuple(string)", []byte{})
 	f.Add("tuple(bytes32, bytes, bytes)", []byte("00000000000000000000000000000000\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 00000000000000000000000000"))
+	// Nested arrays whose offsets all point to the same data, from abi_decode_unit_test.go
+	f.Add("uint8[][][][][]", nestedArraysSharingData(5, 24))
 
 	f.Fuzz(func(t *testing.T, typeStr string, input []byte) {
 		typ, err := NewType(typeStr)
