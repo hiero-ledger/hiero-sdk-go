@@ -204,9 +204,8 @@ func TestDecodeDeeplyNestedTuples(t *testing.T) {
 		return strings.Repeat("tuple(", levels) + "uint8" + strings.Repeat(")", levels)
 	}
 
-	// one word holding a single value nested in 31 tuples, which with the value itself is
-	// the deepest nesting the budget allows
-	typ, err := NewType(nestedTuple(31))
+	// one word holding a single value nested in 32 tuples, the deepest nesting the budget allows
+	typ, err := NewType(nestedTuple(32))
 	require.NoError(t, err)
 	_, err = Decode(typ, make([]byte, 32))
 	require.NoError(t, err)
