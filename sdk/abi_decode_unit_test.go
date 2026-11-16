@@ -198,3 +198,22 @@ func TestDecodeStringArrayWithinBudget(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, value, decoded)
 }
+
+func TestDecodeDeeplyNestedTuples(t *testing.T) {
+	nestedTuple := func(levels int) string {
+		return strings.Repeat("tuple(", levels) + "uint8" + strings.Repeat(")", levels)
+	}
+
+	// one word holding a single value nested in 31 tuples, which with the value itself is
+	// the deepest nesting the budget allows
+	typ, err := NewType(nestedTuple(31))
+	require.NoError(t, err)
+	_, err = Decode(typ, make([]byte, 32))
+	require.NoError(t, err)
+
+	// the innermost tuple runs out of budget and the outer tuples return its error
+	typ, err = NewType(nestedTuple(33))
+	require.NoError(t, err)
+	_, err = Decode(typ, make([]byte, 32))
+	require.ErrorIs(t, err, errABIDecodeBudgetExceeded)
+}
