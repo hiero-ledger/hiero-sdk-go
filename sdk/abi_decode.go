@@ -46,13 +46,15 @@ func DecodeStruct(t *Type, input []byte, out interface{}) error {
 	return nil
 }
 
-// takeDecodeBudget charges n decoded values to the budget, and fails once it runs out.
+// takeDecodeBudget charges n decoded values, or n bytes of a decoded string, to the budget, and fails
+// once it runs out.
 //
 // Dynamic values are read through offsets, and nothing stops many offsets from pointing to the same
 // data, so without a limit a short input could decode into a huge number of values: each level of
-// nested dynamic arrays multiplies them. Decode allows one value per byte of input. A valid encoding
-// takes 32 bytes per value, apart from the static arrays and tuples that contain them, which leaves
-// room for 32 levels of such nesting.
+// nested dynamic arrays multiplies them, and every element of a string array that points to the same
+// long string copies it again. Decode allows one value, or one byte of string, per byte of input. A
+// valid encoding takes 32 bytes per value and one byte per byte of string, apart from the static
+// arrays and tuples that contain them, which leaves room for 32 levels of such nesting.
 func takeDecodeBudget(budget *int, n int) error {
 	if n > *budget {
 		return errABIDecodeBudgetExceeded
@@ -102,6 +104,11 @@ func decode(t *Type, input []byte, budget *int) (interface{}, []byte, error) {
 		val = readInteger(t, data)
 
 	case KindString:
+		// the string copies its bytes out of the input, charge them so that shared strings cannot
+		// multiply them
+		if err := takeDecodeBudget(budget, length); err != nil {
+			return nil, nil, err
+		}
 		val = string(input[32 : 32+length])
 
 	case KindBytes:

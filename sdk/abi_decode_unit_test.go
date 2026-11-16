@@ -16,7 +16,8 @@ import (
 
 func TestDecodeBytesBound(t *testing.T) {
 	typ, _ := NewType("tuple(string)")
-	budget := 0
+	// enough budget for the tuple field, so that decoding reaches the length check of the string
+	budget := 1
 	decodeTuple(typ, nil, &budget) // it should not panic
 }
 
@@ -144,4 +145,56 @@ func TestDecodeDeeplyNestedStaticArrays(t *testing.T) {
 	require.NoError(t, err)
 	_, err = Decode(typ, make([]byte, 32))
 	require.ErrorIs(t, err, errABIDecodeBudgetExceeded)
+}
+
+// stringArraySharingData encodes a string array of n elements whose offsets all point to the same
+// string of length bytes. The input has about length bytes, but decoding it without a limit copies
+// the string n times.
+func stringArraySharingData(n, length int) []byte {
+	word := func(v int) []byte {
+		b := make([]byte, 32)
+		big.NewInt(int64(v)).FillBytes(b)
+		return b
+	}
+	input := word(n)
+	for i := 0; i < n; i++ {
+		// offsets count from the end of the length word, the string starts after n words
+		input = append(input, word(32*n)...)
+	}
+	input = append(input, word(length)...)
+	return append(input, make([]byte, (length+31)/32*32)...)
+}
+
+func TestDecodeStringArraySharingData(t *testing.T) {
+	typ, err := NewType("string[]")
+	require.NoError(t, err)
+
+	// ~100 KB that would decode into 1,000 copies of a 64 KB string, ~64 MB
+	input := stringArraySharingData(1000, 64*1024)
+
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	_, err = Decode(typ, input)
+	runtime.ReadMemStats(&after)
+
+	require.ErrorIs(t, err, errABIDecodeBudgetExceeded)
+	require.Less(t, after.TotalAlloc-before.TotalAlloc, uint64(1<<20))
+}
+
+func TestDecodeStringArrayWithinBudget(t *testing.T) {
+	typ, err := NewType("string[]")
+	require.NoError(t, err)
+
+	// a few elements sharing a short string still decode
+	decoded, err := Decode(typ, stringArraySharingData(3, 40))
+	require.NoError(t, err)
+	require.Equal(t, []string{strings.Repeat("\x00", 40), strings.Repeat("\x00", 40), strings.Repeat("\x00", 40)}, decoded)
+
+	// a valid encoding of a string array decodes back to the same value
+	value := []string{"hello", strings.Repeat("a", 100), ""}
+	input, err := Encode(value, typ)
+	require.NoError(t, err)
+	decoded, err = Decode(typ, input)
+	require.NoError(t, err)
+	require.Equal(t, value, decoded)
 }
