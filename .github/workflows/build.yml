@@ -327,7 +327,7 @@ jobs:
                 echo "pid=$!" >> "${GITHUB_OUTPUT}"
 
             - name: Prepare Hiero Solo
-              uses: hiero-ledger/hiero-solo-action@c982fe02b37db2a25a6a5e61139d9fe5d0917cff # v0.26.0
+              uses: hiero-ledger/hiero-solo-action@dd84e95ece32d42071c945214571099ffbed9cf2 # v0.27.0
               with:
                 installMirrorNode: true
                 hieroVersion: ${{ env.HIERO_VERSION }}
