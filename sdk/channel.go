@@ -18,6 +18,7 @@ type _Channel struct {
 	schedule    services.ScheduleServiceClient
 	util        services.UtilServiceClient
 	addressBook services.AddressBookServiceClient
+	clpr        services.ClprServiceClient
 	client      *grpc.ClientConn
 }
 
@@ -105,4 +106,12 @@ func (channel _Channel) _GetAddressBook() services.AddressBookServiceClient {
 	}
 
 	return channel.addressBook
+}
+
+func (channel _Channel) _GetClpr() services.ClprServiceClient {
+	if channel.clpr == nil {
+		channel.clpr = services.NewClprServiceClient(channel.client)
+	}
+
+	return channel.clpr
 }
