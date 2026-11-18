@@ -9,6 +9,9 @@ import (
 
 const _ClprIDLength = 32
 
+// _ClprServiceAddress is the 20-byte CLPR system contract address 0x16e.
+var _ClprServiceAddress = [20]byte{18: 0x01, 19: 0x6e}
+
 var errClprOwnershipKeyUnsupported = errors.New("CLPR ownership key must be an ECDSA secp256k1 or Ed25519 PublicKey")
 var errClprPrivateKeyRequired = errors.New("CLPR ownership proof requires an ECDSA secp256k1 or Ed25519 PrivateKey")
 

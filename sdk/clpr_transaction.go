@@ -13,8 +13,11 @@ import (
 
 var errClprFieldNotSet = errors.New("must be explicitly set")
 var errClprOwnershipProofIncomplete = errors.New("a complete ownership proof must be set before freezing or executing")
+var errClprConnectorIDMismatch = errors.New("connectorID does not match channelID, ownership public key and salt")
+var errClprLockedStakeNegative = errors.New("lockedStake must not be negative")
 var errClprConfigProofEmpty = errors.New("configProofBytes must not be empty")
 var errClprBodyUnsupported = errors.New("the SDK does not build this CLPR transaction")
+var errClprAdminKeyInvalid = errors.New("adminKey must be a non-empty key")
 
 func _ClprCannotSchedule(name string) error {
 	return fmt.Errorf("cannot schedule `%s`", name)
@@ -86,6 +89,24 @@ func _ClprBytesFromProtobuf(value []byte) []byte {
 	return _ClprCopyBytes(value)
 }
 
+func _ClprCopyAccountID(id *AccountID) *AccountID {
+	if id == nil {
+		return nil
+	}
+
+	accountID := *id
+	if id.AliasEvmAddress != nil {
+		evmAddress := _ClprCopyBytes(*id.AliasEvmAddress)
+		accountID.AliasEvmAddress = &evmAddress
+	}
+	if id.AliasKey != nil {
+		aliasKey := *id.AliasKey
+		accountID.AliasKey = &aliasKey
+	}
+
+	return &accountID
+}
+
 func _ClprCopyContractID(id *ContractID) *ContractID {
 	if id == nil {
 		return nil
@@ -94,6 +115,50 @@ func _ClprCopyContractID(id *ContractID) *ContractID {
 	contractID := *id
 	contractID.EvmAddress = _ClprCopyBytes(id.EvmAddress)
 	return &contractID
+}
+
+// _ClprCopyKey copies the mutable parts of a key without changing its type.
+func _ClprCopyKey(key Key) Key {
+	switch k := key.(type) {
+	case ContractID:
+		return *_ClprCopyContractID(&k)
+	case *ContractID:
+		return _ClprCopyContractID(k)
+	case DelegatableContractID:
+		k.EvmAddress = _ClprCopyBytes(k.EvmAddress)
+		return k
+	case *DelegatableContractID:
+		if k == nil {
+			return nil
+		}
+		copied := *k
+		copied.EvmAddress = _ClprCopyBytes(k.EvmAddress)
+		return &copied
+	case KeyList:
+		return *_ClprCopyKeyList(&k)
+	case *KeyList:
+		return _ClprCopyKeyList(k)
+	}
+
+	return key
+}
+
+func _ClprCopyKeyList(list *KeyList) *KeyList {
+	if list == nil {
+		return nil
+	}
+
+	keys := make([]Key, len(list.keys))
+	for i, key := range list.keys {
+		keys[i] = _ClprCopyKey(key)
+	}
+
+	return &KeyList{keys: keys, threshold: list.threshold}
+}
+
+// _ClprKeyIsEmpty reports whether a key has nothing to put on the wire, such as PublicKey{}.
+func _ClprKeyIsEmpty(key Key) bool {
+	return key == nil || key._ToProtoKey().GetKey() == nil
 }
 
 // _ClprOwnershipProof is a signed ownership reveal. A decoded proof may be incomplete; the private

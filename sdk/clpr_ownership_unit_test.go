@@ -108,6 +108,12 @@ func TestUnitClprSignatureSchemeString(t *testing.T) {
 	assert.Equal(t, "UNKNOWN (7)", ClprSignatureScheme(7).String())
 }
 
+func TestUnitClprServiceAddress(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(t, "000000000000000000000000000000000000016e", hex.EncodeToString(_ClprServiceAddress[:]))
+}
+
 func TestUnitClprOwnershipVectors(t *testing.T) {
 	t.Parallel()
 

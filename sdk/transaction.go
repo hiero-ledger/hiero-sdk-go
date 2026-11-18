@@ -376,6 +376,12 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _ClprCompleteChannelTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprCompleteChannelTransaction](baseTx), first)
 	case *services.TransactionBody_ClprCloseChannel:
 		childTx = _ClprCloseChannelTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprCloseChannelTransaction](baseTx), first)
+	case *services.TransactionBody_ClprRegisterConnector:
+		childTx = _ClprRegisterConnectorTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprRegisterConnectorTransaction](baseTx), first)
+	case *services.TransactionBody_ClprCompleteConnector:
+		childTx = _ClprCompleteConnectorTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprCompleteConnectorTransaction](baseTx), first)
+	case *services.TransactionBody_ClprDeregisterConnector:
+		childTx = _ClprDeregisterConnectorTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprDeregisterConnectorTransaction](baseTx), first)
 	case *services.TransactionBody_ClprEndpointPublication:
 		return nil, fmt.Errorf("TransactionFromBytes does not support clpr_endpoint_publication: %w", errClprBodyUnsupported)
 	case *services.TransactionBody_ClprMaintenance:
