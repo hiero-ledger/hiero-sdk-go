@@ -230,6 +230,9 @@ func _Execute(client *Client, e Executable) (interface{}, error) {
 		}
 
 		protoRequest = e.makeRequest()
+		if requestError, failed := protoRequest.(error); failed {
+			return TransactionResponse{}, requestError
+		}
 		if e.isBatchedAndNotBatchTransaction() {
 			return TransactionResponse{}, errBatchedAndNotBatchTransaction
 		}
