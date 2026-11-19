@@ -20,6 +20,10 @@ This will start the server on port **8054**. You can change the port by setting 
 
 Once started, your TCK server will be up and running! 🚦
 
+## Continuous integration
+
+Pull requests to `main` and pushes to `main` also run the TCK in the `TCK Compatibility` job of `.github/workflows/build.yml`, after the build and test jobs pass. The job starts this server, starts Solo and runs the suite with the [hiero-sdk-tck](https://github.com/hiero-ledger/hiero-sdk-tck) action. The counts are in the job summary and the report is in the `tck-compatibility` artifact. The TCK is pinned to a release commit in the `uses:` line; to move to a newer TCK, change that commit and read the release notes for new tests.
+
 # Start all TCK tests with Docker 🐳
 
 This section covers setting up and running TCK tests using Docker.

@@ -92,6 +92,7 @@ func main() {
 		"updateTopic":               postHandler(HandleError, handler.New(topicService.UpdateTopic)),
 		"deleteTopic":               postHandler(HandleError, handler.New(topicService.DeleteTopic)),
 		"submitTopicMessage":        postHandler(HandleError, handler.New(topicService.SubmitTopicMessage)),
+		"getTopicInfo":              postHandler(HandleError, handler.New(topicService.GetTopicInfo)),
 		"createContract":            postHandler(HandleError, handler.New(contractService.CreateContract)),
 		"updateContract":            postHandler(HandleError, handler.New(contractService.UpdateContract)),
 		"deleteContract":            postHandler(HandleError, handler.New(contractService.DeleteContract)),

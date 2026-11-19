@@ -4,6 +4,7 @@ package hiero
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"reflect"
 	"regexp"
@@ -457,6 +458,10 @@ func readType(l *lexer) (*Type, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to read array size '%s': %v", n.literal, err)
 			}
+			// reflect.ArrayOf panics if the size of the array overflows
+			if elemSize := max(uint64(tt.t.Size()), 1); size > math.MaxInt/elemSize {
+				return nil, fmt.Errorf("array size '%s' is too big", n.literal)
+			}
 
 			tAux = &Type{kind: KindArray, elem: tt, size: int(size), t: reflect.ArrayOf(int(size), tt.t)}
 			if l.nextToken().typ != rbracketToken {
@@ -469,6 +474,28 @@ func readType(l *lexer) (*Type, error) {
 		tt = tAux
 	}
 	return tt, nil
+}
+
+// typeSize checks the size suffix of a type, such as the 8 in uint8, and returns the size.
+// int and uint take a multiple of 8 bits up to 256 and default to 256, 'bytes' may
+// have up to 32 bytes or no size, the rest dont have a size
+func typeSize(t string, size int, hasSize bool) (int, error) {
+	switch {
+	case t == "int" || t == "uint":
+		if !hasSize {
+			return 256, nil
+		}
+		if size == 0 || size > 256 || size%8 != 0 {
+			return 0, fmt.Errorf("type %s expects a multiple of 8 between 8 and 256 bits but found %d", t, size)
+		}
+	case t == "bytes" && hasSize:
+		if size == 0 || size > 32 {
+			return 0, fmt.Errorf("type bytes expects between 1 and 32 bytes but found %d", size)
+		}
+	case hasSize:
+		return 0, fmt.Errorf("type %s does not expect bytes", t)
+	}
+	return size, nil
 }
 
 func decodeSimpleType(str string) (*Type, error) {
@@ -492,14 +519,9 @@ func decodeSimpleType(str string) (*Type, error) {
 		ok = true
 	}
 
-	// int and uint without bytes default to 256, 'bytes' may
-	// have or not, the rest dont have bytes
-	if t == "int" || t == "uint" {
-		if !ok {
-			bytes = 256
-		}
-	} else if t != "bytes" && ok {
-		return nil, fmt.Errorf("type %s does not expect bytes", t)
+	bytes, err = typeSize(t, bytes, ok)
+	if err != nil {
+		return nil, err
 	}
 
 	switch t {
@@ -515,9 +537,6 @@ func decodeSimpleType(str string) (*Type, error) {
 		case 64:
 			k = uint64T
 		default:
-			if bytes%8 != 0 {
-				panic(fmt.Errorf("number of bytes has to be M mod 8"))
-			}
 			k = bigIntT
 		}
 		return &Type{kind: KindUInt, size: bytes, t: k}, nil
@@ -534,9 +553,6 @@ func decodeSimpleType(str string) (*Type, error) {
 		case 64:
 			k = int64T
 		default:
-			if bytes%8 != 0 {
-				panic(fmt.Errorf("number of bytes has to be M mod 8"))
-			}
 			k = bigIntT
 		}
 		return &Type{kind: KindInt, size: bytes, t: k}, nil
