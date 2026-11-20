@@ -68,6 +68,8 @@ type Response struct {
 	//	*Response_TokenGetNftInfos
 	//	*Response_NetworkGetExecutionTime
 	//	*Response_AccountDetails
+	//	*Response_ClprGetLedgerConfiguration
+	//	*Response_ClprGetEndpointManifest
 	Response      isResponse_Response `protobuf_oneof:"response"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -335,6 +337,24 @@ func (x *Response) GetAccountDetails() *GetAccountDetailsResponse {
 	return nil
 }
 
+func (x *Response) GetClprGetLedgerConfiguration() *ClprGetLedgerConfigurationResponse {
+	if x != nil {
+		if x, ok := x.Response.(*Response_ClprGetLedgerConfiguration); ok {
+			return x.ClprGetLedgerConfiguration
+		}
+	}
+	return nil
+}
+
+func (x *Response) GetClprGetEndpointManifest() *ClprGetEndpointManifestResponse {
+	if x != nil {
+		if x, ok := x.Response.(*Response_ClprGetEndpointManifest); ok {
+			return x.ClprGetEndpointManifest
+		}
+	}
+	return nil
+}
+
 type isResponse_Response interface {
 	isResponse_Response()
 }
@@ -535,6 +555,18 @@ type Response_AccountDetails struct {
 	AccountDetails *GetAccountDetailsResponse `protobuf:"bytes,158,opt,name=accountDetails,proto3,oneof"`
 }
 
+type Response_ClprGetLedgerConfiguration struct {
+	// *
+	// Response containing the current CLPR ledger configuration.
+	ClprGetLedgerConfiguration *ClprGetLedgerConfigurationResponse `protobuf:"bytes,159,opt,name=clprGetLedgerConfiguration,proto3,oneof"`
+}
+
+type Response_ClprGetEndpointManifest struct {
+	// *
+	// Response containing the current CLPR endpoint manifest (spec §6.5).
+	ClprGetEndpointManifest *ClprGetEndpointManifestResponse `protobuf:"bytes,160,opt,name=clprGetEndpointManifest,proto3,oneof"`
+}
+
 func (*Response_GetByKey) isResponse_Response() {}
 
 func (*Response_GetBySolidityID) isResponse_Response() {}
@@ -585,11 +617,15 @@ func (*Response_NetworkGetExecutionTime) isResponse_Response() {}
 
 func (*Response_AccountDetails) isResponse_Response() {}
 
+func (*Response_ClprGetLedgerConfiguration) isResponse_Response() {}
+
+func (*Response_ClprGetEndpointManifest) isResponse_Response() {}
+
 var File_response_proto protoreflect.FileDescriptor
 
 const file_response_proto_rawDesc = "" +
 	"\n" +
-	"\x0eresponse.proto\x12\x05proto\x1a\x10get_by_key.proto\x1a\x18get_by_solidity_id.proto\x1a\x19contract_call_local.proto\x1a\x1bcontract_get_bytecode.proto\x1a\x17contract_get_info.proto\x1a\x1acontract_get_records.proto\x1a crypto_get_account_balance.proto\x1a crypto_get_account_records.proto\x1a\x15crypto_get_info.proto\x1a\x1acrypto_get_live_hash.proto\x1a\x18crypto_get_stakers.proto\x1a\x17file_get_contents.proto\x1a\x13file_get_info.proto\x1a\x1dtransaction_get_receipt.proto\x1a\x1ctransaction_get_record.proto\x1a!transaction_get_fast_record.proto\x1a\x1econsensus_get_topic_info.proto\x1a\x1enetwork_get_version_info.proto\x1a network_get_execution_time.proto\x1a!token_get_account_nft_infos.proto\x1a\x14token_get_info.proto\x1a\x18token_get_nft_info.proto\x1a\x19token_get_nft_infos.proto\x1a\x17schedule_get_info.proto\x1a\x19get_account_details.proto\"\xec\x10\n" +
+	"\x0eresponse.proto\x12\x05proto\x1a\x10get_by_key.proto\x1a\x18get_by_solidity_id.proto\x1a\x19contract_call_local.proto\x1a\x1bcontract_get_bytecode.proto\x1a\x17contract_get_info.proto\x1a\x1acontract_get_records.proto\x1a crypto_get_account_balance.proto\x1a crypto_get_account_records.proto\x1a\x15crypto_get_info.proto\x1a\x1acrypto_get_live_hash.proto\x1a\x18crypto_get_stakers.proto\x1a\x17file_get_contents.proto\x1a\x13file_get_info.proto\x1a\x1dtransaction_get_receipt.proto\x1a\x1ctransaction_get_record.proto\x1a!transaction_get_fast_record.proto\x1a\x1econsensus_get_topic_info.proto\x1a\x1enetwork_get_version_info.proto\x1a network_get_execution_time.proto\x1a!token_get_account_nft_infos.proto\x1a\x14token_get_info.proto\x1a\x18token_get_nft_info.proto\x1a\x19token_get_nft_infos.proto\x1a\x17schedule_get_info.proto\x1a\x19get_account_details.proto\x1a#clpr_get_ledger_configuration.proto\x1a clpr_get_endpoint_manifest.proto\"\xe8\x12\n" +
 	"\bResponse\x125\n" +
 	"\bgetByKey\x18\x01 \x01(\v2\x17.proto.GetByKeyResponseH\x00R\bgetByKey\x12J\n" +
 	"\x0fgetBySolidityID\x18\x02 \x01(\v2\x1e.proto.GetBySolidityIDResponseH\x00R\x0fgetBySolidityID\x12P\n" +
@@ -616,7 +652,9 @@ const file_response_proto_rawDesc = "" +
 	"\x0ftokenGetNftInfo\x18\x9b\x01 \x01(\v2\x1e.proto.TokenGetNftInfoResponseH\x00R\x0ftokenGetNftInfo\x12N\n" +
 	"\x10tokenGetNftInfos\x18\x9c\x01 \x01(\v2\x1f.proto.TokenGetNftInfosResponseH\x00R\x10tokenGetNftInfos\x12c\n" +
 	"\x17networkGetExecutionTime\x18\x9d\x01 \x01(\v2&.proto.NetworkGetExecutionTimeResponseH\x00R\x17networkGetExecutionTime\x12K\n" +
-	"\x0eaccountDetails\x18\x9e\x01 \x01(\v2 .proto.GetAccountDetailsResponseH\x00R\x0eaccountDetailsB\n" +
+	"\x0eaccountDetails\x18\x9e\x01 \x01(\v2 .proto.GetAccountDetailsResponseH\x00R\x0eaccountDetails\x12\x80\x01\n" +
+	"\x1aclprGetLedgerConfiguration\x18\x9f\x01 \x01(\v2=.com.hedera.hapi.node.clpr.ClprGetLedgerConfigurationResponseH\x00R\x1aclprGetLedgerConfiguration\x12w\n" +
+	"\x17clprGetEndpointManifest\x18\xa0\x01 \x01(\v2:.com.hedera.hapi.node.clpr.ClprGetEndpointManifestResponseH\x00R\x17clprGetEndpointManifestB\n" +
 	"\n" +
 	"\bresponseB&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
@@ -635,32 +673,34 @@ func file_response_proto_rawDescGZIP() []byte {
 
 var file_response_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_response_proto_goTypes = []any{
-	(*Response)(nil),                         // 0: proto.Response
-	(*GetByKeyResponse)(nil),                 // 1: proto.GetByKeyResponse
-	(*GetBySolidityIDResponse)(nil),          // 2: proto.GetBySolidityIDResponse
-	(*ContractCallLocalResponse)(nil),        // 3: proto.ContractCallLocalResponse
-	(*ContractGetBytecodeResponse)(nil),      // 4: proto.ContractGetBytecodeResponse
-	(*ContractGetInfoResponse)(nil),          // 5: proto.ContractGetInfoResponse
-	(*ContractGetRecordsResponse)(nil),       // 6: proto.ContractGetRecordsResponse
-	(*CryptoGetAccountBalanceResponse)(nil),  // 7: proto.CryptoGetAccountBalanceResponse
-	(*CryptoGetAccountRecordsResponse)(nil),  // 8: proto.CryptoGetAccountRecordsResponse
-	(*CryptoGetInfoResponse)(nil),            // 9: proto.CryptoGetInfoResponse
-	(*CryptoGetLiveHashResponse)(nil),        // 10: proto.CryptoGetLiveHashResponse
-	(*CryptoGetStakersResponse)(nil),         // 11: proto.CryptoGetStakersResponse
-	(*FileGetContentsResponse)(nil),          // 12: proto.FileGetContentsResponse
-	(*FileGetInfoResponse)(nil),              // 13: proto.FileGetInfoResponse
-	(*TransactionGetReceiptResponse)(nil),    // 14: proto.TransactionGetReceiptResponse
-	(*TransactionGetRecordResponse)(nil),     // 15: proto.TransactionGetRecordResponse
-	(*TransactionGetFastRecordResponse)(nil), // 16: proto.TransactionGetFastRecordResponse
-	(*ConsensusGetTopicInfoResponse)(nil),    // 17: proto.ConsensusGetTopicInfoResponse
-	(*NetworkGetVersionInfoResponse)(nil),    // 18: proto.NetworkGetVersionInfoResponse
-	(*TokenGetInfoResponse)(nil),             // 19: proto.TokenGetInfoResponse
-	(*ScheduleGetInfoResponse)(nil),          // 20: proto.ScheduleGetInfoResponse
-	(*TokenGetAccountNftInfosResponse)(nil),  // 21: proto.TokenGetAccountNftInfosResponse
-	(*TokenGetNftInfoResponse)(nil),          // 22: proto.TokenGetNftInfoResponse
-	(*TokenGetNftInfosResponse)(nil),         // 23: proto.TokenGetNftInfosResponse
-	(*NetworkGetExecutionTimeResponse)(nil),  // 24: proto.NetworkGetExecutionTimeResponse
-	(*GetAccountDetailsResponse)(nil),        // 25: proto.GetAccountDetailsResponse
+	(*Response)(nil),                           // 0: proto.Response
+	(*GetByKeyResponse)(nil),                   // 1: proto.GetByKeyResponse
+	(*GetBySolidityIDResponse)(nil),            // 2: proto.GetBySolidityIDResponse
+	(*ContractCallLocalResponse)(nil),          // 3: proto.ContractCallLocalResponse
+	(*ContractGetBytecodeResponse)(nil),        // 4: proto.ContractGetBytecodeResponse
+	(*ContractGetInfoResponse)(nil),            // 5: proto.ContractGetInfoResponse
+	(*ContractGetRecordsResponse)(nil),         // 6: proto.ContractGetRecordsResponse
+	(*CryptoGetAccountBalanceResponse)(nil),    // 7: proto.CryptoGetAccountBalanceResponse
+	(*CryptoGetAccountRecordsResponse)(nil),    // 8: proto.CryptoGetAccountRecordsResponse
+	(*CryptoGetInfoResponse)(nil),              // 9: proto.CryptoGetInfoResponse
+	(*CryptoGetLiveHashResponse)(nil),          // 10: proto.CryptoGetLiveHashResponse
+	(*CryptoGetStakersResponse)(nil),           // 11: proto.CryptoGetStakersResponse
+	(*FileGetContentsResponse)(nil),            // 12: proto.FileGetContentsResponse
+	(*FileGetInfoResponse)(nil),                // 13: proto.FileGetInfoResponse
+	(*TransactionGetReceiptResponse)(nil),      // 14: proto.TransactionGetReceiptResponse
+	(*TransactionGetRecordResponse)(nil),       // 15: proto.TransactionGetRecordResponse
+	(*TransactionGetFastRecordResponse)(nil),   // 16: proto.TransactionGetFastRecordResponse
+	(*ConsensusGetTopicInfoResponse)(nil),      // 17: proto.ConsensusGetTopicInfoResponse
+	(*NetworkGetVersionInfoResponse)(nil),      // 18: proto.NetworkGetVersionInfoResponse
+	(*TokenGetInfoResponse)(nil),               // 19: proto.TokenGetInfoResponse
+	(*ScheduleGetInfoResponse)(nil),            // 20: proto.ScheduleGetInfoResponse
+	(*TokenGetAccountNftInfosResponse)(nil),    // 21: proto.TokenGetAccountNftInfosResponse
+	(*TokenGetNftInfoResponse)(nil),            // 22: proto.TokenGetNftInfoResponse
+	(*TokenGetNftInfosResponse)(nil),           // 23: proto.TokenGetNftInfosResponse
+	(*NetworkGetExecutionTimeResponse)(nil),    // 24: proto.NetworkGetExecutionTimeResponse
+	(*GetAccountDetailsResponse)(nil),          // 25: proto.GetAccountDetailsResponse
+	(*ClprGetLedgerConfigurationResponse)(nil), // 26: com.hedera.hapi.node.clpr.ClprGetLedgerConfigurationResponse
+	(*ClprGetEndpointManifestResponse)(nil),    // 27: com.hedera.hapi.node.clpr.ClprGetEndpointManifestResponse
 }
 var file_response_proto_depIdxs = []int32{
 	1,  // 0: proto.Response.getByKey:type_name -> proto.GetByKeyResponse
@@ -688,11 +728,13 @@ var file_response_proto_depIdxs = []int32{
 	23, // 22: proto.Response.tokenGetNftInfos:type_name -> proto.TokenGetNftInfosResponse
 	24, // 23: proto.Response.networkGetExecutionTime:type_name -> proto.NetworkGetExecutionTimeResponse
 	25, // 24: proto.Response.accountDetails:type_name -> proto.GetAccountDetailsResponse
-	25, // [25:25] is the sub-list for method output_type
-	25, // [25:25] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	26, // 25: proto.Response.clprGetLedgerConfiguration:type_name -> com.hedera.hapi.node.clpr.ClprGetLedgerConfigurationResponse
+	27, // 26: proto.Response.clprGetEndpointManifest:type_name -> com.hedera.hapi.node.clpr.ClprGetEndpointManifestResponse
+	27, // [27:27] is the sub-list for method output_type
+	27, // [27:27] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_response_proto_init() }
@@ -725,6 +767,8 @@ func file_response_proto_init() {
 	file_token_get_nft_infos_proto_init()
 	file_schedule_get_info_proto_init()
 	file_get_account_details_proto_init()
+	file_clpr_get_ledger_configuration_proto_init()
+	file_clpr_get_endpoint_manifest_proto_init()
 	file_response_proto_msgTypes[0].OneofWrappers = []any{
 		(*Response_GetByKey)(nil),
 		(*Response_GetBySolidityID)(nil),
@@ -751,6 +795,8 @@ func file_response_proto_init() {
 		(*Response_TokenGetNftInfos)(nil),
 		(*Response_NetworkGetExecutionTime)(nil),
 		(*Response_AccountDetails)(nil),
+		(*Response_ClprGetLedgerConfiguration)(nil),
+		(*Response_ClprGetEndpointManifest)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
