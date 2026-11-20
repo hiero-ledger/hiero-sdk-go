@@ -39,34 +39,36 @@ scripts/install-hooks.sh
 
 ## Protobuf Generation Script
 
-This script automates the process of moving and compiling `.proto` files using `protoc`. It supports multiple source directories for `proto` definitions and allows for configurable destination directory for the generation output.
+This script regenerates `proto/services` from the `.proto` files in the `services` submodule. It copies the
+`-dest` directory and every `-source` directory into a temporary directory, flattens nested imports to file
+basenames, and compiles the files listed in `proto/proto.json` with `protoc`. The submodule checkout is not modified.
 
 ### Usage
 
 Run the script with the following command:
 
 ```sh
-go run scripts/proto/generator.go -source <dir1,dir2,...> -dest <dir>
+go run scripts/generators/proto/generator.go -dest <services_dir> -source <dir1,dir2,...>
 ```
 
 ### Arguments
 
--   -source (required): A comma-separated list of directories containing .proto files.
+-   -dest (required): The services proto directory. All `.proto` files below it are included.
 
--   -dest (required): The destination directory where all .proto files will be moved before compilation.
+-   -source (optional): A comma-separated list of additional directories containing `.proto` files.
 
 ### Example
 
 ```sh
-go run scripts/generators/proto/generator.go -source services/hapi/hedera-protobuf-java-api/src/main/proto/services/state,services/hapi/hedera-protobuf-java-api/src/main/proto/services/auxiliary,services/hapi/hedera-protobuf-java-api/src/main/proto/platform/event -dest services/hapi/hedera-protobuf-java-api/src/main/proto/services
+go run scripts/generators/proto/generator.go -dest services/hapi/hedera-protobuf-java-api/src/main/proto/services -source services/hapi/hedera-protobuf-java-api/src/main/proto/platform/event
 
 ```
 
 ### Note
 
 -   If proto file definitions are located in the `services` submodule make sure it is initialised.
--   Keep in mind that the script does not still support protobuf import altering. If errors related to
-    the `proto` import paths occur we resolve them manually.
+-   The script fails if two source files share a basename or if `proto/proto.json` lists a file that does not exist.
+-   If `protoc` reports `unable to determine Go import path` for a file, add that file to `proto/proto.json`.
 
 ## Request Codes and Status Generation Scripts
 

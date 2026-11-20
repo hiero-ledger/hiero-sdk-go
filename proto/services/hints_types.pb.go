@@ -90,7 +90,9 @@ type HintsPartyId struct {
 	PartyId uint32 `protobuf:"varint,1,opt,name=party_id,json=partyId,proto3" json:"party_id,omitempty"`
 	// *
 	// The number of parties in the hinTS scheme.
-	NumParties    uint32 `protobuf:"varint,2,opt,name=num_parties,json=numParties,proto3" json:"num_parties,omitempty"`
+	NumParties uint32 `protobuf:"varint,2,opt,name=num_parties,json=numParties,proto3" json:"num_parties,omitempty"`
+	// * The completed CRS generation used to produce this key.
+	CrsId         uint64 `protobuf:"varint,3,opt,name=crs_id,json=crsId,proto3" json:"crs_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -135,6 +137,13 @@ func (x *HintsPartyId) GetPartyId() uint32 {
 func (x *HintsPartyId) GetNumParties() uint32 {
 	if x != nil {
 		return x.NumParties
+	}
+	return 0
+}
+
+func (x *HintsPartyId) GetCrsId() uint64 {
+	if x != nil {
+		return x.CrsId
 	}
 	return 0
 }
@@ -574,8 +583,12 @@ type HintsConstruction struct {
 	//	*HintsConstruction_PreprocessingStartTime
 	//	*HintsConstruction_HintsScheme
 	PreprocessingState isHintsConstruction_PreprocessingState `protobuf_oneof:"preprocessing_state"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// * The bound CRS generation; zero means this construction is waiting to be bound.
+	CrsId uint64 `protobuf:"varint,7,opt,name=crs_id,json=crsId,proto3" json:"crs_id,omitempty"`
+	// * The effective party capacity, which MUST NOT decrease across roster transitions.
+	NumParties    uint32 `protobuf:"varint,8,opt,name=num_parties,json=numParties,proto3" json:"num_parties,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *HintsConstruction) Reset() {
@@ -663,6 +676,20 @@ func (x *HintsConstruction) GetHintsScheme() *HintsScheme {
 	return nil
 }
 
+func (x *HintsConstruction) GetCrsId() uint64 {
+	if x != nil {
+		return x.CrsId
+	}
+	return 0
+}
+
+func (x *HintsConstruction) GetNumParties() uint32 {
+	if x != nil {
+		return x.NumParties
+	}
+	return 0
+}
+
 type isHintsConstruction_PreprocessingState interface {
 	isHintsConstruction_PreprocessingState()
 }
@@ -698,6 +725,60 @@ func (*HintsConstruction_HintsScheme) isHintsConstruction_PreprocessingState() {
 
 // *
 // The state of a CRS construction.
+type CrsContributor struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// * The node authorized to contribute to the ceremony.
+	NodeId uint64 `protobuf:"varint,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
+	// * Its weight in the source roster at the start of the ceremony.
+	Weight        uint64 `protobuf:"varint,2,opt,name=weight,proto3" json:"weight,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CrsContributor) Reset() {
+	*x = CrsContributor{}
+	mi := &file_hints_types_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CrsContributor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CrsContributor) ProtoMessage() {}
+
+func (x *CrsContributor) ProtoReflect() protoreflect.Message {
+	mi := &file_hints_types_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CrsContributor.ProtoReflect.Descriptor instead.
+func (*CrsContributor) Descriptor() ([]byte, []int) {
+	return file_hints_types_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CrsContributor) GetNodeId() uint64 {
+	if x != nil {
+		return x.NodeId
+	}
+	return 0
+}
+
+func (x *CrsContributor) GetWeight() uint64 {
+	if x != nil {
+		return x.Weight
+	}
+	return 0
+}
+
 type CRSState struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
@@ -710,19 +791,43 @@ type CRSState struct {
 	// *
 	// The id of the next node that should contribute to the CRS. This is used
 	// to ensure that all nodes contribute to the CRS in a round-robin fashion.
-	// If this is null, then all nodes in the network have contributed to the CRS.
+	// If this is absent, every contributor has had a turn, including nodes
+	// whose contribution windows expired without a valid contribution.
 	NextContributingNodeId *wrapperspb.UInt64Value `protobuf:"bytes,3,opt,name=next_contributing_node_id,json=nextContributingNodeId,proto3" json:"next_contributing_node_id,omitempty"`
 	// *
-	// The time at which the network should stop waiting for the node's contributions
-	// and move on to the next node in the round-robin fashion.
+	// While gathering, the deadline for the current contributor. While waiting
+	// to adopt the final CRS, the deadline for finalization or retry. This is
+	// absent once the ceremony completes.
 	ContributionEndTime *Timestamp `protobuf:"bytes,4,opt,name=contribution_end_time,json=contributionEndTime,proto3" json:"contribution_end_time,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// * A positive generation identifier that MUST NOT be reused after cancellation.
+	CeremonyId uint64 `protobuf:"varint,5,opt,name=ceremony_id,json=ceremonyId,proto3" json:"ceremony_id,omitempty"`
+	// * The power-of-two effective party capacity of this CRS.
+	NumParties uint32 `protobuf:"varint,6,opt,name=num_parties,json=numParties,proto3" json:"num_parties,omitempty"`
+	// * The source roster authorizing the ceremony.
+	SourceRosterHash []byte `protobuf:"bytes,7,opt,name=source_roster_hash,json=sourceRosterHash,proto3" json:"source_roster_hash,omitempty"`
+	// * The target roster for which this ceremony was started.
+	TargetRosterHash []byte `protobuf:"bytes,8,opt,name=target_roster_hash,json=targetRosterHash,proto3" json:"target_roster_hash,omitempty"`
+	// * The hints construction owning this ceremony.
+	ConstructionId uint64 `protobuf:"varint,9,opt,name=construction_id,json=constructionId,proto3" json:"construction_id,omitempty"`
+	// * The current attempt, incremented when restarting an incomplete ceremony.
+	Attempt uint64 `protobuf:"varint,10,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// * The immutable contributor set and weights for the ceremony.
+	Contributors []*CrsContributor `protobuf:"bytes,11,rep,name=contributors,proto3" json:"contributors,omitempty"`
+	// * Nodes whose valid contributions were incorporated during this attempt, each at most once.
+	ContributedNodeIds []uint64 `protobuf:"varint,12,rep,packed,name=contributed_node_ids,json=contributedNodeIds,proto3" json:"contributed_node_ids,omitempty"`
+	// * The deterministic starting CRS for this capacity, before fresh contributions.
+	InitialCrs []byte `protobuf:"bytes,13,opt,name=initial_crs,json=initialCrs,proto3" json:"initial_crs,omitempty"`
+	// * Allocation high-water mark, retained in the active envelope even when next is discarded.
+	LastUsedCeremonyId uint64 `protobuf:"varint,14,opt,name=last_used_ceremony_id,json=lastUsedCeremonyId,proto3" json:"last_used_ceremony_id,omitempty"`
+	// * Construction allocation high-water mark, preserved when a candidate is abandoned.
+	LastUsedConstructionId uint64 `protobuf:"varint,15,opt,name=last_used_construction_id,json=lastUsedConstructionId,proto3" json:"last_used_construction_id,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *CRSState) Reset() {
 	*x = CRSState{}
-	mi := &file_hints_types_proto_msgTypes[8]
+	mi := &file_hints_types_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -734,7 +839,7 @@ func (x *CRSState) String() string {
 func (*CRSState) ProtoMessage() {}
 
 func (x *CRSState) ProtoReflect() protoreflect.Message {
-	mi := &file_hints_types_proto_msgTypes[8]
+	mi := &file_hints_types_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -747,7 +852,7 @@ func (x *CRSState) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CRSState.ProtoReflect.Descriptor instead.
 func (*CRSState) Descriptor() ([]byte, []int) {
-	return file_hints_types_proto_rawDescGZIP(), []int{8}
+	return file_hints_types_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *CRSState) GetCrs() []byte {
@@ -778,15 +883,93 @@ func (x *CRSState) GetContributionEndTime() *Timestamp {
 	return nil
 }
 
+func (x *CRSState) GetCeremonyId() uint64 {
+	if x != nil {
+		return x.CeremonyId
+	}
+	return 0
+}
+
+func (x *CRSState) GetNumParties() uint32 {
+	if x != nil {
+		return x.NumParties
+	}
+	return 0
+}
+
+func (x *CRSState) GetSourceRosterHash() []byte {
+	if x != nil {
+		return x.SourceRosterHash
+	}
+	return nil
+}
+
+func (x *CRSState) GetTargetRosterHash() []byte {
+	if x != nil {
+		return x.TargetRosterHash
+	}
+	return nil
+}
+
+func (x *CRSState) GetConstructionId() uint64 {
+	if x != nil {
+		return x.ConstructionId
+	}
+	return 0
+}
+
+func (x *CRSState) GetAttempt() uint64 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *CRSState) GetContributors() []*CrsContributor {
+	if x != nil {
+		return x.Contributors
+	}
+	return nil
+}
+
+func (x *CRSState) GetContributedNodeIds() []uint64 {
+	if x != nil {
+		return x.ContributedNodeIds
+	}
+	return nil
+}
+
+func (x *CRSState) GetInitialCrs() []byte {
+	if x != nil {
+		return x.InitialCrs
+	}
+	return nil
+}
+
+func (x *CRSState) GetLastUsedCeremonyId() uint64 {
+	if x != nil {
+		return x.LastUsedCeremonyId
+	}
+	return 0
+}
+
+func (x *CRSState) GetLastUsedConstructionId() uint64 {
+	if x != nil {
+		return x.LastUsedConstructionId
+	}
+	return 0
+}
+
 var File_hints_types_proto protoreflect.FileDescriptor
 
 const file_hints_types_proto_rawDesc = "" +
 	"\n" +
-	"\x11hints_types.proto\x12 com.hedera.hapi.node.state.hints\x1a\x0ftimestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\"J\n" +
+	"\x11hints_types.proto\x12 com.hedera.hapi.node.state.hints\x1a\x0ftimestamp.proto\x1a\x1egoogle/protobuf/wrappers.proto\"a\n" +
 	"\fHintsPartyId\x12\x19\n" +
 	"\bparty_id\x18\x01 \x01(\rR\apartyId\x12\x1f\n" +
 	"\vnum_parties\x18\x02 \x01(\rR\n" +
-	"numParties\"\x8a\x01\n" +
+	"numParties\x12\x15\n" +
+	"\x06crs_id\x18\x03 \x01(\x04R\x05crsId\"\x8a\x01\n" +
 	"\vHintsKeySet\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\x04R\x06nodeId\x125\n" +
 	"\radoption_time\x18\x02 \x01(\v2\x10.proto.TimestampR\fadoptionTime\x12\x10\n" +
@@ -808,20 +991,41 @@ const file_hints_types_proto_rawDesc = "" +
 	"\fparty_weight\x18\x03 \x01(\x04R\vpartyWeight\"\xc3\x01\n" +
 	"\vHintsScheme\x12_\n" +
 	"\x11preprocessed_keys\x18\x01 \x01(\v22.com.hedera.hapi.node.state.hints.PreprocessedKeysR\x10preprocessedKeys\x12S\n" +
-	"\x0enode_party_ids\x18\x02 \x03(\v2-.com.hedera.hapi.node.state.hints.NodePartyIdR\fnodePartyIds\"\x98\x03\n" +
+	"\x0enode_party_ids\x18\x02 \x03(\v2-.com.hedera.hapi.node.state.hints.NodePartyIdR\fnodePartyIds\"\xd0\x03\n" +
 	"\x11HintsConstruction\x12'\n" +
 	"\x0fconstruction_id\x18\x01 \x01(\x04R\x0econstructionId\x12,\n" +
 	"\x12source_roster_hash\x18\x02 \x01(\fR\x10sourceRosterHash\x12,\n" +
 	"\x12target_roster_hash\x18\x03 \x01(\fR\x10targetRosterHash\x12E\n" +
 	"\x15grace_period_end_time\x18\x04 \x01(\v2\x10.proto.TimestampH\x00R\x12gracePeriodEndTime\x12L\n" +
 	"\x18preprocessing_start_time\x18\x05 \x01(\v2\x10.proto.TimestampH\x00R\x16preprocessingStartTime\x12R\n" +
-	"\fhints_scheme\x18\x06 \x01(\v2-.com.hedera.hapi.node.state.hints.HintsSchemeH\x00R\vhintsSchemeB\x15\n" +
-	"\x13preprocessing_state\"\xfd\x01\n" +
+	"\fhints_scheme\x18\x06 \x01(\v2-.com.hedera.hapi.node.state.hints.HintsSchemeH\x00R\vhintsScheme\x12\x15\n" +
+	"\x06crs_id\x18\a \x01(\x04R\x05crsId\x12\x1f\n" +
+	"\vnum_parties\x18\b \x01(\rR\n" +
+	"numPartiesB\x15\n" +
+	"\x13preprocessing_state\"A\n" +
+	"\x0eCrsContributor\x12\x17\n" +
+	"\anode_id\x18\x01 \x01(\x04R\x06nodeId\x12\x16\n" +
+	"\x06weight\x18\x02 \x01(\x04R\x06weight\"\xf5\x05\n" +
 	"\bCRSState\x12\x10\n" +
 	"\x03crs\x18\x01 \x01(\fR\x03crs\x12@\n" +
 	"\x05stage\x18\x02 \x01(\x0e2*.com.hedera.hapi.node.state.hints.CRSStageR\x05stage\x12W\n" +
 	"\x19next_contributing_node_id\x18\x03 \x01(\v2\x1c.google.protobuf.UInt64ValueR\x16nextContributingNodeId\x12D\n" +
-	"\x15contribution_end_time\x18\x04 \x01(\v2\x10.proto.TimestampR\x13contributionEndTime*Z\n" +
+	"\x15contribution_end_time\x18\x04 \x01(\v2\x10.proto.TimestampR\x13contributionEndTime\x12\x1f\n" +
+	"\vceremony_id\x18\x05 \x01(\x04R\n" +
+	"ceremonyId\x12\x1f\n" +
+	"\vnum_parties\x18\x06 \x01(\rR\n" +
+	"numParties\x12,\n" +
+	"\x12source_roster_hash\x18\a \x01(\fR\x10sourceRosterHash\x12,\n" +
+	"\x12target_roster_hash\x18\b \x01(\fR\x10targetRosterHash\x12'\n" +
+	"\x0fconstruction_id\x18\t \x01(\x04R\x0econstructionId\x12\x18\n" +
+	"\aattempt\x18\n" +
+	" \x01(\x04R\aattempt\x12T\n" +
+	"\fcontributors\x18\v \x03(\v20.com.hedera.hapi.node.state.hints.CrsContributorR\fcontributors\x120\n" +
+	"\x14contributed_node_ids\x18\f \x03(\x04R\x12contributedNodeIds\x12\x1f\n" +
+	"\vinitial_crs\x18\r \x01(\fR\n" +
+	"initialCrs\x121\n" +
+	"\x15last_used_ceremony_id\x18\x0e \x01(\x04R\x12lastUsedCeremonyId\x129\n" +
+	"\x19last_used_construction_id\x18\x0f \x01(\x04R\x16lastUsedConstructionId*Z\n" +
 	"\bCRSStage\x12\x1b\n" +
 	"\x17GATHERING_CONTRIBUTIONS\x10\x00\x12\"\n" +
 	"\x1eWAITING_FOR_ADOPTING_FINAL_CRS\x10\x01\x12\r\n" +
@@ -841,7 +1045,7 @@ func file_hints_types_proto_rawDescGZIP() []byte {
 }
 
 var file_hints_types_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_hints_types_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_hints_types_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_hints_types_proto_goTypes = []any{
 	(CRSStage)(0),                  // 0: com.hedera.hapi.node.state.hints.CRSStage
 	(*HintsPartyId)(nil),           // 1: com.hedera.hapi.node.state.hints.HintsPartyId
@@ -852,26 +1056,28 @@ var file_hints_types_proto_goTypes = []any{
 	(*NodePartyId)(nil),            // 6: com.hedera.hapi.node.state.hints.NodePartyId
 	(*HintsScheme)(nil),            // 7: com.hedera.hapi.node.state.hints.HintsScheme
 	(*HintsConstruction)(nil),      // 8: com.hedera.hapi.node.state.hints.HintsConstruction
-	(*CRSState)(nil),               // 9: com.hedera.hapi.node.state.hints.CRSState
-	(*Timestamp)(nil),              // 10: proto.Timestamp
-	(*wrapperspb.UInt64Value)(nil), // 11: google.protobuf.UInt64Value
+	(*CrsContributor)(nil),         // 9: com.hedera.hapi.node.state.hints.CrsContributor
+	(*CRSState)(nil),               // 10: com.hedera.hapi.node.state.hints.CRSState
+	(*Timestamp)(nil),              // 11: proto.Timestamp
+	(*wrapperspb.UInt64Value)(nil), // 12: google.protobuf.UInt64Value
 }
 var file_hints_types_proto_depIdxs = []int32{
-	10, // 0: com.hedera.hapi.node.state.hints.HintsKeySet.adoption_time:type_name -> proto.Timestamp
+	11, // 0: com.hedera.hapi.node.state.hints.HintsKeySet.adoption_time:type_name -> proto.Timestamp
 	3,  // 1: com.hedera.hapi.node.state.hints.PreprocessingVote.preprocessed_keys:type_name -> com.hedera.hapi.node.state.hints.PreprocessedKeys
 	3,  // 2: com.hedera.hapi.node.state.hints.HintsScheme.preprocessed_keys:type_name -> com.hedera.hapi.node.state.hints.PreprocessedKeys
 	6,  // 3: com.hedera.hapi.node.state.hints.HintsScheme.node_party_ids:type_name -> com.hedera.hapi.node.state.hints.NodePartyId
-	10, // 4: com.hedera.hapi.node.state.hints.HintsConstruction.grace_period_end_time:type_name -> proto.Timestamp
-	10, // 5: com.hedera.hapi.node.state.hints.HintsConstruction.preprocessing_start_time:type_name -> proto.Timestamp
+	11, // 4: com.hedera.hapi.node.state.hints.HintsConstruction.grace_period_end_time:type_name -> proto.Timestamp
+	11, // 5: com.hedera.hapi.node.state.hints.HintsConstruction.preprocessing_start_time:type_name -> proto.Timestamp
 	7,  // 6: com.hedera.hapi.node.state.hints.HintsConstruction.hints_scheme:type_name -> com.hedera.hapi.node.state.hints.HintsScheme
 	0,  // 7: com.hedera.hapi.node.state.hints.CRSState.stage:type_name -> com.hedera.hapi.node.state.hints.CRSStage
-	11, // 8: com.hedera.hapi.node.state.hints.CRSState.next_contributing_node_id:type_name -> google.protobuf.UInt64Value
-	10, // 9: com.hedera.hapi.node.state.hints.CRSState.contribution_end_time:type_name -> proto.Timestamp
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	12, // 8: com.hedera.hapi.node.state.hints.CRSState.next_contributing_node_id:type_name -> google.protobuf.UInt64Value
+	11, // 9: com.hedera.hapi.node.state.hints.CRSState.contribution_end_time:type_name -> proto.Timestamp
+	9,  // 10: com.hedera.hapi.node.state.hints.CRSState.contributors:type_name -> com.hedera.hapi.node.state.hints.CrsContributor
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_hints_types_proto_init() }
@@ -895,7 +1101,7 @@ func file_hints_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hints_types_proto_rawDesc), len(file_hints_types_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

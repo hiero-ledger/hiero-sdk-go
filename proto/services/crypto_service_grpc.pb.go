@@ -107,8 +107,11 @@ type CryptoServiceClient interface {
 	// the given account was the effective payer **and** network property
 	// `ledger.keepRecordsInState` was `true`.
 	GetAccountRecords(ctx context.Context, in *Query, opts ...grpc.CallOption) (*Response, error)
+	// Deprecated: Do not use.
 	// *
-	// Retrieve the balance of an account
+	// Retrieve the balance of an account.
+	// <p>
+	// This query is deprecated. Obtain account balances from a mirror node instead.
 	CryptoGetBalance(ctx context.Context, in *Query, opts ...grpc.CallOption) (*Response, error)
 	// *
 	// Retrieve the metadata of an account
@@ -234,6 +237,7 @@ func (c *cryptoServiceClient) GetAccountRecords(ctx context.Context, in *Query, 
 	return out, nil
 }
 
+// Deprecated: Do not use.
 func (c *cryptoServiceClient) CryptoGetBalance(ctx context.Context, in *Query, opts ...grpc.CallOption) (*Response, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Response)
@@ -327,8 +331,11 @@ type CryptoServiceServer interface {
 	// the given account was the effective payer **and** network property
 	// `ledger.keepRecordsInState` was `true`.
 	GetAccountRecords(context.Context, *Query) (*Response, error)
+	// Deprecated: Do not use.
 	// *
-	// Retrieve the balance of an account
+	// Retrieve the balance of an account.
+	// <p>
+	// This query is deprecated. Obtain account balances from a mirror node instead.
 	CryptoGetBalance(context.Context, *Query) (*Response, error)
 	// *
 	// Retrieve the metadata of an account

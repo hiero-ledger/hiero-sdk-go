@@ -1,8 +1,7 @@
 //*
 // # Ledger Id Publication
 // A system-initiated (i.e. internal) transaction to externalize a new
-// ledger id and the verification key to use in verifying recursive
-// chain-of-trust proofs from the new ledger id.
+// ledger id and the node contributions to the chain of trust it identifies.
 //
 // ### Keywords
 // The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
@@ -35,8 +34,8 @@ const (
 )
 
 // *
-// A system initiated transaction to externalize the ledger id and verification
-// key for recursive chain-of-trust proofs extending from the new ledger id.
+// A system initiated transaction to externalize the ledger id and the node
+// contributions to the chain of trust extending from the new ledger id.
 //
 // This transaction SHALL be issued whenever the ledger id changes.<br/>
 // This transaction MUST NOT be sent by a client and SHALL be rejected if
@@ -48,14 +47,16 @@ const (
 type LedgerIdPublicationTransactionBody struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
-	// The new ledger id.
+	// The new ledger id; that is, the hash of the address book the chain of
+	// trust is grounded in, followed by the hash of that address book's hinTS
+	// verification key.
 	LedgerId []byte `protobuf:"bytes,1,opt,name=ledger_id,json=ledgerId,proto3" json:"ledger_id,omitempty"`
 	// *
-	// The key to use when verifying recursive chain-of-trust proofs that extend
-	// from this ledger id.
-	HistoryProofVerificationKey []byte `protobuf:"bytes,2,opt,name=history_proof_verification_key,json=historyProofVerificationKey,proto3" json:"history_proof_verification_key,omitempty"`
-	// *
-	// The node-specific contributions made to the new ledger id.
+	// The published Schnorr keys, node IDs, and weights underlying this ledger id.
+	// Together with the genesis roster (including its missing-key convention) and
+	// genesis hinTS verification key, these provide provenance for recomputing the
+	// ledger id. They are not required for routine WRAPS proof verification and do
+	// not independently authenticate the ledger id as a trust root.
 	NodeContributions []*LedgerIdNodeContribution `protobuf:"bytes,3,rep,name=node_contributions,json=nodeContributions,proto3" json:"node_contributions,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
@@ -94,13 +95,6 @@ func (*LedgerIdPublicationTransactionBody) Descriptor() ([]byte, []int) {
 func (x *LedgerIdPublicationTransactionBody) GetLedgerId() []byte {
 	if x != nil {
 		return x.LedgerId
-	}
-	return nil
-}
-
-func (x *LedgerIdPublicationTransactionBody) GetHistoryProofVerificationKey() []byte {
-	if x != nil {
-		return x.HistoryProofVerificationKey
 	}
 	return nil
 }
@@ -189,11 +183,10 @@ var File_ledger_id_publication_proto protoreflect.FileDescriptor
 
 const file_ledger_id_publication_proto_rawDesc = "" +
 	"\n" +
-	"\x1bledger_id_publication.proto\x12\x18com.hedera.hapi.node.tss\"\xe9\x01\n" +
+	"\x1bledger_id_publication.proto\x12\x18com.hedera.hapi.node.tss\"\xca\x01\n" +
 	"\"LedgerIdPublicationTransactionBody\x12\x1b\n" +
-	"\tledger_id\x18\x01 \x01(\fR\bledgerId\x12C\n" +
-	"\x1ehistory_proof_verification_key\x18\x02 \x01(\fR\x1bhistoryProofVerificationKey\x12a\n" +
-	"\x12node_contributions\x18\x03 \x03(\v22.com.hedera.hapi.node.tss.LedgerIdNodeContributionR\x11nodeContributions\"w\n" +
+	"\tledger_id\x18\x01 \x01(\fR\bledgerId\x12a\n" +
+	"\x12node_contributions\x18\x03 \x03(\v22.com.hedera.hapi.node.tss.LedgerIdNodeContributionR\x11nodeContributionsJ\x04\b\x02\x10\x03R\x1ehistory_proof_verification_key\"w\n" +
 	"\x18LedgerIdNodeContribution\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\x04R\x06nodeId\x12\x16\n" +
 	"\x06weight\x18\x02 \x01(\x04R\x06weight\x12*\n" +
