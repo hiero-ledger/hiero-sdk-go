@@ -6,13 +6,21 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 )
+
+const goPackage = "github.com/hiero-ledger/hiero-sdk-go/v2/proto/services"
+
+// importPattern matches a proto import statement and captures the imported path.
+var importPattern = regexp.MustCompile(`(?m)^(\s*import\s+(?:public\s+|weak\s+)?")([^"]+)(")`)
 
 // ProtoConfig holds the configuration for Proto files.
 type ProtoConfig struct {
@@ -20,80 +28,138 @@ type ProtoConfig struct {
 }
 
 func main() {
-	// Define a slice to store the proto source directories.
 	var protoSourceDirs []string
-	protoServicesDir := flag.String("dest", "", "Path to destination directory")
+	protoServicesDir := flag.String("dest", "", "Path to the services proto directory")
 
-	flag.Func("source", "Comma-separated list of source directories", func(s string) error {
+	flag.Func("source", "Comma-separated list of additional source directories", func(s string) error {
 		protoSourceDirs = strings.Split(s, ",")
 		return nil
 	})
 
-	flag.Parse() // Loads script defined variables
+	flag.Parse()
 
-	// Validate input arguments
-	if len(protoSourceDirs) == 0 || *protoServicesDir == "" {
-		fmt.Println("Usage: go run generate_protobuf.go -source <dir1,dir2,...> -dest <destination_dir>")
-		return
+	if *protoServicesDir == "" {
+		fmt.Println("Usage: go run scripts/generators/proto/generator.go -dest <services_dir> [-source <dir1,dir2,...>]")
+		os.Exit(2)
 	}
 
-	// For each proto source directory we have to move the proto defs into the services directory
-	// in order to have a single entry point for the protoc call
-	for _, dir := range protoSourceDirs {
-		if err := moveProtoFiles(dir, *protoServicesDir); err != nil {
-			fmt.Println("Error:", err)
-			return
-		}
+	if err := run(*protoServicesDir, protoSourceDirs); err != nil {
+		log.Fatal(err)
 	}
+}
 
-	// Load the Proto configuration from the provided JSON file.
-	config, err := loadProtoConfig("proto/proto.json")
+// run stages the proto sources, then regenerates proto/services from the files listed in proto/proto.json.
+func run(protoServicesDir string, protoSourceDirs []string) error {
+	config, err := loadProtoConfig(path.Join(getProjectRootPath(), "proto/proto.json"))
 	if err != nil {
-		fmt.Println("Error loading proto config:", err)
-		return
+		return fmt.Errorf("loading proto config: %w", err)
 	}
 
-	// Create a filter for Proto files based on the loaded config.
-	protoFilter := createProtoFileFilter(config.ProtoFiles)
-
-	// Remove all existing ".pb.go" files in the "proto/services" directory.
-	removeFilesWithExtension(getProjectRootPath(), "proto/services", ".pb.go")
-
-	// Invoke the build process for the Proto files.
-	// Passing not relative service dir path for the proto commands.
-	buildProtos(protoFilter, strings.ReplaceAll(*protoServicesDir, "../", ""))
-}
-
-// ensureDirectoryExists checks if the destination directory exists.
-func ensureDirectoryExists(destDir string) error {
-	_, err := os.Stat(destDir)
-	if os.IsNotExist(err) {
-		return fmt.Errorf("destination directory does not exist: %v", destDir)
+	// Stage a flattened copy of the proto tree so the submodule checkout is never modified.
+	stagingDir, err := os.MkdirTemp("", "hiero-protos-")
+	if err != nil {
+		return fmt.Errorf("creating staging directory: %w", err)
 	}
-	return nil
-}
+	defer os.RemoveAll(stagingDir)
 
-// moveFile moves a single file from the source path to the destination directory.
-func moveFile(sourcePath, destDir string) error {
-	destPath := filepath.Join(destDir, filepath.Base(sourcePath))
-	if err := os.Rename(sourcePath, destPath); err != nil {
-		return fmt.Errorf("error moving file %s: %v", sourcePath, err)
+	if err := stageProtoFiles(append([]string{protoServicesDir}, protoSourceDirs...), stagingDir); err != nil {
+		return fmt.Errorf("staging proto files: %w", err)
 	}
-	fmt.Printf("Moved: %s -> %s\n", sourcePath, destPath)
-	return nil
-}
 
-// moveProtoFiles moves all files from the source directory to the destination.
-func moveProtoFiles(sourceDir, destDir string) error {
-	if err := ensureDirectoryExists(destDir); err != nil {
+	protoFiles, err := selectProtoFiles(config.ProtoFiles, stagingDir)
+	if err != nil {
 		return err
 	}
-	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+
+	removeFilesWithExtension(getProjectRootPath(), "proto/services", ".pb.go")
+
+	if err := buildProtos(protoFiles, stagingDir); err != nil {
+		return fmt.Errorf("running protoc: %w", err)
+	}
+
+	return nil
+}
+
+// stageProtoFiles copies every .proto file under the given directories into stagingDir,
+// flattened to its basename, and rewrites nested imports to those basenames.
+// Two different files with the same basename are reported instead of overwritten.
+func stageProtoFiles(sourceDirs []string, stagingDir string) error {
+	staged := make(map[string]string)
+
+	for _, dir := range sourceDirs {
+		dir = filepath.Clean(dir)
+		if _, err := os.Stat(dir); err != nil {
+			return fmt.Errorf("source directory %s: %w", dir, err)
+		}
+
+		err := filepath.WalkDir(dir, func(sourcePath string, entry fs.DirEntry, err error) error {
+			if err != nil || entry.IsDir() || !strings.HasSuffix(sourcePath, ".proto") {
+				return err
+			}
+
+			name := filepath.Base(sourcePath)
+			if previous, exists := staged[name]; exists {
+				if previous == sourcePath {
+					return nil
+				}
+				return fmt.Errorf("%s and %s both flatten to %s", previous, sourcePath, name)
+			}
+			staged[name] = sourcePath
+
+			// G122/G703: build-time generator reading the local submodule checkout into its own temp directory.
+			content, err := os.ReadFile(sourcePath) //nolint:gosec
+			if err != nil {
+				return err
+			}
+
+			return os.WriteFile(filepath.Join(stagingDir, name), flattenImports(content), 0o600) //nolint:gosec
+		})
+		if err != nil {
 			return err
 		}
-		return moveFile(path, destDir)
+	}
+
+	return nil
+}
+
+// flattenImports rewrites every non-Google nested import to its basename.
+func flattenImports(content []byte) []byte {
+	return importPattern.ReplaceAllFunc(content, func(match []byte) []byte {
+		parts := importPattern.FindSubmatch(match)
+		imported := string(parts[2])
+		if strings.HasPrefix(imported, "google/protobuf/") {
+			return match
+		}
+		return []byte(string(parts[1]) + path.Base(imported) + string(parts[3]))
 	})
+}
+
+// selectProtoFiles returns the sorted, de-duplicated allowlisted files, failing on any entry that was not staged.
+func selectProtoFiles(allowlist []string, stagingDir string) ([]string, error) {
+	unique := make(map[string]struct{})
+	var missing []string
+
+	for _, name := range allowlist {
+		if _, seen := unique[name]; seen {
+			continue
+		}
+		unique[name] = struct{}{}
+		if _, err := os.Stat(filepath.Join(stagingDir, name)); err != nil {
+			missing = append(missing, name)
+		}
+	}
+
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("proto/proto.json lists files that do not exist in the sources: %s", strings.Join(missing, ", "))
+	}
+
+	files := make([]string, 0, len(unique))
+	for name := range unique {
+		files = append(files, name)
+	}
+	sort.Strings(files)
+
+	return files, nil
 }
 
 // loadProtoConfig loads the Proto configuration from a JSON file.
@@ -112,15 +178,6 @@ func loadProtoConfig(filename string) (ProtoConfig, error) {
 	return config, nil
 }
 
-// createProtoFileFilter creates a set of Proto files from the provided list.
-func createProtoFileFilter(protoFiles []string) map[string]struct{} {
-	filter := make(map[string]struct{})
-	for _, file := range protoFiles {
-		filter[file] = struct{}{}
-	}
-	return filter
-}
-
 // getProjectRootPath returns the root path of the project.
 //
 //nolint:dogsled
@@ -129,60 +186,31 @@ func getProjectRootPath() string {
 	return path.Join(filename, "../../../..")
 }
 
-// buildProtos builds the Proto files using the provided filter.
-func buildProtos(protoFilter map[string]struct{}, protoDir string) {
-	var protoFilePaths []string
-	var moduleDecls []string
-
-	// Collect Proto file paths and module declarations.
-	addProtoFilePaths(&protoFilePaths, &moduleDecls, path.Join(getProjectRootPath(), protoDir), protoFilter)
-
-	// Prepare the command arguments for building Proto files.
+// buildProtos compiles the given staged proto files into proto/services.
+func buildProtos(protoFiles []string, stagingDir string) error {
 	cmdArgs := []string{
 		"--go_out=proto/services/",
 		"--go_opt=paths=source_relative",
 		"--go-grpc_out=proto/services/",
 		"--go-grpc_opt=paths=source_relative",
-		"-I" + protoDir,
+		"-I" + stagingDir,
 	}
 
-	cmdArgs = append(cmdArgs, moduleDecls...)
-	cmdArgs = append(cmdArgs, protoFilePaths...)
+	for _, name := range protoFiles {
+		cmdArgs = append(cmdArgs,
+			fmt.Sprintf("--go_opt=M%s=%s", name, goPackage),
+			fmt.Sprintf("--go-grpc_opt=M%s=%s", name, goPackage),
+		)
+	}
 
-	// Execute the Proto build command.
+	for _, name := range protoFiles {
+		cmdArgs = append(cmdArgs, filepath.Join(stagingDir, name))
+	}
+
 	cmd := exec.Command("protoc", cmdArgs...)
 	cmd.Dir = getProjectRootPath()
 
-	if err := executeCommand(cmd); err != nil {
-		fmt.Println("Error running the build command:", err)
-		return
-	}
-}
-
-// addProtoFilePaths collects Proto file paths and their corresponding module declarations.
-func addProtoFilePaths(protoFilePaths *[]string, moduleDecls *[]string, protoPath string, protoFilter map[string]struct{}) {
-	err := filepath.Walk(protoPath, func(fullpath string, info fs.FileInfo, err error) error {
-		if err != nil || !strings.HasSuffix(fullpath, ".proto") {
-			return err
-		}
-
-		relativePath := strings.TrimPrefix(fullpath, getProjectRootPath()+"/")
-		filename := path.Base(fullpath)
-
-		// Skip files that are not in the filter.
-		if _, exists := protoFilter[filename]; exists {
-			*protoFilePaths = append(*protoFilePaths, relativePath)
-			*moduleDecls = append(*moduleDecls,
-				fmt.Sprintf("--go_opt=M%s=github.com/hashgraph/hedera-go-sdk/services", filename),
-				fmt.Sprintf("--go-grpc_opt=M%s=github.com/hashgraph/hedera-go-sdk/services", filename),
-			)
-		}
-
-		return nil
-	})
-	if err != nil {
-		panic(err)
-	}
+	return executeCommand(cmd)
 }
 
 // executeCommand runs a command and checks for errors.

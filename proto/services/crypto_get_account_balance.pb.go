@@ -38,11 +38,15 @@ const (
 // *
 // Query to read the HBAR balance of an account or contract.
 //
+// Deprecated. Obtain account balances from a mirror node instead.
+//
 // This query SHALL return _only_ the HBAR balance for an account
 // or smart contract. Early releases of the network would return all
 // fungible/common token balances, but HIP-367 made it infeasible to
 // return all such balances. This query SHALL NOT return any information
 // beyond the current HBAR balance.
+//
+// Deprecated: Marked as deprecated in crypto_get_account_balance.proto.
 type CryptoGetAccountBalanceQuery struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
@@ -150,9 +154,13 @@ func (*CryptoGetAccountBalanceQuery_ContractID) isCryptoGetAccountBalanceQuery_B
 // *
 // Response to a CryptoGetAccountBalanceQuery.<br/>
 //
+// Deprecated. Obtain account balances from a mirror node instead.
+//
 // This response SHALL contain only the information needed to
 // identify the query request and the actual HBAR balance of the
 // identified account or contract.
+//
+// Deprecated: Marked as deprecated in crypto_get_account_balance.proto.
 type CryptoGetAccountBalanceResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
@@ -251,19 +259,19 @@ var File_crypto_get_account_balance_proto protoreflect.FileDescriptor
 
 const file_crypto_get_account_balance_proto_rawDesc = "" +
 	"\n" +
-	" crypto_get_account_balance.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x12query_header.proto\x1a\x15response_header.proto\"\xc2\x01\n" +
+	" crypto_get_account_balance.proto\x12\x05proto\x1a\x11basic_types.proto\x1a\x12query_header.proto\x1a\x15response_header.proto\"\xc6\x01\n" +
 	"\x1cCryptoGetAccountBalanceQuery\x12*\n" +
 	"\x06header\x18\x01 \x01(\v2\x12.proto.QueryHeaderR\x06header\x120\n" +
 	"\taccountID\x18\x02 \x01(\v2\x10.proto.AccountIDH\x00R\taccountID\x123\n" +
 	"\n" +
 	"contractID\x18\x03 \x01(\v2\x11.proto.ContractIDH\x00R\n" +
-	"contractIDB\x0f\n" +
-	"\rbalanceSource\"\xd9\x01\n" +
+	"contractID:\x02\x18\x01B\x0f\n" +
+	"\rbalanceSource\"\xdd\x01\n" +
 	"\x1fCryptoGetAccountBalanceResponse\x12-\n" +
 	"\x06header\x18\x01 \x01(\v2\x15.proto.ResponseHeaderR\x06header\x12.\n" +
 	"\taccountID\x18\x02 \x01(\v2\x10.proto.AccountIDR\taccountID\x12\x18\n" +
 	"\abalance\x18\x03 \x01(\x04R\abalance\x12=\n" +
-	"\rtokenBalances\x18\x04 \x03(\v2\x13.proto.TokenBalanceB\x02\x18\x01R\rtokenBalancesB&\n" +
+	"\rtokenBalances\x18\x04 \x03(\v2\x13.proto.TokenBalanceB\x02\x18\x01R\rtokenBalances:\x02\x18\x01B&\n" +
 	"\"com.hederahashgraph.api.proto.javaP\x01b\x06proto3"
 
 var (

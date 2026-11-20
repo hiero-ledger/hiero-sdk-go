@@ -43,7 +43,7 @@ var File_crypto_service_proto protoreflect.FileDescriptor
 
 const file_crypto_service_proto_rawDesc = "" +
 	"\n" +
-	"\x14crypto_service.proto\x12\x05proto\x1a\vquery.proto\x1a\x0eresponse.proto\x1a\x1atransaction_response.proto\x1a\x11transaction.proto2\xdf\x06\n" +
+	"\x14crypto_service.proto\x12\x05proto\x1a\vquery.proto\x1a\x0eresponse.proto\x1a\x1atransaction_response.proto\x1a\x11transaction.proto2\xe4\x06\n" +
 	"\rCryptoService\x12?\n" +
 	"\rcreateAccount\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12?\n" +
 	"\rupdateAccount\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\x12@\n" +
@@ -54,8 +54,8 @@ const file_crypto_service_proto_rawDesc = "" +
 	"\vaddLiveHash\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\"\x03\x88\x02\x01\x12E\n" +
 	"\x0edeleteLiveHash\x12\x12.proto.Transaction\x1a\x1a.proto.TransactionResponse\"\x03\x88\x02\x01\x121\n" +
 	"\vgetLiveHash\x12\f.proto.Query\x1a\x0f.proto.Response\"\x03\x88\x02\x01\x122\n" +
-	"\x11getAccountRecords\x12\f.proto.Query\x1a\x0f.proto.Response\x121\n" +
-	"\x10cryptoGetBalance\x12\f.proto.Query\x1a\x0f.proto.Response\x12/\n" +
+	"\x11getAccountRecords\x12\f.proto.Query\x1a\x0f.proto.Response\x126\n" +
+	"\x10cryptoGetBalance\x12\f.proto.Query\x1a\x0f.proto.Response\"\x03\x88\x02\x01\x12/\n" +
 	"\x0egetAccountInfo\x12\f.proto.Query\x1a\x0f.proto.Response\x127\n" +
 	"\x16getTransactionReceipts\x12\f.proto.Query\x1a\x0f.proto.Response\x122\n" +
 	"\x11getTxRecordByTxID\x12\f.proto.Query\x1a\x0f.proto.ResponseB(\n" +
