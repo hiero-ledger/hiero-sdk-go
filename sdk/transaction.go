@@ -186,6 +186,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			if err != nil {
 				return nil, errors.Wrap(err, "error deserializing body bytes from signed transaction")
 			}
+			_EnsureSigMap(signedTx)
 			baseTx.signedTransactions = baseTx.signedTransactions._Push(signedTx)
 		}
 
@@ -213,6 +214,7 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 			}
 
 			if txIsSigned {
+				_EnsureSigMap(&signedTransaction)
 				baseTx.signedTransactions = baseTx.signedTransactions._Push(&signedTransaction)
 
 				if i == 0 {
@@ -866,6 +868,12 @@ func (tx *Transaction[T]) _BuildAllTransactions() ([]*services.Transaction, erro
 func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, error) {
 	signedTx := tx.signedTransactions._Get(index).(*services.SignedTransaction)
 
+	// A transaction deserialized from signed bytes whose body has no transaction ID
+	// or node account ID has none to build with
+	if tx.transactionIDs._Length() == 0 {
+		return &services.Transaction{}, errTransactionHasNoTransactionID
+	}
+
 	txID := tx.transactionIDs._GetCurrent().(TransactionID)
 	originalBody := services.TransactionBody{}
 	_ = protobuf.Unmarshal(signedTx.BodyBytes, &originalBody)
@@ -875,6 +883,9 @@ func (tx *Transaction[T]) _BuildTransaction(index int) (*services.Transaction, e
 	updatedBodyProto := protobuf.Clone(&originalBody).(*services.TransactionBody)
 
 	if updatedBodyProto.NodeAccountID == nil {
+		if tx.nodeAccountIDs._Length() == 0 {
+			return &services.Transaction{}, errTransactionHasNoNodeAccountID
+		}
 		updatedBodyProto.NodeAccountID = tx.nodeAccountIDs._GetCurrent().(AccountID)._ToProtobuf()
 	}
 
@@ -976,9 +987,10 @@ func (tx *Transaction[T]) GetSignatures() (map[AccountID]map[*PublicKey][]byte, 
 		case AccountID:
 			tempID = k
 		}
-		inner := make(map[*PublicKey][]byte, len(sigMap.SigPair))
+		inner := make(map[*PublicKey][]byte, len(sigMap.GetSigPair()))
 
-		for _, sigPair := range sigMap.SigPair {
+		// A deserialized transaction may have no signature map
+		for _, sigPair := range sigMap.GetSigPair() {
 			key, err := PublicKeyFromBytes(sigPair.PubKeyPrefix)
 			if err != nil {
 				return make(map[AccountID]map[*PublicKey][]byte), err
@@ -999,6 +1011,10 @@ func (tx *Transaction[T]) GetSignatures() (map[AccountID]map[*PublicKey][]byte, 
 }
 
 func (tx *Transaction[T]) GetTransactionHash() ([]byte, error) {
+	if !tx.IsFrozen() {
+		return nil, errTransactionIsNotFrozen
+	}
+
 	current, err := tx._BuildTransaction(0)
 	if err != nil {
 		return nil, err
@@ -1044,6 +1060,11 @@ func (tx *Transaction[T]) GetTransactionHashPerNode() (map[AccountID][]byte, err
 
 // String returns a string representation of the transaction
 func (tx *Transaction[T]) String() string {
+	// A transaction that is not frozen has no signed transactions yet
+	if tx.signedTransactions._Length() == 0 {
+		return ""
+	}
+
 	switch sig := tx.signedTransactions._Get(0).(type) { //nolint
 	case *services.SignedTransaction:
 		return fmt.Sprintf("%+v", sig)
@@ -2133,7 +2154,7 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 
 	// If the transaction was serialised, without setting "NodeId", or "TransactionID", we should leave them empty
 	// A chunked transaction has one body per chunk per node, so each ID is kept once.
-	if transactionID.AccountID.Account != 0 && !containsID(baseTx.transactionIDs, transactionID.String()) {
+	if transactionID.AccountID != nil && transactionID.AccountID.Account != 0 && !containsID(baseTx.transactionIDs, transactionID.String()) {
 		baseTx.transactionIDs = baseTx.transactionIDs._Push(transactionID)
 	}
 	if !nodeAccountID._IsZero() && !containsID(baseTx.nodeAccountIDs, nodeAccountID.String()) {
@@ -2146,6 +2167,15 @@ func setTransactionFields(body *services.TransactionBody, baseTx *Transaction[Tr
 		baseTx.transactionFee = body.TransactionFee
 	}
 	return nil
+}
+
+// _EnsureSigMap gives a deserialized signed transaction an empty signature map if it
+// has none, as Freeze does, because the code that signs a transaction or reads its
+// signatures expects one.
+func _EnsureSigMap(signedTx *services.SignedTransaction) {
+	if signedTx.SigMap == nil {
+		signedTx.SigMap = &services.SignatureMap{}
+	}
 }
 
 // containsID reports whether ids already holds an ID with this string form.
