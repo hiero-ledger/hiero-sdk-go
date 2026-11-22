@@ -2655,3 +2655,37 @@ func TestUnitTransactionFromBytesMissingNestedFields(t *testing.T) {
 		})
 	}
 }
+
+func TestUnitTransactionFromBytesRoyaltyFeeWithFallbackWithoutFraction(t *testing.T) {
+	t.Parallel()
+
+	body := &services.TransactionBody{
+		TransactionID: &services.TransactionID{AccountID: testAccID(100), TransactionValidStart: &services.Timestamp{Seconds: 1}},
+		NodeAccountID: testAccID(3),
+		Data: &services.TransactionBody_TokenCreation{TokenCreation: &services.TokenCreateTransactionBody{
+			CustomFees: []*services.CustomFee{{
+				FeeCollectorAccountId: testAccID(5),
+				Fee: &services.CustomFee_RoyaltyFee{RoyaltyFee: &services.RoyaltyFee{
+					FallbackFee: &services.FixedFee{Amount: 7},
+				}},
+			}},
+		}},
+	}
+
+	decoded, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body)})
+	require.NoError(t, err)
+
+	tokenCreate, ok := decoded.(TokenCreateTransaction)
+	require.True(t, ok, "expected TokenCreateTransaction")
+	fees := tokenCreate.GetCustomFees()
+	require.Len(t, fees, 1)
+	royaltyFee, ok := fees[0].(CustomRoyaltyFee)
+	require.True(t, ok, "expected CustomRoyaltyFee")
+
+	// The missing fraction decodes as zero, and the fallback fee is kept
+	assert.Equal(t, int64(0), royaltyFee.GetNumerator())
+	assert.Equal(t, int64(0), royaltyFee.GetDenominator())
+	require.NotNil(t, royaltyFee.FallbackFee)
+	assert.Equal(t, int64(7), royaltyFee.FallbackFee.Amount)
+	assert.Equal(t, AccountID{Account: 5}, royaltyFee.GetFeeCollectorAccountID())
+}
