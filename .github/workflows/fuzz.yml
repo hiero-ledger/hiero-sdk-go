@@ -28,6 +28,8 @@ jobs:
                 target:
                     - FuzzRLPItemRead
                     - FuzzABIDecode
+                    - FuzzEthereumTransactionDataFromBytes
+                    - FuzzTransactionFromBytes
 
         steps:
             - name: Harden Runner
