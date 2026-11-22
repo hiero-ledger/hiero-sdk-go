@@ -76,7 +76,7 @@ func _Ed25519PrivateKeyFromBytesRaw(bytes []byte) (*_Ed25519PrivateKey, error) {
 // _Ed25519PrivateKeyFromBytes constructs an _Ed25519PrivateKey from a raw slice of either 32 or 64 bytes.
 func _Ed25519PrivateKeyFromBytesDer(byt []byte) (*_Ed25519PrivateKey, error) {
 	given := hex.EncodeToString(byt)
-	result := strings.ReplaceAll(given, _Ed25519PrivateKeyPrefix, "")
+	result := strings.TrimPrefix(given, _Ed25519PrivateKeyPrefix)
 	decoded, err := hex.DecodeString(result)
 	if err != nil {
 		return &_Ed25519PrivateKey{}, err

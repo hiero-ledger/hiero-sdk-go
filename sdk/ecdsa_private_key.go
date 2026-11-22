@@ -69,7 +69,7 @@ func _ECDSAPrivateKeyFromBytesRaw(byt []byte) (*_ECDSAPrivateKey, error) {
 func _LegacyECDSAPrivateKeyFromBytesDer(byt []byte) (*_ECDSAPrivateKey, error) {
 	given := hex.EncodeToString(byt)
 
-	result := strings.ReplaceAll(given, _LegacyECDSAPrivateKeyPrefix, "")
+	result := strings.TrimPrefix(given, _LegacyECDSAPrivateKeyPrefix)
 	decoded, err := hex.DecodeString(result)
 	if err != nil {
 		return &_ECDSAPrivateKey{}, err
