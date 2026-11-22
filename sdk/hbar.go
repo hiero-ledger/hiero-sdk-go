@@ -5,8 +5,10 @@ package hiero
 import (
 	"fmt"
 	"math"
+	"math/big"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -57,12 +59,25 @@ func (hbar Hbar) String() string {
 		return fmt.Sprintf("%v %s", hbar.tinybar, HbarUnits.Tinybar.Symbol())
 	}
 
-	return fmt.Sprintf("%v %s", float64(hbar.tinybar)/float64(HbarUnits.Hbar._NumberOfTinybar()), HbarUnits.Hbar.Symbol())
+	return fmt.Sprintf("%s %s", _FormatTinybar(hbar.tinybar, HbarUnits.Hbar), HbarUnits.Hbar.Symbol())
+}
+
+// _FormatTinybar formats an amount of tinybar as an exact decimal number of the unit,
+// without the exponent notation a float would use for large amounts, so that
+// HbarFromString can parse it again
+func _FormatTinybar(tinybar int64, unit HbarUnit) string {
+	unitTinybar := unit._NumberOfTinybar()
+	decimals := len(strconv.FormatInt(unitTinybar, 10)) - 1
+	amount := new(big.Rat).SetFrac64(tinybar, unitTinybar).FloatString(decimals)
+	if strings.Contains(amount, ".") {
+		amount = strings.TrimRight(strings.TrimRight(amount, "0"), ".")
+	}
+
+	return amount
 }
 
 // HbarFromString returns a Hbar representation of the string provided.
 func HbarFromString(hbar string) (Hbar, error) {
-	var err error
 	match := regexp.MustCompile(`^((?:\+|\-)?\d+(?:\.\d+)?)(?: (tℏ|μℏ|mℏ|ℏ|kℏ|Mℏ|Gℏ))?$`)
 
 	matchArray := match.FindStringSubmatch(hbar)
@@ -70,12 +85,21 @@ func HbarFromString(hbar string) (Hbar, error) {
 		return Hbar{}, errors.New("invalid number and/or symbol")
 	}
 
-	a, err := strconv.ParseFloat(matchArray[1], 64)
-	if err != nil {
-		return Hbar{}, err
+	// Parse the amount exactly instead of as a float, which loses tinybar
+	amount, ok := new(big.Rat).SetString(matchArray[1])
+	if !ok {
+		return Hbar{}, errors.New("invalid number and/or symbol")
+	}
+	unit := _HbarUnitFromString(matchArray[2])
+	amount.Mul(amount, new(big.Rat).SetInt64(unit._NumberOfTinybar()))
+
+	// A fraction of a tinybar is truncated toward zero
+	tinybar := new(big.Int).Quo(amount.Num(), amount.Denom())
+	if !tinybar.IsInt64() {
+		return Hbar{}, errors.New("amount is out of range")
 	}
 
-	return HbarFrom(a, _HbarUnitFromString(matchArray[2])), nil
+	return HbarFromTinybar(tinybar.Int64()), nil
 }
 
 func _HbarUnitFromString(symbol string) HbarUnit {
@@ -99,7 +123,7 @@ func _HbarUnitFromString(symbol string) HbarUnit {
 
 // ToString returns a string representation of the Hbar value in the given unit.
 func (hbar Hbar) ToString(unit HbarUnit) string {
-	return fmt.Sprintf("%v %v", float64(hbar.tinybar)/float64(unit._NumberOfTinybar()), unit.Symbol())
+	return fmt.Sprintf("%s %s", _FormatTinybar(hbar.tinybar, unit), unit.Symbol())
 }
 
 // Negated returns the negated value of the Hbar.

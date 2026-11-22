@@ -116,6 +116,10 @@ func _ECDSAPublicKeyFromBytesDer(byt []byte) (*_ECDSAPublicKey, error) {
 		return nil, errors.New("public key is not a secp256k1 public key")
 	}
 
+	if len(key.PublicKey.Bytes) == 0 {
+		return nil, errors.New("invalid public key length")
+	}
+
 	// Check if the public key is compressed and decompress it if necessary
 	var pubKeyBytes []byte
 	if key.PublicKey.Bytes[0] == 0x02 || key.PublicKey.Bytes[0] == 0x03 {
