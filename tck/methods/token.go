@@ -1083,3 +1083,58 @@ func (t *TokenService) RejectToken(_ context.Context, params param.RejectTokenPa
 		Status: receipt.Status.String(),
 	}, nil
 }
+
+// GetTokenNftInfo jRPC method for getTokenNftInfo
+func (t *TokenService) GetTokenNftInfo(_ context.Context, params param.GetTokenNftInfoParams) (*response.TokenNftInfoResponse, error) {
+	query := hiero.NewTokenNftInfoQuery().SetGrpcDeadline(&threeSecondsDuration)
+
+	if params.NftId != nil {
+		nftId, err := hiero.NftIDFromString(*params.NftId)
+		if err != nil {
+			return nil, err
+		}
+		query.SetNftID(nftId)
+	}
+
+	if params.MaxQueryPayment != nil {
+		maxQueryPayment, err := strconv.ParseInt(*params.MaxQueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse maxQuery payment: %w", err)
+		}
+		query.SetMaxQueryPayment(hiero.HbarFromTinybar(maxQueryPayment))
+	}
+
+	if params.QueryPayment != nil {
+		queryPayment, err := strconv.ParseInt(*params.QueryPayment, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse query payment: %w", err)
+		}
+		query.SetQueryPayment(hiero.HbarFromTinybar(queryPayment))
+	}
+
+	infos, err := query.Execute(t.sdkService.GetClient(params.SessionId))
+	if err != nil {
+		return nil, err
+	}
+	// The query targets a single NFT, so the network returns exactly one entry
+	if len(infos) == 0 {
+		return nil, fmt.Errorf("no NFT info returned")
+	}
+	info := infos[0]
+
+	result := &response.TokenNftInfoResponse{
+		NftId:        info.NftID.String(),
+		AccountId:    info.AccountID.String(),
+		CreationTime: strconv.FormatInt(info.CreationTime.Unix(), 10),
+		Metadata:     hex.EncodeToString(info.Metadata),
+		LedgerId:     info.LedgerID.String(),
+	}
+
+	// The SDK reports a missing spender as 0.0.0, which means there is no allowance
+	if !info.SpenderID.IsZero() {
+		spenderId := info.SpenderID.String()
+		result.SpenderId = &spenderId
+	}
+
+	return result, nil
+}
