@@ -85,11 +85,9 @@ func HbarFromString(hbar string) (Hbar, error) {
 		return Hbar{}, errors.New("invalid number and/or symbol")
 	}
 
-	// Parse the amount exactly instead of as a float, which loses tinybar
-	amount, ok := new(big.Rat).SetString(matchArray[1])
-	if !ok {
-		return Hbar{}, errors.New("invalid number and/or symbol")
-	}
+	// Parse the amount exactly instead of as a float, which loses tinybar.
+	// The regex above only matches plain decimal numbers, which SetString always accepts.
+	amount, _ := new(big.Rat).SetString(matchArray[1])
 	unit := _HbarUnitFromString(matchArray[2])
 	amount.Mul(amount, new(big.Rat).SetInt64(unit._NumberOfTinybar()))
 
