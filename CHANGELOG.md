@@ -1,3 +1,10 @@
+## Unreleased
+
+### Added
+- Local candidate `Transaction.GetTransactionBodyHash` and `TransactionGetTransactionBodyHash` for signature-independent review of all prepared nodes and chunks, including batch child bodies. The profile is representation-based and pending maintainer agreement in [SDK collaboration hub PR #288](https://github.com/hiero-ledger/sdk-collaboration-hub/pull/288); SDK PRs must not merge before that agreement.
+- Go body reviews reject stale common-field projections and subsequent body-changing edits or rebuilds while allowing later signatures. The shared 35-vector profile covers 20 digests and 15 rejections, including node entries with different child signatures.
+- Freeze prepares custom-fee limits and batch keys before review without signing. Unchanged imported common submessages retain unknown nested bytes. Five auxiliary identifier vectors verify bounded raw identifier records; operation submessages retain existing decoding checks.
+
 ## v2.85.1
 
 ### Deprecated

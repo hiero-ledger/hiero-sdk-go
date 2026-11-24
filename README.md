@@ -29,6 +29,48 @@ To run examples or integration tests, you need Hiero network credentials. Copy [
 
 See [TESTING.md](TESTING.md) for detailed instructions on running tests and examples.
 
+### Review a prepared transaction body hash (candidate)
+
+`GetTransactionBodyHash() ([]byte, error)` returns 48 raw SHA-384 bytes for a frozen transaction. For a `TransactionInterface` returned by `TransactionFromBytes`, use `TransactionGetTransactionBodyHash(transaction)`.
+
+This is a local candidate for [SDK collaboration hub PR #288](https://github.com/hiero-ledger/sdk-collaboration-hub/pull/288). The batch framing, import ordering, rejection rules and reviewed-node execution rule are pending maintainer agreement. SDK PRs must not merge before that agreement.
+
+Freeze with the final transaction ID, node selection and chunking before recording the digest:
+
+```go
+tx, err := hiero.NewTransferTransaction().
+    SetTransactionID(hiero.TransactionIDGenerate(hiero.AccountID{Account: 1001})).
+    SetNodeAccountIDs([]hiero.AccountID{{Account: 3}, {Account: 4}}).
+    AddHbarTransfer(hiero.AccountID{Account: 1001}, hiero.NewHbar(-1)).
+    AddHbarTransfer(hiero.AccountID{Account: 1002}, hiero.NewHbar(1)).
+    Freeze()
+if err != nil {
+    return err
+}
+digest, err := tx.GetTransactionBodyHash()
+if err != nil {
+    return err
+}
+fmt.Printf("Body hash: %x\n", digest)
+// Record the digest with the review, then collect transaction signatures.
+```
+
+The candidate commits to every prepared node and chunk using original body bytes. Ordinary entries use `SHA384(bodyBytes)`; the final result is `SHA384(concat(entryHashes))`, including for one entry. Batch entries use `SHA384(SHA384(outerBodyWithoutField74) || SHA384(child0.bodyBytes) || ...)`. Removing field 74 for hashing leaves every other outer-body byte intact. Outer and child envelope signatures and metadata are excluded; unknown body fields remain content.
+
+Chunks follow transaction-ID first appearance, and every chunk follows the first chunk's node order. Node-major imports and differing later-node orders hash with that traversal without reordering stored entries. Duplicate entries, missing IDs, inconsistent node sets, malformed bodies, unsupported batch wrapper fields and nested batches return local errors. Modern `signedTransactionBytes` and complete legacy `bodyBytes` imports retain their original body bytes.
+
+The candidate scanner validates `TransactionBody`, its transaction/node identifiers (including the transaction ID's timestamp and payer account), the atomic-batch wrapper and child `SignedTransaction` envelopes. These messages support protobuf wire types 0, 1, 2 and 5. Tags and lengths use at most five varint bytes; values use at most ten bytes without 64-bit overflow. Nonminimal encodings within those bounds remain original hash input; legacy groups are rejected. Unknown length-delimited identifier payloads remain opaque. Operation-specific submessages retain existing SDK decoding and content checks; this is not a universal protobuf validator.
+
+Batch consistency validation uses a temporary projection of each child envelope to its original body bytes. Child signature maps, algorithm flags and unknown envelope metadata may differ between node entries; child bodies, child order and all other outer content must still match. This projection never changes stored or network envelopes.
+
+The getter neither signs nor accesses the network. Repeated calls preserve bodies, signatures and cursors. It rejects selected IDs or nodes that duplicate or differ from the complete prepared membership before marking the body reviewed. Success locks reviewed IDs and node membership against execution regeneration or pruning while allowing later signing; failure leaves state unchanged. Reviewed imported execution resolves prepared entries by decoded transaction ID and node ID, preserving stored wire order. Unreviewed execution retains its existing cursor-driven ID regeneration and rebuilding. Unknown fields inside transaction IDs remain in the hashed and signed bytes, while identity comparisons ignore them. Existing network transaction hashes retain their signature-sensitive meaning.
+
+In this Go binding, Freeze prepares configured common fields, including custom-fee limits and batch keys, without signing or requiring serialization before hashing. The getter rejects later pending common-field updates that differ from prepared bytes. Imported transaction IDs, batch keys and custom-fee limits retain their original nested bytes when their decoded editable values are unchanged; unknown fields remain hash input. Successful hashing marks the shared transaction body as reviewed: changing memo, fee, high-volume flag, duration, custom-fee limits or batch key is rejected using the existing frozen-mutation convention; free-function setters return that error. Indirect changes through caller-held mutable fee/key objects also cause hashing, serialization and execution to reject instead of rebuilding reviewed bytes. Re-freezing a reviewed topic transaction is rejected. Signature collection and execution options that do not change body bytes remain available. Transactions whose body hash has not been read retain their existing setter behavior.
+
+The unit suite consumes the exact shared **35-vector** profile: **20 expected digests and 15 rejections**, including the multi-node mixed-child-signature regression. A separate five-vector identifier boundary dataset adds one digest and four rejections, for 40 shared inputs overall (21 digests and 19 rejections).
+
+This hash identifies a prepared protobuf representation. Equivalent operations encoded independently can have different hashes; it does not promise semantic canonicalization across encoders. Re-import returned transaction bytes and recompute the digest before approval. A matching digest does not establish signature validity, authorization or network success.
+
 ### Linting
 
 This repository uses golangci-lint for linting. You can install a pre-commit git hook that runs golangci-lint before each commit by running the following command:
