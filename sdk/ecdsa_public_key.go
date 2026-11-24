@@ -64,7 +64,7 @@ func _LegacyECDSAPublicKeyFromBytesDer(byt []byte) (*_ECDSAPublicKey, error) {
 	}
 
 	given := hex.EncodeToString(byt)
-	result := strings.ReplaceAll(given, _LegacyECDSAPubKeyPrefix, "")
+	result := strings.TrimPrefix(given, _LegacyECDSAPubKeyPrefix)
 	decoded, err := hex.DecodeString(result)
 	if err != nil {
 		return &_ECDSAPublicKey{}, err
@@ -114,6 +114,10 @@ func _ECDSAPublicKeyFromBytesDer(byt []byte) (*_ECDSAPublicKey, error) {
 	secp256k1OID := asn1.ObjectIdentifier{1, 3, 132, 0, 10}
 	if !key.AlgorithmIdentifier.Parameters.Equal(secp256k1OID) {
 		return nil, errors.New("public key is not a secp256k1 public key")
+	}
+
+	if len(key.PublicKey.Bytes) == 0 {
+		return nil, errors.New("invalid public key length")
 	}
 
 	// Check if the public key is compressed and decompress it if necessary
