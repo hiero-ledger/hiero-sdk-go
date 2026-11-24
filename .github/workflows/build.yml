@@ -32,7 +32,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
               with:
                 egress-policy: audit
 
@@ -42,7 +42,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -77,7 +77,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
               with:
                   egress-policy: audit
 
@@ -92,7 +92,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -148,7 +148,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
               with:
                 egress-policy: audit
 
@@ -163,7 +163,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -206,7 +206,7 @@ jobs:
 
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
               with:
                   egress-policy: audit
 
@@ -221,7 +221,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -255,7 +255,7 @@ jobs:
         runs-on: hiero-client-sdk-linux-medium
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
               with:
                 egress-policy: audit
 
@@ -265,7 +265,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go
@@ -298,7 +298,7 @@ jobs:
         timeout-minutes: 45
         steps:
             - name: Harden Runner
-              uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+              uses: step-security/harden-runner@aebdcf6156ab6691adf63218240e476564a1ed4c # v2.23.0
               with:
                 egress-policy: audit
 
@@ -308,7 +308,7 @@ jobs:
                 sudo apt-get install -y --no-install-recommends gcc libc6-dev libc-dev
 
             - name: Set up Go ${{ env.GO_VERSION }}
-              uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+              uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
               with:
                   go-version: ${{ env.GO_VERSION }}
               id: go

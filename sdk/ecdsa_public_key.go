@@ -64,7 +64,7 @@ func _LegacyECDSAPublicKeyFromBytesDer(byt []byte) (*_ECDSAPublicKey, error) {
 	}
 
 	given := hex.EncodeToString(byt)
-	result := strings.ReplaceAll(given, _LegacyECDSAPubKeyPrefix, "")
+	result := strings.TrimPrefix(given, _LegacyECDSAPubKeyPrefix)
 	decoded, err := hex.DecodeString(result)
 	if err != nil {
 		return &_ECDSAPublicKey{}, err

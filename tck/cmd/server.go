@@ -88,6 +88,7 @@ func main() {
 		"appendFile":                postHandler(HandleError, handler.New(fileService.AppendFile)),
 		"getFileInfo":               postHandler(HandleError, handler.New(fileService.GetFileInfo)),
 		"rejectToken":               postHandler(HandleError, handler.New(tokenService.RejectToken)),
+		"getTokenNftInfo":           postHandler(HandleError, handler.New(tokenService.GetTokenNftInfo)),
 		"createTopic":               postHandler(HandleError, handler.New(topicService.CreateTopic)),
 		"updateTopic":               postHandler(HandleError, handler.New(topicService.UpdateTopic)),
 		"deleteTopic":               postHandler(HandleError, handler.New(topicService.DeleteTopic)),
