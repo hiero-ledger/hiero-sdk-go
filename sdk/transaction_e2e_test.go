@@ -423,6 +423,51 @@ func _SignaturesContainKey(signatures map[AccountID]map[*PublicKey][]byte, publi
 	return false
 }
 
+func TestIntegrationTransactionGetSignaturesECDSA(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	newKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(newKey.PublicKey()).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err := NewAccountDeleteTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetAccountID(*receipt.AccountID).
+		SetTransferAccountID(env.Client.GetOperatorAccountID()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	signature, err := newKey.SignTransaction(tx)
+	require.NoError(t, err)
+
+	signatures, err := tx.GetSignatures()
+	require.NoError(t, err)
+	require.True(t, _SignaturesContainKey(signatures, newKey.PublicKey()))
+	for key, reported := range signatures[resp.NodeID] {
+		if key.String() == newKey.PublicKey().String() {
+			require.Equal(t, signature, reported)
+		}
+	}
+
+	// The delete requires the ECDSA account key, so a successful receipt proves the signature
+	// GetSignatures reported is the one that reached the network.
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
 func TestIntegrationTransactionRemoveSignature(t *testing.T) {
 	t.Parallel()
 	env := NewIntegrationTestEnv(t)
@@ -600,6 +645,47 @@ func TestIntegrationTransactionRemoveAllSignatures(t *testing.T) {
 	// at execution time, so re-adding the account key is enough for the delete to succeed.
 	_, err = newKey.SignTransaction(tx)
 	require.NoError(t, err)
+
+	resp, err = tx.Execute(env.Client)
+	require.NoError(t, err)
+
+	_, err = resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+}
+
+func TestIntegrationTransactionSignAfterBuild(t *testing.T) {
+	t.Parallel()
+	env := NewIntegrationTestEnv(t)
+	defer CloseIntegrationTestEnv(env, nil)
+
+	ed25519Key, err := PrivateKeyGenerateEd25519()
+	require.NoError(t, err)
+	ecdsaKey, err := PrivateKeyGenerateEcdsa()
+	require.NoError(t, err)
+
+	// Both keys are required, so the delete below only succeeds if the signature added after the
+	// first build actually reaches the wire.
+	resp, err := NewAccountCreateTransaction().
+		SetKeyWithoutAlias(NewKeyList().AddAllPublicKeys([]PublicKey{ed25519Key.PublicKey(), ecdsaKey.PublicKey()})).
+		SetNodeAccountIDs(env.NodeAccountIDs).
+		Execute(env.Client)
+	require.NoError(t, err)
+
+	receipt, err := resp.SetValidateStatus(true).GetReceipt(env.Client)
+	require.NoError(t, err)
+
+	tx, err := NewAccountDeleteTransaction().
+		SetNodeAccountIDs([]AccountID{resp.NodeID}).
+		SetAccountID(*receipt.AccountID).
+		SetTransferAccountID(env.Client.GetOperatorAccountID()).
+		FreezeWith(env.Client)
+	require.NoError(t, err)
+
+	tx.Sign(ed25519Key)
+	_, err = tx.ToBytes()
+	require.NoError(t, err)
+
+	tx.Sign(ecdsaKey)
 
 	resp, err = tx.Execute(env.Client)
 	require.NoError(t, err)
