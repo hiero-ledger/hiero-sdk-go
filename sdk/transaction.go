@@ -989,7 +989,6 @@ func (tx *Transaction[T]) GetSignatures() (map[AccountID]map[*PublicKey][]byte, 
 		}
 		inner := make(map[*PublicKey][]byte, len(sigMap.GetSigPair()))
 
-		// A deserialized transaction may have no signature map
 		for _, sigPair := range sigMap.GetSigPair() {
 			key, err := PublicKeyFromBytes(sigPair.PubKeyPrefix)
 			if err != nil {
@@ -1060,8 +1059,7 @@ func (tx *Transaction[T]) GetTransactionHashPerNode() (map[AccountID][]byte, err
 
 // String returns a string representation of the transaction
 func (tx *Transaction[T]) String() string {
-	// A transaction that is not frozen has no signed transactions yet
-	if tx.signedTransactions._Length() == 0 {
+	if !tx.IsFrozen() {
 		return ""
 	}
 
@@ -1724,6 +1722,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 		if err != nil {
 			return TransactionResponse{}, err
 		}
+	}
+
+	if tx.transactionIDs._Length() == 0 {
+		return TransactionResponse{}, errTransactionHasNoTransactionID
 	}
 
 	transactionID := tx.transactionIDs._GetCurrent().(TransactionID)

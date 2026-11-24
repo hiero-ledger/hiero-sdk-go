@@ -2573,6 +2573,11 @@ func TestUnitTransactionFromBytesWithoutTransactionID(t *testing.T) {
 	require.ErrorIs(t, err, errTransactionHasNoTransactionID)
 	_, err = TransactionGetTransactionHash(tx)
 	require.ErrorIs(t, err, errTransactionHasNoTransactionID)
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	_, err = TransactionExecute(tx, client)
+	require.ErrorIs(t, err, errTransactionHasNoTransactionID)
 }
 
 func TestUnitTransactionFromBytesWithoutNodeAccountID(t *testing.T) {
@@ -2639,6 +2644,16 @@ func TestUnitTransactionFromBytesMissingNestedFields(t *testing.T) {
 		"token create with fractional fee without fraction": {
 			Data: &services.TransactionBody_TokenCreation{TokenCreation: &services.TokenCreateTransactionBody{
 				CustomFees: []*services.CustomFee{{Fee: &services.CustomFee_FractionalFee{FractionalFee: &services.FractionalFee{}}}},
+			}},
+		},
+		"topic create with custom fee without fixed fee": {
+			Data: &services.TransactionBody_ConsensusCreateTopic{ConsensusCreateTopic: &services.ConsensusCreateTopicTransactionBody{
+				CustomFees: []*services.FixedCustomFee{{}},
+			}},
+		},
+		"topic update with custom fee without fixed fee": {
+			Data: &services.TransactionBody_ConsensusUpdateTopic{ConsensusUpdateTopic: &services.ConsensusUpdateTopicTransactionBody{
+				CustomFees: &services.FixedCustomFeeList{Fees: []*services.FixedCustomFee{{}}},
 			}},
 		},
 	}
