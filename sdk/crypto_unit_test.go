@@ -1599,3 +1599,75 @@ func TestUnitGetRecoveryIdEd25519Key(t *testing.T) {
 	recoveryId := privateKey.GetRecoveryId(r, s, message)
 	require.Equal(t, -1, recoveryId)
 }
+
+func TestUnitECDSAPublicKeyFromBytesDerEmptyKey(t *testing.T) {
+	t.Parallel()
+
+	// SubjectPublicKeyInfo for secp256k1 with an empty public key, padded to the
+	// 56 bytes of a DER-encoded ECDSA public key
+	der, err := hex.DecodeString("3015301006072a8648ce3d020106052b8104000a030100")
+	require.NoError(t, err)
+	der = append(der, make([]byte, 56-len(der))...)
+
+	_, err = PublicKeyFromBytesECDSA(der)
+	require.Error(t, err)
+	_, err = PublicKeyFromBytes(der)
+	require.Error(t, err)
+}
+
+func TestUnitEd25519PrivateKeyStartingWithDerPrefixRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	// A key whose raw bytes start with the DER prefix, so its DER encoding holds
+	// the prefix twice
+	raw, err := hex.DecodeString(_Ed25519PrivateKeyPrefix + strings.Repeat("00", 16))
+	require.NoError(t, err)
+	key, err := PrivateKeyFromBytesEd25519(raw)
+	require.NoError(t, err)
+
+	parsed, err := PrivateKeyFromString(key.String())
+	require.NoError(t, err)
+	assert.Equal(t, key.String(), parsed.String())
+
+	parsed, err = PrivateKeyFromStringEd25519(key.StringDer())
+	require.NoError(t, err)
+	assert.Equal(t, key.String(), parsed.String())
+}
+
+func TestUnitEd25519PrivateKeyFromBytesDerPrefixNotAtStart(t *testing.T) {
+	t.Parallel()
+
+	prefix, err := hex.DecodeString(_Ed25519PrivateKeyPrefix)
+	require.NoError(t, err)
+	data := append(bytes.Repeat([]byte{0x01}, 16), prefix...)
+	data = append(data, bytes.Repeat([]byte{0x02}, 16)...)
+
+	_, err = PrivateKeyFromBytesEd25519(data)
+	require.Error(t, err)
+}
+
+func TestUnitLegacyECDSAPrivateKeyStartingWithDerPrefix(t *testing.T) {
+	t.Parallel()
+
+	prefix, err := hex.DecodeString(_LegacyECDSAPrivateKeyPrefix)
+	require.NoError(t, err)
+	raw := append(append([]byte{}, prefix...), bytes.Repeat([]byte{0x01}, 32-len(prefix))...)
+	key, err := PrivateKeyFromBytesECDSA(raw)
+	require.NoError(t, err)
+
+	parsed, err := PrivateKeyFromBytesECDSA(append(append([]byte{}, prefix...), raw...))
+	require.NoError(t, err)
+	assert.Equal(t, key.String(), parsed.String())
+}
+
+func TestUnitLegacyECDSAPublicKeyFromBytesDerPrefixNotAtStart(t *testing.T) {
+	t.Parallel()
+
+	prefix, err := hex.DecodeString(_LegacyECDSAPubKeyPrefix)
+	require.NoError(t, err)
+	raw := privateKeyECDSA.PublicKey().BytesRaw()
+	data := append(append(append([]byte{}, raw[:1]...), prefix...), raw[1:]...)
+
+	_, err = PublicKeyFromBytesECDSA(data)
+	require.Error(t, err)
+}

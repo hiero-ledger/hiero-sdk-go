@@ -28,6 +28,9 @@ jobs:
                 target:
                     - FuzzRLPItemRead
                     - FuzzABIDecode
+                    - FuzzPrivateKeyFromString
+                    - FuzzPublicKeyFromString
+                    - FuzzKeyFromBytes
                     - FuzzEthereumTransactionDataFromBytes
                     - FuzzTransactionFromBytes
 

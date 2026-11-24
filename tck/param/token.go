@@ -137,3 +137,10 @@ type RejectTokenParams struct {
 	TokenIds      *[]string `json:"tokenIds,omitempty"`
 	SerialNumbers *[]string `json:"serialNumbers,omitempty"`
 }
+
+type GetTokenNftInfoParams struct {
+	BaseParams
+	NftId           *string `json:"nftId,omitempty"`
+	QueryPayment    *string `json:"queryPayment,omitempty"`
+	MaxQueryPayment *string `json:"maxQueryPayment,omitempty"`
+}

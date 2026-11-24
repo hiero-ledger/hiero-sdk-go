@@ -25,3 +25,12 @@ type TokenWipeResponse struct {
 	NewTotalSupply *string `json:"newTotalSupply,omitempty"`
 	Status         *string `json:"status,omitempty"`
 }
+
+type TokenNftInfoResponse struct {
+	NftId        string  `json:"nftId"`
+	AccountId    string  `json:"accountId"`
+	CreationTime string  `json:"creationTime"`
+	Metadata     string  `json:"metadata"`
+	LedgerId     string  `json:"ledgerId"`
+	SpenderId    *string `json:"spenderId,omitempty"`
+}
