@@ -47,9 +47,16 @@ type HistoryProofKeyPublicationTransactionBody struct {
 	// *
 	// The phase of the proof construction this key is being
 	// published for.
-	Phase         WrapsPhase `protobuf:"varint,4,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Phase WrapsPhase `protobuf:"varint,4,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
+	// *
+	// For a key rotation's first WRAPS round, the submitting node's partial
+	// signature under the active hinTS construction over the exact upcoming
+	// hinTS verification key bytes. Its construction_id identifies the source
+	// hinTS generation, independently of this body's history construction_id.
+	// Required for key rotations and absent for genesis.
+	HintsPartialSignature *HintsPartialSignatureTransactionBody `protobuf:"bytes,5,opt,name=hints_partial_signature,json=hintsPartialSignature,proto3" json:"hints_partial_signature,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *HistoryProofKeyPublicationTransactionBody) Reset() {
@@ -121,6 +128,13 @@ func (x *HistoryProofKeyPublicationTransactionBody) GetPhase() WrapsPhase {
 	return WrapsPhase_R1
 }
 
+func (x *HistoryProofKeyPublicationTransactionBody) GetHintsPartialSignature() *HintsPartialSignatureTransactionBody {
+	if x != nil {
+		return x.HintsPartialSignature
+	}
+	return nil
+}
+
 type isHistoryProofKeyPublicationTransactionBody_Data interface {
 	isHistoryProofKeyPublicationTransactionBody_Data()
 }
@@ -149,12 +163,13 @@ var File_history_proof_key_publication_proto protoreflect.FileDescriptor
 
 const file_history_proof_key_publication_proto_rawDesc = "" +
 	"\n" +
-	"#history_proof_key_publication.proto\x12*com.hedera.hapi.services.auxiliary.history\x1a\x13history_types.proto\"\xe8\x01\n" +
+	"#history_proof_key_publication.proto\x12*com.hedera.hapi.services.auxiliary.history\x1a\x13history_types.proto\x1a\x1dhints_partial_signature.proto\"\xf1\x02\n" +
 	")HistoryProofKeyPublicationTransactionBody\x12\x1d\n" +
 	"\tproof_key\x18\x01 \x01(\fH\x00R\bproofKey\x12%\n" +
 	"\rwraps_message\x18\x02 \x01(\fH\x00R\fwrapsMessage\x12'\n" +
 	"\x0fconstruction_id\x18\x03 \x01(\x04R\x0econstructionId\x12D\n" +
-	"\x05phase\x18\x04 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phaseB\x06\n" +
+	"\x05phase\x18\x04 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phase\x12\x86\x01\n" +
+	"\x17hints_partial_signature\x18\x05 \x01(\v2N.com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBodyR\x15hintsPartialSignatureB\x06\n" +
 	"\x04dataB5\n" +
 	"1com.hedera.hapi.services.auxiliary.history.legacyP\x01b\x06proto3"
 
@@ -174,14 +189,16 @@ var file_history_proof_key_publication_proto_msgTypes = make([]protoimpl.Message
 var file_history_proof_key_publication_proto_goTypes = []any{
 	(*HistoryProofKeyPublicationTransactionBody)(nil), // 0: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody
 	(WrapsPhase)(0), // 1: com.hedera.hapi.node.state.history.WrapsPhase
+	(*HintsPartialSignatureTransactionBody)(nil), // 2: com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody
 }
 var file_history_proof_key_publication_proto_depIdxs = []int32{
 	1, // 0: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	2, // 1: com.hedera.hapi.services.auxiliary.history.HistoryProofKeyPublicationTransactionBody.hints_partial_signature:type_name -> com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody
+	2, // [2:2] is the sub-list for method output_type
+	2, // [2:2] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_history_proof_key_publication_proto_init() }
@@ -190,6 +207,7 @@ func file_history_proof_key_publication_proto_init() {
 		return
 	}
 	file_history_types_proto_init()
+	file_hints_partial_signature_proto_init()
 	file_history_proof_key_publication_proto_msgTypes[0].OneofWrappers = []any{
 		(*HistoryProofKeyPublicationTransactionBody_ProofKey)(nil),
 		(*HistoryProofKeyPublicationTransactionBody_WrapsMessage)(nil),

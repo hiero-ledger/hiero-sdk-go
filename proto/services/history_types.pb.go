@@ -9,6 +9,7 @@ package services
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -39,8 +40,8 @@ const (
 	// Nodes are aggregating all messages to produce a final signature.
 	WrapsPhase_AGGREGATE WrapsPhase = 3
 	// *
-	// Nodes are doing work that must occur in a different event loop
-	// than the one used for the above phases.
+	// No longer used; nodes now compute a proof in the AGGREGATE phase
+	// whether it grounds a chain of trust or extends one.
 	WrapsPhase_POST_AGGREGATION WrapsPhase = 4
 )
 
@@ -298,14 +299,18 @@ type HistoryProof struct {
 	TargetHistory *History `protobuf:"bytes,2,opt,name=target_history,json=targetHistory,proto3" json:"target_history,omitempty"`
 	// *
 	// The proof of chain of trust from the ledger id to the target
-	// history's metadata. May be switched from AggregatedNodeSignatures
-	// to a recursive proof when one becomes available.
+	// history's metadata.
 	ChainOfTrustProof *ChainOfTrustProof `protobuf:"bytes,3,opt,name=chain_of_trust_proof,json=chainOfTrustProof,proto3" json:"chain_of_trust_proof,omitempty"`
 	// *
 	// If set, the uncompressed proof of chain of trust from the ledger id to
 	// the target address book; the uncompressed version of the WRAPS proof is
 	// required to keep extending the chain of trust.
 	UncompressedWrapsProof []byte `protobuf:"bytes,4,opt,name=uncompressed_wraps_proof,json=uncompressedWrapsProof,proto3" json:"uncompressed_wraps_proof,omitempty"`
+	// *
+	// The aggregate hinTS signature over the target verification key, made by the
+	// preceding signing generation. Required for rotation proof votes so consensus
+	// can validate and persist explicit key provenance. Absent for genesis.
+	KeyProvenanceSignature []byte `protobuf:"bytes,5,opt,name=key_provenance_signature,json=keyProvenanceSignature,proto3" json:"key_provenance_signature,omitempty"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -368,6 +373,13 @@ func (x *HistoryProof) GetUncompressedWrapsProof() []byte {
 	return nil
 }
 
+func (x *HistoryProof) GetKeyProvenanceSignature() []byte {
+	if x != nil {
+		return x.KeyProvenanceSignature
+	}
+	return nil
+}
+
 // *
 // Summary of the status of constructing a metadata proof, necessary to
 // ensure deterministic construction ending in a roster with sufficient
@@ -397,8 +409,30 @@ type HistoryProofConstruction struct {
 	// *
 	// The number of times the network has had to restart this construction.
 	WrapsRetryCount uint32 `protobuf:"varint,10,opt,name=wraps_retry_count,json=wrapsRetryCount,proto3" json:"wraps_retry_count,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// *
+	// The metadata this construction proves, once available. This binding survives
+	// a restart and prevents resuming a proof for an obsolete hinTS verification
+	// key when the same roster transition receives a replacement hinTS construction.
+	TargetMetadata *wrapperspb.BytesValue `protobuf:"bytes,11,opt,name=target_metadata,json=targetMetadata,proto3" json:"target_metadata,omitempty"`
+	// *
+	// The consensus cutoff for proof-key selection, frozen when assembly begins.
+	// Unlike assembly_start_time in proof_state, this survives WRAPS phases and
+	// retries so a restarted controller reconstructs the same address book.
+	ProofKeyCutoffTime *Timestamp `protobuf:"bytes,12,opt,name=proof_key_cutoff_time,json=proofKeyCutoffTime,proto3" json:"proof_key_cutoff_time,omitempty"`
+	// *
+	// The previous hinTS generation's signature authorizing this construction's
+	// target verification key. This survives WRAPS phases, retries, and proof
+	// completion, and is enqueued only when the construction becomes active.
+	// Absent for genesis, which has no preceding signing generation.
+	KeyProvenance *HintsKeyProvenance `protobuf:"bytes,13,opt,name=key_provenance,json=keyProvenance,proto3" json:"key_provenance,omitempty"`
+	// *
+	// The ids of source nodes whose WRAPS messages this construction ignores:
+	// nodes that published a message honest nodes could not use, or that in
+	// an earlier attempt published an R1 message but not a later one before
+	// its grace period ended.
+	WrapsExcludedNodeIds []uint64 `protobuf:"varint,14,rep,packed,name=wraps_excluded_node_ids,json=wrapsExcludedNodeIds,proto3" json:"wraps_excluded_node_ids,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *HistoryProofConstruction) Reset() {
@@ -511,6 +545,34 @@ func (x *HistoryProofConstruction) GetWrapsRetryCount() uint32 {
 	return 0
 }
 
+func (x *HistoryProofConstruction) GetTargetMetadata() *wrapperspb.BytesValue {
+	if x != nil {
+		return x.TargetMetadata
+	}
+	return nil
+}
+
+func (x *HistoryProofConstruction) GetProofKeyCutoffTime() *Timestamp {
+	if x != nil {
+		return x.ProofKeyCutoffTime
+	}
+	return nil
+}
+
+func (x *HistoryProofConstruction) GetKeyProvenance() *HintsKeyProvenance {
+	if x != nil {
+		return x.KeyProvenance
+	}
+	return nil
+}
+
+func (x *HistoryProofConstruction) GetWrapsExcludedNodeIds() []uint64 {
+	if x != nil {
+		return x.WrapsExcludedNodeIds
+	}
+	return nil
+}
+
 type isHistoryProofConstruction_ProofState interface {
 	isHistoryProofConstruction_ProofState()
 }
@@ -571,9 +633,11 @@ type WrapsSigningState struct {
 	// The phase of the WRAPS protocol.
 	Phase WrapsPhase `protobuf:"varint,1,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
 	// *
-	// If the network is still gathering WRAPS messages for the R2 or R3
-	// protocol phase, the next time at which nodes should stop waiting
-	// for tardy messages from R1 participants and start over.
+	// If the network is still gathering WRAPS messages for a protocol phase
+	// with a grace period, the next time at which nodes should stop waiting
+	// and start over. R2 and R3 always have one, for tardy messages from R1
+	// participants; R1 has one when a restart excludes some nodes, and when
+	// it ends the next attempt excludes none.
 	GracePeriodEndTime *Timestamp `protobuf:"bytes,2,opt,name=grace_period_end_time,json=gracePeriodEndTime,proto3" json:"grace_period_end_time,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
@@ -900,9 +964,13 @@ type WrapsMessageDetails struct {
 	Phase WrapsPhase `protobuf:"varint,2,opt,name=phase,proto3,enum=com.hedera.hapi.node.state.history.WrapsPhase" json:"phase,omitempty"`
 	// *
 	// The message itself.
-	Message       []byte `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Message []byte `protobuf:"bytes,3,opt,name=message,proto3" json:"message,omitempty"`
+	// *
+	// The validated source-generation hinTS share accepted with this R1 message.
+	// Persisted with the message so restart replays the same eligible signer set.
+	HintsPartialSignature *HintsPartialSignatureTransactionBody `protobuf:"bytes,4,opt,name=hints_partial_signature,json=hintsPartialSignature,proto3" json:"hints_partial_signature,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
 }
 
 func (x *WrapsMessageDetails) Reset() {
@@ -952,6 +1020,13 @@ func (x *WrapsMessageDetails) GetPhase() WrapsPhase {
 func (x *WrapsMessageDetails) GetMessage() []byte {
 	if x != nil {
 		return x.Message
+	}
+	return nil
+}
+
+func (x *WrapsMessageDetails) GetHintsPartialSignature() *HintsPartialSignatureTransactionBody {
+	if x != nil {
+		return x.HintsPartialSignature
 	}
 	return nil
 }
@@ -1075,17 +1150,15 @@ type isChainOfTrustProof_Proof interface {
 
 type ChainOfTrustProof_AggregatedNodeSignatures struct {
 	// *
-	// If there is not yet a SNARK proving the chain of trust from ledger id to
-	// the hinTS verification key, an aggregation of Schnorr signatures on
-	// the concatenation of the ledger id and genesis hinTS verification key
-	// that serve as witnesses for the SNARK prover algorithm.
+	// No longer used; every chain-of-trust proof, including the one for
+	// the genesis hinTS verification key, is now a WRAPS proof.
 	AggregatedNodeSignatures *AggregatedNodeSignatures `protobuf:"bytes,1,opt,name=aggregated_node_signatures,json=aggregatedNodeSignatures,proto3,oneof"`
 }
 
 type ChainOfTrustProof_WrapsProof struct {
 	// *
-	// If known, a ZK-compressed SNARK proof proving the chain of trust from
-	// the ledger id to this hinTS verification key.
+	// A ZK-compressed SNARK proof proving the chain of trust from the
+	// ledger id to this hinTS verification key.
 	WrapsProof []byte `protobuf:"bytes,2,opt,name=wraps_proof,json=wrapsProof,proto3,oneof"`
 }
 
@@ -1096,9 +1169,8 @@ func (*ChainOfTrustProof_WrapsProof) isChainOfTrustProof_Proof() {}
 // *
 // An aggregation of node signatures on some data.
 // <p>
-// Can be used to prove the genesis hinTS verification key in a block proof; but
-// not succinct and not recursive; hence in normal operations with TSS, used only
-// until the first recursive proof is available.
+// No longer used; it once proved the genesis hinTS verification key in block
+// proofs until the first recursive proof was available.
 type AggregatedNodeSignatures struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// *
@@ -1165,11 +1237,107 @@ func (x *AggregatedNodeSignatures) GetVerificationKey() []byte {
 	return nil
 }
 
+// *
+// An explicit link between consecutive hinTS signing generations.
+//
+// The signature MUST verify over exactly target_verification_key under
+// source_verification_key at the aBFT threshold. The construction identifiers
+// identify the local generations; they are not included in the signed message.
+type HintsKeyProvenance struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// * The hinTS construction whose signing key authorized the next key.
+	SourceHintsConstructionId uint64 `protobuf:"varint,1,opt,name=source_hints_construction_id,json=sourceHintsConstructionId,proto3" json:"source_hints_construction_id,omitempty"`
+	// * The hinTS construction whose verification key is being adopted.
+	TargetHintsConstructionId uint64 `protobuf:"varint,2,opt,name=target_hints_construction_id,json=targetHintsConstructionId,proto3" json:"target_hints_construction_id,omitempty"`
+	// * The previous generation's verification key.
+	SourceVerificationKey []byte `protobuf:"bytes,3,opt,name=source_verification_key,json=sourceVerificationKey,proto3" json:"source_verification_key,omitempty"`
+	// * The next generation's verification key, and the exact signed message.
+	TargetVerificationKey []byte `protobuf:"bytes,4,opt,name=target_verification_key,json=targetVerificationKey,proto3" json:"target_verification_key,omitempty"`
+	// * The aggregate hinTS signature from the previous signing generation.
+	Signature []byte `protobuf:"bytes,5,opt,name=signature,proto3" json:"signature,omitempty"`
+	// * The history construction that certified adoption of the target key.
+	HistoryConstructionId uint64 `protobuf:"varint,6,opt,name=history_construction_id,json=historyConstructionId,proto3" json:"history_construction_id,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *HintsKeyProvenance) Reset() {
+	*x = HintsKeyProvenance{}
+	mi := &file_history_types_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HintsKeyProvenance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HintsKeyProvenance) ProtoMessage() {}
+
+func (x *HintsKeyProvenance) ProtoReflect() protoreflect.Message {
+	mi := &file_history_types_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HintsKeyProvenance.ProtoReflect.Descriptor instead.
+func (*HintsKeyProvenance) Descriptor() ([]byte, []int) {
+	return file_history_types_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *HintsKeyProvenance) GetSourceHintsConstructionId() uint64 {
+	if x != nil {
+		return x.SourceHintsConstructionId
+	}
+	return 0
+}
+
+func (x *HintsKeyProvenance) GetTargetHintsConstructionId() uint64 {
+	if x != nil {
+		return x.TargetHintsConstructionId
+	}
+	return 0
+}
+
+func (x *HintsKeyProvenance) GetSourceVerificationKey() []byte {
+	if x != nil {
+		return x.SourceVerificationKey
+	}
+	return nil
+}
+
+func (x *HintsKeyProvenance) GetTargetVerificationKey() []byte {
+	if x != nil {
+		return x.TargetVerificationKey
+	}
+	return nil
+}
+
+func (x *HintsKeyProvenance) GetSignature() []byte {
+	if x != nil {
+		return x.Signature
+	}
+	return nil
+}
+
+func (x *HintsKeyProvenance) GetHistoryConstructionId() uint64 {
+	if x != nil {
+		return x.HistoryConstructionId
+	}
+	return 0
+}
+
 var File_history_types_proto protoreflect.FileDescriptor
 
 const file_history_types_proto_rawDesc = "" +
 	"\n" +
-	"\x13history_types.proto\x12\"com.hedera.hapi.node.state.history\x1a\x0ftimestamp.proto\"q\n" +
+	"\x13history_types.proto\x12\"com.hedera.hapi.node.state.history\x1a\x0ftimestamp.proto\x1a\x1dhints_partial_signature.proto\x1a\x1egoogle/protobuf/wrappers.proto\"q\n" +
 	"\vProofKeySet\x125\n" +
 	"\radoption_time\x18\x02 \x01(\v2\x10.proto.TimestampR\fadoptionTime\x12\x10\n" +
 	"\x03key\x18\x03 \x01(\fR\x03key\x12\x19\n" +
@@ -1179,12 +1347,13 @@ const file_history_types_proto_rawDesc = "" +
 	"\x03key\x18\x02 \x01(\fR\x03key\"Q\n" +
 	"\aHistory\x12*\n" +
 	"\x11address_book_hash\x18\x01 \x01(\fR\x0faddressBookHash\x12\x1a\n" +
-	"\bmetadata\x18\x02 \x01(\fR\bmetadata\"\xde\x02\n" +
+	"\bmetadata\x18\x02 \x01(\fR\bmetadata\"\x98\x03\n" +
 	"\fHistoryProof\x12X\n" +
 	"\x11target_proof_keys\x18\x01 \x03(\v2,.com.hedera.hapi.node.state.history.ProofKeyR\x0ftargetProofKeys\x12R\n" +
 	"\x0etarget_history\x18\x02 \x01(\v2+.com.hedera.hapi.node.state.history.HistoryR\rtargetHistory\x12f\n" +
 	"\x14chain_of_trust_proof\x18\x03 \x01(\v25.com.hedera.hapi.node.state.history.ChainOfTrustProofR\x11chainOfTrustProof\x128\n" +
-	"\x18uncompressed_wraps_proof\x18\x04 \x01(\fR\x16uncompressedWrapsProof\"\xd4\x04\n" +
+	"\x18uncompressed_wraps_proof\x18\x04 \x01(\fR\x16uncompressedWrapsProof\x128\n" +
+	"\x18key_provenance_signature\x18\x05 \x01(\fR\x16keyProvenanceSignature\"\xf5\x06\n" +
 	"\x18HistoryProofConstruction\x12'\n" +
 	"\x0fconstruction_id\x18\x01 \x01(\x04R\x0econstructionId\x12,\n" +
 	"\x12source_roster_hash\x18\x02 \x01(\fR\x10sourceRosterHash\x12,\n" +
@@ -1195,7 +1364,11 @@ const file_history_types_proto_rawDesc = "" +
 	"\x0efailure_reason\x18\b \x01(\tH\x00R\rfailureReason\x12g\n" +
 	"\x13wraps_signing_state\x18\t \x01(\v25.com.hedera.hapi.node.state.history.WrapsSigningStateH\x00R\x11wrapsSigningState\x12*\n" +
 	"\x11wraps_retry_count\x18\n" +
-	" \x01(\rR\x0fwrapsRetryCountB\r\n" +
+	" \x01(\rR\x0fwrapsRetryCount\x12D\n" +
+	"\x0ftarget_metadata\x18\v \x01(\v2\x1b.google.protobuf.BytesValueR\x0etargetMetadata\x12C\n" +
+	"\x15proof_key_cutoff_time\x18\f \x01(\v2\x10.proto.TimestampR\x12proofKeyCutoffTime\x12]\n" +
+	"\x0ekey_provenance\x18\r \x01(\v26.com.hedera.hapi.node.state.history.HintsKeyProvenanceR\rkeyProvenance\x125\n" +
+	"\x17wraps_excluded_node_ids\x18\x0e \x03(\x04R\x14wrapsExcludedNodeIdsB\r\n" +
 	"\vproof_stateJ\x04\b\x03\x10\x04\"\x9e\x01\n" +
 	"\x11WrapsSigningState\x12D\n" +
 	"\x05phase\x18\x01 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phase\x12C\n" +
@@ -1212,11 +1385,12 @@ const file_history_types_proto_rawDesc = "" +
 	"\tsignature\x18\x02 \x01(\fR\tsignature\"\xb2\x01\n" +
 	"\x18RecordedHistorySignature\x123\n" +
 	"\fsigning_time\x18\x01 \x01(\v2\x10.proto.TimestampR\vsigningTime\x12a\n" +
-	"\x11history_signature\x18\x02 \x01(\v24.com.hedera.hapi.node.state.history.HistorySignatureR\x10historySignature\"\xb2\x01\n" +
+	"\x11history_signature\x18\x02 \x01(\v24.com.hedera.hapi.node.state.history.HistorySignatureR\x10historySignature\"\xbb\x02\n" +
 	"\x13WrapsMessageDetails\x12;\n" +
 	"\x10publication_time\x18\x01 \x01(\v2\x10.proto.TimestampR\x0fpublicationTime\x12D\n" +
 	"\x05phase\x18\x02 \x01(\x0e2..com.hedera.hapi.node.state.history.WrapsPhaseR\x05phase\x12\x18\n" +
-	"\amessage\x18\x03 \x01(\fR\amessage\"j\n" +
+	"\amessage\x18\x03 \x01(\fR\amessage\x12\x86\x01\n" +
+	"\x17hints_partial_signature\x18\x04 \x01(\v2N.com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBodyR\x15hintsPartialSignature\"j\n" +
 	"\x13WrapsMessageHistory\x12S\n" +
 	"\bmessages\x18\x01 \x03(\v27.com.hedera.hapi.node.state.history.WrapsMessageDetailsR\bmessages\"\xbd\x01\n" +
 	"\x11ChainOfTrustProof\x12|\n" +
@@ -1227,7 +1401,14 @@ const file_history_types_proto_rawDesc = "" +
 	"\x18AggregatedNodeSignatures\x121\n" +
 	"\x14aggregated_signature\x18\x01 \x01(\fR\x13aggregatedSignature\x12(\n" +
 	"\x10signing_node_ids\x18\x02 \x03(\x04R\x0esigningNodeIds\x12)\n" +
-	"\x10verification_key\x18\x03 \x01(\fR\x0fverificationKey*I\n" +
+	"\x10verification_key\x18\x03 \x01(\fR\x0fverificationKey\"\xdc\x02\n" +
+	"\x12HintsKeyProvenance\x12?\n" +
+	"\x1csource_hints_construction_id\x18\x01 \x01(\x04R\x19sourceHintsConstructionId\x12?\n" +
+	"\x1ctarget_hints_construction_id\x18\x02 \x01(\x04R\x19targetHintsConstructionId\x126\n" +
+	"\x17source_verification_key\x18\x03 \x01(\fR\x15sourceVerificationKey\x126\n" +
+	"\x17target_verification_key\x18\x04 \x01(\fR\x15targetVerificationKey\x12\x1c\n" +
+	"\tsignature\x18\x05 \x01(\fR\tsignature\x126\n" +
+	"\x17history_construction_id\x18\x06 \x01(\x04R\x15historyConstructionId*I\n" +
 	"\n" +
 	"WrapsPhase\x12\x06\n" +
 	"\x02R1\x10\x00\x12\x06\n" +
@@ -1250,49 +1431,56 @@ func file_history_types_proto_rawDescGZIP() []byte {
 }
 
 var file_history_types_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_history_types_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_history_types_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_history_types_proto_goTypes = []any{
-	(WrapsPhase)(0),                  // 0: com.hedera.hapi.node.state.history.WrapsPhase
-	(*ProofKeySet)(nil),              // 1: com.hedera.hapi.node.state.history.ProofKeySet
-	(*ProofKey)(nil),                 // 2: com.hedera.hapi.node.state.history.ProofKey
-	(*History)(nil),                  // 3: com.hedera.hapi.node.state.history.History
-	(*HistoryProof)(nil),             // 4: com.hedera.hapi.node.state.history.HistoryProof
-	(*HistoryProofConstruction)(nil), // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction
-	(*WrapsSigningState)(nil),        // 6: com.hedera.hapi.node.state.history.WrapsSigningState
-	(*ConstructionNodeId)(nil),       // 7: com.hedera.hapi.node.state.history.ConstructionNodeId
-	(*HistoryProofVote)(nil),         // 8: com.hedera.hapi.node.state.history.HistoryProofVote
-	(*HistorySignature)(nil),         // 9: com.hedera.hapi.node.state.history.HistorySignature
-	(*RecordedHistorySignature)(nil), // 10: com.hedera.hapi.node.state.history.RecordedHistorySignature
-	(*WrapsMessageDetails)(nil),      // 11: com.hedera.hapi.node.state.history.WrapsMessageDetails
-	(*WrapsMessageHistory)(nil),      // 12: com.hedera.hapi.node.state.history.WrapsMessageHistory
-	(*ChainOfTrustProof)(nil),        // 13: com.hedera.hapi.node.state.history.ChainOfTrustProof
-	(*AggregatedNodeSignatures)(nil), // 14: com.hedera.hapi.node.state.history.AggregatedNodeSignatures
-	(*Timestamp)(nil),                // 15: proto.Timestamp
+	(WrapsPhase)(0),                              // 0: com.hedera.hapi.node.state.history.WrapsPhase
+	(*ProofKeySet)(nil),                          // 1: com.hedera.hapi.node.state.history.ProofKeySet
+	(*ProofKey)(nil),                             // 2: com.hedera.hapi.node.state.history.ProofKey
+	(*History)(nil),                              // 3: com.hedera.hapi.node.state.history.History
+	(*HistoryProof)(nil),                         // 4: com.hedera.hapi.node.state.history.HistoryProof
+	(*HistoryProofConstruction)(nil),             // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction
+	(*WrapsSigningState)(nil),                    // 6: com.hedera.hapi.node.state.history.WrapsSigningState
+	(*ConstructionNodeId)(nil),                   // 7: com.hedera.hapi.node.state.history.ConstructionNodeId
+	(*HistoryProofVote)(nil),                     // 8: com.hedera.hapi.node.state.history.HistoryProofVote
+	(*HistorySignature)(nil),                     // 9: com.hedera.hapi.node.state.history.HistorySignature
+	(*RecordedHistorySignature)(nil),             // 10: com.hedera.hapi.node.state.history.RecordedHistorySignature
+	(*WrapsMessageDetails)(nil),                  // 11: com.hedera.hapi.node.state.history.WrapsMessageDetails
+	(*WrapsMessageHistory)(nil),                  // 12: com.hedera.hapi.node.state.history.WrapsMessageHistory
+	(*ChainOfTrustProof)(nil),                    // 13: com.hedera.hapi.node.state.history.ChainOfTrustProof
+	(*AggregatedNodeSignatures)(nil),             // 14: com.hedera.hapi.node.state.history.AggregatedNodeSignatures
+	(*HintsKeyProvenance)(nil),                   // 15: com.hedera.hapi.node.state.history.HintsKeyProvenance
+	(*Timestamp)(nil),                            // 16: proto.Timestamp
+	(*wrapperspb.BytesValue)(nil),                // 17: google.protobuf.BytesValue
+	(*HintsPartialSignatureTransactionBody)(nil), // 18: com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody
 }
 var file_history_types_proto_depIdxs = []int32{
-	15, // 0: com.hedera.hapi.node.state.history.ProofKeySet.adoption_time:type_name -> proto.Timestamp
+	16, // 0: com.hedera.hapi.node.state.history.ProofKeySet.adoption_time:type_name -> proto.Timestamp
 	2,  // 1: com.hedera.hapi.node.state.history.HistoryProof.target_proof_keys:type_name -> com.hedera.hapi.node.state.history.ProofKey
 	3,  // 2: com.hedera.hapi.node.state.history.HistoryProof.target_history:type_name -> com.hedera.hapi.node.state.history.History
 	13, // 3: com.hedera.hapi.node.state.history.HistoryProof.chain_of_trust_proof:type_name -> com.hedera.hapi.node.state.history.ChainOfTrustProof
-	15, // 4: com.hedera.hapi.node.state.history.HistoryProofConstruction.grace_period_end_time:type_name -> proto.Timestamp
-	15, // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction.assembly_start_time:type_name -> proto.Timestamp
+	16, // 4: com.hedera.hapi.node.state.history.HistoryProofConstruction.grace_period_end_time:type_name -> proto.Timestamp
+	16, // 5: com.hedera.hapi.node.state.history.HistoryProofConstruction.assembly_start_time:type_name -> proto.Timestamp
 	4,  // 6: com.hedera.hapi.node.state.history.HistoryProofConstruction.target_proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
 	6,  // 7: com.hedera.hapi.node.state.history.HistoryProofConstruction.wraps_signing_state:type_name -> com.hedera.hapi.node.state.history.WrapsSigningState
-	0,  // 8: com.hedera.hapi.node.state.history.WrapsSigningState.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
-	15, // 9: com.hedera.hapi.node.state.history.WrapsSigningState.grace_period_end_time:type_name -> proto.Timestamp
-	4,  // 10: com.hedera.hapi.node.state.history.HistoryProofVote.proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
-	3,  // 11: com.hedera.hapi.node.state.history.HistorySignature.history:type_name -> com.hedera.hapi.node.state.history.History
-	15, // 12: com.hedera.hapi.node.state.history.RecordedHistorySignature.signing_time:type_name -> proto.Timestamp
-	9,  // 13: com.hedera.hapi.node.state.history.RecordedHistorySignature.history_signature:type_name -> com.hedera.hapi.node.state.history.HistorySignature
-	15, // 14: com.hedera.hapi.node.state.history.WrapsMessageDetails.publication_time:type_name -> proto.Timestamp
-	0,  // 15: com.hedera.hapi.node.state.history.WrapsMessageDetails.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
-	11, // 16: com.hedera.hapi.node.state.history.WrapsMessageHistory.messages:type_name -> com.hedera.hapi.node.state.history.WrapsMessageDetails
-	14, // 17: com.hedera.hapi.node.state.history.ChainOfTrustProof.aggregated_node_signatures:type_name -> com.hedera.hapi.node.state.history.AggregatedNodeSignatures
-	18, // [18:18] is the sub-list for method output_type
-	18, // [18:18] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	17, // 8: com.hedera.hapi.node.state.history.HistoryProofConstruction.target_metadata:type_name -> google.protobuf.BytesValue
+	16, // 9: com.hedera.hapi.node.state.history.HistoryProofConstruction.proof_key_cutoff_time:type_name -> proto.Timestamp
+	15, // 10: com.hedera.hapi.node.state.history.HistoryProofConstruction.key_provenance:type_name -> com.hedera.hapi.node.state.history.HintsKeyProvenance
+	0,  // 11: com.hedera.hapi.node.state.history.WrapsSigningState.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
+	16, // 12: com.hedera.hapi.node.state.history.WrapsSigningState.grace_period_end_time:type_name -> proto.Timestamp
+	4,  // 13: com.hedera.hapi.node.state.history.HistoryProofVote.proof:type_name -> com.hedera.hapi.node.state.history.HistoryProof
+	3,  // 14: com.hedera.hapi.node.state.history.HistorySignature.history:type_name -> com.hedera.hapi.node.state.history.History
+	16, // 15: com.hedera.hapi.node.state.history.RecordedHistorySignature.signing_time:type_name -> proto.Timestamp
+	9,  // 16: com.hedera.hapi.node.state.history.RecordedHistorySignature.history_signature:type_name -> com.hedera.hapi.node.state.history.HistorySignature
+	16, // 17: com.hedera.hapi.node.state.history.WrapsMessageDetails.publication_time:type_name -> proto.Timestamp
+	0,  // 18: com.hedera.hapi.node.state.history.WrapsMessageDetails.phase:type_name -> com.hedera.hapi.node.state.history.WrapsPhase
+	18, // 19: com.hedera.hapi.node.state.history.WrapsMessageDetails.hints_partial_signature:type_name -> com.hedera.hapi.services.auxiliary.hints.HintsPartialSignatureTransactionBody
+	11, // 20: com.hedera.hapi.node.state.history.WrapsMessageHistory.messages:type_name -> com.hedera.hapi.node.state.history.WrapsMessageDetails
+	14, // 21: com.hedera.hapi.node.state.history.ChainOfTrustProof.aggregated_node_signatures:type_name -> com.hedera.hapi.node.state.history.AggregatedNodeSignatures
+	22, // [22:22] is the sub-list for method output_type
+	22, // [22:22] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_history_types_proto_init() }
@@ -1301,6 +1489,7 @@ func file_history_types_proto_init() {
 		return
 	}
 	file_timestamp_proto_init()
+	file_hints_partial_signature_proto_init()
 	file_history_types_proto_msgTypes[4].OneofWrappers = []any{
 		(*HistoryProofConstruction_GracePeriodEndTime)(nil),
 		(*HistoryProofConstruction_AssemblyStartTime)(nil),
@@ -1322,7 +1511,7 @@ func file_history_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_history_types_proto_rawDesc), len(file_history_types_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   14,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

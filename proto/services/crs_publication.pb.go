@@ -41,9 +41,15 @@ type CrsPublicationTransactionBody struct {
 	NewCrs []byte `protobuf:"bytes,1,opt,name=new_crs,json=newCrs,proto3" json:"new_crs,omitempty"`
 	// *
 	// The party's proof of the CRS update.
-	Proof         []byte `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Proof []byte `protobuf:"bytes,2,opt,name=proof,proto3" json:"proof,omitempty"`
+	// * The CRS generation to which this contribution belongs.
+	CeremonyId uint64 `protobuf:"varint,3,opt,name=ceremony_id,json=ceremonyId,proto3" json:"ceremony_id,omitempty"`
+	// * The attempt within that generation.
+	Attempt uint64 `protobuf:"varint,4,opt,name=attempt,proto3" json:"attempt,omitempty"`
+	// * SHA-384 hash of the CRS updated by this contribution.
+	PreviousCrsHash []byte `protobuf:"bytes,5,opt,name=previous_crs_hash,json=previousCrsHash,proto3" json:"previous_crs_hash,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *CrsPublicationTransactionBody) Reset() {
@@ -90,14 +96,39 @@ func (x *CrsPublicationTransactionBody) GetProof() []byte {
 	return nil
 }
 
+func (x *CrsPublicationTransactionBody) GetCeremonyId() uint64 {
+	if x != nil {
+		return x.CeremonyId
+	}
+	return 0
+}
+
+func (x *CrsPublicationTransactionBody) GetAttempt() uint64 {
+	if x != nil {
+		return x.Attempt
+	}
+	return 0
+}
+
+func (x *CrsPublicationTransactionBody) GetPreviousCrsHash() []byte {
+	if x != nil {
+		return x.PreviousCrsHash
+	}
+	return nil
+}
+
 var File_crs_publication_proto protoreflect.FileDescriptor
 
 const file_crs_publication_proto_rawDesc = "" +
 	"\n" +
-	"\x15crs_publication.proto\x12(com.hedera.hapi.services.auxiliary.hints\"N\n" +
+	"\x15crs_publication.proto\x12(com.hedera.hapi.services.auxiliary.hints\"\xb5\x01\n" +
 	"\x1dCrsPublicationTransactionBody\x12\x17\n" +
 	"\anew_crs\x18\x01 \x01(\fR\x06newCrs\x12\x14\n" +
-	"\x05proof\x18\x02 \x01(\fR\x05proofB3\n" +
+	"\x05proof\x18\x02 \x01(\fR\x05proof\x12\x1f\n" +
+	"\vceremony_id\x18\x03 \x01(\x04R\n" +
+	"ceremonyId\x12\x18\n" +
+	"\aattempt\x18\x04 \x01(\x04R\aattempt\x12*\n" +
+	"\x11previous_crs_hash\x18\x05 \x01(\fR\x0fpreviousCrsHashB3\n" +
 	"/com.hedera.hapi.services.auxiliary.hints.legacyP\x01b\x06proto3"
 
 var (
