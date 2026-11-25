@@ -455,3 +455,13 @@ func TestUnitEntityIDFromStringRejectsEmptyChecksum(t *testing.T) {
 	require.NotNil(t, id.GetChecksum())
 	require.Equal(t, "esxsf", *id.GetChecksum())
 }
+
+func TestUnitAccountIDFromStringAliasWithEmptyECDSAKey(t *testing.T) {
+	t.Parallel()
+
+	// A DER-encoded secp256k1 public key with an empty key, padded to 56 bytes
+	der := "3015301006072a8648ce3d020106052b8104000a030100" + strings.Repeat("00", 56-23)
+
+	_, err := AccountIDFromString("0.0." + der)
+	require.Error(t, err)
+}
