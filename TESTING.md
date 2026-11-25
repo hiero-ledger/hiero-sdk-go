@@ -27,6 +27,9 @@ Fuzz tests feed generated inputs to the SDK's parsers and decoders to find input
 | `FuzzPrivateKeyFromString` | `PrivateKeyFromString` and its `Der`, `Ed25519` and `ECDSA` variants, and checks that a parsed key's `String()` parses again to the same key |
 | `FuzzPublicKeyFromString` | `PublicKeyFromString` and its `Ed25519` and `ECDSA` variants, with the same round trip check |
 | `FuzzKeyFromBytes` | `KeyFromBytes`, and `PrivateKeyFromBytes` and `PublicKeyFromBytes` with their `Der`, `Ed25519` and `ECDSA` variants |
+| `FuzzEntityIDFromString` | `AccountIDFromString`, `ContractIDFromString`, `FileIDFromString`, `TokenIDFromString`, `TopicIDFromString` and `ScheduleIDFromString`, and checks that a parsed ID's `String()` parses again to the same ID |
+| `FuzzHbarFromString` | `HbarFromString`, and checks that a parsed amount's `String()` parses again to the same amount |
+| `FuzzMnemonicFromString` | `MnemonicFromString`, and deriving keys from the parsed mnemonic |
 | `FuzzEthereumTransactionDataFromBytes` | `EthereumTransactionDataFromBytes`, and checks that encoding a decoded transaction gives the same bytes every time |
 | `FuzzTransactionFromBytes` | `TransactionFromBytes`, and the read-only functions called on the result, such as `TransactionToBytes` and `TransactionGetSignatures` |
 
