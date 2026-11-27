@@ -52,8 +52,9 @@ func _TransferTransactionFromProtobuf(tx Transaction[*TransferTransaction], pb *
 	nftTransfers := make(map[TokenID][]*_TokenNftTransfer)
 
 	for _, tokenTransfersList := range pb.GetCryptoTransfer().GetTokenTransfers() {
-		tok := _TokenIDFromProtobuf(tokenTransfersList.Token)
-		tokenTransfers[*tok] = _TokenTransferPrivateFromProtobuf(tokenTransfersList)
+		if tok := _TokenIDFromProtobuf(tokenTransfersList.Token); tok != nil {
+			tokenTransfers[*tok] = _TokenTransferPrivateFromProtobuf(tokenTransfersList)
+		}
 	}
 
 	for _, tokenTransfersList := range pb.GetCryptoTransfer().GetTokenTransfers() {

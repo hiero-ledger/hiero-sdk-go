@@ -34,6 +34,8 @@ jobs:
                     - FuzzEntityIDFromString
                     - FuzzHbarFromString
                     - FuzzMnemonicFromString
+                    - FuzzEthereumTransactionDataFromBytes
+                    - FuzzTransactionFromBytes
 
         steps:
             - name: Harden Runner

@@ -30,8 +30,9 @@ func _TokenAirdropTransactionFromProtobuf(tx Transaction[*TokenAirdropTransactio
 	nftTransfers := make(map[TokenID][]*_TokenNftTransfer)
 
 	for _, tokenTransfersList := range pb.GetTokenAirdrop().GetTokenTransfers() {
-		tok := _TokenIDFromProtobuf(tokenTransfersList.Token)
-		tokenTransfers[*tok] = _TokenTransferPrivateFromProtobuf(tokenTransfersList)
+		if tok := _TokenIDFromProtobuf(tokenTransfersList.Token); tok != nil {
+			tokenTransfers[*tok] = _TokenTransferPrivateFromProtobuf(tokenTransfersList)
+		}
 	}
 
 	for _, tokenTransfersList := range pb.GetTokenAirdrop().GetTokenTransfers() {

@@ -56,7 +56,7 @@ func _FileUpdateTransactionFromProtobuf(tx Transaction[*FileUpdateTransaction], 
 		keys:           keys,
 		expirationTime: expiration,
 		contents:       pb.GetFileUpdate().GetContents(),
-		memo:           pb.GetFileUpdate().GetMemo().Value,
+		memo:           pb.GetFileUpdate().GetMemo().GetValue(),
 	}
 
 	tx.childTransaction = &fileUpdateTransaction

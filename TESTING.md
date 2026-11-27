@@ -30,6 +30,8 @@ Fuzz tests feed generated inputs to the SDK's parsers and decoders to find input
 | `FuzzEntityIDFromString` | `AccountIDFromString`, `ContractIDFromString`, `FileIDFromString`, `TokenIDFromString`, `TopicIDFromString` and `ScheduleIDFromString`, and checks that a parsed ID's `String()` parses again to the same ID |
 | `FuzzHbarFromString` | `HbarFromString`, and checks that a parsed amount's `String()` parses again to the same amount |
 | `FuzzMnemonicFromString` | `MnemonicFromString`, and deriving keys from the parsed mnemonic |
+| `FuzzEthereumTransactionDataFromBytes` | `EthereumTransactionDataFromBytes`, and checks that encoding a decoded transaction gives the same bytes every time |
+| `FuzzTransactionFromBytes` | `TransactionFromBytes`, and the read-only functions called on the result, such as `TransactionToBytes` and `TransactionGetSignatures` |
 
 Each target has a seed corpus: the inputs added with `f.Add` in the test, and the files in `sdk/testdata/fuzz/<FuzzTarget>/`. The unit test command above runs every seed as a normal test, so the seed corpus is checked on every PR. New inputs are only generated with the `-fuzz` flag, which the [Fuzz Tests workflow](.github/workflows/fuzz.yml) runs every night for 5 minutes per target.
 

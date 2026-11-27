@@ -106,11 +106,11 @@ func (fee *CustomFractionalFee) SetAssessmentMethod(feeAssessmentMethod FeeAsses
 func _CustomFractionalFeeFromProtobuf(fractionalFee *services.FractionalFee, fee CustomFee) CustomFractionalFee {
 	return CustomFractionalFee{
 		CustomFee:        fee,
-		Numerator:        fractionalFee.FractionalAmount.Numerator,
-		Denominator:      fractionalFee.FractionalAmount.Denominator,
-		MinimumAmount:    fractionalFee.MinimumAmount,
-		MaximumAmount:    fractionalFee.MaximumAmount,
-		AssessmentMethod: FeeAssessmentMethod(fractionalFee.NetOfTransfers),
+		Numerator:        fractionalFee.GetFractionalAmount().GetNumerator(),
+		Denominator:      fractionalFee.GetFractionalAmount().GetDenominator(),
+		MinimumAmount:    fractionalFee.GetMinimumAmount(),
+		MaximumAmount:    fractionalFee.GetMaximumAmount(),
+		AssessmentMethod: FeeAssessmentMethod(fractionalFee.GetNetOfTransfers()),
 	}
 }
 

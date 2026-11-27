@@ -2544,3 +2544,163 @@ func TestUnitChunkedTopicMessageSubmitDivergentTopicIDRejected(t *testing.T) {
 	_, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body1), marshalBody(t, body2)})
 	require.Error(t, err, "chunked TopicMessageSubmitTransaction with divergent TopicIDs must be rejected")
 }
+
+func TestUnitTransactionStringNotFrozen(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "", NewTransferTransaction().String())
+}
+
+func TestUnitTransactionGetTransactionHashNotFrozen(t *testing.T) {
+	t.Parallel()
+
+	_, err := NewTransferTransaction().GetTransactionHash()
+	require.ErrorIs(t, err, errTransactionIsNotFrozen)
+}
+
+func TestUnitTransactionFromBytesWithoutTransactionID(t *testing.T) {
+	t.Parallel()
+
+	body := &services.TransactionBody{
+		NodeAccountID: testAccID(3),
+		Data:          &services.TransactionBody_UtilPrng{UtilPrng: &services.UtilPrngTransactionBody{}},
+	}
+	decoded, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body)})
+	require.NoError(t, err)
+	tx := decoded.(TransactionInterface)
+
+	_, err = TransactionToBytes(tx)
+	require.ErrorIs(t, err, errTransactionHasNoTransactionID)
+	_, err = TransactionGetTransactionHash(tx)
+	require.ErrorIs(t, err, errTransactionHasNoTransactionID)
+
+	client, err := _NewMockClient()
+	require.NoError(t, err)
+	_, err = TransactionExecute(tx, client)
+	require.ErrorIs(t, err, errTransactionHasNoTransactionID)
+}
+
+func TestUnitTransactionFromBytesWithoutNodeAccountID(t *testing.T) {
+	t.Parallel()
+
+	body := &services.TransactionBody{
+		TransactionID: &services.TransactionID{AccountID: testAccID(100), TransactionValidStart: &services.Timestamp{Seconds: 1}},
+		Data:          &services.TransactionBody_UtilPrng{UtilPrng: &services.UtilPrngTransactionBody{}},
+	}
+	decoded, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body)})
+	require.NoError(t, err)
+
+	_, err = TransactionToBytes(decoded.(TransactionInterface))
+	require.ErrorIs(t, err, errTransactionHasNoNodeAccountID)
+}
+
+func TestUnitTransactionFromBytesSignedWithoutSigMap(t *testing.T) {
+	t.Parallel()
+
+	body := &services.TransactionBody{
+		TransactionID: &services.TransactionID{AccountID: testAccID(100), TransactionValidStart: &services.Timestamp{Seconds: 1}},
+		NodeAccountID: testAccID(3),
+		Data:          &services.TransactionBody_UtilPrng{UtilPrng: &services.UtilPrngTransactionBody{}},
+	}
+	bodyBytes, err := protobuf.Marshal(body)
+	require.NoError(t, err)
+	signedBytes, err := protobuf.Marshal(&services.SignedTransaction{BodyBytes: bodyBytes})
+	require.NoError(t, err)
+
+	decoded, err := decodeTransactionList(t, []*services.Transaction{{SignedTransactionBytes: signedBytes}})
+	require.NoError(t, err)
+	tx := decoded.(TransactionInterface)
+
+	signatures, err := TransactionGetSignatures(tx)
+	require.NoError(t, err)
+	require.Empty(t, signatures[AccountID{Account: 3}])
+
+	_, err = TransactionToBytes(tx)
+	require.NoError(t, err)
+}
+
+func TestUnitTransactionFromBytesMissingNestedFields(t *testing.T) {
+	t.Parallel()
+
+	tokenTransferWithoutToken := []*services.TokenTransferList{{
+		Transfers: []*services.AccountAmount{{AccountID: testAccID(100), Amount: -1}, {AccountID: testAccID(101), Amount: 1}},
+	}}
+
+	cases := map[string]*services.TransactionBody{
+		"transfer with a token transfer list without token": {
+			Data: &services.TransactionBody_CryptoTransfer{CryptoTransfer: &services.CryptoTransferTransactionBody{TokenTransfers: tokenTransferWithoutToken}},
+		},
+		"airdrop with a token transfer list without token": {
+			Data: &services.TransactionBody_TokenAirdrop{TokenAirdrop: &services.TokenAirdropTransactionBody{TokenTransfers: tokenTransferWithoutToken}},
+		},
+		"file update without memo": {
+			Data: &services.TransactionBody_FileUpdate{FileUpdate: &services.FileUpdateTransactionBody{}},
+		},
+		"token create with royalty fee without fraction": {
+			Data: &services.TransactionBody_TokenCreation{TokenCreation: &services.TokenCreateTransactionBody{
+				CustomFees: []*services.CustomFee{{Fee: &services.CustomFee_RoyaltyFee{RoyaltyFee: &services.RoyaltyFee{}}}},
+			}},
+		},
+		"token create with fractional fee without fraction": {
+			Data: &services.TransactionBody_TokenCreation{TokenCreation: &services.TokenCreateTransactionBody{
+				CustomFees: []*services.CustomFee{{Fee: &services.CustomFee_FractionalFee{FractionalFee: &services.FractionalFee{}}}},
+			}},
+		},
+		"topic create with custom fee without fixed fee": {
+			Data: &services.TransactionBody_ConsensusCreateTopic{ConsensusCreateTopic: &services.ConsensusCreateTopicTransactionBody{
+				CustomFees: []*services.FixedCustomFee{{}},
+			}},
+		},
+		"topic update with custom fee without fixed fee": {
+			Data: &services.TransactionBody_ConsensusUpdateTopic{ConsensusUpdateTopic: &services.ConsensusUpdateTopicTransactionBody{
+				CustomFees: &services.FixedCustomFeeList{Fees: []*services.FixedCustomFee{{}}},
+			}},
+		},
+	}
+
+	for name, body := range cases {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			body.TransactionID = &services.TransactionID{AccountID: testAccID(100), TransactionValidStart: &services.Timestamp{Seconds: 1}}
+			body.NodeAccountID = testAccID(3)
+
+			_, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body)})
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestUnitTransactionFromBytesRoyaltyFeeWithFallbackWithoutFraction(t *testing.T) {
+	t.Parallel()
+
+	body := &services.TransactionBody{
+		TransactionID: &services.TransactionID{AccountID: testAccID(100), TransactionValidStart: &services.Timestamp{Seconds: 1}},
+		NodeAccountID: testAccID(3),
+		Data: &services.TransactionBody_TokenCreation{TokenCreation: &services.TokenCreateTransactionBody{
+			CustomFees: []*services.CustomFee{{
+				FeeCollectorAccountId: testAccID(5),
+				Fee: &services.CustomFee_RoyaltyFee{RoyaltyFee: &services.RoyaltyFee{
+					FallbackFee: &services.FixedFee{Amount: 7},
+				}},
+			}},
+		}},
+	}
+
+	decoded, err := decodeTransactionList(t, []*services.Transaction{marshalBody(t, body)})
+	require.NoError(t, err)
+
+	tokenCreate, ok := decoded.(TokenCreateTransaction)
+	require.True(t, ok, "expected TokenCreateTransaction")
+	fees := tokenCreate.GetCustomFees()
+	require.Len(t, fees, 1)
+	royaltyFee, ok := fees[0].(CustomRoyaltyFee)
+	require.True(t, ok, "expected CustomRoyaltyFee")
+
+	// The missing fraction decodes as zero, and the fallback fee is kept
+	assert.Equal(t, int64(0), royaltyFee.GetNumerator())
+	assert.Equal(t, int64(0), royaltyFee.GetDenominator())
+	require.NotNil(t, royaltyFee.FallbackFee)
+	assert.Equal(t, int64(7), royaltyFee.FallbackFee.Amount)
+	assert.Equal(t, AccountID{Account: 5}, royaltyFee.GetFeeCollectorAccountID())
+}
