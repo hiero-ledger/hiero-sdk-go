@@ -146,7 +146,7 @@ func (q *AccountBalanceQuery) SetLogLevel(level LogLevel) *AccountBalanceQuery {
 
 func (q *AccountBalanceQuery) getMethod(channel *_Channel) _Method {
 	return _Method{
-		query: channel._GetCrypto().CryptoGetBalance,
+		query: channel._GetCrypto().CryptoGetBalance, //nolint:staticcheck // SA1019: AccountBalanceQuery is itself deprecated
 	}
 }
 

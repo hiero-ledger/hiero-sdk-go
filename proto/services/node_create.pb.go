@@ -33,6 +33,8 @@ const (
 //   - A `NodeCreateTransactionBody` MUST be signed by the `Key` assigned to the
 //     `admin_key` field and one of those keys: treasure account (2) key,
 //     systemAdmin(50) key, or addressBookAdmin(55) key.
+//   - This transaction MUST also be signed by the `Key` on the account
+//     identified by `account_id`.
 //   - The newly created node information SHALL be added to the network address
 //     book information in the network state.
 //   - The new entry SHALL be created in "state" but SHALL NOT participate in
@@ -55,7 +57,7 @@ type NodeCreateTransactionBody struct {
 	// This account identifier MUST be in the "account number" form.<br/>
 	// This account identifier MUST NOT use the alias field.<br/>
 	// If the identified account does not exist, this transaction SHALL fail.<br/>
-	// Multiple nodes MAY share the same node account.<br/>
+	// Each account_id MUST NOT be associated with more than one node.<br/>
 	// This field is REQUIRED.
 	AccountId *AccountID `protobuf:"bytes,1,opt,name=account_id,json=accountId,proto3" json:"account_id,omitempty"`
 	// *

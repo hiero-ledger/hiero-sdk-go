@@ -372,6 +372,28 @@ func TransactionFromBytes(data []byte) (TransactionInterface, error) { // nolint
 		childTx = _BatchTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*BatchTransaction](baseTx), first)
 	case *services.TransactionBody_HookStore:
 		childTx = _HookStoreTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*HookStoreTransaction](baseTx), first)
+	case *services.TransactionBody_ClprRegisterChannel:
+		childTx = _ClprRegisterChannelTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprRegisterChannelTransaction](baseTx), first)
+	case *services.TransactionBody_ClprCompleteChannel:
+		childTx = _ClprCompleteChannelTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprCompleteChannelTransaction](baseTx), first)
+	case *services.TransactionBody_ClprCloseChannel:
+		childTx = _ClprCloseChannelTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprCloseChannelTransaction](baseTx), first)
+	case *services.TransactionBody_ClprRegisterConnector:
+		childTx = _ClprRegisterConnectorTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprRegisterConnectorTransaction](baseTx), first)
+	case *services.TransactionBody_ClprCompleteConnector:
+		childTx = _ClprCompleteConnectorTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprCompleteConnectorTransaction](baseTx), first)
+	case *services.TransactionBody_ClprDeregisterConnector:
+		childTx = _ClprDeregisterConnectorTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprDeregisterConnectorTransaction](baseTx), first)
+	case *services.TransactionBody_ClprSubmitBundle:
+		childTx = _ClprSubmitBundleTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprSubmitBundleTransaction](baseTx), first)
+	case *services.TransactionBody_ClprUpdateLedgerConfiguration:
+		childTx = _ClprUpdateLedgerConfigurationTransactionFromProtobuf(*castFromBaseToConcreteTransaction[*ClprUpdateLedgerConfigurationTransaction](baseTx), first)
+	case *services.TransactionBody_ClprEndpointPublication:
+		return nil, fmt.Errorf("TransactionFromBytes does not support clpr_endpoint_publication: %w", errClprBodyUnsupported)
+	case *services.TransactionBody_ClprMaintenance:
+		return nil, fmt.Errorf("TransactionFromBytes does not support clpr_maintenance: %w", errClprBodyUnsupported)
+	case *services.TransactionBody_ClprEvictPeerEndpoint:
+		return nil, fmt.Errorf("TransactionFromBytes does not support clprEvictPeerEndpoint: %w", errClprBodyUnsupported)
 	default:
 		return nil, errFailedToDeserializeBytes
 	}
@@ -1704,6 +1726,12 @@ func (tx *Transaction[T]) regenerateID(client *Client) bool {
 	return false
 }
 
+// _FrozenExecuteValidator is implemented by transactions whose fields must be re-validated before
+// executing already frozen bytes, such as a decoded HIP-1535 CLPR transaction.
+type _FrozenExecuteValidator interface {
+	validateFrozenExecute() error
+}
+
 func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 	if client == nil {
 		return TransactionResponse{}, errNoClientProvided
@@ -1720,6 +1748,10 @@ func (tx *Transaction[T]) Execute(client *Client) (TransactionResponse, error) {
 	if !tx.IsFrozen() {
 		_, err := tx.FreezeWith(client)
 		if err != nil {
+			return TransactionResponse{}, err
+		}
+	} else if validator, ok := any(tx.childTransaction).(_FrozenExecuteValidator); ok {
+		if err := validator.validateFrozenExecute(); err != nil {
 			return TransactionResponse{}, err
 		}
 	}

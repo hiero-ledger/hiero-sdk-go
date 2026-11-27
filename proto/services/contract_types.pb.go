@@ -141,9 +141,27 @@ type EvmTransactionResult struct {
 	// *
 	// In an EthereumTransaction, the nonce of the signer account at the end of
 	// the transaction.<br/>
-	SignerNonce   *wrapperspb.Int64Value `protobuf:"bytes,9,opt,name=signer_nonce,json=signerNonce,proto3" json:"signer_nonce,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	SignerNonce *wrapperspb.Int64Value `protobuf:"bytes,9,opt,name=signer_nonce,json=signerNonce,proto3" json:"signer_nonce,omitempty"`
+	// *
+	// The contracts created within this EVM execution's completed scope,
+	// including creations performed by nested executions.
+	// <p>
+	// This field SHALL be set for every successful, committed EVM execution
+	// scope, including ordinary, scheduled, and batch-inner executions. A present
+	// message with an empty list means this scope created no contracts.
+	// Synthetic child or system-precompile results that do not represent a
+	// completed EVM execution scope SHALL NOT populate this field.
+	// <p>
+	// Older producers may omit this field. An absent message leaves creation
+	// identifiers to be derived from the other block items using the existing
+	// rules; it does not establish that the execution created no contracts.
+	// <p>
+	// When present, this list SHALL take precedence over creation identifiers
+	// inferred from the transactional unit's state changes or contract actions.
+	// This field SHALL NOT be set for an unsuccessful or reverted execution.
+	CreatedContractIds *CreatedContractIds `protobuf:"bytes,10,opt,name=created_contract_ids,json=createdContractIds,proto3" json:"created_contract_ids,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *EvmTransactionResult) Reset() {
@@ -239,6 +257,62 @@ func (x *EvmTransactionResult) GetSignerNonce() *wrapperspb.Int64Value {
 	return nil
 }
 
+func (x *EvmTransactionResult) GetCreatedContractIds() *CreatedContractIds {
+	if x != nil {
+		return x.CreatedContractIds
+	}
+	return nil
+}
+
+// *
+// An authoritative list of contracts created within one EVM execution scope.
+type CreatedContractIds struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// *
+	// Created contract identifiers, in ascending contract-number order.
+	// This list MAY be empty when the execution created no contracts.
+	ContractIds   []*ContractID `protobuf:"bytes,1,rep,name=contract_ids,json=contractIds,proto3" json:"contract_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreatedContractIds) Reset() {
+	*x = CreatedContractIds{}
+	mi := &file_contract_types_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreatedContractIds) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreatedContractIds) ProtoMessage() {}
+
+func (x *CreatedContractIds) ProtoReflect() protoreflect.Message {
+	mi := &file_contract_types_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreatedContractIds.ProtoReflect.Descriptor instead.
+func (*CreatedContractIds) Descriptor() ([]byte, []int) {
+	return file_contract_types_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CreatedContractIds) GetContractIds() []*ContractID {
+	if x != nil {
+		return x.ContractIds
+	}
+	return nil
+}
+
 // *
 // A contract "nonce" reference.<br/>
 // This connects a contract and its "nonce" value, and is primarily for use in
@@ -263,7 +337,7 @@ type ContractNonceInfo struct {
 
 func (x *ContractNonceInfo) Reset() {
 	*x = ContractNonceInfo{}
-	mi := &file_contract_types_proto_msgTypes[2]
+	mi := &file_contract_types_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -275,7 +349,7 @@ func (x *ContractNonceInfo) String() string {
 func (*ContractNonceInfo) ProtoMessage() {}
 
 func (x *ContractNonceInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_types_proto_msgTypes[2]
+	mi := &file_contract_types_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -288,7 +362,7 @@ func (x *ContractNonceInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContractNonceInfo.ProtoReflect.Descriptor instead.
 func (*ContractNonceInfo) Descriptor() ([]byte, []int) {
-	return file_contract_types_proto_rawDescGZIP(), []int{2}
+	return file_contract_types_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ContractNonceInfo) GetContractId() *ContractID {
@@ -342,7 +416,7 @@ type ContractLoginfo struct {
 
 func (x *ContractLoginfo) Reset() {
 	*x = ContractLoginfo{}
-	mi := &file_contract_types_proto_msgTypes[3]
+	mi := &file_contract_types_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +428,7 @@ func (x *ContractLoginfo) String() string {
 func (*ContractLoginfo) ProtoMessage() {}
 
 func (x *ContractLoginfo) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_types_proto_msgTypes[3]
+	mi := &file_contract_types_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +441,7 @@ func (x *ContractLoginfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContractLoginfo.ProtoReflect.Descriptor instead.
 func (*ContractLoginfo) Descriptor() ([]byte, []int) {
-	return file_contract_types_proto_rawDescGZIP(), []int{3}
+	return file_contract_types_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ContractLoginfo) GetContractID() *ContractID {
@@ -524,7 +598,7 @@ type ContractFunctionResult struct {
 
 func (x *ContractFunctionResult) Reset() {
 	*x = ContractFunctionResult{}
-	mi := &file_contract_types_proto_msgTypes[4]
+	mi := &file_contract_types_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -536,7 +610,7 @@ func (x *ContractFunctionResult) String() string {
 func (*ContractFunctionResult) ProtoMessage() {}
 
 func (x *ContractFunctionResult) ProtoReflect() protoreflect.Message {
-	mi := &file_contract_types_proto_msgTypes[4]
+	mi := &file_contract_types_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -549,7 +623,7 @@ func (x *ContractFunctionResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ContractFunctionResult.ProtoReflect.Descriptor instead.
 func (*ContractFunctionResult) Descriptor() ([]byte, []int) {
-	return file_contract_types_proto_rawDescGZIP(), []int{4}
+	return file_contract_types_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ContractFunctionResult) GetContractID() *ContractID {
@@ -659,7 +733,7 @@ const file_contract_types_proto_rawDesc = "" +
 	"\x13InternalCallContext\x12\x10\n" +
 	"\x03gas\x18\x01 \x01(\x04R\x03gas\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\x04R\x05value\x12\x1b\n" +
-	"\tcall_data\x18\x03 \x01(\fR\bcallData\"\xe6\x03\n" +
+	"\tcall_data\x18\x03 \x01(\fR\bcallData\"\xb3\x04\n" +
 	"\x14EvmTransactionResult\x12-\n" +
 	"\tsender_id\x18\x01 \x01(\v2\x10.proto.AccountIDR\bsenderId\x122\n" +
 	"\vcontract_id\x18\x02 \x01(\v2\x11.proto.ContractIDR\n" +
@@ -671,7 +745,11 @@ const file_contract_types_proto_rawDesc = "" +
 	"\x15internal_call_context\x18\x06 \x01(\v2\x1a.proto.InternalCallContextR\x13internalCallContext\x127\n" +
 	"\x10executed_hook_id\x18\a \x01(\v2\r.proto.HookIdR\x0eexecutedHookId\x12A\n" +
 	"\x0fcontract_nonces\x18\b \x03(\v2\x18.proto.ContractNonceInfoR\x0econtractNonces\x12>\n" +
-	"\fsigner_nonce\x18\t \x01(\v2\x1b.google.protobuf.Int64ValueR\vsignerNonce\"]\n" +
+	"\fsigner_nonce\x18\t \x01(\v2\x1b.google.protobuf.Int64ValueR\vsignerNonce\x12K\n" +
+	"\x14created_contract_ids\x18\n" +
+	" \x01(\v2\x19.proto.CreatedContractIdsR\x12createdContractIds\"J\n" +
+	"\x12CreatedContractIds\x124\n" +
+	"\fcontract_ids\x18\x01 \x03(\v2\x11.proto.ContractIDR\vcontractIds\"]\n" +
 	"\x11ContractNonceInfo\x122\n" +
 	"\vcontract_id\x18\x01 \x01(\v2\x11.proto.ContractIDR\n" +
 	"contractId\x12\x14\n" +
@@ -716,40 +794,43 @@ func file_contract_types_proto_rawDescGZIP() []byte {
 	return file_contract_types_proto_rawDescData
 }
 
-var file_contract_types_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_contract_types_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_contract_types_proto_goTypes = []any{
 	(*InternalCallContext)(nil),    // 0: proto.InternalCallContext
 	(*EvmTransactionResult)(nil),   // 1: proto.EvmTransactionResult
-	(*ContractNonceInfo)(nil),      // 2: proto.ContractNonceInfo
-	(*ContractLoginfo)(nil),        // 3: proto.ContractLoginfo
-	(*ContractFunctionResult)(nil), // 4: proto.ContractFunctionResult
-	(*AccountID)(nil),              // 5: proto.AccountID
-	(*ContractID)(nil),             // 6: proto.ContractID
-	(*HookId)(nil),                 // 7: proto.HookId
-	(*wrapperspb.Int64Value)(nil),  // 8: google.protobuf.Int64Value
-	(*wrapperspb.BytesValue)(nil),  // 9: google.protobuf.BytesValue
+	(*CreatedContractIds)(nil),     // 2: proto.CreatedContractIds
+	(*ContractNonceInfo)(nil),      // 3: proto.ContractNonceInfo
+	(*ContractLoginfo)(nil),        // 4: proto.ContractLoginfo
+	(*ContractFunctionResult)(nil), // 5: proto.ContractFunctionResult
+	(*AccountID)(nil),              // 6: proto.AccountID
+	(*ContractID)(nil),             // 7: proto.ContractID
+	(*HookId)(nil),                 // 8: proto.HookId
+	(*wrapperspb.Int64Value)(nil),  // 9: google.protobuf.Int64Value
+	(*wrapperspb.BytesValue)(nil),  // 10: google.protobuf.BytesValue
 }
 var file_contract_types_proto_depIdxs = []int32{
-	5,  // 0: proto.EvmTransactionResult.sender_id:type_name -> proto.AccountID
-	6,  // 1: proto.EvmTransactionResult.contract_id:type_name -> proto.ContractID
+	6,  // 0: proto.EvmTransactionResult.sender_id:type_name -> proto.AccountID
+	7,  // 1: proto.EvmTransactionResult.contract_id:type_name -> proto.ContractID
 	0,  // 2: proto.EvmTransactionResult.internal_call_context:type_name -> proto.InternalCallContext
-	7,  // 3: proto.EvmTransactionResult.executed_hook_id:type_name -> proto.HookId
-	2,  // 4: proto.EvmTransactionResult.contract_nonces:type_name -> proto.ContractNonceInfo
-	8,  // 5: proto.EvmTransactionResult.signer_nonce:type_name -> google.protobuf.Int64Value
-	6,  // 6: proto.ContractNonceInfo.contract_id:type_name -> proto.ContractID
-	6,  // 7: proto.ContractLoginfo.contractID:type_name -> proto.ContractID
-	6,  // 8: proto.ContractFunctionResult.contractID:type_name -> proto.ContractID
-	3,  // 9: proto.ContractFunctionResult.logInfo:type_name -> proto.ContractLoginfo
-	6,  // 10: proto.ContractFunctionResult.createdContractIDs:type_name -> proto.ContractID
-	9,  // 11: proto.ContractFunctionResult.evm_address:type_name -> google.protobuf.BytesValue
-	5,  // 12: proto.ContractFunctionResult.sender_id:type_name -> proto.AccountID
-	2,  // 13: proto.ContractFunctionResult.contract_nonces:type_name -> proto.ContractNonceInfo
-	8,  // 14: proto.ContractFunctionResult.signer_nonce:type_name -> google.protobuf.Int64Value
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	8,  // 3: proto.EvmTransactionResult.executed_hook_id:type_name -> proto.HookId
+	3,  // 4: proto.EvmTransactionResult.contract_nonces:type_name -> proto.ContractNonceInfo
+	9,  // 5: proto.EvmTransactionResult.signer_nonce:type_name -> google.protobuf.Int64Value
+	2,  // 6: proto.EvmTransactionResult.created_contract_ids:type_name -> proto.CreatedContractIds
+	7,  // 7: proto.CreatedContractIds.contract_ids:type_name -> proto.ContractID
+	7,  // 8: proto.ContractNonceInfo.contract_id:type_name -> proto.ContractID
+	7,  // 9: proto.ContractLoginfo.contractID:type_name -> proto.ContractID
+	7,  // 10: proto.ContractFunctionResult.contractID:type_name -> proto.ContractID
+	4,  // 11: proto.ContractFunctionResult.logInfo:type_name -> proto.ContractLoginfo
+	7,  // 12: proto.ContractFunctionResult.createdContractIDs:type_name -> proto.ContractID
+	10, // 13: proto.ContractFunctionResult.evm_address:type_name -> google.protobuf.BytesValue
+	6,  // 14: proto.ContractFunctionResult.sender_id:type_name -> proto.AccountID
+	3,  // 15: proto.ContractFunctionResult.contract_nonces:type_name -> proto.ContractNonceInfo
+	9,  // 16: proto.ContractFunctionResult.signer_nonce:type_name -> google.protobuf.Int64Value
+	17, // [17:17] is the sub-list for method output_type
+	17, // [17:17] is the sub-list for method input_type
+	17, // [17:17] is the sub-list for extension type_name
+	17, // [17:17] is the sub-list for extension extendee
+	0,  // [0:17] is the sub-list for field type_name
 }
 
 func init() { file_contract_types_proto_init() }
@@ -764,7 +845,7 @@ func file_contract_types_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_contract_types_proto_rawDesc), len(file_contract_types_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

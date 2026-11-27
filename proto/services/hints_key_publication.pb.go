@@ -51,7 +51,11 @@ type HintsKeyPublicationTransactionBody struct {
 	NumParties uint32 `protobuf:"varint,2,opt,name=num_parties,json=numParties,proto3" json:"num_parties,omitempty"`
 	// *
 	// The party's hinTS key.
-	HintsKey      []byte `protobuf:"bytes,3,opt,name=hints_key,json=hintsKey,proto3" json:"hints_key,omitempty"`
+	HintsKey []byte `protobuf:"bytes,3,opt,name=hints_key,json=hintsKey,proto3" json:"hints_key,omitempty"`
+	// * The construction accepting this publication.
+	ConstructionId uint64 `protobuf:"varint,4,opt,name=construction_id,json=constructionId,proto3" json:"construction_id,omitempty"`
+	// * The completed CRS generation used to produce this key.
+	CrsId         uint64 `protobuf:"varint,5,opt,name=crs_id,json=crsId,proto3" json:"crs_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -107,16 +111,32 @@ func (x *HintsKeyPublicationTransactionBody) GetHintsKey() []byte {
 	return nil
 }
 
+func (x *HintsKeyPublicationTransactionBody) GetConstructionId() uint64 {
+	if x != nil {
+		return x.ConstructionId
+	}
+	return 0
+}
+
+func (x *HintsKeyPublicationTransactionBody) GetCrsId() uint64 {
+	if x != nil {
+		return x.CrsId
+	}
+	return 0
+}
+
 var File_hints_key_publication_proto protoreflect.FileDescriptor
 
 const file_hints_key_publication_proto_rawDesc = "" +
 	"\n" +
-	"\x1bhints_key_publication.proto\x12(com.hedera.hapi.services.auxiliary.hints\"}\n" +
+	"\x1bhints_key_publication.proto\x12(com.hedera.hapi.services.auxiliary.hints\"\xbd\x01\n" +
 	"\"HintsKeyPublicationTransactionBody\x12\x19\n" +
 	"\bparty_id\x18\x01 \x01(\rR\apartyId\x12\x1f\n" +
 	"\vnum_parties\x18\x02 \x01(\rR\n" +
 	"numParties\x12\x1b\n" +
-	"\thints_key\x18\x03 \x01(\fR\bhintsKeyB3\n" +
+	"\thints_key\x18\x03 \x01(\fR\bhintsKey\x12'\n" +
+	"\x0fconstruction_id\x18\x04 \x01(\x04R\x0econstructionId\x12\x15\n" +
+	"\x06crs_id\x18\x05 \x01(\x04R\x05crsIdB3\n" +
 	"/com.hedera.hapi.services.auxiliary.hints.legacyP\x01b\x06proto3"
 
 var (
