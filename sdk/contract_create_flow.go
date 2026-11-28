@@ -272,6 +272,9 @@ func (tx *ContractCreateFlow) _CreateContractCreateTransaction(fileID FileID) *C
 	return contractCreateTx
 }
 
+// Execute creates a contract and deletes its temporary bytecode file after the
+// contract creation receipt succeeds. If file deletion or its receipt fails,
+// Execute returns the successful contract creation response with a cleanup error.
 func (tx *ContractCreateFlow) Execute(client *Client) (TransactionResponse, error) {
 	tx.splitBytecode()
 
@@ -305,6 +308,19 @@ func (tx *ContractCreateFlow) Execute(client *Client) (TransactionResponse, erro
 	_, err = contractCreateResponse.SetValidateStatus(true).GetReceipt(client)
 	if err != nil {
 		return TransactionResponse{}, err
+	}
+
+	fileDeleteTx := NewFileDeleteTransaction().SetFileID(fileID)
+	if len(tx.nodeAccountIDs) > 0 {
+		fileDeleteTx.SetNodeAccountIDs(tx.nodeAccountIDs)
+	}
+	fileDeleteResponse, err := fileDeleteTx.Execute(client)
+	if err != nil {
+		return contractCreateResponse, errors.Wrapf(err, "contract created, but failed to delete temporary bytecode file %s", fileID)
+	}
+	_, err = fileDeleteResponse.SetValidateStatus(true).GetReceipt(client)
+	if err != nil {
+		return contractCreateResponse, errors.Wrapf(err, "contract created, but failed to confirm deletion of temporary bytecode file %s", fileID)
 	}
 
 	return contractCreateResponse, nil

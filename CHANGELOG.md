@@ -3,6 +3,9 @@
 ### Deprecated
 - `AccountBalanceQuery.Execute` and `AccountBalanceQuery.GetCost` now return the deprecation error without contacting a consensus node, which no longer serves the query. This completes Stage 2 of the cross-SDK [`AccountBalanceQuery` deprecation proposal](https://github.com/hiero-ledger/sdk-collaboration-hub/blob/main/proposals/account-balance-query-deprecation.md) [#1847](https://github.com/hiero-ledger/hiero-sdk-go/pull/1847)
 
+### Fixed
+- `ContractCreateFlow.Execute` now deletes its temporary bytecode file after successful contract creation and validates the deletion receipt. If cleanup fails, it returns the successful contract creation response alongside a wrapped cleanup error [#1882](https://github.com/hiero-ledger/hiero-sdk-go/issues/1882)
+
 ## v2.85.0
 
 ### Added
